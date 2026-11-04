@@ -17,6 +17,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 0
+output and 1
+ringout 0 Q0.0 1 P0.2
+output diff 1
+ringout 0 Q0.0 1 P0.3 P0.0 P0.1
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case control Q inside P
@@ -34,6 +40,13 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 in vertex - -
+output and 1
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3
+output or 1
+ringout P0.0 P0.1 P0.2 P0.3
 endorder
 endcase
 case control hole crossed only
@@ -61,6 +74,14 @@ piece P 1 0 0 0 in deduced 0 1
 piece P 1 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.2 Q0.3 1
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3
+ringout 0 Q0.2 Q0.3 1 P1.3 P1.0 P1.1 P1.2
+output or 2
+ringout P0.0 P0.1 P0.2 P0.3
+ringout 1 Q0.0 Q0.1 0 P1.2 P1.1 P1.0 P1.3
 endorder
 endcase
 case control apex on edge (6.4)
@@ -78,6 +99,13 @@ LS 2 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 in vertex 0 0
+output and 1
+ringout 0 Q0.2 Q0.1
+output diff 2
+ringout 0 Q0.2 Q0.1
+ringout 0 P0.3 P0.0 P0.1 P0.2
+output or 1
+ringout 0 P0.3 P0.0 P0.1 P0.2
 endorder
 endcase
 case wedge 10deg r=+0.5h straight
@@ -97,6 +125,13 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 in vertex 0 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 10deg r=+0.5h bend WS
@@ -118,6 +153,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 10deg r=+0.5h bend SW
@@ -139,6 +180,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 0 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
+output or 1
+ringout 0 Q0.3 1 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 10deg r=+0.5h bend WN
@@ -157,6 +204,12 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 10deg r=+0.5h bend NW
@@ -175,6 +228,12 @@ SS 2 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 P0.3 P0.0 P0.1
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 10deg r=+0.8h straight
@@ -194,6 +253,13 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 in vertex 0 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 10deg r=+0.8h bend WS
@@ -215,6 +281,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2
+output or 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.3
 endorder
 endcase
 case wedge 10deg r=+0.8h bend SW
@@ -236,6 +308,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 Q0.1 Q0.2 0
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 endcase
 case wedge 10deg r=+0.8h bend WN
@@ -254,6 +332,12 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 10deg r=+0.8h bend NW
@@ -272,6 +356,12 @@ SS 2 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 10deg r=+1.2h straight
@@ -293,11 +383,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 P0.0 P0.4 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 P0.2 P0.3 P0.4 P0.0
+ringout 0 Q0.3 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 10deg r=+1.2h bend WS
@@ -321,6 +425,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 Q0.2 Q0.1 0
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -328,6 +438,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 Q0.1 Q0.2 1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 10deg r=+1.2h bend SW
@@ -351,6 +467,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q0.1 Q0.2 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -358,6 +480,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 Q0.2 Q0.1 1
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 10deg r=+1.2h bend WN
@@ -381,6 +509,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 0 1 P0.2 P0.3 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.3 P0.2 1
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0,2 1
@@ -388,6 +522,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 10deg r=+1.2h bend NW
@@ -411,6 +551,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.0 P0.1
+output or 2
+ringout 1 Q0.3 Q0.2 Q0.1
+ringout 1 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -418,6 +564,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0
+output or 2
+ringout 1 Q0.3 Q0.2 Q0.1
+ringout 1 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 10deg r=+2h straight
@@ -439,11 +591,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 P0.2 P0.3 P0.4 P0.0
+ringout 0 Q0.3 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 P0.0 P0.4 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 10deg r=+2h bend WS
@@ -467,6 +633,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -474,6 +646,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 10deg r=+2h bend SW
@@ -497,6 +675,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q0.1 Q0.2 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -504,6 +688,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 10deg r=+2h bend WN
@@ -524,11 +714,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 10deg r=+2h bend NW
@@ -549,11 +751,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 P0.3 P0.0 P0.1
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 10deg r=+3h straight
@@ -575,11 +789,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 10deg r=+3h bend WS
@@ -603,6 +831,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 Q0.2 Q0.1 0
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -610,6 +844,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 10deg r=+3h bend SW
@@ -633,6 +873,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -640,6 +886,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 endcase
 case wedge 10deg r=+3h bend WN
@@ -660,11 +912,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 P0.2 P0.3 P0.0
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 10deg r=+3h bend NW
@@ -685,11 +949,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 P0.1 P0.0 P0.3
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 10deg r=+10.3h straight
@@ -711,11 +987,19 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output same
 endorder
 endcase
 case wedge 10deg r=+10.3h bend WS
@@ -739,6 +1023,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 Q0.1 Q0.2 1
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -746,6 +1036,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 0 Q0.1 Q0.2
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 10deg r=+10.3h bend SW
@@ -769,6 +1065,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q0.1 Q0.2 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -776,6 +1078,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 10deg r=+10.3h bend WN
@@ -796,11 +1104,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 P0.0 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case wedge 10deg r=+10.3h bend NW
@@ -821,11 +1141,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 P0.3 P0.0 P0.1
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 10deg r=+12.6h straight
@@ -848,6 +1180,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1 Q0.3 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2 1 Q0.0
 endorder
 endcase
 case wedge 10deg r=+12.6h bend WS
@@ -869,6 +1207,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 1 P0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2
+output or 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.0 Q0.3
 endorder
 endcase
 case wedge 10deg r=+12.6h bend SW
@@ -890,6 +1234,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 P0.2 1 Q0.1 Q0.2
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 0 Q0.3 Q0.0 1 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 10deg r=+12.6h bend WN
@@ -911,6 +1261,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 1 P0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0
+output or 1
+ringout 1 Q0.0 Q0.3 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case wedge 10deg r=+12.6h bend NW
@@ -932,6 +1288,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 0 P0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 10deg r=+17.2h straight
@@ -954,6 +1316,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2 1 Q0.0
 endorder
 endcase
 case wedge 10deg r=+17.2h bend WS
@@ -975,6 +1343,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.1 0 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.3 Q0.0 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case wedge 10deg r=+17.2h bend SW
@@ -996,6 +1370,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 P0.2 0 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.0 Q0.3
 endorder
 endcase
 case wedge 10deg r=+17.2h bend WN
@@ -1017,6 +1397,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 0 P0.1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 10deg r=+17.2h bend NW
@@ -1038,6 +1424,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 30deg r=+0.5h straight
@@ -1057,6 +1449,13 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 in vertex 0 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 30deg r=+0.5h bend WS
@@ -1078,6 +1477,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 0 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 30deg r=+0.5h bend SW
@@ -1099,6 +1504,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
+output or 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.3
 endorder
 endcase
 case wedge 30deg r=+0.5h bend WN
@@ -1117,6 +1528,12 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 P0.2 P0.3 P0.0
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case wedge 30deg r=+0.5h bend NW
@@ -1135,6 +1552,12 @@ SS 2 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 P0.3 P0.0 P0.1
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 30deg r=+0.8h straight
@@ -1154,6 +1577,13 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 in vertex 0 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 P0.0 P0.4 P0.3 P0.2
+ringout 0 Q0.3 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 30deg r=+0.8h bend WS
@@ -1175,6 +1605,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.2 Q0.1 0
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 30deg r=+0.8h bend SW
@@ -1196,6 +1632,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.3
 endorder
 endcase
 case wedge 30deg r=+0.8h bend WN
@@ -1214,6 +1656,12 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case wedge 30deg r=+0.8h bend NW
@@ -1232,6 +1680,12 @@ SS 2 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 30deg r=+1.2h straight
@@ -1253,11 +1707,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 30deg r=+1.2h bend WS
@@ -1281,6 +1749,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 Q0.1 Q0.2 1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -1288,6 +1762,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 Q0.1 Q0.2 1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 30deg r=+1.2h bend SW
@@ -1311,6 +1791,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q0.1 Q0.2 0
+output diff 1
+ringout 0 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -1318,6 +1804,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 30deg r=+1.2h bend WN
@@ -1341,6 +1833,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0
+output or 2
+ringout 1 0 P0.0 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0,2 1
@@ -1348,6 +1846,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 1 P0.2 P0.3 P0.0 0
 endorder
 endcase
 case wedge 30deg r=+1.2h bend NW
@@ -1371,6 +1875,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.0 P0.1
+output or 2
+ringout 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.1 P0.0 P0.3 1
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -1378,6 +1888,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.0 P0.1
+output or 2
+ringout 0 1 P0.3 P0.0 P0.1
+ringout 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case wedge 30deg r=+2h straight
@@ -1399,11 +1915,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 P0.2 P0.3 P0.4 P0.0
+ringout 0 Q0.3 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 P0.0 P0.4 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 30deg r=+2h bend WS
@@ -1427,6 +1957,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 0 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -1434,6 +1970,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 Q0.1 Q0.2 1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 30deg r=+2h bend SW
@@ -1457,6 +1999,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -1464,6 +2012,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q0.1 Q0.2 0
+output diff 1
+ringout 1 Q0.1 Q0.2 0 P0.1 P0.0 P0.3
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 endcase
 case wedge 30deg r=+2h bend WN
@@ -1484,11 +2038,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 P0.0 P0.3 P0.2
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 30deg r=+2h bend NW
@@ -1509,11 +2075,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.3 P0.0 P0.1
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 P0.3 P0.0 P0.1
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case wedge 30deg r=+3h straight
@@ -1535,11 +2113,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 P0.2 P0.3 P0.4 P0.0
+ringout 0 Q0.3 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 30deg r=+3h bend WS
@@ -1563,6 +2155,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 0 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -1570,6 +2168,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 30deg r=+3h bend SW
@@ -1593,6 +2197,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 Q0.2 Q0.1 1
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -1600,6 +2210,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 endcase
 case wedge 30deg r=+3h bend WN
@@ -1620,11 +2236,18 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output same
 endorder
 endcase
 case wedge 30deg r=+3h bend NW
@@ -1645,11 +2268,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 P0.3 P0.0 P0.1
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 30deg r=+3.48h straight
@@ -1671,11 +2306,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 30deg r=+3.48h bend WS
@@ -1699,6 +2348,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -1706,6 +2361,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 30deg r=+3.48h bend SW
@@ -1729,6 +2390,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 0 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -1736,6 +2403,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 0 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3
 endorder
 endcase
 case wedge 30deg r=+3.48h bend WN
@@ -1756,11 +2429,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 P0.2 P0.3 P0.0
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 P0.0 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case wedge 30deg r=+3.48h bend NW
@@ -1781,11 +2466,23 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 P0.3 P0.0 P0.1
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.0 P0.1
+output or 2
+ringout 0 P0.1 P0.0 P0.3
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case wedge 30deg r=+4.25h straight
@@ -1808,6 +2505,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.1
+output diff 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 1 Q0.0 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 30deg r=+4.25h bend WS
@@ -1829,6 +2532,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 1 P0.1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 Q0.0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 30deg r=+4.25h bend SW
@@ -1850,6 +2559,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 P0.2 1 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 1 Q0.0 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 30deg r=+4.25h bend WN
@@ -1871,6 +2586,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 P0.1 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 30deg r=+4.25h bend NW
@@ -1892,6 +2613,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.2
+output diff 1
+ringout 1 0 P0.1 P0.0 P0.3
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 30deg r=+5.8h straight
@@ -1914,6 +2641,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1 Q0.3 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 1 P0.2 P0.3 P0.4 P0.0 0 Q0.0
 endorder
 endcase
 case wedge 30deg r=+5.8h bend WS
@@ -1935,6 +2668,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 Q0.0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 30deg r=+5.8h bend SW
@@ -1956,6 +2695,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 Q0.1 Q0.2 0 P0.2
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3 Q0.0
 endorder
 endcase
 case wedge 30deg r=+5.8h bend WN
@@ -1977,6 +2722,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 1 P0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0
+output or 1
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 30deg r=+5.8h bend NW
@@ -1998,6 +2749,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 0 P0.2
+output diff 1
+ringout 1 0 P0.1 P0.0 P0.3
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 60deg r=+0.5h straight
@@ -2017,6 +2774,13 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 in vertex 0 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 60deg r=+0.5h bend WS
@@ -2038,6 +2802,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 0 Q0.1 Q0.2
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 60deg r=+0.5h bend SW
@@ -2059,6 +2829,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 0 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.3
 endorder
 endcase
 case wedge 60deg r=+0.5h bend WN
@@ -2077,6 +2853,12 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.3 P0.0
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 60deg r=+0.5h bend NW
@@ -2095,6 +2877,12 @@ SS 2 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 60deg r=+0.8h straight
@@ -2114,6 +2902,13 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 in vertex 0 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 P0.0 P0.4 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 60deg r=+0.8h bend WS
@@ -2135,6 +2930,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 endcase
 case wedge 60deg r=+0.8h bend SW
@@ -2156,6 +2957,12 @@ piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2
+output or 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.3
 endorder
 endcase
 case wedge 60deg r=+0.8h bend WN
@@ -2174,6 +2981,12 @@ SS 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case wedge 60deg r=+0.8h bend NW
@@ -2192,6 +3005,12 @@ SS 2 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3
+output or 2
+ringout 0 P0.1 P0.0 P0.3
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case wedge 60deg r=+1.2h straight
@@ -2213,11 +3032,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.3 Q0.2 Q0.1
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 0 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 60deg r=+1.2h bend WS
@@ -2241,6 +3074,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 0 Q0.1 Q0.2
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -2248,6 +3087,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 1 Q0.2 Q0.1
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.2 Q0.1
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 60deg r=+1.2h bend SW
@@ -2271,6 +3116,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 Q0.2 Q0.1 1
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -2278,6 +3129,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 60deg r=+1.2h bend WN
@@ -2301,6 +3158,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 0 1 P0.2 P0.3 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.3 P0.2 1
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0,2 1
@@ -2308,6 +3171,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.3 P0.2 1
 endorder
 endcase
 case wedge 60deg r=+1.2h bend NW
@@ -2331,6 +3200,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.0 P0.1
+output or 2
+ringout 1 0 P0.1 P0.0 P0.3
+ringout 1 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -2338,6 +3213,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0
+output or 2
+ringout 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.1 P0.0 P0.3 1
 endorder
 endcase
 case wedge 60deg r=+1.8h straight
@@ -2359,11 +3240,25 @@ order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 P0.0 P0.4 P0.3 P0.2
+ringout 0 Q0.1 Q0.2 Q0.3
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 0,1
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.0 P0.4 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 60deg r=+1.8h bend WS
@@ -2387,6 +3282,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 Q0.2 Q0.1 0
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0,2 1
@@ -2394,6 +3295,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 0 Q0.1 Q0.2
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 60deg r=+1.8h bend SW
@@ -2417,6 +3324,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 0 1 Q0.1 Q0.2
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1,2
@@ -2424,6 +3337,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q0.1 Q0.2 0
+output diff 1
+ringout 1 Q0.1 Q0.2 0 P0.1 P0.0 P0.3
+output or 1
+ringout 1 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 60deg r=+1.8h bend WN
@@ -2447,6 +3366,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 1 P0.2 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0,2 1
@@ -2454,6 +3379,12 @@ piece P 0 0 0 0 out vertex 1 0,2
 piece Q 0 0 1 0 none none 1 0
 piece Q 0 0 0 0 out vertex 0 2
 piece Q 0 0 1 0 none none 2 1
+output and 0
+output diff 1
+ringout 1 0 P0.0 P0.3 P0.2
+output or 2
+ringout 0 P0.0 P0.3 P0.2 1
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 60deg r=+1.8h bend NW
@@ -2477,6 +3408,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 1
+output or 2
+ringout 0 P0.1 P0.0 P0.3 1
+ringout 1 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -2484,6 +3421,12 @@ piece P 0 0 0 0 out vertex 1,2 0
 piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.0 P0.1
+output or 2
+ringout 1 Q0.1 Q0.2 Q0.3
+ringout 0 1 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 60deg r=+2.2h straight
@@ -2506,6 +3449,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.4 P0.0 0 Q0.1 Q0.2 Q0.3
+output or 1
+ringout 0 Q0.0 1 P0.2 P0.3 P0.4 P0.0
 endorder
 endcase
 case wedge 60deg r=+2.2h bend WS
@@ -2527,6 +3476,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.2 Q0.1 0 P0.1
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.3 Q0.0
 endorder
 endcase
 case wedge 60deg r=+2.2h bend SW
@@ -2548,6 +3503,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 Q0.2 Q0.1 1 P0.2
+output diff 1
+ringout 0 Q0.2 Q0.1 1 P0.3 P0.0 P0.1
+output or 1
+ringout 0 Q0.3 Q0.0 1 P0.3 P0.0 P0.1
 endorder
 endcase
 case wedge 60deg r=+2.2h bend WN
@@ -2569,6 +3530,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 0 P0.1
+output diff 1
+ringout 1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case wedge 60deg r=+2.2h bend NW
@@ -2590,6 +3557,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.2
+output diff 1
+ringout 0 1 P0.3 P0.0 P0.1
+output or 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case wedge 60deg r=+3h straight
@@ -2612,6 +3585,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1 Q0.3 Q0.2 Q0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.4 P0.0 0 Q0.1 Q0.2 Q0.3
+output or 1
+ringout 0 P0.0 P0.4 P0.3 P0.2 1 Q0.0
 endorder
 endcase
 case wedge 60deg r=+3h bend WS
@@ -2633,6 +3612,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.1 0 Q0.1 Q0.2
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 1 Q0.3 Q0.0 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case wedge 60deg r=+3h bend SW
@@ -2654,6 +3639,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 P0.2 0 Q0.2 Q0.1
+output diff 1
+ringout 1 Q0.1 Q0.2 0 P0.1 P0.0 P0.3
+output or 1
+ringout 1 Q0.0 Q0.3 0 P0.1 P0.0 P0.3
 endorder
 endcase
 case wedge 60deg r=+3h bend WN
@@ -2675,6 +3666,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 0 P0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0
+output or 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case wedge 60deg r=+3h bend NW
@@ -2696,6 +3693,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.2
+output diff 1
+ringout 0 1 P0.3 P0.0 P0.1
+output or 1
+ringout 0 P0.1 P0.0 P0.3 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case wedge 60deg r=+3h straight
@@ -2718,6 +3721,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
+output or 1
+ringout 1 Q0.0 0 P0.0 P0.4 P0.3 P0.2
 endorder
 endcase
 case wedge 60deg r=+3h bend WS
@@ -2739,6 +3748,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 1 P0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 Q0.0 Q0.3 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case wedge 60deg r=+3h bend SW
@@ -2760,6 +3775,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 Q0.2 Q0.1 1 P0.2
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.2 Q0.1
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.3 Q0.0
 endorder
 endcase
 case wedge 60deg r=+3h bend WN
@@ -2781,6 +3802,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 P0.1 0
+output diff 1
+ringout 1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case wedge 60deg r=+3h bend NW
@@ -2802,6 +3829,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 1 P0.3 P0.0 P0.1 0
+output or 1
+ringout 1 P0.3 P0.0 P0.1 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case right wedge a=+0.5h near
@@ -2824,6 +3857,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 1 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.2 Q0.3
 endorder
 endcase
 case right wedge a=+0.5h far
@@ -2846,6 +3885,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 1 P0.2
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.1
+output or 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.3 Q0.2
 endorder
 endcase
 case right wedge a=+0.6h near
@@ -2868,6 +3913,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.1 0 P0.2
+output diff 1
+ringout 1 Q0.1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.3 Q0.2 1 P0.3 P0.4 P0.0
 endorder
 endcase
 case right wedge a=+0.6h far
@@ -2890,6 +3941,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 1 P0.2
+output diff 1
+ringout 0 Q0.1 1 P0.3 P0.4 P0.0
+output or 1
+ringout 1 Q0.2 Q0.3 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case right wedge a=+0.72h near
@@ -2917,6 +3974,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 Q0.1 3 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 3 Q0.1 1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 3 Q0.2 Q0.3 1
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -2926,6 +3989,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 3 P0.2 1 Q0.1
+output diff 1
+ringout 3 P0.3 P0.4 P0.0 0 1 Q0.1
+output or 1
+ringout 3 P0.3 P0.4 P0.0 0 1 Q0.3 Q0.2
 endorder
 endcase
 case right wedge a=+0.72h far
@@ -2950,6 +4019,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 Q0.1 2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -2957,6 +4032,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 2 P0.2 0 Q0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 endcase
 case right wedge a=+0.85h near
@@ -2984,6 +4065,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 3 P0.2 1 Q0.1
+output diff 1
+ringout 0 1 Q0.1 3 P0.3 P0.4 P0.0
+output or 1
+ringout 0 1 Q0.3 Q0.2 3 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -2993,6 +4080,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 3 P0.2 1 Q0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 3 Q0.1 1
+output or 1
+ringout 3 Q0.2 Q0.3 1 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case right wedge a=+0.85h far
@@ -3017,6 +4110,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 2 Q0.1 0 P0.2
+output diff 1
+ringout 2 Q0.1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -3024,6 +4123,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 2 P0.2 0 Q0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 endcase
 case right wedge a=+0.95h near
@@ -3051,6 +4156,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 P0.2 3 Q0.1
+output diff 1
+ringout 1 Q0.1 3 P0.3 P0.4 P0.0 0
+output or 1
+ringout 1 Q0.3 Q0.2 3 P0.3 P0.4 P0.0 0
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -3060,6 +4171,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 Q0.1 3 P0.2
+output diff 1
+ringout 3 P0.3 P0.4 P0.0 0 1 Q0.1
+output or 1
+ringout 3 P0.3 P0.4 P0.0 0 1 Q0.3 Q0.2
 endorder
 endcase
 case right wedge a=+0.95h far
@@ -3084,6 +4201,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 2 Q0.1 0 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -3091,6 +4214,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 endcase
 case right wedge a=+1.05h near
@@ -3113,6 +4242,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.1 0 P0.1 P0.2
+output diff 1
+ringout 1 Q0.1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.2 Q0.3
 endorder
 endcase
 case right wedge a=+1.05h far
@@ -3135,6 +4270,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 1 P0.2 P0.1
+output diff 1
+ringout 0 Q0.1 1 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case right wedge a=+1.2h near
@@ -3157,6 +4298,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 P0.2 1 Q0.1
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.2 Q0.3
 endorder
 endcase
 case right wedge a=+1.2h far
@@ -3179,6 +4326,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.1 0 P0.1 P0.2
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.1
+output or 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.0 Q0.3 Q0.2
 endorder
 endcase
 case right wedge a=+0.5h near swapped
@@ -3201,6 +4354,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.2 0 P0.1
+output diff 1
+ringout 1 Q0.2 0 P0.3 P0.2
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case right wedge a=+0.5h far swapped
@@ -3223,6 +4382,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1 Q0.2
+output diff 1
+ringout 0 Q0.2 1 P0.2 P0.3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case right wedge a=+0.6h near swapped
@@ -3245,6 +4410,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.2 1 P0.1
+output diff 1
+ringout 1 P0.2 P0.3 0 Q0.2
+output or 1
+ringout 1 P0.2 P0.3 0 Q0.0 Q0.4 Q0.3
 endorder
 endcase
 case right wedge a=+0.6h far swapped
@@ -3267,6 +4438,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.2 1 P0.1
+output diff 1
+ringout 0 Q0.2 1 P0.2 P0.3
+output or 1
+ringout 1 Q0.3 Q0.4 Q0.0 0 P0.3 P0.2
 endorder
 endcase
 case right wedge a=+0.72h near swapped
@@ -3294,6 +4471,12 @@ piece P 0 0 1 0 none none 3 0
 piece Q 0 0 0 0 out deduced 0 1,3
 piece Q 0 0 0 0 in vertex 1,3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 2 P0.1 1 Q0.2
+output diff 1
+ringout 1 P0.3 P0.2 2 Q0.2
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 2 P0.2 P0.3 1
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -3303,6 +4486,12 @@ piece P 0 0 1 0 none none 3 0
 piece Q 0 0 0 0 out deduced 0 1,3
 piece Q 0 0 0 0 in vertex 1,3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 P0.1 2 Q0.2
+output diff 1
+ringout 1 Q0.2 2 P0.2 P0.3
+output or 1
+ringout 0 1 P0.3 P0.2 2 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case right wedge a=+0.72h far swapped
@@ -3327,6 +4516,12 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0 Q0.2
+output diff 1
+ringout 0 P0.3 P0.2 1 Q0.2
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.4 Q0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3334,6 +4529,12 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0 Q0.2
+output diff 1
+ringout 0 Q0.2 1 P0.2 P0.3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case right wedge a=+0.85h near swapped
@@ -3361,6 +4562,12 @@ piece P 0 0 1 0 none none 3 0
 piece Q 0 0 0 0 out deduced 0 1,3
 piece Q 0 0 0 0 in vertex 1,3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 2 Q0.2 1 P0.1
+output diff 1
+ringout 2 Q0.2 1 P0.3 P0.2
+output or 1
+ringout 1 0 Q0.0 Q0.4 Q0.3 2 P0.2 P0.3
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -3370,6 +4577,12 @@ piece P 0 0 1 0 none none 3 0
 piece Q 0 0 0 0 out deduced 0 1,3
 piece Q 0 0 0 0 in vertex 1,3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 2 P0.1 1 Q0.2
+output diff 1
+ringout 2 Q0.2 1 P0.3 P0.2
+output or 1
+ringout 1 P0.3 P0.2 2 Q0.3 Q0.4 Q0.0 0
 endorder
 endcase
 case right wedge a=+0.85h far swapped
@@ -3394,6 +4607,12 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 Q0.2 0 P0.1
+output diff 1
+ringout 0 P0.3 P0.2 1 Q0.2
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.4 Q0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3401,6 +4620,12 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0 Q0.2
+output diff 1
+ringout 0 Q0.2 1 P0.2 P0.3
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case right wedge a=+0.95h near swapped
@@ -3428,6 +4653,12 @@ piece P 0 0 1 0 none none 3 0
 piece Q 0 0 0 0 out deduced 0 1,3
 piece Q 0 0 0 0 in vertex 1,3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 2 Q0.2 1 P0.1
+output diff 1
+ringout 2 Q0.2 1 P0.3 P0.2
+output or 1
+ringout 1 P0.3 P0.2 2 Q0.3 Q0.4 Q0.0 0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -3437,6 +4668,12 @@ piece P 0 0 1 0 none none 3 0
 piece Q 0 0 0 0 out deduced 0 1,3
 piece Q 0 0 0 0 in vertex 1,3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 Q0.2 2 P0.1
+output diff 1
+ringout 2 P0.2 P0.3 1 Q0.2
+output or 1
+ringout 2 Q0.3 Q0.4 Q0.0 0 1 P0.3 P0.2
 endorder
 endcase
 case right wedge a=+0.95h far swapped
@@ -3461,6 +4698,12 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 Q0.2 0 P0.1
+output diff 1
+ringout 0 Q0.2 1 P0.2 P0.3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 1 P0.2 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3468,6 +4711,12 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 Q0.2 1 P0.1
+output diff 1
+ringout 0 Q0.2 1 P0.2 P0.3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case right wedge a=+1.05h near swapped
@@ -3490,6 +4739,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 Q0.2 Q0.1 0 P0.1
+output diff 1
+ringout 1 Q0.2 Q0.1 0 P0.3 P0.2
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case right wedge a=+1.05h far swapped
@@ -3512,6 +4767,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1 Q0.2 Q0.1
+output diff 1
+ringout 0 Q0.1 Q0.2 1 P0.2 P0.3 P0.0
+output or 1
+ringout 1 Q0.3 Q0.4 Q0.0 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case right wedge a=+1.2h near swapped
@@ -3534,6 +4795,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 Q0.1 Q0.2 1 P0.1
+output diff 1
+ringout 1 P0.2 P0.3 0 Q0.1 Q0.2
+output or 1
+ringout 1 P0.2 P0.3 0 Q0.0 Q0.4 Q0.3
 endorder
 endcase
 case right wedge a=+1.2h far swapped
@@ -3556,6 +4823,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1 Q0.2 Q0.1
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.1 Q0.2
+output or 1
+ringout 1 Q0.3 Q0.4 Q0.0 0 P0.0 P0.3 P0.2
 endorder
 endcase
 case twist edge d=-10h
@@ -3583,6 +4856,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 3 2 P0.3
+ringout 0 1 P0.1
+output diff 1
+ringout 0 1 P0.2 2 3 P0.0
+output or 1
+ringout 0 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0
 endorder
 endcase
 case twist edge d=-3h
@@ -3610,6 +4890,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 0 P0.1 1
+ringout 2 3 P0.3
+output diff 1
+ringout 0 P0.0 3 2 P0.2 1
+output or 1
+ringout 0 P0.0 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2 2
 endorder
 endcase
 case twist edge d=-1h
@@ -3637,6 +4924,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 2 3 P0.3
+ringout 0 1 P0.1
+output diff 1
+ringout 0 1 P0.2 2 3 P0.0
+output or 1
+ringout 2 0 P0.0 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2
 endorder
 endcase
 case twist edge d=-0.3h
@@ -3664,6 +4958,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 3 2 P0.3
+ringout 1 0 P0.1
+output diff 1
+ringout 2 P0.2 1 0 P0.0 3
+output or 1
+ringout 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0 0
 endorder
 endcase
 case twist edge d=-0.1h
@@ -3691,6 +4992,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 3 2 P0.3
+ringout 0 1 P0.1
+output diff 1
+ringout 0 1 P0.2 2 3 P0.0
+output or 1
+ringout 2 0 P0.0 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2
 endorder
 endcase
 case twist edge d=-0.000707h
@@ -3718,6 +5026,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 3 2 P0.3
+ringout 0 1 P0.1
+output diff 1
+ringout 0 1 P0.2 2 3 P0.0
+output or 1
+ringout 2 0 P0.0 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2
 endorder
 endcase
 case twist edge d=-4ulp
@@ -3745,6 +5060,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 1 P0.1 0
+ringout 2 P0.3 3
+output diff 1
+ringout 1 0 P0.0 3 2 P0.2
+output or 1
+ringout 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2 2 0 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3755,6 +5077,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 1 P0.1 0 3 P0.3 2
+output diff 2
+ringout 1 2 P0.2
+ringout 0 3 P0.0
+output or 1
+ringout 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2 2 0 P0.0
 endorder
 endcase
 case twist edge d=-1ulp
@@ -3782,6 +5111,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 2 P0.3 3
+ringout 0 1 P0.1
+output diff 1
+ringout 0 1 P0.2 2 3 P0.0
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0 0 2 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3792,6 +5128,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 0 3 P0.3 2 1 P0.1
+output diff 2
+ringout 2 P0.2 1
+ringout 0 3 P0.0
+output or 1
+ringout 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2 2 0 P0.0
 endorder
 endcase
 case twist edge d=+0h
@@ -3819,6 +5162,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 0 3 P0.3 2 1 P0.1
+output diff 2
+ringout 1 2 P0.2
+ringout 0 3 P0.0
+output or 1
+ringout 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3829,6 +5179,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 3 P0.3 2
+ringout 1 P0.1 0
+output diff 1
+ringout 3 P0.0 0 1 P0.2 2
+output or 1
+ringout 3 P0.0 0 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case twist edge d=+1ulp
@@ -3856,6 +5213,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 2 P0.3 3 0 P0.1 1
+output diff 2
+ringout 1 P0.2 2
+ringout 3 P0.0 0
+output or 1
+ringout 0 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3866,6 +5230,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 2 P0.3 3
+ringout 0 1 P0.1
+output diff 1
+ringout 0 1 P0.2 2 3 P0.0
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0 0 2 P0.2
 endorder
 endcase
 case twist edge d=+4ulp
@@ -3893,6 +5264,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 0 3 P0.3 2 1 P0.1
+output diff 2
+ringout 1 P0.2 2
+ringout 0 3 P0.0
+output or 1
+ringout 2 0 P0.0 3 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -3903,6 +5281,13 @@ piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 2
+ringout 0 P0.1 1
+ringout 2 3 P0.3
+output diff 1
+ringout 2 3 P0.0 0 1 P0.2
+output or 1
+ringout 0 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0
 endorder
 endcase
 case twist edge d=+0.000707h
@@ -3930,6 +5315,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 1 2 P0.3 3 0 P0.1
+output diff 2
+ringout 0 3 P0.0
+ringout 1 2 P0.2
+output or 1
+ringout 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0 0
 endorder
 endcase
 case twist edge d=+0.1h
@@ -3957,6 +5349,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 2 P0.3 3 0 P0.1 1
+output diff 2
+ringout 3 P0.0 0
+ringout 2 1 P0.2
+output or 1
+ringout 3 P0.0 0 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case twist edge d=+0.3h
@@ -3984,6 +5383,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 3 P0.3 2 1 P0.1 0
+output diff 2
+ringout 2 P0.2 1
+ringout 0 3 P0.0
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0 0 2 P0.2
 endorder
 endcase
 case twist edge d=+1h
@@ -4011,6 +5417,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 0 P0.1 1 2 P0.3 3
+output diff 2
+ringout 1 2 P0.2
+ringout 0 3 P0.0
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0 0 2 P0.2
 endorder
 endcase
 case twist edge d=+3h
@@ -4038,6 +5451,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 0 3 P0.3 2 1 P0.1
+output diff 2
+ringout 2 P0.2 1
+ringout 0 P0.0 3
+output or 1
+ringout 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0 3 P0.0 0
 endorder
 endcase
 case twist edge d=+10h
@@ -4065,6 +5485,13 @@ piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
+output and 1
+ringout 1 2 P0.3 3 0 P0.1
+output diff 2
+ringout 3 0 P0.0
+ringout 1 2 P0.2
+output or 1
+ringout 3 P0.0 0 2 P0.2 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case twist vertex w=(+0h,+0h)
@@ -4088,6 +5515,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 0 P0.1
+output diff 2
+ringout 0 P0.0 P0.3
+ringout 0 1 P0.2
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4095,6 +5530,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 0 P0.1
+output diff 2
+ringout 0 P0.2 1
+ringout 0 P0.3 P0.0
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 endcase
 case twist vertex w=(+7.85e-11h,+0h)
@@ -4118,6 +5561,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 P0.1 1
+output diff 2
+ringout 0 P0.0 P0.3
+ringout 0 1 P0.2
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4125,6 +5576,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 1 P0.1
+output diff 2
+ringout 0 1 P0.2
+ringout 0 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2
+ringout 0 P0.0 P0.3
 endorder
 endcase
 case twist vertex w=(+0h,-7.85e-11h)
@@ -4148,6 +5607,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0
+output diff 2
+ringout 0 P0.3 P0.0
+ringout 0 P0.2 1
+output or 2
+ringout 0 P0.3 P0.0
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4155,6 +5622,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0
+output diff 2
+ringout 0 1 P0.2
+ringout 0 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2
+ringout 0 P0.0 P0.3
 endorder
 endcase
 case twist vertex w=(+0.5h,+0h)
@@ -4178,6 +5653,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 0 P0.1
+output diff 2
+ringout 0 P0.2 1
+ringout 0 P0.3 P0.0
+output or 2
+ringout 0 P0.0 P0.3
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4185,6 +5668,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0
+output diff 2
+ringout 0 1 P0.2
+ringout 0 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2
+ringout 0 P0.0 P0.3
 endorder
 endcase
 case twist vertex w=(+0h,+0.5h)
@@ -4208,6 +5699,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 1 P0.1
+output diff 2
+ringout 0 P0.2 1
+ringout 0 P0.3 P0.0
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4215,6 +5714,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0
+output diff 2
+ringout 0 1 P0.2
+ringout 0 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2
+ringout 0 P0.0 P0.3
 endorder
 endcase
 case twist vertex w=(+0h,-0.5h)
@@ -4238,6 +5745,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 P0.1 1
+output diff 2
+ringout 0 P0.3 P0.0
+ringout 0 P0.2 1
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4245,6 +5760,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 P0.1 1
+output diff 2
+ringout 0 P0.2 1
+ringout 0 P0.3 P0.0
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 endcase
 case twist vertex w=(-0.5h,+0h)
@@ -4268,6 +5791,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 1 P0.1
+output diff 2
+ringout 0 P0.2 1
+ringout 0 P0.3 P0.0
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4275,6 +5806,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 1 P0.1
+output diff 2
+ringout 0 1 P0.2
+ringout 0 P0.0 P0.3
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 endcase
 case twist vertex w=(+0.5h,+0.5h)
@@ -4298,6 +5837,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 P0.1 1
+output diff 2
+ringout 0 P0.2 1
+ringout 0 P0.3 P0.0
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4305,6 +5852,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 1 P0.1 0
+output diff 2
+ringout 0 1 P0.2
+ringout 0 P0.0 P0.3
+output or 2
+ringout 0 P0.0 P0.3
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2
 endorder
 endcase
 case twist vertex w=(-0.5h,-0.5h)
@@ -4328,6 +5883,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 1 P0.1
+output diff 2
+ringout 0 P0.0 P0.3
+ringout 0 1 P0.2
+output or 2
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 0 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4335,6 +5898,14 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 0,2
+output and 1
+ringout 0 1 P0.1
+output diff 2
+ringout 0 1 P0.2
+ringout 0 P0.0 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2
+ringout 0 P0.0 P0.3
 endorder
 endcase
 case twist vertex w=(+1.5h,+0h)
@@ -4356,6 +5927,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.1 1 Q0.0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.0
+output or 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case twist vertex w=(+0h,+1.5h)
@@ -4383,6 +5960,13 @@ piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 0 P0.1 1 2
+output diff 2
+ringout 3 P0.3 P0.0
+ringout 1 P0.2 2
+output or 1
+ringout 1 P0.2 2 Q0.0 3 P0.3 P0.0 0 Q0.3 Q0.2 Q0.1
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4393,6 +5977,13 @@ piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 0 2 1 P0.1
+output diff 2
+ringout 2 1 P0.2
+ringout 0 P0.3 P0.0
+output or 1
+ringout 1 P0.2 2 Q0.0 0 P0.0 P0.3 3 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case twist vertex w=(+0h,-1.5h)
@@ -4414,6 +6005,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 1
+output diff 1
+ringout 0 1 P0.2 P0.3 P0.0
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.2 P0.3 P0.0
 endorder
 endcase
 case twist vertex w=(-1.5h,+0h)
@@ -4441,6 +6038,13 @@ piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 0 in vertex 3 0
+output and 1
+ringout 3 Q0.0 0 P0.1 1 2
+output diff 2
+ringout 2 P0.2 1
+ringout 3 Q0.0 0 P0.0 P0.3
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 3 P0.3 P0.0 0 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4451,6 +6055,13 @@ piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 0 in vertex 3 2
+output and 2
+ringout 2 Q0.0 3
+ringout 0 1 P0.1
+output diff 1
+ringout 2 P0.2 1 0 P0.0 P0.3 3 Q0.0
+output or 1
+ringout 2 P0.2 1 Q0.1 Q0.2 Q0.3 3 P0.3 P0.0
 endorder
 endcase
 case twist vertex w=(+1.5h,-0.3h)
@@ -4472,6 +6083,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.1 0
+output diff 1
+ringout 1 0 P0.0 P0.3 P0.2
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case twist vertex w=(+3h,+0h)
@@ -4493,6 +6110,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.1 1 Q0.0
+output diff 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.0
+output or 1
+ringout 0 P0.0 P0.3 P0.2 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case twist vertex w=(+0h,+3h)
@@ -4520,6 +6143,13 @@ piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 0 2 1 P0.1
+output diff 2
+ringout 1 P0.2 2
+ringout 0 P0.3 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.2 2 Q0.0 3 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4530,6 +6160,13 @@ piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 0 in deduced 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 1 P0.1 0
+output diff 2
+ringout 2 1 P0.2
+ringout 0 P0.0 P0.3
+output or 1
+ringout 2 P0.2 1 Q0.1 Q0.2 Q0.3 3 P0.3 P0.0 0 Q0.0
 endorder
 endcase
 case twist vertex w=(-3h,+0h)
@@ -4557,6 +6194,13 @@ piece Q 0 0 0 0 out deduced 0 2
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 0 in vertex 3 0
+output and 1
+ringout 1 P0.1 0 Q0.0 3 2
+output diff 2
+ringout 2 1 P0.2
+ringout 0 Q0.0 3 P0.3 P0.0
+output or 1
+ringout 0 P0.2 1 Q0.1 Q0.2 Q0.3 3 P0.3 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0 1
@@ -4567,6 +6211,13 @@ piece Q 0 0 0 0 out deduced 2 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 0 in vertex 3 2
+output and 2
+ringout 1 0 P0.1
+ringout 3 2 Q0.0
+output diff 1
+ringout 1 P0.2 2 Q0.0 3 P0.3 P0.0 0
+output or 1
+ringout 1 P0.2 2 P0.0 P0.3 3 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case twist vertex w=(+0h,-3h)
@@ -4588,6 +6239,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.1 0
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 0
+output or 1
+ringout 1 P0.2 P0.3 P0.0 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case d4 len=+0.5h phi=90 lone
@@ -4612,6 +6269,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2
+output diff 1
+ringout 2 1 0 P0.3
+output or 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 1 same sector 0 1
@@ -4620,6 +6283,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
+output and 1
+ringout 2 P0.2 1 0
+output diff 1
+ringout 0 2 P0.3
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.1 Q0.0 Q0.3 1
 endorder
 endcase
 case d4 len=+0.5h phi=45 lone
@@ -4644,6 +6313,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2
+output diff 1
+ringout 1 2 P0.3 0
+output or 1
+ringout 0 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+0.5h phi=45 hole-between
@@ -4678,6 +6353,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 0 1 P0.2 2 4 P1.1 3
+output diff 1
+ringout 2 P0.3 0 3 P1.2 4
+output or 2
+ringout 4 P1.2 3 1
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+0.5h phi=45 Qvertex-between
@@ -4702,6 +6384,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 0 P0.2
+output diff 1
+ringout 0 P0.3 2
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -4709,6 +6397,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 0 P0.2
+output diff 1
+ringout 2 0 P0.3
+output or 1
+ringout 2 P0.3 0 Q0.0 Q0.4 Q0.3 Q0.2
 endorder
 endcase
 case d4 len=+0.5h phi=20 lone
@@ -4733,6 +6427,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 P0.2 1
+output diff 1
+ringout 1 0 P0.3 2
+output or 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 endcase
 case d4 len=+0.5h phi=20 hole-between
@@ -4767,6 +6467,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 4 2 P0.2 1 0 3 P1.1
+output diff 1
+ringout 2 P0.3 0 3 P1.2 4
+output or 2
+ringout 1 4 P1.2 3
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+0.5h phi=20 Qvertex-between
@@ -4791,6 +6498,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 2 P0.2
+output diff 1
+ringout 0 2 P0.3
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -4798,6 +6511,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 P0.2 2
+output diff 1
+ringout 2 P0.3 0
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+1h phi=90 lone
@@ -4822,6 +6541,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 P0.2 1
+output diff 1
+ringout 2 P0.3 0 1
+output or 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 1 same sector 0 1
@@ -4830,6 +6555,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
+output and 1
+ringout 0 1 P0.2 2
+output diff 1
+ringout 0 2 P0.3
+output or 1
+ringout 0 1 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+1h phi=45 lone
@@ -4854,6 +6585,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2
+output diff 1
+ringout 2 P0.3 0 1
+output or 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 endcase
 case d4 len=+1h phi=45 hole-between
@@ -4888,6 +6625,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 0 1 P0.2 2 4 P1.1 3
+output diff 1
+ringout 3 P1.2 4 2 P0.3 0
+output or 2
+ringout 0 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
+ringout 3 P1.2 4 1
 endorder
 endcase
 case d4 len=+1h phi=45 Qvertex-between
@@ -4912,6 +6656,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 P0.2 0
+output diff 1
+ringout 0 2 P0.3
+output or 1
+ringout 2 Q0.2 Q0.3 Q0.4 Q0.0 0 P0.3
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -4919,6 +6669,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 P0.2 2
+output diff 1
+ringout 0 2 P0.3
+output or 1
+ringout 2 Q0.2 Q0.3 Q0.4 Q0.0 0 P0.3
 endorder
 endcase
 case d4 len=+1h phi=20 lone
@@ -4943,6 +6699,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 1 P0.2
+output diff 1
+ringout 1 2 P0.3 0
+output or 1
+ringout 0 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+1h phi=20 hole-between
@@ -4977,6 +6739,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 4 P1.1 3 0 1 P0.2
+output diff 1
+ringout 2 4 P1.2 3 0 P0.3
+output or 2
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
+ringout 1 3 P1.2 4
 endorder
 endcase
 case d4 len=+1h phi=20 Qvertex-between
@@ -5001,6 +6770,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 P0.2 2
+output diff 1
+ringout 2 0 P0.3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 Q0.2 2 P0.3
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5008,6 +6783,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 2 P0.2
+output diff 1
+ringout 0 2 P0.3
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case d4 len=+1.5h phi=90 lone
@@ -5032,6 +6813,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2
+output diff 1
+ringout 2 P0.3 0 1
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.1 Q0.0 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 1 same sector 0 1
@@ -5040,6 +6827,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
+output and 1
+ringout 0 1 P0.2 2
+output diff 1
+ringout 2 P0.3 0
+output or 1
+ringout 0 1 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+1.5h phi=45 lone
@@ -5064,6 +6857,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 2 P0.2
+output diff 1
+ringout 0 P0.3 2 1
+output or 1
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+1.5h phi=45 hole-between
@@ -5098,6 +6897,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 0 3 P1.1 4 2 P0.2
+output diff 1
+ringout 4 2 P0.3 0 3 P1.2
+output or 2
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
+ringout 1 4 P1.2 3
 endorder
 endcase
 case d4 len=+1.5h phi=45 Qvertex-between
@@ -5122,6 +6928,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 0 P0.2
+output diff 1
+ringout 2 P0.3 0
+output or 1
+ringout 2 P0.3 0 Q0.0 Q0.4 Q0.3 Q0.2
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5129,6 +6941,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 P0.2 0
+output diff 1
+ringout 0 P0.3 2
+output or 1
+ringout 2 P0.3 0 Q0.0 Q0.4 Q0.3 Q0.2
 endorder
 endcase
 case d4 len=+1.5h phi=20 lone
@@ -5153,6 +6971,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 1 P0.2
+output diff 1
+ringout 0 1 2 P0.3
+output or 1
+ringout 0 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+1.5h phi=20 hole-between
@@ -5187,6 +7011,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 0 3 P1.1 4 2 P0.2
+output diff 1
+ringout 2 P0.3 0 3 P1.2 4
+output or 2
+ringout 0 P0.3 2 Q0.2 Q0.1 Q0.0 Q0.3
+ringout 1 4 P1.2 3
 endorder
 endcase
 case d4 len=+1.5h phi=20 Qvertex-between
@@ -5211,6 +7042,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 P0.2 2
+output diff 1
+ringout 2 P0.3 0
+output or 1
+ringout 2 Q0.2 Q0.3 Q0.4 Q0.0 0 P0.3
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5218,6 +7055,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 P0.2 0
+output diff 1
+ringout 2 0 P0.3
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case d4 len=+1.9h phi=90 lone
@@ -5242,6 +7085,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 1 P0.2
+output diff 1
+ringout 1 0 P0.3 2
+output or 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 order 0 0
 piece P 0 0 0 1 same sector 0 1
@@ -5250,6 +7099,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
+output and 1
+ringout 0 1 P0.2 2
+output diff 1
+ringout 2 P0.3 0
+output or 1
+ringout 2 P0.3 0 1 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+1.9h phi=45 lone
@@ -5274,6 +7129,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 P0.2 1
+output diff 1
+ringout 0 1 2 P0.3
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.1 Q0.0 Q0.3
 endorder
 endcase
 case d4 len=+1.9h phi=45 hole-between
@@ -5308,6 +7169,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 P0.2 1 0 3 P1.1 4
+output diff 1
+ringout 4 P1.2 3 0 P0.3 2
+output or 2
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
+ringout 1 4 P1.2 3
 endorder
 endcase
 case d4 len=+1.9h phi=45 Qvertex-between
@@ -5332,6 +7200,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 2 P0.2
+output diff 1
+ringout 0 2 P0.3
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5339,6 +7213,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 P0.2 2
+output diff 1
+ringout 0 P0.3 2
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+1.9h phi=20 lone
@@ -5363,6 +7243,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 2 P0.2
+output diff 1
+ringout 1 2 P0.3 0
+output or 1
+ringout 0 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+1.9h phi=20 hole-between
@@ -5397,6 +7283,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 4 P1.1 3 0 1 P0.2
+output diff 1
+ringout 2 4 P1.2 3 0 P0.3
+output or 2
+ringout 3 P1.2 4 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 endcase
 case d4 len=+1.9h phi=20 Qvertex-between
@@ -5421,6 +7314,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 P0.2 0
+output diff 1
+ringout 0 P0.3 2
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5428,6 +7327,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 2 P0.2
+output diff 1
+ringout 0 P0.3 2
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case d4 len=+2.1h phi=90 lone
@@ -5449,6 +7354,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 0 P0.1 P0.2
+output diff 1
+ringout 1 P0.3 P0.0 0
+output or 1
+ringout 1 P0.3 P0.0 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+2.1h phi=45 lone
@@ -5473,6 +7384,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2
+output diff 1
+ringout 0 P0.3 2 1
+output or 1
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+2.1h phi=45 hole-between
@@ -5507,6 +7424,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 3 P1.1 4 2 P0.2 1 0
+output diff 1
+ringout 2 P0.3 0 3 P1.2 4
+output or 2
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
+ringout 1 4 P1.2 3
 endorder
 endcase
 case d4 len=+2.1h phi=45 Qvertex-between
@@ -5537,6 +7461,12 @@ piece Q 0 0 0 0 out deduced 0 1,4
 piece Q 0 0 0 1 opposite sector 1,4 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 2 P0.2 3
+output diff 1
+ringout 3 2 1 P0.3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 Q0.2 3 P0.3 1
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5548,6 +7478,12 @@ piece Q 0 0 0 0 out deduced 0 1,4
 piece Q 0 0 0 1 opposite sector 1,4 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 2 3 P0.2
+output diff 1
+ringout 2 1 P0.3 3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 Q0.2 3 P0.3 1
 endorder
 endcase
 case d4 len=+2.1h phi=20 lone
@@ -5572,6 +7508,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 P0.2 1
+output diff 1
+ringout 2 P0.3 0 1
+output or 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 endcase
 case d4 len=+2.1h phi=20 hole-between
@@ -5606,6 +7548,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 0 1 P0.2 2 4 P1.1 3
+output diff 1
+ringout 4 2 P0.3 0 3 P1.2
+output or 2
+ringout 1 3 P1.2 4
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+2.1h phi=20 Qvertex-between
@@ -5636,6 +7585,12 @@ piece Q 0 0 0 0 out deduced 0 1,4
 piece Q 0 0 0 1 opposite sector 1,4 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 3 2 P0.2
+output diff 1
+ringout 1 2 3 P0.3
+output or 1
+ringout 0 Q0.0 Q0.4 Q0.3 Q0.2 3 P0.3 1
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5647,6 +7602,12 @@ piece Q 0 0 0 0 out deduced 0 1,4
 piece Q 0 0 0 1 opposite sector 1,4 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 2 P0.2 3
+output diff 1
+ringout 2 1 P0.3 3
+output or 1
+ringout 1 0 Q0.0 Q0.4 Q0.3 Q0.2 3 P0.3
 endorder
 endcase
 case d4 len=+2.5h phi=90 lone
@@ -5668,6 +7629,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 P0.1 P0.2 1
+output diff 1
+ringout 1 P0.3 P0.0 0
+output or 1
+ringout 1 P0.3 P0.0 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+2.5h phi=45 lone
@@ -5692,6 +7659,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 2 P0.2 1
+output diff 1
+ringout 2 P0.3 0 1
+output or 1
+ringout 2 Q0.2 Q0.1 Q0.0 Q0.3 0 P0.3
 endorder
 endcase
 case d4 len=+2.5h phi=45 hole-between
@@ -5726,6 +7699,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2 4 P1.1 3 0
+output diff 1
+ringout 2 P0.3 0 3 P1.2 4
+output or 2
+ringout 4 P1.2 3 1
+ringout 0 P0.3 2 Q0.2 Q0.1 Q0.0 Q0.3
 endorder
 endcase
 case d4 len=+2.5h phi=45 Qvertex-between
@@ -5754,6 +7734,12 @@ piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 1 opposite sector 1 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 3 P0.2 2
+output diff 1
+ringout 0 1 2 3 P0.3
+output or 1
+ringout 0 P0.3 3 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case d4 len=+2.5h phi=20 lone
@@ -5778,6 +7764,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2
+output diff 1
+ringout 2 1 0 P0.3
+output or 1
+ringout 2 P0.3 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+2.5h phi=20 hole-between
@@ -5812,6 +7804,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 3 P1.1 4 2 P0.2 1 0
+output diff 1
+ringout 2 4 P1.2 3 0 P0.3
+output or 2
+ringout 3 1 4 P1.2
+ringout 0 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+2.5h phi=20 Qvertex-between
@@ -5842,6 +7841,12 @@ piece Q 0 0 0 0 out deduced 0 1,4
 piece Q 0 0 0 1 opposite sector 1,4 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 2 3 P0.2
+output diff 1
+ringout 3 P0.3 1 2
+output or 1
+ringout 3 P0.3 1 0 Q0.0 Q0.4 Q0.3 Q0.2
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -5853,6 +7858,12 @@ piece Q 0 0 0 0 out deduced 0 1,4
 piece Q 0 0 0 1 opposite sector 1,4 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 2 P0.2 3
+output diff 1
+ringout 1 P0.3 3 2
+output or 1
+ringout 1 0 Q0.0 Q0.4 Q0.3 Q0.2 3 P0.3
 endorder
 endcase
 case d4 len=+3h phi=90 lone
@@ -5874,6 +7885,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 P0.2 P0.1 0
+output diff 1
+ringout 0 P0.0 P0.3 1
+output or 1
+ringout 0 P0.0 P0.3 1 Q0.2 Q0.1 Q0.0 Q0.3
 endorder
 endcase
 case d4 len=+3h phi=45 lone
@@ -5895,6 +7912,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 P0.1 P0.2 1
+output diff 1
+ringout 0 1 P0.3 P0.0
+output or 1
+ringout 1 P0.3 P0.0 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+3h phi=45 hole-between
@@ -5926,6 +7949,13 @@ piece Q 0 0 0 0 in deduced 1 3
 piece Q 0 0 0 0 out deduced 3 2
 piece Q 0 0 0 0 in deduced 2 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 2 P1.1 3 1 P0.2 P0.1 0
+output diff 1
+ringout 1 P0.3 P0.0 0 2 P1.2 3
+output or 2
+ringout 3 2 P1.2
+ringout 1 P0.3 P0.0 0 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case d4 len=+3h phi=45 Qvertex-between
@@ -5948,6 +7978,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.2 P0.1
+output diff 1
+ringout 0 P0.0 P0.3 1
+output or 1
+ringout 0 P0.0 P0.3 1 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case d4 len=+3h phi=20 lone
@@ -5972,6 +8008,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 2 P0.2
+output diff 1
+ringout 1 0 P0.3 2
+output or 1
+ringout 0 P0.3 2 Q0.2 Q0.1 Q0.0 Q0.3
 endorder
 endcase
 case d4 len=+3h phi=20 hole-between
@@ -6006,6 +8048,13 @@ piece Q 0 0 0 0 out deduced 4 1
 piece Q 0 0 0 0 out deduced 1 3
 piece Q 0 0 0 0 in midpoint 3 0
 piece Q 0 0 0 0 out vertex 0 2
+output and 1
+ringout 1 P0.2 2 4 P1.1 3 0
+output diff 1
+ringout 3 P1.2 4 2 P0.3 0
+output or 2
+ringout 3 P1.2 4 1
+ringout 0 Q0.3 Q0.0 Q0.1 Q0.2 2 P0.3
 endorder
 endcase
 case d4 len=+3h phi=20 Qvertex-between
@@ -6034,6 +8083,12 @@ piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 1 opposite sector 1 2
 piece Q 0 0 0 0 in deduced 2 3
 piece Q 0 0 0 0 out vertex 3 0
+output and 1
+ringout 2 3 P0.2
+output diff 1
+ringout 0 P0.3 3 2 1
+output or 1
+ringout 0 P0.3 3 Q0.2 Q0.3 Q0.4 Q0.0
 endorder
 endcase
 case neck w=+0.5h apex
@@ -6063,6 +8118,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 2 3 Q0.6 0 Q0.1
+output diff 2
+ringout 0 Q0.6 3 P0.1
+ringout 2 P0.2 0 Q0.1
+output or 2
+ringout 0 Q0.5 Q0.4 Q0.3 Q0.2
+ringout 2 Q0.0 Q0.7 3 P0.1 0 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 3
@@ -6072,6 +8135,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 0 Q0.1 2 3 Q0.6
+output diff 2
+ringout 2 P0.2 0 Q0.1
+ringout 0 P0.1 3 Q0.6
+output or 2
+ringout 0 Q0.2 Q0.3 Q0.4 Q0.5
+ringout 0 P0.1 3 Q0.7 Q0.0 2 P0.2
 endorder
 endcase
 case neck w=+0.5h apex-offset
@@ -6101,6 +8172,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 3 2 Q0.1 0 Q0.6
+output diff 2
+ringout 0 P0.2 2 Q0.1
+ringout 0 P0.1 3 Q0.6
+output or 2
+ringout 3 P0.1 0 P0.2 2 Q0.0 Q0.7
+ringout 0 Q0.5 Q0.4 Q0.3 Q0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 3
@@ -6110,6 +8189,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 2 3 Q0.6 0 Q0.1
+output diff 2
+ringout 3 P0.1 0 Q0.6
+ringout 2 P0.2 0 Q0.1
+output or 2
+ringout 0 Q0.5 Q0.4 Q0.3 Q0.2
+ringout 2 Q0.0 Q0.7 3 P0.1 0 P0.2
 endorder
 endcase
 case neck w=+1h apex
@@ -6139,6 +8226,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 0 Q0.6 3 2 Q0.1
+output diff 2
+ringout 0 P0.2 2 Q0.1
+ringout 0 P0.1 3 Q0.6
+output or 2
+ringout 0 Q0.2 Q0.3 Q0.4 Q0.5
+ringout 0 P0.1 3 Q0.7 Q0.0 2 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 3
@@ -6148,6 +8243,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 3 Q0.6 0 Q0.1 2
+output diff 2
+ringout 2 P0.2 0 Q0.1
+ringout 0 P0.1 3 Q0.6
+output or 2
+ringout 0 Q0.5 Q0.4 Q0.3 Q0.2
+ringout 0 P0.1 3 Q0.7 Q0.0 2 P0.2
 endorder
 endcase
 case neck w=+1h apex-offset
@@ -6177,6 +8280,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 2 3 Q0.6 0 Q0.1
+output diff 2
+ringout 3 P0.1 0 Q0.6
+ringout 2 P0.2 0 Q0.1
+output or 2
+ringout 0 Q0.2 Q0.3 Q0.4 Q0.5
+ringout 2 P0.2 0 P0.1 3 Q0.7 Q0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 3
@@ -6186,6 +8297,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 3 2 Q0.1 0 Q0.6
+output diff 2
+ringout 3 Q0.6 0 P0.1
+ringout 0 P0.2 2 Q0.1
+output or 2
+ringout 2 Q0.0 Q0.7 3 P0.1 0 P0.2
+ringout 0 Q0.2 Q0.3 Q0.4 Q0.5
 endorder
 endcase
 case neck w=+1.5h apex
@@ -6215,6 +8334,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 2 Q0.1 0 Q0.6 3
+output diff 2
+ringout 0 Q0.6 3 P0.1
+ringout 2 P0.2 0 Q0.1
+output or 2
+ringout 2 P0.2 0 P0.1 3 Q0.7 Q0.0
+ringout 0 Q0.2 Q0.3 Q0.4 Q0.5
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 3
@@ -6224,6 +8351,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 3 2 Q0.1 0 Q0.6
+output diff 2
+ringout 0 P0.1 3 Q0.6
+ringout 0 Q0.1 2 P0.2
+output or 2
+ringout 0 Q0.2 Q0.3 Q0.4 Q0.5
+ringout 0 P0.1 3 Q0.7 Q0.0 2 P0.2
 endorder
 endcase
 case neck w=+1.5h apex-offset
@@ -6254,6 +8389,13 @@ piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q0.1 3 0 Q0.6 2
+output diff 2
+ringout 1 Q0.1 3 P0.2
+ringout 2 P0.1 0 Q0.6
+output or 1
+ringout 2 P0.1 0 Q0.5 Q0.4 Q0.3 Q0.2 3 P0.2 1 Q0.0 Q0.7
 endorder
 endcase
 case neck w=+1.9h apex
@@ -6283,6 +8425,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 3 2 Q0.1 0 Q0.6
+output diff 2
+ringout 2 P0.2 0 Q0.1
+ringout 3 Q0.6 0 P0.1
+output or 2
+ringout 0 Q0.2 Q0.3 Q0.4 Q0.5
+ringout 3 Q0.7 Q0.0 2 P0.2 0 P0.1
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0,1 3
@@ -6292,6 +8442,14 @@ piece Q 0 0 0 0 in vertex 2 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 2
+output and 1
+ringout 0 Q0.6 3 2 Q0.1
+output diff 2
+ringout 0 Q0.1 2 P0.2
+ringout 0 Q0.6 3 P0.1
+output or 2
+ringout 3 P0.1 0 P0.2 2 Q0.0 Q0.7
+ringout 0 Q0.5 Q0.4 Q0.3 Q0.2
 endorder
 endcase
 case neck w=+1.9h apex-offset
@@ -6322,6 +8480,13 @@ piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 2 Q0.6 0 3 Q0.1 1
+output diff 2
+ringout 3 P0.2 1 Q0.1
+ringout 0 P0.1 2 Q0.6
+output or 1
+ringout 0 P0.1 2 Q0.7 Q0.0 1 P0.2 3 Q0.2 Q0.3 Q0.4 Q0.5
 endorder
 endcase
 case neck w=+2.5h apex
@@ -6352,6 +8517,13 @@ piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 2 Q0.6 0 P0.0 3 Q0.1
+output diff 2
+ringout 2 Q0.6 0 P0.1
+ringout 3 Q0.1 1 P0.2
+output or 1
+ringout 0 Q0.5 Q0.4 Q0.3 Q0.2 3 P0.2 1 Q0.0 Q0.7 2 P0.1
 endorder
 endcase
 case neck w=+2.5h apex-offset
@@ -6382,6 +8554,13 @@ piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 2 1 Q0.1 3 0 Q0.6
+output diff 2
+ringout 3 P0.2 1 Q0.1
+ringout 0 P0.1 2 Q0.6
+output or 1
+ringout 0 P0.1 2 Q0.7 Q0.0 1 P0.2 3 Q0.2 Q0.3 Q0.4 Q0.5
 endorder
 endcase
 case neck w=+4h apex
@@ -6412,6 +8591,13 @@ piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 3 P0.0 0 Q0.6 2 1 Q0.1
+output diff 2
+ringout 1 Q0.1 3 P0.2
+ringout 0 P0.1 2 Q0.6
+output or 1
+ringout 0 P0.1 2 Q0.7 Q0.0 1 P0.2 3 Q0.2 Q0.3 Q0.4 Q0.5
 endorder
 endcase
 case neck w=+4h apex-offset
@@ -6442,6 +8628,13 @@ piece Q 0 0 0 0 in vertex 1 3
 piece Q 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
+output and 1
+ringout 1 2 Q0.6 0 P0.0 3 Q0.1
+output diff 2
+ringout 2 P0.1 0 Q0.6
+ringout 3 P0.2 1 Q0.1
+output or 1
+ringout 3 P0.2 1 Q0.0 Q0.7 2 P0.1 0 Q0.5 Q0.4 Q0.3 Q0.2
 endorder
 endcase
 case neck hole d=+0.5h
@@ -6472,6 +8665,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 2 0 Q0.3 1 Q1.3
+output diff 2
+ringout 0 Q0.3 1 P0.2 P0.1
+ringout 1 2 Q1.3
+output or 2
+ringout 1 P0.2 P0.1 0 Q0.2 Q0.1 Q0.0
+ringout 1 Q1.0 Q1.1 Q1.2 2
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 1,3 2
@@ -6481,6 +8682,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 0 Q0.3 1 Q1.3 2
+output diff 2
+ringout 2 Q1.3 1
+ringout 0 Q0.3 1 P0.2 P0.1
+output or 2
+ringout 1 P0.2 P0.1 0 Q0.2 Q0.1 Q0.0
+ringout 1 Q1.0 Q1.1 Q1.2 2
 endorder
 endcase
 case neck hole d=+1h
@@ -6511,6 +8720,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 2 Q1.3 1 Q0.3 0
+output diff 2
+ringout 2 Q1.3 1
+ringout 0 P0.1 P0.2 1 Q0.3
+output or 2
+ringout 1 P0.2 P0.1 0 Q0.2 Q0.1 Q0.0
+ringout 1 Q1.0 Q1.1 Q1.2 2
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 1,3 2
@@ -6520,6 +8737,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 1 Q0.3 0 2 Q1.3
+output diff 2
+ringout 1 2 Q1.3
+ringout 1 Q0.3 0 P0.1 P0.2
+output or 2
+ringout 1 2 Q1.2 Q1.1 Q1.0
+ringout 1 Q0.0 Q0.1 Q0.2 0 P0.1 P0.2
 endorder
 endcase
 case neck hole d=+1.5h
@@ -6550,6 +8775,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 0 Q0.3 1 Q1.3 2
+output diff 2
+ringout 2 Q1.3 1
+ringout 0 Q0.3 1 P0.2 P0.1
+output or 2
+ringout 1 Q0.0 Q0.1 Q0.2 0 P0.1 P0.2
+ringout 1 2 Q1.2 Q1.1 Q1.0
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 1,3 2
@@ -6559,6 +8792,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 0 Q0.3 1 Q1.3 2
+output diff 2
+ringout 2 1 Q1.3
+ringout 0 Q0.3 1 P0.2 P0.1
+output or 2
+ringout 1 P0.2 P0.1 0 Q0.2 Q0.1 Q0.0
+ringout 1 Q1.0 Q1.1 Q1.2 2
 endorder
 endcase
 case neck hole d=+2h
@@ -6589,6 +8830,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 0 Q0.3 1 Q1.3 2
+output diff 2
+ringout 2 Q1.3 1
+ringout 0 Q0.3 1 P0.2 P0.1
+output or 2
+ringout 1 Q0.0 Q0.1 Q0.2 0 P0.1 P0.2
+ringout 1 2 Q1.2 Q1.1 Q1.0
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 1,3 2
@@ -6598,6 +8847,14 @@ piece Q 0 0 0 0 in vertex 0 1
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 1 0 0 0 in vertex 2 3
 piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 1 Q1.3 2 0 Q0.3
+output diff 2
+ringout 1 Q1.3 2
+ringout 1 Q0.3 0 P0.1 P0.2
+output or 2
+ringout 1 2 Q1.2 Q1.1 Q1.0
+ringout 1 Q0.0 Q0.1 Q0.2 0 P0.1 P0.2
 endorder
 endcase
 case neck hole d=+3h
@@ -6629,6 +8886,14 @@ piece Q 0 0 0 0 in vertex 0 3
 piece Q 0 0 0 0 out vertex 3 0
 piece Q 1 0 0 0 in vertex 1 2
 piece Q 1 0 0 0 out vertex 2 1
+output and 1
+ringout 1 Q1.3 2 P0.0 3 Q0.3 0
+output diff 2
+ringout 0 P0.1 P0.2 3 Q0.3
+ringout 1 2 Q1.3
+output or 2
+ringout 3 Q0.0 Q0.1 Q0.2 0 P0.1 P0.2
+ringout 1 2 Q1.0 Q1.1 Q1.2
 endorder
 endcase
 case touching rings eps=+0h
@@ -6661,6 +8926,14 @@ piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 in deduced 1 3
 piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 2
+ringout 3 P1.2 P1.1
+ringout 1 2 P0.0 P0.1 0
+output diff 2
+ringout 1 P0.2 0
+ringout 1 2 P0.4
+output or 1
+ringout 1 P0.4 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0 1
@@ -6671,6 +8944,14 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 in deduced 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 2
+ringout 3 P1.2 P1.1
+ringout 0 P0.1 P0.0 2 1
+output diff 2
+ringout 1 0 P0.2
+ringout 1 P0.4 2
+output or 1
+ringout 1 P0.4 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2
 endorder
 endcase
 case touching rings eps=+0h hole-above
@@ -6703,6 +8984,15 @@ piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 in deduced 1 3
 piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 P0.1 P0.0 2 3
+output diff 3
+ringout 1 0 P0.2
+ringout 1 P0.4 2
+ringout 3 P1.2 P1.1
+output or 2
+ringout 3 P1.1 P1.2
+ringout 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2 1 P0.4
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0 1
@@ -6713,6 +9003,15 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 in deduced 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 2 P0.0 P0.1 0 3
+output diff 3
+ringout 3 P1.2 P1.1
+ringout 1 P0.2 0
+ringout 1 2 P0.4
+output or 2
+ringout 3 P1.2 P1.1
+ringout 1 P0.2 0 Q0.2 Q0.1 Q0.0 Q0.3 2 P0.4
 endorder
 endcase
 case touching rings eps=+0.3h
@@ -6745,6 +9044,14 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 in deduced 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 2
+ringout 3 P1.2 P1.1
+ringout 1 2 P0.0 P0.1 0 3
+output diff 2
+ringout 1 2 P0.4
+ringout 1 P0.2 0 3
+output or 1
+ringout 1 P0.2 0 Q0.2 Q0.1 Q0.0 Q0.3 2 P0.4
 endorder
 endcase
 case touching rings eps=+0.3h hole-above
@@ -6777,6 +9084,15 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 in deduced 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 P0.1 P0.0 2 1 3
+output diff 3
+ringout 3 P1.1 P1.2
+ringout 1 P0.2 0 3
+ringout 1 2 P0.4
+output or 2
+ringout 3 P1.1 P1.2
+ringout 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2 1 P0.4
 endorder
 endcase
 case touching rings eps=+0.8h
@@ -6809,6 +9125,14 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 in deduced 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 2
+ringout 3 P1.1 P1.2
+ringout 0 3 1 2 P0.0 P0.1
+output diff 2
+ringout 1 P0.2 0 3
+ringout 1 2 P0.4
+output or 1
+ringout 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2 1 P0.4
 endorder
 endcase
 case touching rings eps=+0.8h hole-above
@@ -6841,6 +9165,15 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 in deduced 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 0 P0.1 P0.0 2 1 3
+output diff 3
+ringout 3 P1.1 P1.2
+ringout 1 2 P0.4
+ringout 1 P0.2 0 3
+output or 2
+ringout 3 P1.1 P1.2
+ringout 1 P0.2 0 Q0.2 Q0.1 Q0.0 Q0.3 2 P0.4
 endorder
 endcase
 case touching rings eps=+1.2h
@@ -6871,6 +9204,14 @@ piece P 1 1 0 0 in vertex - -
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 2
+ringout P1.0 P1.1 P1.2
+ringout 0 P0.1 P0.0 2 1
+output diff 2
+ringout 1 2 P0.4
+ringout 1 P0.2 0
+output or 1
+ringout 1 P0.2 0 Q0.2 Q0.1 Q0.0 Q0.3 2 P0.4
 endorder
 endcase
 case touching rings eps=+1.2h hole-above
@@ -6901,6 +9242,15 @@ piece P 1 1 0 0 out vertex - -
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 2 1 0 P0.1 P0.0
+output diff 3
+ringout P1.0 P1.1 P1.2
+ringout 1 0 P0.2
+ringout 1 P0.4 2
+output or 2
+ringout P1.0 P1.1 P1.2
+ringout 1 P0.4 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2
 endorder
 endcase
 case ss two Q vertices d=+0.3h x=(+0.15h,+0.3h)
@@ -6926,6 +9276,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 P0.2 2 Q0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -6933,6 +9289,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 2 P0.2 0 Q0.1
+output diff 1
+ringout 2 Q0.1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 endcase
 case ss two Q vertices d=+0.3h x=(+0.15h,-0.3h)
@@ -6958,6 +9320,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 P0.2 2 Q0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -6965,6 +9333,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 Q0.1 2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 endcase
 case ss two Q vertices d=+0.3h x=(+0.15h,+0h)
@@ -6990,6 +9364,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 2 Q0.1 0 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -6997,6 +9377,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 Q0.1 2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 endcase
 case ss two Q vertices d=+0.8h x=(+0.4h,+0.3h)
@@ -7022,6 +9408,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 2 P0.2 0 Q0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 2 Q0.2 Q0.3 0 P0.0 P0.4 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -7029,6 +9421,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 P0.2 2 Q0.1
+output diff 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.1
+output or 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.3 Q0.2
 endorder
 endcase
 case ss two Q vertices d=+0.8h x=(+0.4h,-0.3h)
@@ -7054,6 +9452,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.1
+output or 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.3 Q0.2
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -7061,6 +9465,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 2 Q0.1 0 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 2 Q0.2 Q0.3 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case ss two Q vertices d=+0.8h x=(+0.4h,+0h)
@@ -7086,6 +9496,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 2 Q0.2 Q0.3 0 P0.0 P0.4 P0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -7093,6 +9509,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 P0.2 2 Q0.1
+output diff 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.1
+output or 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.3 Q0.2
 endorder
 endcase
 case ss two Q vertices d=+1.5h x=(+0.75h,+0.3h)
@@ -7118,6 +9540,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 Q0.1 2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -7125,6 +9553,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 endcase
 case ss two Q vertices d=+1.5h x=(+0.75h,-0.3h)
@@ -7150,6 +9584,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 P0.2 2 Q0.1
+output diff 1
+ringout 0 Q0.1 2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -7157,6 +9597,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 Q0.1 2 P0.3 P0.4 P0.0
+output or 1
+ringout 2 Q0.2 Q0.3 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case ss two Q vertices d=+1.5h x=(+0.75h,+0h)
@@ -7182,6 +9628,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 0 Q0.1 2 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1
+output or 1
+ringout 2 P0.3 P0.4 P0.0 0 Q0.3 Q0.2
 endorder
 order 0 0
 piece P 0 0 0 0 in vertex 0,1 2
@@ -7189,6 +9641,12 @@ piece P 0 0 0 0 out vertex 2 0,1
 piece Q 0 0 0 0 in vertex 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 1 0 none none 1 0
+output and 1
+ringout 2 P0.2 0 Q0.1
+output diff 1
+ringout 0 Q0.1 2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.3 P0.4 P0.0
 endorder
 endcase
 case ss zero-length P seg 0.2h at Q vertex
@@ -7214,6 +9672,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 Q0.1 2 P0.3
+output diff 1
+ringout 0 Q0.1 2 P0.4 P0.5 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.4 P0.5 P0.0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -7221,6 +9685,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 Q0.1 0 P0.3
+output diff 1
+ringout 2 Q0.1 0 P0.0 P0.5 P0.4
+output or 1
+ringout 2 P0.4 P0.5 P0.0 0 Q0.3 Q0.2
 endorder
 endcase
 case ss zero-length P seg 0.2h on Q edge
@@ -7250,6 +9720,12 @@ piece Q 0 0 0 1 same sector 3 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 0 in vertex 0 3
+output and 1
+ringout 1 2 3 Q0.1 Q0.0 0
+output diff 1
+ringout 0 P0.0 P0.5 P0.4 3 Q0.1 Q0.0
+output or 1
+ringout 2 Q0.3 1 0 P0.0 P0.5 P0.4 3
 endorder
 endcase
 case ss zero-length P seg 0.6h at Q vertex
@@ -7275,6 +9751,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 P0.3 2 Q0.1
+output diff 1
+ringout 0 Q0.1 2 P0.4 P0.5 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.4 P0.5 P0.0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -7282,6 +9764,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 Q0.1 2 P0.3
+output diff 1
+ringout 0 P0.0 P0.5 P0.4 2 Q0.1
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.4 P0.5 P0.0
 endorder
 endcase
 case ss zero-length P seg 0.6h on Q edge
@@ -7311,6 +9799,12 @@ piece Q 0 0 0 1 same sector 3 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 0 in vertex 0 3
+output and 1
+ringout 0 1 2 3 Q0.1 Q0.0
+output diff 1
+ringout 0 Q0.0 Q0.1 3 P0.4 P0.5 P0.0
+output or 1
+ringout 0 1 Q0.3 2 3 P0.4 P0.5 P0.0
 endorder
 endcase
 case ss two P vertices +0.8h apart at Q vertex
@@ -7336,6 +9830,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 P0.3 0 Q0.1
+output diff 1
+ringout 0 P0.0 P0.5 P0.4 2 Q0.1
+output or 1
+ringout 0 Q0.3 Q0.2 2 P0.4 P0.5 P0.0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -7343,6 +9843,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 Q0.1 2 P0.3
+output diff 1
+ringout 0 Q0.1 2 P0.4 P0.5 P0.0
+output or 1
+ringout 2 P0.4 P0.5 P0.0 0 Q0.3 Q0.2
 endorder
 endcase
 case ss two P vertices +1.5h apart at Q vertex
@@ -7368,6 +9874,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 2 Q0.1 0 P0.3
+output diff 1
+ringout 0 Q0.1 2 P0.4 P0.5 P0.0
+output or 1
+ringout 2 Q0.2 Q0.3 0 P0.0 P0.5 P0.4
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -7375,6 +9887,12 @@ piece P 0 0 0 0 in vertex 1 2
 piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in vertex 0,1 2
 piece Q 0 0 0 0 out vertex 2 0,1
+output and 1
+ringout 0 P0.3 2 Q0.1
+output diff 1
+ringout 0 Q0.1 2 P0.4 P0.5 P0.0
+output or 1
+ringout 0 P0.0 P0.5 P0.4 2 Q0.2 Q0.3
 endorder
 endcase
 case shared neighbours d=+0h
@@ -7396,6 +9914,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.3 P0.0 0
+output or 1
+ringout 1 P0.3 P0.0 0 Q0.1 Q0.2
 endorder
 endcase
 case shared inside d=+0h
@@ -7417,6 +9940,12 @@ piece P 0 0 0 1 same sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 in vertex 1 0
+output and 1
+ringout 0 1 Q0.3 Q0.0
+output diff 1
+ringout 0 P0.1 P0.0 P0.3 P0.2 1 Q0.3 Q0.0
+output or 1
+ringout 0 1 P0.2 P0.3 P0.0 P0.1
 endorder
 endcase
 case shared neighbours d=+0h interleaved
@@ -7458,6 +9987,11 @@ piece Q 0 0 0 1 opposite sector 1 2
 piece Q 0 0 0 1 opposite sector 2 4
 piece Q 0 0 0 1 opposite sector 4 3
 piece Q 0 0 0 1 opposite sector 3 0
+output and 0
+output diff 1
+ringout 2 4 3 0 P0.0 P0.5 6 5 1
+output or 1
+ringout 6 Q0.2 Q0.1 0 P0.0 P0.5
 endorder
 endcase
 case shared inside d=+0h interleaved
@@ -7491,6 +10025,12 @@ piece Q 0 0 0 1 same sector 1 2
 piece Q 0 0 0 1 same sector 2 3
 piece Q 0 0 0 1 same sector 3 4
 piece Q 0 0 0 0 in vertex 4 0
+output and 1
+ringout 2 1 0 Q0.0 Q0.4 4 3
+output diff 1
+ringout 0 P0.1 P0.0 P0.5 P0.4 4 Q0.4 Q0.0
+output or 1
+ringout 0 1 2 3 4 P0.4 P0.5 P0.0 P0.1
 endorder
 endcase
 case shared neighbours d=+0.5h
@@ -7512,6 +10052,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.0
+output or 1
+ringout 0 Q0.1 Q0.2 1 P0.3 P0.0
 endorder
 endcase
 case shared inside d=+0.5h
@@ -7533,6 +10078,12 @@ piece P 0 0 0 1 same sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 in vertex 1 0
+output and 1
+ringout 0 Q0.0 Q0.3 1
+output diff 1
+ringout 0 Q0.0 Q0.3 1 P0.2 P0.3 P0.0 P0.1
+output or 1
+ringout 0 P0.1 P0.0 P0.3 P0.2 1
 endorder
 endcase
 case shared neighbours d=+0.5h interleaved
@@ -7574,6 +10125,11 @@ piece Q 0 0 0 1 opposite sector 1 2
 piece Q 0 0 0 1 opposite sector 2 4
 piece Q 0 0 0 1 opposite sector 4 3
 piece Q 0 0 0 1 opposite sector 3 0
+output and 0
+output diff 1
+ringout 2 4 3 0 P0.0 P0.5 6 5 1
+output or 1
+ringout 0 P0.0 P0.5 6 Q0.2 Q0.1
 endorder
 endcase
 case shared inside d=+0.5h interleaved
@@ -7607,6 +10163,12 @@ piece Q 0 0 0 1 same sector 1 2
 piece Q 0 0 0 1 same sector 2 3
 piece Q 0 0 0 1 same sector 3 4
 piece Q 0 0 0 0 in vertex 4 0
+output and 1
+ringout 3 2 1 0 Q0.0 Q0.4 4
+output diff 1
+ringout 4 P0.4 P0.5 P0.0 P0.1 0 Q0.0 Q0.4
+output or 1
+ringout 3 2 1 0 P0.1 P0.0 P0.5 P0.4 4
 endorder
 endcase
 case shared inside d=+1h
@@ -7628,6 +10190,12 @@ piece P 0 0 0 1 same sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 in vertex 1 0
+output and 1
+ringout 1 0 Q0.0 Q0.3
+output diff 1
+ringout 1 P0.2 P0.3 P0.0 P0.1 0 Q0.0 Q0.3
+output or 1
+ringout 1 P0.2 P0.3 P0.0 P0.1 0
 endorder
 endcase
 case shared inside d=+1h interleaved
@@ -7661,6 +10229,12 @@ piece Q 0 0 0 1 same sector 1 2
 piece Q 0 0 0 1 same sector 2 3
 piece Q 0 0 0 1 same sector 3 4
 piece Q 0 0 0 0 in vertex 4 0
+output and 1
+ringout 2 1 0 Q0.0 Q0.4 4 3
+output diff 1
+ringout 0 P0.1 P0.0 P0.5 P0.4 4 Q0.4 Q0.0
+output or 1
+ringout 2 1 0 P0.1 P0.0 P0.5 P0.4 4 3
 endorder
 endcase
 case shared neighbours d=+1.5h
@@ -7678,6 +10252,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3
 endorder
 endcase
 case shared inside d=+1.5h
@@ -7695,6 +10275,13 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 in vertex - -
+output and 1
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3
+output or 1
+ringout P0.0 P0.1 P0.2 P0.3
 endorder
 endcase
 case shared neighbours d=+1.5h interleaved
@@ -7717,6 +10304,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5 Q0.6
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case shared inside d=+1.5h interleaved
@@ -7737,6 +10330,13 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 in vertex - -
+output and 1
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4
+output diff 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+output or 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case shared neighbours d=+2h
@@ -7754,6 +10354,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3
 endorder
 endcase
 case shared inside d=+2h
@@ -7771,6 +10377,13 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 in vertex - -
+output and 1
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3
+output or 1
+ringout P0.0 P0.1 P0.2 P0.3
 endorder
 endcase
 case shared neighbours d=+2h interleaved
@@ -7793,6 +10406,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5 Q0.6
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case shared inside d=+2h interleaved
@@ -7813,6 +10432,13 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 in vertex - -
+output and 1
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4
+output diff 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+output or 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case shared neighbours d=+3h
@@ -7830,6 +10456,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3
 endorder
 endcase
 case shared inside d=+3h
@@ -7847,6 +10479,13 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 in vertex - -
+output and 1
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3
+output or 1
+ringout P0.0 P0.1 P0.2 P0.3
 endorder
 endcase
 case shared neighbours d=+3h interleaved
@@ -7869,6 +10508,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5 Q0.6
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case shared inside d=+3h interleaved
@@ -7889,6 +10534,13 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 in vertex - -
+output and 1
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4
+output diff 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+output or 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case T-intersection yC=+1.1h delta=-0.9h
@@ -7906,6 +10558,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.2
+output or 2
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.2
 endorder
 endcase
 case T-intersection yC=+1.1h delta=+0h
@@ -7923,6 +10581,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.2
+output or 2
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.0 P0.2
 endorder
 endcase
 case T-intersection yC=+1.1h delta=+0.5h
@@ -7940,6 +10604,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case T-intersection yC=+1.1h delta=+0.9h
@@ -7957,6 +10627,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 P0.2 P0.0
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case T-intersection yC=+2h delta=-0.9h
@@ -7974,6 +10650,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case T-intersection yC=+2h delta=+0h
@@ -7991,6 +10673,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case T-intersection yC=+2h delta=+0.5h
@@ -8008,6 +10696,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case T-intersection yC=+2h delta=+0.9h
@@ -8025,6 +10719,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case T-intersection yC=+10h delta=-0.9h
@@ -8042,6 +10742,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case T-intersection yC=+10h delta=+0h
@@ -8059,6 +10765,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.2
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0
+ringout 0 P0.0 P0.2
 endorder
 endcase
 case T-intersection yC=+10h delta=+0.5h
@@ -8076,6 +10788,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3 Q0.0
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case T-intersection yC=+10h delta=+0.9h
@@ -8093,6 +10811,12 @@ SL 1 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.2 P0.0
+output or 2
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.2 P0.0
 endorder
 endcase
 case near vertex rho=+1.05h psi=0 W-E
@@ -8121,6 +10845,12 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 0 3 P0.3 2 1
+output diff 1
+ringout 0 3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 3 Q0.1 Q0.2 Q0.3 2 1
 endorder
 endcase
 case near vertex rho=+1.05h psi=0 W-S
@@ -8146,6 +10876,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 0 1 P0.2 2
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.1 Q0.2 Q0.3 1
 endorder
 endcase
 case near vertex rho=+1.05h psi=0 NW-SE
@@ -8171,6 +10907,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 1 0 2 P0.3 P0.2
+output diff 1
+ringout 0 2 P0.4 P0.0
+output or 1
+ringout 2 Q0.1 Q0.2 Q0.3 1 0 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.05h psi=0 N-E
@@ -8193,6 +10935,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 0
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 Q0.0 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.05h psi=45 W-E
@@ -8221,6 +10968,12 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 1 0 3 P0.3 2
+output diff 1
+ringout 0 P0.0 P0.4 3
+output or 1
+ringout 1 0 P0.0 P0.4 3 Q0.1 Q0.2 Q0.3 2
 endorder
 endcase
 case near vertex rho=+1.05h psi=45 W-S
@@ -8248,6 +11001,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 1 opposite sector 0,1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 0 out deduced 2 0,1
+output and 0
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 3
+output or 1
+ringout 3 Q0.1 Q0.2 Q0.3 2 0 P0.0 P0.4 P0.3
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 2
@@ -8257,6 +11015,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 1 opposite sector 0,1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 0 out deduced 2 0,1
+output and 0
+output diff 1
+ringout 3 0 P0.0 P0.4 P0.3
+output or 1
+ringout 3 P0.3 P0.4 P0.0 0 2 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=45 NW-SE
@@ -8279,6 +11042,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 Q0.0 1 P0.2
+output diff 1
+ringout 0 Q0.0 1 P0.4 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.05h psi=45 N-E
@@ -8301,6 +11070,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 0
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 Q0.0 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.05h psi=90 W-E
@@ -8323,6 +11097,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 1 Q0.0 0 P0.3
+output diff 1
+ringout 1 Q0.0 0 P0.2 P0.1 P0.0 P0.4
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0 P0.1 P0.2
 endorder
 endcase
 case near vertex rho=+1.05h psi=90 W-S
@@ -8345,6 +11125,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 1 0 P0.1 P0.0 P0.4 P0.3
+output or 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=90 NW-SE
@@ -8367,6 +11152,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 0 1 P0.4 P0.0 P0.1
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=90 N-E
@@ -8385,6 +11176,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.05h psi=135 W-E
@@ -8410,6 +11207,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 0 1 P0.3 2
+output diff 1
+ringout 2 0 P0.1 P0.0 P0.4
+output or 1
+ringout 0 1 Q0.3 Q0.2 Q0.1 2 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=135 W-S
@@ -8432,6 +11235,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.05h psi=135 NW-SE
@@ -8454,6 +11262,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.2 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 1
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=135 N-E
@@ -8476,6 +11290,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0
+output or 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.05h psi=180 W-E
@@ -8501,6 +11320,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 0 2 P0.3 1
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 2
+output or 1
+ringout 2 Q0.1 Q0.2 Q0.3 1 0 P0.1 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.05h psi=180 W-S
@@ -8519,6 +11344,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.05h psi=180 NW-SE
@@ -8541,6 +11372,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 1 0 P0.1 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=180 N-E
@@ -8563,6 +11400,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0 P0.1
+output or 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.3 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=225 W-E
@@ -8591,6 +11433,12 @@ piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
+output and 1
+ringout 0 3 P0.3 2 1
+output diff 1
+ringout 0 P0.0 P0.4 3
+output or 1
+ringout 2 Q0.3 Q0.2 Q0.1 3 P0.4 P0.0 0 1
 endorder
 endcase
 case near vertex rho=+1.05h psi=225 W-S
@@ -8613,6 +11461,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 0
+output or 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=225 NW-SE
@@ -8635,6 +11488,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.2 0
+output diff 1
+ringout 1 0 P0.0 P0.4
+output or 1
+ringout 1 P0.4 P0.0 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=225 N-E
@@ -8662,6 +11521,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 out deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 0,2
+output and 0
+output diff 1
+ringout 3 P0.3 P0.4 P0.0 0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 3 Q0.3 Q0.2 Q0.1 1
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -8671,6 +11535,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 out deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 0,2
+output and 0
+output diff 1
+ringout 3 0 P0.0 P0.4 P0.3
+output or 1
+ringout 3 Q0.3 Q0.2 Q0.1 1 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.05h psi=270 W-E
@@ -8693,6 +11562,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 P0.3 1
+output diff 1
+ringout 0 P0.0 P0.4 1
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.05h psi=270 W-S
@@ -8715,6 +11590,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+1.05h psi=270 NW-SE
@@ -8740,6 +11620,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 P0.2 2
+output diff 1
+ringout 0 1 2 P0.4 P0.0
+output or 1
+ringout 2 P0.4 P0.0 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=270 N-E
@@ -8765,6 +11651,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 in deduced 2 0
+output and 1
+ringout 0 2 P0.2 1
+output diff 1
+ringout 2 P0.3 P0.4 P0.0 0
+output or 1
+ringout 1 0 P0.0 P0.4 P0.3 2 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.05h psi=315 W-E
@@ -8795,6 +11687,12 @@ piece Q 0 0 0 0 in deduced 1 4
 piece Q 0 0 0 0 out vertex 4 3
 piece Q 0 0 0 1 same sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 4 P0.3 3
+output diff 1
+ringout 1 0 P0.0 P0.4 4
+output or 1
+ringout 1 0 P0.0 P0.4 4 Q0.1 Q0.2 Q0.3 3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -8806,6 +11704,12 @@ piece Q 0 0 0 0 in deduced 1 4
 piece Q 0 0 0 0 out vertex 4 3
 piece Q 0 0 0 1 same sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 4 P0.3 3 1
+output diff 1
+ringout 4 1 0 P0.0 P0.4
+output or 1
+ringout 3 Q0.3 Q0.2 Q0.1 4 P0.4 P0.0 0 1
 endorder
 endcase
 case near vertex rho=+1.05h psi=315 W-S
@@ -8833,6 +11737,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 1 opposite sector 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 1 3 P0.3 P0.4 P0.0 0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 3 Q0.1 Q0.2 Q0.3 1
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -8842,6 +11751,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 1 opposite sector 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 1 0 P0.0 P0.4 P0.3 3
+output or 1
+ringout 1 0 P0.0 P0.4 P0.3 3 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.05h psi=315 NW-SE
@@ -8869,6 +11783,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in deduced 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 P0.2 3
+output diff 1
+ringout 1 0 P0.0 P0.4 3
+output or 1
+ringout 1 0 P0.0 P0.4 3 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -8878,6 +11798,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in deduced 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 3 P0.2
+output diff 1
+ringout 0 1 3 P0.4 P0.0
+output or 1
+ringout 0 1 Q0.3 Q0.2 Q0.1 3 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.05h psi=315 N-E
@@ -8905,6 +11831,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 3 1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 1 0 P0.0 P0.4 P0.3 3 Q0.3 Q0.2 Q0.1
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -8914,6 +11845,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 3 1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 3 Q0.3 Q0.2 Q0.1 1 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=0 W-E
@@ -8942,6 +11878,12 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 2 1 0 3 P0.3
+output diff 1
+ringout 0 P0.0 P0.4 3
+output or 1
+ringout 3 Q0.1 Q0.2 Q0.3 2 1 0 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.2h psi=0 W-S
@@ -8967,6 +11909,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 1 P0.2 2 0
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2
+output or 1
+ringout 2 Q0.1 Q0.2 Q0.3 1 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=0 NW-SE
@@ -8992,6 +11940,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 1 0 2 P0.3 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 2
+output or 1
+ringout 0 P0.0 P0.4 2 Q0.1 Q0.2 Q0.3 1
 endorder
 endcase
 case near vertex rho=+1.2h psi=0 N-E
@@ -9014,6 +11968,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 0
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.3 Q0.2 Q0.1 Q0.0
 endorder
 endcase
 case near vertex rho=+1.2h psi=45 W-E
@@ -9042,6 +12001,12 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 1 0 3 P0.3 2
+output diff 1
+ringout 3 0 P0.0 P0.4
+output or 1
+ringout 1 0 P0.0 P0.4 3 Q0.1 Q0.2 Q0.3 2
 endorder
 endcase
 case near vertex rho=+1.2h psi=45 W-S
@@ -9069,6 +12034,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 1 opposite sector 0,1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 0 out deduced 2 0,1
+output and 0
+output diff 1
+ringout 3 P0.3 P0.4 P0.0 0
+output or 1
+ringout 3 Q0.1 Q0.2 Q0.3 2 0 P0.0 P0.4 P0.3
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 2
@@ -9078,6 +12048,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 1 opposite sector 0,1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 0 out deduced 2 0,1
+output and 0
+output diff 1
+ringout 0 3 P0.3 P0.4 P0.0
+output or 1
+ringout 3 P0.3 P0.4 P0.0 0 2 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=45 NW-SE
@@ -9100,6 +12075,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.2 1 Q0.0
+output diff 1
+ringout 0 Q0.0 1 P0.4 P0.0
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.2h psi=45 N-E
@@ -9122,6 +12103,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 0
+output diff 1
+ringout 1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.0 Q0.1 Q0.2 Q0.3 1 P0.3 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.2h psi=90 W-E
@@ -9144,6 +12130,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.3 1 Q0.0
+output diff 1
+ringout 1 P0.4 P0.0 P0.1 P0.2 0 Q0.0
+output or 1
+ringout 0 P0.2 P0.1 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=90 W-S
@@ -9166,6 +12158,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=90 NW-SE
@@ -9188,6 +12185,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 1
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=90 N-E
@@ -9206,6 +12209,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.2h psi=135 W-E
@@ -9231,6 +12240,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 0 1 P0.3 2
+output diff 1
+ringout 0 2 P0.4 P0.0 P0.1
+output or 1
+ringout 0 1 Q0.3 Q0.2 Q0.1 2 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=135 W-S
@@ -9253,6 +12268,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=135 NW-SE
@@ -9275,6 +12295,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.2 0
+output diff 1
+ringout 1 P0.4 P0.0 P0.1 0
+output or 1
+ringout 1 P0.4 P0.0 P0.1 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=135 N-E
@@ -9297,6 +12323,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=180 W-E
@@ -9322,6 +12353,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 2 0 1 P0.3
+output diff 1
+ringout 2 0 P0.1 P0.0 P0.4
+output or 1
+ringout 2 Q0.1 Q0.2 Q0.3 1 0 P0.1 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.2h psi=180 W-S
@@ -9340,6 +12377,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.2h psi=180 NW-SE
@@ -9362,6 +12405,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=180 N-E
@@ -9384,6 +12433,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0 P0.1
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.1 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=225 W-E
@@ -9412,6 +12466,12 @@ piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
+output and 1
+ringout 0 1 2 P0.3 3
+output diff 1
+ringout 3 0 P0.0 P0.4
+output or 1
+ringout 0 1 2 Q0.3 Q0.2 Q0.1 3 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.2h psi=225 W-S
@@ -9434,6 +12494,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.2h psi=225 NW-SE
@@ -9456,6 +12521,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.2
+output diff 1
+ringout 0 1 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+1.2h psi=225 N-E
@@ -9483,6 +12554,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 out deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 0,2
+output and 0
+output diff 1
+ringout 3 P0.3 P0.4 P0.0 0
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 3 P0.3 P0.4 P0.0 0
 endorder
 order 0 0
 piece P 0 0 1 0 none none 0 1
@@ -9492,6 +12568,11 @@ piece P 0 0 0 0 out vertex 3 0
 piece Q 0 0 0 0 out deduced 0,2 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 0,2
+output and 0
+output diff 1
+ringout 0 3 P0.3 P0.4 P0.0
+output or 1
+ringout 1 0 P0.0 P0.4 P0.3 3 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=270 W-E
@@ -9514,6 +12595,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.3 P0.2 0
+output diff 1
+ringout 1 P0.4 P0.0 0
+output or 1
+ringout 1 P0.4 P0.0 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.2h psi=270 W-S
@@ -9536,6 +12623,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=270 NW-SE
@@ -9561,6 +12653,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
+output and 1
+ringout 1 2 P0.2
+output diff 1
+ringout 2 1 0 P0.0 P0.4
+output or 1
+ringout 0 P0.0 P0.4 2 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=270 N-E
@@ -9586,6 +12684,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 in deduced 2 0
+output and 1
+ringout 1 P0.2 2 0
+output diff 1
+ringout 0 2 P0.3 P0.4 P0.0
+output or 1
+ringout 2 Q0.3 Q0.2 Q0.1 1 0 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.2h psi=315 W-E
@@ -9616,6 +12720,12 @@ piece Q 0 0 0 0 in deduced 1 4
 piece Q 0 0 0 0 out vertex 4 3
 piece Q 0 0 0 1 same sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 4 P0.3 3
+output diff 1
+ringout 0 1 4 P0.4 P0.0
+output or 1
+ringout 0 1 3 Q0.3 Q0.2 Q0.1 4 P0.4 P0.0
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -9627,6 +12737,12 @@ piece Q 0 0 0 0 in deduced 1 4
 piece Q 0 0 0 0 out vertex 4 3
 piece Q 0 0 0 1 same sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 3 P0.3 4 1
+output diff 1
+ringout 0 P0.0 P0.4 4 1
+output or 1
+ringout 0 P0.0 P0.4 4 Q0.1 Q0.2 Q0.3 3 1
 endorder
 endcase
 case near vertex rho=+1.2h psi=315 W-S
@@ -9654,6 +12770,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 1 opposite sector 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 3 1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 1 0 P0.0 P0.4 P0.3 3 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -9663,6 +12784,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 1 opposite sector 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 0 1 3 P0.3 P0.4 P0.0
+output or 1
+ringout 0 1 Q0.3 Q0.2 Q0.1 3 P0.3 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.2h psi=315 NW-SE
@@ -9690,6 +12816,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in deduced 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 3 P0.2
+output diff 1
+ringout 0 P0.0 P0.4 3 1
+output or 1
+ringout 0 P0.0 P0.4 3 Q0.1 Q0.2 Q0.3 1
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -9699,6 +12831,12 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 in deduced 1 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 1
+ringout 1 P0.2 3
+output diff 1
+ringout 1 3 P0.4 P0.0 0
+output or 1
+ringout 3 Q0.1 Q0.2 Q0.3 1 0 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.2h psi=315 N-E
@@ -9726,6 +12864,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 3 P0.3 P0.4 P0.0 0 1
+output or 1
+ringout 3 P0.3 P0.4 P0.0 0 1 Q0.1 Q0.2 Q0.3
 endorder
 order 0 0
 piece P 0 0 0 0 out deduced 0 1,2
@@ -9735,6 +12878,11 @@ piece Q 0 0 1 0 none none 0 1
 piece Q 0 0 0 0 out vertex 1 3
 piece Q 0 0 0 1 opposite sector 3 2
 piece Q 0 0 1 0 none none 2 0
+output and 0
+output diff 1
+ringout 1 3 P0.3 P0.4 P0.0 0
+output or 1
+ringout 0 1 Q0.1 Q0.2 Q0.3 3 P0.3 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=0 W-E
@@ -9763,6 +12911,12 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 2 1 0 3 P0.3
+output diff 1
+ringout 3 0 P0.0 P0.4
+output or 1
+ringout 2 1 0 P0.0 P0.4 3 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.5h psi=0 W-S
@@ -9788,6 +12942,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 1 0 2 P0.2
+output diff 1
+ringout 2 P0.3 P0.4 P0.0 0
+output or 1
+ringout 1 0 P0.0 P0.4 P0.3 2 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.5h psi=0 NW-SE
@@ -9810,6 +12970,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.2 P0.3 1 Q0.0
+output diff 1
+ringout 1 Q0.0 0 P0.0 P0.4
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=0 N-E
@@ -9832,6 +12998,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.3 Q0.2 Q0.1 Q0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=45 W-E
@@ -9854,6 +13025,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 1 Q0.0 0 P0.3
+output diff 1
+ringout 1 Q0.0 0 P0.2 P0.1 P0.0 P0.4
+output or 1
+ringout 1 P0.4 P0.0 P0.1 P0.2 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.5h psi=45 W-S
@@ -9876,6 +13053,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.2 1 Q0.0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.0
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.5h psi=45 NW-SE
@@ -9898,6 +13081,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 1 P0.3 P0.2 0 Q0.0
+output diff 1
+ringout 1 Q0.0 0 P0.1 P0.0 P0.4
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 0 P0.1 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=45 N-E
@@ -9916,6 +13105,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=90 W-E
@@ -9938,6 +13133,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 Q0.0 1 P0.3
+output diff 1
+ringout 0 Q0.0 1 P0.4 P0.0 P0.1 P0.2
+output or 1
+ringout 1 P0.4 P0.0 P0.1 P0.2 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.5h psi=90 W-S
@@ -9960,6 +13161,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0
+output or 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.5h psi=90 NW-SE
@@ -9982,6 +13188,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 Q0.0 1 P0.2
+output diff 1
+ringout 1 P0.4 P0.0 P0.1 0 Q0.0
+output or 1
+ringout 1 P0.4 P0.0 P0.1 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+1.5h psi=90 N-E
@@ -10000,6 +13212,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=135 W-E
@@ -10022,6 +13240,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 1 Q0.0 0 P0.3
+output diff 1
+ringout 1 Q0.0 0 P0.2 P0.1 P0.0 P0.4
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0 P0.1 P0.2
 endorder
 endcase
 case near vertex rho=+1.5h psi=135 W-S
@@ -10040,6 +13264,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=135 NW-SE
@@ -10062,6 +13292,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.5h psi=135 N-E
@@ -10080,6 +13316,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=180 W-E
@@ -10105,6 +13347,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 0 1 P0.3 2
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 2
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 2 P0.4 P0.0 P0.1 0
 endorder
 endcase
 case near vertex rho=+1.5h psi=180 W-S
@@ -10123,6 +13371,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=180 NW-SE
@@ -10145,6 +13399,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.2 0
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0
+output or 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=180 N-E
@@ -10167,6 +13427,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0 P0.1
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.1 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+1.5h psi=225 W-E
@@ -10189,6 +13454,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.3 P0.2
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 1
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 0 P0.1 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=225 W-S
@@ -10207,6 +13478,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=225 NW-SE
@@ -10229,6 +13506,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 1 0 P0.1 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+1.5h psi=225 N-E
@@ -10251,6 +13534,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 0
+output and 1
+ringout 1 P0.2 0 Q0.0
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.0
+output or 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+1.5h psi=270 W-E
@@ -10273,6 +13562,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.3 P0.2 0
+output diff 1
+ringout 0 P0.0 P0.4 1
+output or 1
+ringout 0 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=270 W-S
@@ -10295,6 +13590,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=270 NW-SE
@@ -10317,6 +13617,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 0 P0.0 P0.4 1
+output or 1
+ringout 0 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=270 N-E
@@ -10342,6 +13648,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 in deduced 2 0
+output and 1
+ringout 0 1 P0.2 2
+output diff 1
+ringout 0 2 P0.3 P0.4 P0.0
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.3 Q0.2 Q0.1 1
 endorder
 endcase
 case near vertex rho=+1.5h psi=315 W-E
@@ -10364,6 +13676,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 0 P0.1 P0.2 P0.3
+output diff 1
+ringout 1 0 P0.0 P0.4
+output or 1
+ringout 0 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=315 W-S
@@ -10386,6 +13704,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 P0.2 1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+1.5h psi=315 NW-SE
@@ -10408,6 +13732,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 P0.2 P0.3 1
+output diff 1
+ringout 0 P0.0 P0.4 1
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 0 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+1.5h psi=315 N-E
@@ -10430,6 +13760,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 1 0 P0.1 P0.2
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 0
+output or 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+2h psi=0 W-E
@@ -10458,6 +13794,12 @@ piece Q 0 0 0 0 in deduced 0 3
 piece Q 0 0 0 0 out vertex 3 2
 piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 3 P0.3 2 1 0
+output diff 1
+ringout 3 P0.4 P0.0 0
+output or 1
+ringout 1 0 P0.0 P0.4 3 Q0.1 Q0.2 Q0.3 2
 endorder
 endcase
 case near vertex rho=+2h psi=0 W-S
@@ -10483,6 +13825,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 2 0 1 P0.2
+output diff 1
+ringout 2 0 P0.0 P0.4 P0.3
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 2 P0.3 P0.4 P0.0 0
 endorder
 endcase
 case near vertex rho=+2h psi=0 NW-SE
@@ -10505,6 +13853,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 1 P0.3 P0.2 0 Q0.0
+output diff 1
+ringout 1 P0.4 P0.0 0 Q0.0
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 0 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=0 N-E
@@ -10527,6 +13881,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 0
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.3 Q0.2 Q0.1 Q0.0
 endorder
 endcase
 case near vertex rho=+2h psi=45 W-E
@@ -10549,6 +13908,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 1 P0.3 0 Q0.0
+output diff 1
+ringout 1 P0.4 P0.0 P0.1 P0.2 0 Q0.0
+output or 1
+ringout 0 P0.2 P0.1 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+2h psi=45 W-S
@@ -10571,6 +13936,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 Q0.0 1 P0.2
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.0
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.3 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+2h psi=45 NW-SE
@@ -10593,6 +13964,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.2 P0.3 1 Q0.0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 1 Q0.0
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+2h psi=45 N-E
@@ -10611,6 +13988,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=90 W-E
@@ -10633,6 +14016,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 Q0.0 1 P0.3
+output diff 1
+ringout 0 P0.2 P0.1 P0.0 P0.4 1 Q0.0
+output or 1
+ringout 0 P0.2 P0.1 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+2h psi=90 W-S
@@ -10655,6 +14044,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0 P0.1
+output or 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+2h psi=90 NW-SE
@@ -10677,6 +14071,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 0 P0.2 1 Q0.0
+output diff 1
+ringout 0 P0.1 P0.0 P0.4 1 Q0.0
+output or 1
+ringout 0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+2h psi=90 N-E
@@ -10695,6 +14095,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=135 W-E
@@ -10717,6 +14123,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in vertex 0 1
+output and 1
+ringout 1 P0.3 0 Q0.0
+output diff 1
+ringout 0 P0.2 P0.1 P0.0 P0.4 1 Q0.0
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 0 P0.2 P0.1 P0.0 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=135 W-S
@@ -10735,6 +14147,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=135 NW-SE
@@ -10757,6 +14175,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.2 0
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0 P0.1
+output or 1
+ringout 0 P0.1 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+2h psi=135 N-E
@@ -10775,6 +14199,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=180 W-E
@@ -10800,6 +14230,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 0 in deduced 0 2
 piece Q 0 0 0 0 out vertex 2 1
 piece Q 0 0 0 1 same sector 1 0
+output and 1
+ringout 2 P0.3 1 0
+output diff 1
+ringout 2 0 P0.1 P0.0 P0.4
+output or 1
+ringout 1 0 P0.1 P0.0 P0.4 2 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+2h psi=180 W-S
@@ -10818,6 +14254,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=180 NW-SE
@@ -10840,6 +14282,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.2 1
+output diff 1
+ringout 0 1 P0.3 P0.4 P0.0 P0.1
+output or 1
+ringout 1 Q0.1 Q0.2 Q0.3 Q0.0 0 P0.1 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+2h psi=180 N-E
@@ -10862,6 +14310,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.1 P0.0 P0.4 P0.3
 endorder
 endcase
 case near vertex rho=+2h psi=225 W-E
@@ -10884,6 +14337,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.3 P0.2 0
+output diff 1
+ringout 0 1 P0.4 P0.0 P0.1
+output or 1
+ringout 0 P0.1 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+2h psi=225 W-S
@@ -10902,6 +14361,12 @@ records 0
 order 0 0
 piece P 0 1 0 0 out vertex - -
 piece Q 0 1 0 0 out vertex - -
+output and 0
+output diff 1
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4
 endorder
 endcase
 case near vertex rho=+2h psi=225 NW-SE
@@ -10924,6 +14389,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.2 0
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0
+output or 1
+ringout 1 P0.3 P0.4 P0.0 P0.1 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+2h psi=225 N-E
@@ -10946,6 +14417,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in vertex 1 0
+output and 1
+ringout 0 P0.2 1 Q0.0
+output diff 1
+ringout 1 Q0.0 0 P0.1 P0.0 P0.4 P0.3
+output or 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.3 P0.4 P0.0 P0.1
 endorder
 endcase
 case near vertex rho=+2h psi=270 W-E
@@ -10968,6 +14445,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 P0.3 P0.2 0
+output diff 1
+ringout 0 1 P0.4 P0.0
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+2h psi=270 W-S
@@ -10990,6 +14473,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 1 opposite sector 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 0
+output diff 1
+ringout 1 0 P0.0 P0.4 P0.3
+output or 1
+ringout 0 P0.0 P0.4 P0.3 1 Q0.1 Q0.2 Q0.3 Q0.0
 endorder
 endcase
 case near vertex rho=+2h psi=270 NW-SE
@@ -11012,6 +14500,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 0 P0.2
+output diff 1
+ringout 1 0 P0.0 P0.4
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+2h psi=270 N-E
@@ -11037,6 +14531,12 @@ piece P 0 0 0 0 out vertex 2 0
 piece Q 0 0 0 1 same sector 0 1
 piece Q 0 0 0 0 out vertex 1 2
 piece Q 0 0 0 0 in deduced 2 0
+output and 1
+ringout 0 2 P0.2 1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 2
+output or 1
+ringout 0 P0.0 P0.4 P0.3 2 Q0.3 Q0.2 Q0.1 1
 endorder
 endcase
 case near vertex rho=+2h psi=315 W-E
@@ -11059,6 +14559,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 1 0 P0.1 P0.2 P0.3
+output diff 1
+ringout 0 P0.0 P0.4 1
+output or 1
+ringout 0 Q0.0 Q0.3 Q0.2 Q0.1 1 P0.4 P0.0
 endorder
 endcase
 case near vertex rho=+2h psi=315 W-S
@@ -11081,6 +14587,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 P0.1 P0.2 1
+output diff 1
+ringout 1 P0.3 P0.4 P0.0 0
+output or 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case near vertex rho=+2h psi=315 NW-SE
@@ -11103,6 +14615,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 0 1
 piece Q 0 0 0 0 out vertex 1 0
+output and 1
+ringout 0 1 P0.3 P0.2 P0.1
+output diff 1
+ringout 0 P0.0 P0.4 1
+output or 1
+ringout 0 P0.0 P0.4 1 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case near vertex rho=+2h psi=315 N-E
@@ -11125,6 +14643,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 in deduced 1 0
 piece Q 0 0 0 0 out vertex 0 1
+output and 1
+ringout 0 1 P0.2 P0.1
+output diff 1
+ringout 0 P0.0 P0.4 P0.3 1
+output or 1
+ringout 1 P0.3 P0.4 P0.0 0 Q0.0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case tangent L=0.01 alpha=-5h/L
@@ -11146,6 +14670,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in deduced 1 0
+output and 1
+ringout 0 P0.1 1
+output diff 1
+ringout 0 1 P0.2 P0.3
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.01 alpha=-2h/L
@@ -11167,6 +14697,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in deduced 1 0
+output and 1
+ringout 0 P0.1 1
+output diff 1
+ringout 0 1 P0.2 P0.3
+output or 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.01 alpha=-1.2h/L
@@ -11188,6 +14724,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in deduced 1 0
+output and 1
+ringout 1 0 P0.1
+output diff 1
+ringout 1 0 P0.3 P0.2
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.3 P0.2
 endorder
 endcase
 case tangent L=0.01 alpha=-0.8h/L
@@ -11209,6 +14751,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.2 P0.3
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.01 alpha=-0.5h/L
@@ -11230,6 +14777,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 0
+output or 1
+ringout 1 P0.2 P0.3 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case tangent L=0.01 alpha=-0.1h/L
@@ -11251,6 +14803,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 0
+output or 1
+ringout 1 P0.2 P0.3 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case tangent L=0.01 alpha=+0h/L
@@ -11272,6 +14829,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 0
+output or 1
+ringout 1 P0.2 P0.3 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case tangent L=0.01 alpha=+0.1h/L
@@ -11293,6 +14855,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 0
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.3 P0.2
 endorder
 endcase
 case tangent L=0.01 alpha=+0.5h/L
@@ -11314,6 +14881,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 0
+output or 1
+ringout 1 P0.2 P0.3 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case tangent L=0.01 alpha=+0.8h/L
@@ -11335,6 +14907,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 1
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.01 alpha=+1.2h/L
@@ -11353,6 +14930,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.2 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.01 alpha=+2h/L
@@ -11371,6 +14954,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.2 P0.3
+output or 2
+ringout 0 P0.1 P0.2 P0.3
+ringout 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case tangent L=0.01 alpha=+5h/L
@@ -11389,6 +14978,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 P0.1
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.3 P0.2 P0.1
 endorder
 endcase
 case tangent L=0.01 alpha=+20h/L
@@ -11407,6 +15002,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 P0.1
+output or 2
+ringout 0 P0.3 P0.2 P0.1
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.01 alpha=+200h/L
@@ -11425,6 +15026,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 P0.1
+output or 2
+ringout 0 P0.3 P0.2 P0.1
+ringout 0 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.001 alpha=-5h/L
@@ -11446,6 +15053,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in deduced 1 0
+output and 1
+ringout 1 P0.1 0
+output diff 1
+ringout 0 P0.3 P0.2 1
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.001 alpha=-2h/L
@@ -11467,6 +15080,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in deduced 1 0
+output and 1
+ringout 1 0 P0.1
+output diff 1
+ringout 1 0 P0.3 P0.2
+output or 1
+ringout 1 Q0.3 Q0.2 Q0.1 0 P0.3 P0.2
 endorder
 endcase
 case tangent L=0.001 alpha=-1.2h/L
@@ -11488,6 +15107,12 @@ piece P 0 0 0 0 in vertex 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 0 in deduced 1 0
+output and 1
+ringout 1 P0.1 0
+output diff 1
+ringout 0 P0.3 P0.2 1
+output or 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.001 alpha=-0.8h/L
@@ -11509,6 +15134,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 1
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.001 alpha=-0.5h/L
@@ -11530,6 +15160,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.2 P0.3
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.001 alpha=-0.1h/L
@@ -11551,6 +15186,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 P0.2 P0.3 0
+output or 1
+ringout 1 P0.2 P0.3 0 Q0.1 Q0.2 Q0.3
 endorder
 endcase
 case tangent L=0.001 alpha=+0h/L
@@ -11572,6 +15212,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 1 0 P0.3 P0.2
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.001 alpha=+0.1h/L
@@ -11593,6 +15238,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 1
+output or 1
+ringout 0 P0.3 P0.2 1 Q0.3 Q0.2 Q0.1
 endorder
 endcase
 case tangent L=0.001 alpha=+0.5h/L
@@ -11614,6 +15264,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 1
+output or 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.001 alpha=+0.8h/L
@@ -11635,6 +15290,11 @@ piece P 0 0 0 1 opposite sector 0 1
 piece P 0 0 0 0 out vertex 1 0
 piece Q 0 0 0 0 out vertex 0 1
 piece Q 0 0 0 1 opposite sector 1 0
+output and 0
+output diff 1
+ringout 0 1 P0.2 P0.3
+output or 1
+ringout 0 Q0.1 Q0.2 Q0.3 1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.001 alpha=+1.2h/L
@@ -11653,6 +15313,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 P0.1
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.3 P0.2 P0.1
 endorder
 endcase
 case tangent L=0.001 alpha=+2h/L
@@ -11671,6 +15337,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.2 P0.3
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.001 alpha=+5h/L
@@ -11689,6 +15361,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.2 P0.3
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.001 alpha=+20h/L
@@ -11707,6 +15385,12 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.1 P0.2 P0.3
+output or 2
+ringout 0 Q0.1 Q0.2 Q0.3
+ringout 0 P0.1 P0.2 P0.3
 endorder
 endcase
 case tangent L=0.001 alpha=+200h/L
@@ -11725,5 +15409,11 @@ SS 0 0
 order 0 0
 piece P 0 0 0 0 out vertex 0 0
 piece Q 0 0 0 0 out vertex 0 0
+output and 0
+output diff 1
+ringout 0 P0.3 P0.2 P0.1
+output or 2
+ringout 0 Q0.3 Q0.2 Q0.1
+ringout 0 P0.3 P0.2 P0.1
 endorder
 endcase

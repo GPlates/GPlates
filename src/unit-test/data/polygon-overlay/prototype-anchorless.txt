@@ -50,6 +50,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 2 1 0 6 5 4
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 3 2 1 0 6 5 4
 endorder
 endcase
 case anchorless jittered seed 1
@@ -104,6 +112,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 6 5 4 3 2 1
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 0 6 5 4 3 2 1
 endorder
 endcase
 case anchorless hole-equals-ring seed 1
@@ -160,6 +176,13 @@ piece Q 0 0 0 1 opposite sector 4 5
 piece Q 0 0 0 1 opposite sector 5 6
 piece Q 0 0 0 1 opposite sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 0 6 5 4 3 2 1
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless hole-equals-ring jittered seed 1
@@ -216,6 +239,13 @@ piece Q 0 0 0 1 opposite sector 4 5
 piece Q 0 0 0 1 opposite sector 5 6
 piece Q 0 0 0 1 opposite sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 1 2 3 4 5 6 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless ring-equals-hole seed 1
@@ -272,6 +302,13 @@ piece Q 1 0 0 1 opposite sector 3 4
 piece Q 1 0 0 1 opposite sector 4 5
 piece Q 1 0 0 1 opposite sector 5 6
 piece Q 1 0 0 1 opposite sector 6 0
+output and 0
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 4 5 6 0 1 2
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5
+ringout P1.0 P1.1 P1.2 P1.3
 endorder
 endcase
 case anchorless identical reversed seed 1
@@ -326,6 +363,14 @@ piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 1 same sector 0 6
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 0 6 5 4 3 2
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 1 0 6 5 4 3 2
 endorder
 endcase
 case anchorless jittered reversed seed 1
@@ -380,6 +425,14 @@ piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 1 same sector 0 6
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 6 5 4 3 2 1
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 0 6 5 4 3 2 1
 endorder
 endcase
 case anchorless hole-equals-ring reversed seed 1
@@ -436,6 +489,13 @@ piece Q 0 0 0 1 opposite sector 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 1 opposite sector 0 6
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 1 0 6 5 4 3 2
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless hole-equals-ring jittered reversed seed 1
@@ -492,6 +552,13 @@ piece Q 0 0 0 1 opposite sector 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 1 opposite sector 0 6
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 4 5 6 0 1 2 3
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless ring-equals-hole reversed seed 1
@@ -548,6 +615,13 @@ piece Q 1 0 0 1 opposite sector 3 2
 piece Q 1 0 0 1 opposite sector 2 1
 piece Q 1 0 0 1 opposite sector 1 0
 piece Q 1 0 0 1 opposite sector 0 6
+output and 0
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 6 5 4 3 2 1
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5
+ringout P1.0 P1.1 P1.2 P1.3
 endorder
 endcase
 case anchorless thin-face-P seed 1
@@ -611,6 +685,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 6 5 4 3 2 1
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 0 6 5 4 3 2 1
 endorder
 endcase
 case anchorless thin-face-P 1.5h seed 1
@@ -674,6 +756,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 1 2 3 4 5 6
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 0 1 2 3 4 5 6
 endorder
 endcase
 case anchorless thin-face-Q seed 1
@@ -737,6 +827,17 @@ piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
 piece Q 2 1 0 0 in vertex - -
+output and 3
+ringout Q2.0 Q2.1 Q2.2 Q2.3 Q2.4 Q2.5 Q2.6
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 1 2 3 4 5 6 0
+output diff 3
+ringout Q2.0 Q2.1 Q2.2 Q2.3 Q2.4 Q2.5 Q2.6
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+output or 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 2 3 4 5 6 0
 endorder
 endcase
 case anchorless thin-face-P jittered seed 1
@@ -802,6 +903,15 @@ piece Q 0 0 0 0 in deduced 5 7
 piece Q 0 0 0 0 in midpoint 7 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 7 P2.5 P2.4 P2.3 P2.2 P2.1 P2.0
+ringout 1 2 3 4 5 7 6 0
+output diff 1
+ringout 6 7 5
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 1 2 3 4 5 6 0
 endorder
 endcase
 case anchorless two-rings seed 1
@@ -866,6 +976,13 @@ piece Q 1 0 0 1 same sector 7 8
 piece Q 1 0 0 1 same sector 8 9
 piece Q 1 0 0 1 same sector 9 10
 piece Q 1 0 0 1 same sector 10 7
+output and 2
+ringout 7 10 9 8
+ringout 2 1 0 6 5 4 3
+output diff 0
+output or 2
+ringout 7 10 9 8
+ringout 2 1 0 6 5 4 3
 endorder
 endcase
 case anchorless two-rings jittered seed 1
@@ -930,6 +1047,13 @@ piece Q 1 0 0 1 same sector 7 8
 piece Q 1 0 0 1 same sector 8 9
 piece Q 1 0 0 1 same sector 9 10
 piece Q 1 0 0 1 same sector 10 7
+output and 2
+ringout 7 10 9 8
+ringout 6 5 4 3 2 1 0
+output diff 0
+output or 2
+ringout 7 10 9 8
+ringout 6 5 4 3 2 1 0
 endorder
 endcase
 case anchorless identical seed 2
@@ -984,6 +1108,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 2 3 4 5 6 0 1
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 2 3 4 5 6 0 1
 endorder
 endcase
 case anchorless jittered seed 2
@@ -1038,6 +1170,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 2 1 0 6 5 4
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 3 2 1 0 6 5 4
 endorder
 endcase
 case anchorless hole-equals-ring seed 2
@@ -1094,6 +1234,13 @@ piece Q 0 0 0 1 opposite sector 4 5
 piece Q 0 0 0 1 opposite sector 5 6
 piece Q 0 0 0 1 opposite sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 3 2 1 0 6 5 4
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless hole-equals-ring jittered seed 2
@@ -1150,6 +1297,13 @@ piece Q 0 0 0 1 opposite sector 4 5
 piece Q 0 0 0 1 opposite sector 5 6
 piece Q 0 0 0 1 opposite sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 5 6 0 1 2 3 4
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless ring-equals-hole seed 2
@@ -1206,6 +1360,13 @@ piece Q 1 0 0 1 opposite sector 3 4
 piece Q 1 0 0 1 opposite sector 4 5
 piece Q 1 0 0 1 opposite sector 5 6
 piece Q 1 0 0 1 opposite sector 6 0
+output and 0
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 1 2 3 4 5 6
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5
+ringout P1.0 P1.1 P1.2 P1.3
 endorder
 endcase
 case anchorless identical reversed seed 2
@@ -1260,6 +1421,14 @@ piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 1 same sector 0 6
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 4 5 6 0 1 2
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 3 4 5 6 0 1 2
 endorder
 endcase
 case anchorless jittered reversed seed 2
@@ -1314,6 +1483,14 @@ piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 1 same sector 0 6
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 2 3 4 5 6 0
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 1 2 3 4 5 6 0
 endorder
 endcase
 case anchorless hole-equals-ring reversed seed 2
@@ -1370,6 +1547,13 @@ piece Q 0 0 0 1 opposite sector 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 1 opposite sector 0 6
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 1 2 3 4 5 6 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless hole-equals-ring jittered reversed seed 2
@@ -1426,6 +1610,13 @@ piece Q 0 0 0 1 opposite sector 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 1 opposite sector 0 6
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 5 4 3 2 1 0 6
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless ring-equals-hole reversed seed 2
@@ -1482,6 +1673,13 @@ piece Q 1 0 0 1 opposite sector 3 2
 piece Q 1 0 0 1 opposite sector 2 1
 piece Q 1 0 0 1 opposite sector 1 0
 piece Q 1 0 0 1 opposite sector 0 6
+output and 0
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 2 1 0 6 5 4 3
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5
+ringout P1.0 P1.1 P1.2 P1.3
 endorder
 endcase
 case anchorless thin-face-P seed 2
@@ -1545,6 +1743,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 2 1 0 6 5 4
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 3 2 1 0 6 5 4
 endorder
 endcase
 case anchorless thin-face-P 1.5h seed 2
@@ -1608,6 +1814,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 2 1 0 6 5 4 3
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 2 1 0 6 5 4 3
 endorder
 endcase
 case anchorless thin-face-Q seed 2
@@ -1671,6 +1885,17 @@ piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
 piece Q 2 1 0 0 in vertex - -
+output and 3
+ringout Q2.0 Q2.1 Q2.2 Q2.3 Q2.4 Q2.5 Q2.6
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 1 0 6 5 4 3 2
+output diff 3
+ringout Q2.0 Q2.1 Q2.2 Q2.3 Q2.4 Q2.5 Q2.6
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+output or 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 0 6 5 4 3 2
 endorder
 endcase
 case anchorless thin-face-P jittered seed 2
@@ -1734,6 +1959,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 1 2 3 4 5 6
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 0 1 2 3 4 5 6
 endorder
 endcase
 case anchorless two-rings seed 2
@@ -1798,6 +2031,13 @@ piece Q 1 0 0 1 same sector 7 8
 piece Q 1 0 0 1 same sector 8 9
 piece Q 1 0 0 1 same sector 9 10
 piece Q 1 0 0 1 same sector 10 7
+output and 2
+ringout 8 9 10 7
+ringout 3 4 5 6 0 1 2
+output diff 0
+output or 2
+ringout 8 9 10 7
+ringout 3 4 5 6 0 1 2
 endorder
 endcase
 case anchorless two-rings jittered seed 2
@@ -1862,6 +2102,13 @@ piece Q 1 0 0 1 same sector 7 8
 piece Q 1 0 0 1 same sector 8 9
 piece Q 1 0 0 1 same sector 9 10
 piece Q 1 0 0 1 same sector 10 7
+output and 2
+ringout 7 10 9 8
+ringout 0 1 2 3 4 5 6
+output diff 0
+output or 2
+ringout 7 10 9 8
+ringout 0 1 2 3 4 5 6
 endorder
 endcase
 case anchorless identical seed 3
@@ -1916,6 +2163,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 2 1 0 6 5 4
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 3 2 1 0 6 5 4
 endorder
 endcase
 case anchorless jittered seed 3
@@ -1970,6 +2225,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 1 2 3 4 5 6
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 0 1 2 3 4 5 6
 endorder
 endcase
 case anchorless hole-equals-ring seed 3
@@ -2026,6 +2289,13 @@ piece Q 0 0 0 1 opposite sector 4 5
 piece Q 0 0 0 1 opposite sector 5 6
 piece Q 0 0 0 1 opposite sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 3 2 1 0 6 5 4
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless hole-equals-ring jittered seed 3
@@ -2082,6 +2352,13 @@ piece Q 0 0 0 1 opposite sector 4 5
 piece Q 0 0 0 1 opposite sector 5 6
 piece Q 0 0 0 1 opposite sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 0 1 2 3 4 5 6
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless ring-equals-hole seed 3
@@ -2138,6 +2415,13 @@ piece Q 1 0 0 1 opposite sector 3 4
 piece Q 1 0 0 1 opposite sector 4 5
 piece Q 1 0 0 1 opposite sector 5 6
 piece Q 1 0 0 1 opposite sector 6 0
+output and 0
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 2 1 0 6 5 4
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5
+ringout P1.0 P1.1 P1.2 P1.3
 endorder
 endcase
 case anchorless identical reversed seed 3
@@ -2192,6 +2476,14 @@ piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 1 same sector 0 6
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 1 2 3 4 5 6
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 0 1 2 3 4 5 6
 endorder
 endcase
 case anchorless jittered reversed seed 3
@@ -2246,6 +2538,14 @@ piece Q 0 0 0 1 same sector 2 1
 piece Q 0 0 0 1 same sector 1 0
 piece Q 0 0 0 1 same sector 0 6
 piece Q 1 1 0 0 in vertex - -
+output and 3
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 2 1 0 6 5 4 3
+output diff 1
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+output or 1
+ringout 2 1 0 6 5 4 3
 endorder
 endcase
 case anchorless hole-equals-ring reversed seed 3
@@ -2302,6 +2602,13 @@ piece Q 0 0 0 1 opposite sector 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 1 opposite sector 0 6
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 6 0 1 2 3 4 5
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless hole-equals-ring jittered reversed seed 3
@@ -2358,6 +2665,13 @@ piece Q 0 0 0 1 opposite sector 2 1
 piece Q 0 0 0 1 opposite sector 1 0
 piece Q 0 0 0 1 opposite sector 0 6
 piece Q 1 1 0 0 out vertex - -
+output and 0
+output diff 2
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
+ringout 3 4 5 6 0 1 2
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P0.0 P0.1 P0.2 P0.3 P0.4 P0.5
 endorder
 endcase
 case anchorless ring-equals-hole reversed seed 3
@@ -2414,6 +2728,13 @@ piece Q 1 0 0 1 opposite sector 3 2
 piece Q 1 0 0 1 opposite sector 2 1
 piece Q 1 0 0 1 opposite sector 1 0
 piece Q 1 0 0 1 opposite sector 0 6
+output and 0
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 0 6 5 4 3 2
+output or 2
+ringout Q0.0 Q0.1 Q0.2 Q0.3 Q0.4 Q0.5
+ringout P1.0 P1.1 P1.2 P1.3
 endorder
 endcase
 case anchorless thin-face-P seed 3
@@ -2477,6 +2798,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 2 3 4 5 6 0
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 1 2 3 4 5 6 0
 endorder
 endcase
 case anchorless thin-face-P 1.5h seed 3
@@ -2540,6 +2869,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 0 6 5 4 3 2 1
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 0 6 5 4 3 2 1
 endorder
 endcase
 case anchorless thin-face-Q seed 3
@@ -2603,6 +2940,17 @@ piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 in vertex - -
 piece Q 2 1 0 0 in vertex - -
+output and 3
+ringout Q2.0 Q2.1 Q2.2 Q2.3 Q2.4 Q2.5 Q2.6
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 1 2 3 4 5 6 0
+output diff 3
+ringout Q2.0 Q2.1 Q2.2 Q2.3 Q2.4 Q2.5 Q2.6
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout P1.0 P1.1 P1.2 P1.3
+output or 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 2 3 4 5 6 0
 endorder
 endcase
 case anchorless thin-face-P jittered seed 3
@@ -2666,6 +3014,14 @@ piece Q 0 0 0 1 same sector 4 5
 piece Q 0 0 0 1 same sector 5 6
 piece Q 0 0 0 1 same sector 6 0
 piece Q 1 1 0 0 out vertex - -
+output and 3
+ringout P2.0 P2.1 P2.2 P2.3 P2.4 P2.5 P2.6
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 1 2 3 4 5 6 0
+output diff 0
+output or 2
+ringout Q1.0 Q1.1 Q1.2 Q1.3
+ringout 1 2 3 4 5 6 0
 endorder
 endcase
 case anchorless two-rings seed 3
@@ -2730,6 +3086,13 @@ piece Q 1 0 0 1 same sector 7 8
 piece Q 1 0 0 1 same sector 8 9
 piece Q 1 0 0 1 same sector 9 10
 piece Q 1 0 0 1 same sector 10 7
+output and 2
+ringout 9 10 7 8
+ringout 6 5 4 3 2 1 0
+output diff 0
+output or 2
+ringout 9 10 7 8
+ringout 6 5 4 3 2 1 0
 endorder
 endcase
 case anchorless two-rings jittered seed 3
@@ -2794,5 +3157,12 @@ piece Q 1 0 0 1 same sector 7 8
 piece Q 1 0 0 1 same sector 8 9
 piece Q 1 0 0 1 same sector 9 10
 piece Q 1 0 0 1 same sector 10 7
+output and 2
+ringout 8 7 10 9
+ringout 0 6 5 4 3 2 1
+output diff 0
+output or 2
+ringout 8 7 10 9
+ringout 0 6 5 4 3 2 1
 endorder
 endcase

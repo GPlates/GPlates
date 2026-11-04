@@ -39,6 +39,8 @@
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
+#include "unit-test/PolygonOverlayOracle.h"
+
 
 //
 // Tests of PolygonOverlay, the overlay of a subject (polygon or polyline) with a clip polygon
@@ -1360,5 +1362,154 @@ TEST(PolygonOverlayTest, InconsistentOverlayThrows)
 		overlay.set_piece_class(inside.front(), false, Overlay::METHOD_DEDUCED);
 		EXPECT_NO_THROW(overlay.check_and_repair());
 		EXPECT_EQ(overlay.get_diagnostics().check_failures, 2u);
+	}
+}
+
+
+
+//
+// Linking, split and clean-up (phase4b-design.md sections 3.10 and 3.11): the rings of each
+// operation, checked by the output oracle (section 11.3).
+//
+
+namespace
+{
+	const Overlay::Operation ALL_OPERATIONS[] = {
+			Overlay::INTERSECTION, Overlay::DIFFERENCE, Overlay::REVERSE_DIFFERENCE,
+			Overlay::UNION, Overlay::SYMMETRIC_DIFFERENCE };
+
+	//! The number of points of each output ring of @a operation, sorted.
+	std::vector<unsigned int>
+	ring_sizes(
+			const Overlay::Overlay &overlay,
+			Overlay::Operation operation)
+	{
+		std::vector<Overlay::OutputRing> rings;
+		overlay.extract_rings(operation, rings);
+		std::vector<unsigned int> sizes;
+		for (const Overlay::OutputRing &ring : rings)
+		{
+			sizes.push_back(ring.points.size());
+		}
+		std::sort(sizes.begin(), sizes.end());
+		return sizes;
+	}
+
+	//! Every operation's output passes the oracle.
+	void
+	check_oracle(
+			const PolygonOnSphere &P,
+			const PolygonOnSphere &Q,
+			const Overlay::Overlay &overlay)
+	{
+		const std::vector<PointOnSphere> samples = PolygonOverlayOracle::get_samples(P, Q, overlay);
+		EXPECT_GT(samples.size(), 100u);
+		for (Overlay::Operation operation : ALL_OPERATIONS)
+		{
+			SCOPED_TRACE(operation);
+			std::vector<Overlay::OutputRing> rings;
+			overlay.extract_rings(operation, rings);
+			EXPECT_EQ(PolygonOverlayOracle::count_failures(P, Q, operation, rings, samples), 0u);
+		}
+		EXPECT_EQ(overlay.get_diagnostics().pairing_failures, 0u);
+		EXPECT_EQ(overlay.get_diagnostics().keep_mismatches, 0u);
+	}
+}
+
+
+// Two squares overlapping at a corner, under the five operations: the intersection and the two
+// differences are one ring each, the union one ring of eight points, the symmetric difference two.
+TEST(PolygonOverlayTest, LinkTwoSquares)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.005, 0.005));
+	const auto Q = polygon(square(-0.005, -0.005, 0.02, 0.02));
+	Overlay::Overlay overlay(*P, *Q);
+	classify_and_check(overlay);
+
+	EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 4 }));
+	EXPECT_EQ(ring_sizes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 6 }));
+	EXPECT_EQ(ring_sizes(overlay, Overlay::REVERSE_DIFFERENCE), (std::vector<unsigned int>{ 6 }));
+	EXPECT_EQ(ring_sizes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 8 }));
+	EXPECT_EQ(
+			ring_sizes(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+			(std::vector<unsigned int>{ 6, 6 }));
+	check_oracle(*P, *Q, overlay);
+}
+
+
+// The clip wholly inside the subject: no record; the difference is the subject's ring and the
+// clip's (its hole, once grouped), the intersection the clip's ring, the union the subject's.
+TEST(PolygonOverlayTest, LinkClipInsideSubject)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.02, 0.02));
+	const auto Q = polygon(square(-0.005, -0.005, 0.005, 0.005));
+	Overlay::Overlay overlay(*P, *Q);
+	classify_and_check(overlay);
+
+	EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 4 }));
+	EXPECT_EQ(ring_sizes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 4, 4 }));
+	EXPECT_EQ(ring_sizes(overlay, Overlay::REVERSE_DIFFERENCE), std::vector<unsigned int>());
+	EXPECT_EQ(ring_sizes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 4 }));
+	check_oracle(*P, *Q, overlay);
+}
+
+
+// Walk-through 6.4: the clip's apex on the subject's edge. The difference is the subject with the
+// clip as a hole touching its exterior at the apex: one walk passes that vertex twice and is cut
+// there into the two rings.
+TEST(PolygonOverlayTest, LinkPinch)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.02, 0.02));
+	const auto Q = polygon(ring_type{ F.at(0.0, 0.02), F.at(0.01, 0.0), F.at(-0.01, 0.0) });
+	Overlay::Overlay overlay(*P, *Q);
+	classify_and_check(overlay);
+
+	EXPECT_EQ(ring_sizes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 3, 5 }));
+	EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 3 }));
+	check_oracle(*P, *Q, overlay);
+}
+
+
+// The catalogue's hard configurations, under every operation: the acute wedge (whose tip x, apex, x
+// is a collapsed region, dropped by clean-up), shared edges, the twist on the clip.
+TEST(PolygonOverlayTest, LinkCatalogueFamilies)
+{
+	{
+		SCOPED_TRACE("wedge");
+		const double half_angle = 15.0 * 3.14159265358979323846 / 180.0;
+		const double L = 0.02;
+		const double r = 2.0 * H;
+		const auto Q = polygon(ring_type{
+				F.at(0.0, 0.0),
+				F.at(-L * std::sin(half_angle), -L * std::cos(half_angle)),
+				F.at(0.0, -1.5 * L),
+				F.at(L * std::sin(half_angle), -L * std::cos(half_angle)) });
+		const auto P = polygon(ring_type{
+				F.at(-0.04, -r), F.at(0.0, -r), F.at(0.04, -r),
+				F.at(0.04, -0.05), F.at(-0.04, -0.05) });
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+	}
+	for (double d : { 0.0, 0.5 * H, 2.0 * H })
+	{
+		SCOPED_TRACE("shared edge");
+		const auto P = polygon(square(-0.02, -0.01, 0.0, 0.01));
+		const auto Q = polygon(square(d, -0.01, 0.02, 0.01));
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+		EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), std::vector<unsigned int>());
+	}
+	for (double d : { 3.0 * H, 0.0 })
+	{
+		SCOPED_TRACE("twist");
+		const auto P = polygon(ring_type{
+				F.at(-0.01, 0.01), F.at(0.01, -0.01), F.at(0.01, 0.01), F.at(-0.01, -0.01) });
+		const auto Q = polygon(ring_type{
+				F.at(-0.03, d), F.at(0.03, d), F.at(0.03, -0.03), F.at(-0.03, -0.03) });
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
 	}
 }

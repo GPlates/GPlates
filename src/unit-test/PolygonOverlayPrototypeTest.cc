@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <sstream>
 #include <string>
@@ -41,6 +42,8 @@
 #include "maths/PolygonOverlay.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
+
+#include "unit-test/PolygonOverlayOracle.h"
 
 
 //
@@ -111,6 +114,10 @@ namespace
 		unsigned int repairs;
 		unsigned int check_failures;
 		std::vector<PrototypePiece> pieces;
+
+		//! The output rings of 'and', 'diff' and 'or' (intersection, difference, union), each ring
+		//! a cyclic sequence of named points (a record index, or P|Q<ring>.<vertex>).
+		std::vector<std::vector<std::string>> outputs[3];
 	};
 
 	class PrototypeCase
@@ -201,6 +208,38 @@ namespace
 			{
 				cases.back().raw_pieces.back().push_back(line);
 			}
+			else if (keyword == "output")
+			{
+				std::string operation;
+				stream >> operation;
+				PrototypeOrder &order = cases.back().orders.back();
+				if (operation == "same")
+				{
+					const std::vector<PrototypeOrder> &orders = cases.back().orders;
+					const PrototypeOrder &previous = orders[orders.size() - 2];
+					for (unsigned int o = 0; o < 3; ++o)
+					{
+						order.outputs[o] = previous.outputs[o];
+					}
+					continue;
+				}
+				const unsigned int o = (operation == "and") ? 0 : (operation == "diff" ? 1 : 2);
+				unsigned int num_rings;
+				stream >> num_rings;
+				for (unsigned int i = 0; i < num_rings; ++i)
+				{
+					std::getline(file, line);
+					std::stringstream ring_stream(line);
+					std::string token;
+					ring_stream >> token;  // 'ringout'
+					std::vector<std::string> ring;
+					while (ring_stream >> token)
+					{
+						ring.push_back(token);
+					}
+					order.outputs[o].push_back(ring);
+				}
+			}
 		}
 		return cases;
 	}
@@ -240,12 +279,190 @@ namespace
 
 
 	/**
+	 * Whether two ring points are the same for the comparison: within 1e-9 radians (under 1e-3 h).
+	 * Two distinct overlay vertices can lie within the rounding of a computed crossing of each
+	 * other (a crossing beside a touch, or two crossings of nearly parallel segments, joined by a
+	 * piece 1e-9 h to 1e-6 h long), and the prototype's float positions for its exact ones can then
+	 * be equal, so that its clean-up drops one as a repeat where the C++ keeps both (measured:
+	 * 6e-16 and 2e-12 radians apart); see 'without_near_repeats'.
+	 */
+	bool
+	same_point(
+			const PointOnSphere &a,
+			const PointOnSphere &b)
+	{
+		return PolygonOverlayOracle::angle_between(a.position_vector(), b.position_vector()) < 1e-9;
+	}
+
+
+	//! A ring without points within 1e-9 radians of the one before (cyclically).
+	std::vector<PointOnSphere>
+	without_near_repeats(
+			const std::vector<PointOnSphere> &ring)
+	{
+		std::vector<PointOnSphere> out;
+		for (const PointOnSphere &point : ring)
+		{
+			if (out.empty() || !same_point(out.back(), point))
+			{
+				out.push_back(point);
+			}
+		}
+		while (out.size() > 1 && same_point(out.front(), out.back()))
+		{
+			out.pop_back();
+		}
+		return out;
+	}
+
+
+	//! Whether two rings are the same cyclic sequence of points, in either direction.
+	bool
+	same_ring(
+			const std::vector<PointOnSphere> &a,
+			const std::vector<PointOnSphere> &b)
+	{
+		const unsigned int n = a.size();
+		if (b.size() != n)
+		{
+			return false;
+		}
+		for (unsigned int start = 0; start < n; ++start)
+		{
+			for (int direction : { 1, -1 })
+			{
+				bool same = true;
+				for (unsigned int i = 0; same && i < n; ++i)
+				{
+					const unsigned int j = (start + n + direction * static_cast<int>(i)) % n;
+					same = same_point(a[i], b[j]);
+				}
+				if (same)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+
+	/**
+	 * Compare the overlay's rings of the intersection, difference and union with the prototype's
+	 * (by the points they name); an empty string if they are the same rings.
+	 */
+	//! Ring sets not compared because their decomposition is ambiguous (see compare_rings).
+	unsigned int num_ambiguous_ring_sets = 0;
+
+
+	std::string
+	compare_rings(
+			const PrototypeCase &prototype_case,
+			const PrototypeOrder &order,
+			const Overlay::Overlay &overlay,
+			const std::vector<unsigned int> &overlay_record_of_prototype)
+	{
+		const auto point_of = [&](const std::string &name)
+		{
+			if (name[0] == 'P' || name[0] == 'Q')
+			{
+				const Overlay::Side side = (name[0] == 'P') ? Overlay::SUBJECT : Overlay::CLIP;
+				const std::size_t dot = name.find('.');
+				const unsigned int ring_index = std::stoul(name.substr(1, dot - 1));
+				const unsigned int vertex = std::stoul(name.substr(dot + 1));
+				for (const Overlay::RingView &ring : overlay.get_rings())
+				{
+					if (ring.side == side && ring.ring_index == ring_index)
+					{
+						return ring.vertex(vertex);
+					}
+				}
+			}
+			const unsigned int record = overlay_record_of_prototype[std::stoul(name)];
+			return overlay.get_vertices()[overlay.get_vertex_of_record(record)].position;
+		};
+
+		const Overlay::Operation operations[3] = {
+				Overlay::INTERSECTION, Overlay::DIFFERENCE, Overlay::UNION };
+		const char *const names[3] = { "intersection", "difference", "union" };
+		std::stringstream report;
+		for (unsigned int o = 0; o < 3; ++o)
+		{
+			// Rings that touch each other at two vertices (or one ring twice) decompose in more
+			// than one valid way, depending on which repeated vertex the split meets first, and the
+			// prototype starts its walks at arbitrary points: compare only where no two of the
+			// prototype's rings share two points. (The oracle checks the point set regardless.)
+			const std::vector<std::vector<std::string>> &prototype_rings = order.outputs[o];
+			std::vector<std::vector<std::string>> sorted_names;
+			for (const std::vector<std::string> &prototype_ring : prototype_rings)
+			{
+				sorted_names.push_back(prototype_ring);
+				std::sort(sorted_names.back().begin(), sorted_names.back().end());
+			}
+			bool ambiguous = false;
+			for (unsigned int a = 0; !ambiguous && a < sorted_names.size(); ++a)
+			{
+				// A point twice on one ring, or two points shared by two rings.
+				ambiguous = std::adjacent_find(sorted_names[a].begin(), sorted_names[a].end()) !=
+						sorted_names[a].end();
+				for (unsigned int b = a + 1; !ambiguous && b < sorted_names.size(); ++b)
+				{
+					std::vector<std::string> shared;
+					std::set_intersection(
+							sorted_names[a].begin(), sorted_names[a].end(),
+							sorted_names[b].begin(), sorted_names[b].end(),
+							std::back_inserter(shared));
+					ambiguous = shared.size() >= 2;
+				}
+			}
+			if (ambiguous)
+			{
+				++num_ambiguous_ring_sets;
+				continue;
+			}
+
+			std::vector<Overlay::OutputRing> rings;
+			overlay.extract_rings(operations[o], rings);
+
+			std::vector<bool> used(rings.size(), false);
+			unsigned int num_unmatched = 0;
+			for (const std::vector<std::string> &prototype_ring : order.outputs[o])
+			{
+				std::vector<PointOnSphere> points;
+				for (const std::string &name : prototype_ring)
+				{
+					points.push_back(point_of(name));
+				}
+				bool matched = false;
+				points = without_near_repeats(points);
+				for (unsigned int r = 0; !matched && r < rings.size(); ++r)
+				{
+					if (!used[r] && same_ring(without_near_repeats(rings[r].points), points))
+					{
+						used[r] = matched = true;
+					}
+				}
+				num_unmatched += matched ? 0 : 1;
+			}
+			if (num_unmatched != 0 || rings.size() != order.outputs[o].size())
+			{
+				report << names[o] << ": " << rings.size() << " rings against the prototype's "
+						<< order.outputs[o].size() << ", " << num_unmatched
+						<< " of its unmatched; ";
+			}
+		}
+		return report.str();
+	}
+
+
+	/**
 	 * Compare one case; returns an empty string if it matches, else what differed.
 	 */
 	std::string
 	compare_case(
 			PrototypeCase &prototype_case,
-			unsigned int &num_band_differences)
+			unsigned int &num_band_differences,
+			unsigned int &num_oracle_failures)
 	{
 		const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
 		{
@@ -472,6 +689,50 @@ namespace
 			if (differences.str().empty())
 			{
 				num_band_differences += band_differences + num_common_differences;
+
+				// The output of every operation, by the oracle (phase4b-design.md section 11.3).
+				const std::vector<PointOnSphere> samples =
+						PolygonOverlayOracle::get_samples(*P, *Q, overlay);
+				std::stringstream oracle_report;
+				for (Overlay::Operation operation : {
+						Overlay::INTERSECTION, Overlay::DIFFERENCE, Overlay::REVERSE_DIFFERENCE,
+						Overlay::UNION, Overlay::SYMMETRIC_DIFFERENCE })
+				{
+					std::vector<Overlay::OutputRing> rings;
+					overlay.extract_rings(operation, rings);
+					const unsigned int failures =
+							PolygonOverlayOracle::count_failures(*P, *Q, operation, rings, samples);
+					if (failures != 0)
+					{
+						oracle_report << "operation " << operation << ": " << failures << " of "
+								<< samples.size() << " samples wrong; ";
+					}
+				}
+				if (overlay.get_diagnostics().pairing_failures != 0 ||
+					overlay.get_diagnostics().keep_mismatches != 0)
+				{
+					oracle_report << overlay.get_diagnostics().pairing_failures
+							<< " pairing failures, "
+							<< overlay.get_diagnostics().keep_mismatches << " keep mismatches; ";
+				}
+				if (!oracle_report.str().empty())
+				{
+					++num_oracle_failures;
+					return "classes agree, but the output does not: " + oracle_report.str();
+				}
+
+				// The ring structure (which the oracle cannot see: it reads the output by parity),
+				// against the prototype's, where no band piece differs.
+				if (band_differences + num_common_differences == 0)
+				{
+					const std::string ring_report = compare_rings(
+							prototype_case, order, overlay, overlay_record_of_prototype);
+					if (!ring_report.empty())
+					{
+						++num_oracle_failures;
+						return "classes agree, but the rings do not: " + ring_report;
+					}
+				}
 				return std::string();
 			}
 			if (first_mismatch.empty() || first_mismatch == "pieces differ in every tie order")
@@ -510,6 +771,8 @@ namespace
 		unsigned int num_failures = 0;
 		unsigned int num_band_differences = 0;
 		unsigned int num_prototype_failures = 0;
+		unsigned int num_oracle_failures = 0;
+		num_ambiguous_ring_sets = 0;
 		for (PrototypeCase &prototype_case : cases)
 		{
 			// A case the prototype itself fails in every tie order (a check failure, or repair) is
@@ -528,7 +791,8 @@ namespace
 			}
 
 			const unsigned int band_differences_before = num_band_differences;
-			const std::string mismatch = compare_case(prototype_case, num_band_differences);
+			const std::string mismatch =
+					compare_case(prototype_case, num_band_differences, num_oracle_failures);
 			if (num_band_differences != band_differences_before)
 			{
 				std::cout << "band pieces with the other class: " << prototype_case.name << " ("
@@ -545,7 +809,9 @@ namespace
 		{
 			EXPECT_EQ(num_prototype_failures, 0u) << filename;
 		}
-		std::cout << cases.size() << " prototype cases, " << num_failures << " differ; "
+		std::cout << cases.size() << " prototype cases, " << num_failures << " differ ("
+				<< num_oracle_failures << " in output only; " << num_ambiguous_ring_sets
+				<< " ring sets not compared, touching at two vertices); "
 				<< num_band_differences << " band pieces have the other class; "
 				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
 	}

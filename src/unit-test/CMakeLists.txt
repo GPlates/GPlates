@@ -21,6 +21,7 @@ set(srcs
     GsmlXmlQueryTest.cc
     MipmapperTest.cc
     PointInPolygonTest.cc
+    PolygonOverlayOracle.h
     PolygonOverlayPrototypeTest.cc
     PolygonOverlayTest.cc
     RealTest.cc

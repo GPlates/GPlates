@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
 #include <ostream>
 #include <sstream>
@@ -1243,7 +1244,8 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_four_end_vertex(
 GPlatesMaths::PolygonOverlay::VertexSolution
 GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		unsigned int vertex_index,
-		std::vector<Deduction> *deductions) const
+		std::vector<Deduction> *deductions,
+		bool use_free_rule) const
 {
 	const Vertex &vertex = d_vertices[vertex_index];
 	const std::vector<Ray> &rays = vertex.rays;
@@ -1256,7 +1258,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 	}
 
 	// Four ends, two of each input, none common: the geometry-free rule.
-	if (num_rays == 4)
+	if (num_rays == 4 && use_free_rule)
 	{
 		unsigned int num_subject_rays = 0;
 		bool any_common = false;
@@ -2765,4 +2767,483 @@ GPlatesMaths::PolygonOverlay::Overlay::repair()
 			return;
 		}
 	}
+}
+
+
+boost::optional<bool>
+GPlatesMaths::PolygonOverlay::Overlay::is_kept(
+		const Piece &piece,
+		Operation operation) const
+{
+	//
+	// The keep-rule (phase4b-design.md section 3.10): with f the operation's function of
+	// (in subject, in clip), a subject piece of class c is kept iff f(1, c) != f(0, c), a clip piece
+	// iff f(c, 1) != f(c, 0), a same-side chain iff f(1, 1) != f(0, 0), an opposite-sides chain iff
+	// f(1, 0) != f(0, 1): the output differs across the piece.
+	//
+	if (!piece.is_classified())
+	{
+		return boost::none;
+	}
+	if (piece.common)
+	{
+		return piece.common_class == COMMON_SAME_SIDE
+				? is_in_output(operation, true, true) != is_in_output(operation, false, false)
+				: is_in_output(operation, true, false) != is_in_output(operation, false, true);
+	}
+	const bool c = (piece.piece_class == CLASS_INSIDE);
+	return d_rings[piece.ring].side == SUBJECT
+			? is_in_output(operation, true, c) != is_in_output(operation, false, c)
+			: is_in_output(operation, c, true) != is_in_output(operation, c, false);
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
+		Operation operation,
+		std::vector<OutputRing> &rings) const
+{
+	// A ray, as (vertex, index into its rays).
+	typedef std::pair<unsigned int, unsigned int> ray_ref_type;
+	const ray_ref_type no_ray((std::numeric_limits<unsigned int>::max)(), 0);
+
+	// The ray carrying each piece end (2 * piece + at_end).
+	std::vector<ray_ref_type> ray_of_end(2 * d_pieces.size(), no_ray);
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		const std::vector<Ray> &rays = d_vertices[v].rays;
+		for (unsigned int i = 0; i < rays.size(); ++i)
+		{
+			for (const boost::optional<End> &end : { rays[i].subject_end, rays[i].clip_end })
+			{
+				if (end)
+				{
+					ray_of_end[2 * end->piece + (end->at_end ? 1 : 0)] = ray_ref_type(v, i);
+				}
+			}
+		}
+	}
+
+	// The piece end a ray carries (a common ray: its subject piece's).
+	const auto ray_end = [this](const ray_ref_type &ray_ref)
+	{
+		const Ray &ray = d_vertices[ray_ref.first].rays[ray_ref.second];
+		return ray.subject_end ? *ray.subject_end : *ray.clip_end;
+	};
+
+	//
+	// Pair the kept ends at every vertex (phase4b-design.md section 3.10's table).
+	//
+	std::vector<std::vector<boost::optional<unsigned int>>> partner(d_vertices.size());
+	unsigned int num_pairing_failures = 0;
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		const Vertex &vertex = d_vertices[v];
+		const std::vector<Ray> &rays = vertex.rays;
+		const unsigned int num_rays = rays.size();
+		partner[v].assign(num_rays, boost::none);
+		if (num_rays == 0)
+		{
+			continue;
+		}
+
+		std::vector<unsigned int> kept;
+		bool unresolved = false;
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			const boost::optional<bool> keep =
+					is_kept(d_pieces[ray_end(ray_ref_type(v, i)).piece], operation);
+			if (!keep)
+			{
+				unresolved = true;
+			}
+			else if (*keep)
+			{
+				kept.push_back(i);
+			}
+		}
+		if (unresolved)
+		{
+			++d_diagnostics.unresolved_vertices;
+			++num_pairing_failures;
+			continue;
+		}
+		if (kept.size() % 2 != 0)
+		{
+			++num_pairing_failures;
+			continue;
+		}
+		if (kept.empty())
+		{
+			continue;
+		}
+
+		const auto pair = [&](unsigned int a, unsigned int b)
+		{
+			partner[v][a] = b;
+			partner[v][b] = a;
+		};
+
+		// The free rule's vertex: four ends, two of each input, none common.
+		std::vector<unsigned int> subject_rays, clip_rays;
+		bool any_common = false;
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			any_common = any_common || rays[i].is_common();
+			(rays[i].subject_end ? subject_rays : clip_rays).push_back(i);
+		}
+		const auto inside = [&](unsigned int i)
+		{
+			return d_pieces[ray_end(ray_ref_type(v, i)).piece].piece_class == CLASS_INSIDE;
+		};
+		if (num_rays == 4 && !any_common && subject_rays.size() == 2)
+		{
+			if (kept.size() == 2)
+			{
+				pair(kept[0], kept[1]);
+			}
+			else if (inside(subject_rays[0]) != inside(subject_rays[1]))
+			{
+				// A crossing: the sector (mP, mQ) in the output is bounded by the subject ray whose
+				// class is mQ and the clip ray whose class is mP; pair those.
+				for (bool m_subject : { false, true })
+				{
+					for (bool m_clip : { false, true })
+					{
+						if (is_in_output(operation, m_subject, m_clip))
+						{
+							const unsigned int s = (inside(subject_rays[0]) == m_clip)
+									? subject_rays[0]
+									: subject_rays[1];
+							const unsigned int c = (inside(clip_rays[0]) == m_subject)
+									? clip_rays[0]
+									: clip_rays[1];
+							pair(s, c);
+						}
+					}
+				}
+			}
+			else
+			{
+				// A bounce: each input's two ends pair (the split pairing, walk-through 6.4).
+				pair(subject_rays[0], subject_rays[1]);
+				pair(clip_rays[0], clip_rays[1]);
+			}
+			continue;
+		}
+
+		if (kept.size() == 2)
+		{
+			// One pairing, no geometry (also a chain-interior vertex, where only the memberships'
+			// xor is known).
+			pair(kept[0], kept[1]);
+			continue;
+		}
+
+		if (!any_common && (subject_rays.empty() || clip_rays.empty()))
+		{
+			//
+			// Only one input has ends here (the other's were a loop or a spike), so the vertex is
+			// no intersection for linking: ring continuity (run 3 section 5). Each kept end pairs
+			// with the end of the next non-internal piece of its ring beyond it, at the same stop.
+			//
+			bool ok = true;
+			for (unsigned int i : kept)
+			{
+				const End end = ray_end(ray_ref_type(v, i));
+				const unsigned int ring = d_pieces[end.piece].ring;
+				const std::pair<unsigned int, unsigned int> range = ring_piece_range(ring);
+				const unsigned int num_ring_pieces = range.second - range.first;
+				unsigned int p = end.piece;
+				do
+				{
+					p = range.first + (end.at_end
+							? (p - range.first + 1) % num_ring_pieces
+							: (p - range.first + num_ring_pieces - 1) % num_ring_pieces);
+				}
+				while (d_pieces[p].internal && p != end.piece);
+
+				const ray_ref_type neighbour = ray_of_end[2 * p + (end.at_end ? 0 : 1)];
+				if (neighbour.first != v ||
+					!is_kept(d_pieces[p], operation).get_value_or(false))
+				{
+					ok = false;
+					break;
+				}
+				pair(i, neighbour.second);
+			}
+			if (!ok)
+			{
+				++num_pairing_failures;
+			}
+			continue;
+		}
+
+		//
+		// Otherwise the sector walk (without the free rule) on the order used: the output
+		// membership of each sector is f(in subject, in clip); a ray is kept iff the output differs
+		// across it (counted if not as the keep-rule says); consecutive kept rays pair across
+		// output sectors.
+		//
+		const VertexSolution solution = solve_vertex(v, nullptr, false/*use_free_rule*/);
+		bool known = solution.consistent;
+		for (unsigned int j = 0; known && j < num_rays; ++j)
+		{
+			known = solution.in_subject[j] && solution.in_clip[j];
+		}
+		if (!known)
+		{
+			++d_diagnostics.unresolved_vertices;
+			++num_pairing_failures;
+			continue;
+		}
+
+		std::vector<bool> out(num_rays);
+		for (unsigned int j = 0; j < num_rays; ++j)
+		{
+			out[j] = is_in_output(operation, *solution.in_subject[j], *solution.in_clip[j]);
+		}
+		// Position j's ray separates sector j - 1 (before it) from sector j (after it).
+		std::vector<unsigned int> sequence;
+		for (unsigned int j = 0; j < num_rays; ++j)
+		{
+			if (out[(j + num_rays - 1) % num_rays] != out[j])
+			{
+				sequence.push_back(j);
+			}
+		}
+		std::vector<unsigned int> kept_by_sector;
+		for (unsigned int j : sequence)
+		{
+			kept_by_sector.push_back(solution.order[j]);
+		}
+		std::sort(kept_by_sector.begin(), kept_by_sector.end());
+		if (kept_by_sector != kept)
+		{
+			++d_diagnostics.keep_mismatches;
+		}
+		if (sequence.size() % 2 != 0)
+		{
+			++num_pairing_failures;
+			continue;
+		}
+		// Start at a kept ray followed by an output sector.
+		if (!out[sequence.front()])
+		{
+			std::rotate(sequence.begin(), sequence.begin() + 1, sequence.end());
+		}
+		for (unsigned int j = 0; j < sequence.size(); j += 2)
+		{
+			pair(solution.order[sequence[j]], solution.order[sequence[j + 1]]);
+		}
+	}
+
+	//
+	// Walk the pairs into rings: from an unused paired ray, along its piece (its interior stops,
+	// reversed when leaving from the piece's end), to the ray at the piece's other end, then to
+	// that ray's partner; until back at the start. Deterministic: rays in vertex and ray order.
+	//
+	class Entry
+	{
+	public:
+		boost::optional<unsigned int> vertex;   // an overlay vertex, or an interior stop's point
+		PointOnSphere position;
+	};
+	std::vector<std::vector<Entry>> walked;
+	std::vector<std::vector<bool>> used(d_vertices.size());
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		used[v].assign(d_vertices[v].rays.size(), false);
+	}
+	for (unsigned int v0 = 0; v0 < d_vertices.size(); ++v0)
+	{
+		for (unsigned int i0 = 0; i0 < d_vertices[v0].rays.size(); ++i0)
+		{
+			if (used[v0][i0] || !partner[v0][i0])
+			{
+				continue;
+			}
+
+			std::vector<Entry> ring;
+			ray_ref_type ray(v0, i0);
+			bool closed = false;
+			for (unsigned int guard = 0; guard <= 2 * d_pieces.size(); ++guard)
+			{
+				used[ray.first][ray.second] = true;
+				const End end = ray_end(ray);
+				const Piece &piece = d_pieces[end.piece];
+				ring.push_back(Entry{ ray.first, d_vertices[ray.first].position });
+
+				// The piece's interior stops, in the direction walked.
+				std::vector<unsigned int> stops;
+				const RingView &ring_view = d_rings[piece.ring];
+				for (unsigned int s = piece.start_stop; ; )
+				{
+					s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+					if (s == piece.end_stop)
+					{
+						break;
+					}
+					stops.push_back(s);
+				}
+				if (end.at_end)
+				{
+					std::reverse(stops.begin(), stops.end());
+				}
+				for (unsigned int s : stops)
+				{
+					ring.push_back(Entry{ boost::none, d_stops[s].position });
+				}
+
+				const ray_ref_type arrive = ray_of_end[2 * end.piece + (end.at_end ? 0 : 1)];
+				used[arrive.first][arrive.second] = true;
+				const boost::optional<unsigned int> next = partner[arrive.first][arrive.second];
+				if (!next)
+				{
+					++num_pairing_failures;
+					break;
+				}
+				ray = ray_ref_type(arrive.first, *next);
+				if (ray == ray_ref_type(v0, i0))
+				{
+					closed = true;
+					break;
+				}
+			}
+			if (!closed)
+			{
+				++num_pairing_failures;
+				continue;
+			}
+			walked.push_back(ring);
+		}
+	}
+
+	// A kept closed piece (a ring with no record) is a ring on its own.
+	for (const Piece &piece : d_pieces)
+	{
+		if (piece.closed &&
+			d_rings[piece.ring].closed &&
+			is_kept(piece, operation).get_value_or(false))
+		{
+			std::vector<Entry> ring;
+			const RingView &ring_view = d_rings[piece.ring];
+			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+			{
+				ring.push_back(Entry{ boost::none, d_stops[s].position });
+			}
+			walked.push_back(ring);
+		}
+	}
+
+	//
+	// Split (phase4b-design.md section 3.11; walk-through 6.4, Q11): a ring passing an overlay
+	// vertex twice (by identity) is v, A, v, B; it is cut into v, A and v, B, until no ring repeats
+	// a vertex.
+	//
+	std::vector<std::vector<Entry>> split;
+	while (!walked.empty())
+	{
+		std::vector<Entry> ring = walked.back();
+		walked.pop_back();
+
+		std::vector<int> first_seen(d_vertices.size(), -1);
+		boost::optional<std::pair<unsigned int, unsigned int>> cut;
+		for (unsigned int j = 0; j < ring.size(); ++j)
+		{
+			if (!ring[j].vertex)
+			{
+				continue;
+			}
+			if (first_seen[*ring[j].vertex] >= 0)
+			{
+				cut = std::make_pair(static_cast<unsigned int>(first_seen[*ring[j].vertex]), j);
+				break;
+			}
+			first_seen[*ring[j].vertex] = j;
+		}
+		if (!cut)
+		{
+			split.push_back(ring);
+			continue;
+		}
+		++d_diagnostics.rings_split;
+		walked.push_back(std::vector<Entry>(ring.begin() + cut->first, ring.begin() + cut->second));
+		std::vector<Entry> rest(ring.begin() + cut->second, ring.end());
+		rest.insert(rest.end(), ring.begin(), ring.begin() + cut->first);
+		walked.push_back(rest);
+	}
+	std::reverse(split.begin(), split.end());  // in walk order
+
+	//
+	// Clean-up (section 3.11), last and counted: consecutive repeated positions (exact: they come
+	// from one stored position) and a last position equal to the first are removed; a ring with
+	// fewer than three distinct positions (a region the records had already collapsed) is dropped.
+	//
+	for (const std::vector<Entry> &ring : split)
+	{
+		std::vector<PointOnSphere> points;
+		for (const Entry &entry : ring)
+		{
+			if (!points.empty() && is_same_position(points.back(), entry.position))
+			{
+				++d_diagnostics.repeated_positions_removed;
+				continue;
+			}
+			points.push_back(entry.position);
+		}
+		while (points.size() > 1 && is_same_position(points.front(), points.back()))
+		{
+			points.pop_back();
+			++d_diagnostics.repeated_positions_removed;
+		}
+
+		unsigned int num_distinct = 0;
+		for (unsigned int j = 0; j < points.size() && num_distinct < 3; ++j)
+		{
+			bool repeated = false;
+			for (unsigned int k = 0; k < j; ++k)
+			{
+				repeated = repeated || is_same_position(points[k], points[j]);
+			}
+			num_distinct += repeated ? 0 : 1;
+		}
+		if (num_distinct < 3)
+		{
+			++d_diagnostics.collapsed_rings_dropped;
+			continue;
+		}
+
+		rings.push_back(OutputRing{ points });
+	}
+
+	d_diagnostics.pairing_failures += num_pairing_failures;
+	if (num_pairing_failures != 0 && d_options.throw_if_inconsistent)
+	{
+		throw InconsistentOverlayException(
+				GPLATES_EXCEPTION_SOURCE,
+				"The overlay's kept piece ends could not be paired into rings at "
+						+ std::to_string(num_pairing_failures) + " vertices.",
+				d_diagnostics,
+				boost::none);
+	}
+}
+
+
+std::pair<unsigned int, unsigned int>
+GPlatesMaths::PolygonOverlay::Overlay::ring_piece_range(
+		unsigned int ring) const
+{
+	// The pieces are stored ring by ring.
+	unsigned int first = 0;
+	while (first < d_pieces.size() && d_pieces[first].ring != ring)
+	{
+		++first;
+	}
+	unsigned int end = first;
+	while (end < d_pieces.size() && d_pieces[end].ring == ring)
+	{
+		++end;
+	}
+	return std::make_pair(first, end);
 }

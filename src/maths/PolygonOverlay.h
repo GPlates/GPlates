@@ -93,6 +93,45 @@ namespace GPlatesMaths
 			METHOD_ALONG           // a polyline piece along the clip's boundary
 		};
 
+		/**
+		 * The Boolean operations, each a function f(in subject, in clip) of a point's memberships
+		 * (phase4b-design.md section 5.1). Partitioning's inside is the intersection, its outside
+		 * the difference.
+		 */
+		enum Operation
+		{
+			INTERSECTION,          // p and q
+			DIFFERENCE,            // p and not q (subject minus clip)
+			REVERSE_DIFFERENCE,    // q and not p (clip minus subject)
+			UNION,                 // p or q
+			SYMMETRIC_DIFFERENCE   // p != q
+		};
+
+		//! Whether a point with these memberships is in the output of @a operation.
+		inline
+		bool
+		is_in_output(
+				Operation operation,
+				bool in_subject,
+				bool in_clip)
+		{
+			switch (operation)
+			{
+			case INTERSECTION:
+				return in_subject && in_clip;
+			case DIFFERENCE:
+				return in_subject && !in_clip;
+			case REVERSE_DIFFERENCE:
+				return in_clip && !in_subject;
+			case UNION:
+				return in_subject || in_clip;
+			case SYMMETRIC_DIFFERENCE:
+			default:
+				return in_subject != in_clip;
+			}
+		}
+
+
 		//! Where the subject lies relative to the clip, as a whole.
 		enum Result
 		{
@@ -463,6 +502,14 @@ namespace GPlatesMaths
 			unsigned int one_passage_vertices = 0;
 			unsigned int one_passage_moved = 0;       // its built order is not the measured one
 			unsigned int both_pass_twice = 0;         // both inputs pass more than once
+
+			// Linking, accumulated over every extract.
+			unsigned int pairing_failures = 0;        // vertices whose kept ends did not pair
+			unsigned int unresolved_vertices = 0;     // a vertex with an unclassified piece end
+			unsigned int keep_mismatches = 0;         // kept by the sectors, not by the classes
+			unsigned int rings_split = 0;             // cuts of a ring passing a vertex twice
+			unsigned int repeated_positions_removed = 0;
+			unsigned int collapsed_rings_dropped = 0; // fewer than three distinct positions
 		};
 
 
@@ -522,6 +569,14 @@ namespace GPlatesMaths
 			std::string d_message;
 			Diagnostics d_diagnostics;
 			boost::optional<PointOnSphere> d_vertex_position;
+		};
+
+
+		//! One output ring (phase4b-design.md section 2.8), not yet grouped into polygons.
+		class OutputRing
+		{
+		public:
+			std::vector<PointOnSphere> points;
 		};
 
 
@@ -673,7 +728,25 @@ namespace GPlatesMaths
 			VertexSolution
 			solve_vertex(
 					unsigned int vertex_index,
-					std::vector<Deduction> *deductions = nullptr) const;
+					std::vector<Deduction> *deductions = nullptr,
+					bool use_free_rule = true) const;
+
+
+			/**
+			 * The rings of one operation's output (phase4b-design.md sections 3.10 and 3.11): the
+			 * kept ends paired at every vertex and walked into rings, rings passing a vertex twice
+			 * cut there, repeated positions removed and collapsed rings dropped. Appended to
+			 * @a rings. Not yet grouped into polygons, nor oriented.
+			 *
+			 * Call after @a classify. @throws InconsistentOverlayException if a vertex's ends
+			 * cannot be paired (which consistent classes rule out), unless
+			 * Options::throw_if_inconsistent is false (then counted in the diagnostics, and the
+			 * affected rings left missing).
+			 */
+			void
+			extract_rings(
+					Operation operation,
+					std::vector<OutputRing> &rings) const;
 
 		private:
 
@@ -698,7 +771,8 @@ namespace GPlatesMaths
 
 			std::vector<Piece> d_pieces;
 
-			Diagnostics d_diagnostics;
+			//! Mutable: extract_rings accumulates the linking counters.
+			mutable Diagnostics d_diagnostics;
 
 
 			void
@@ -755,6 +829,17 @@ namespace GPlatesMaths
 			is_inside_other(
 					Side side,
 					const PointOnSphere &point) const;
+
+			//! The pieces of one ring: [first, end) in the piece list.
+			std::pair<unsigned int, unsigned int>
+			ring_piece_range(
+					unsigned int ring) const;
+
+			//! Whether a piece bounds the output of an operation (none while unclassified).
+			boost::optional<bool>
+			is_kept(
+					const Piece &piece,
+					Operation operation) const;
 
 			//! Steps (a) to (e) of classification (phase4b-design.md section 3.7).
 			void
