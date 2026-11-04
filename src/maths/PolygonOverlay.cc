@@ -779,6 +779,25 @@ GPlatesMaths::PolygonOverlay::Overlay::apply_loop_and_spike_rules()
 				*b.end_vertex == *a.start_vertex &&
 				*a.start_vertex != *a.end_vertex)
 			{
+				// Only where the other input passes the tip at most once (two ends of its pieces
+				// not yet internal): with two passages the tip is a self-touch of the other input,
+				// the hairpin can lie between them, and removing it would remove a crossing there
+				// (phase4a-run4.md sections 2.4 and 3.3).
+				const Side side = d_rings[a.ring].side;
+				unsigned int other_ends = 0;
+				for (const End &end : d_vertices[*a.end_vertex].ends)
+				{
+					const Piece &piece = d_pieces[end.piece];
+					if (d_rings[piece.ring].side != side && !piece.internal)
+					{
+						++other_ends;
+					}
+				}
+				if (other_ends > 2)
+				{
+					continue;
+				}
+
 				a.internal = b.internal = true;
 				d_diagnostics.internal_pieces += 2;
 				++d_diagnostics.spikes;
@@ -1093,8 +1112,9 @@ GPlatesMaths::PolygonOverlay::Overlay::build_rays()
 		d_diagnostics.max_ends = (std::max)(d_diagnostics.max_ends, num_ends);
 		vertex.rays = sort_rays_anticlockwise(vertex.position, rays);
 
-		// The bundle rule, at six or more ends (the orders depend on geometry only).
-		if (num_ends >= 6)
+		// The bundle rule, at six or more ends where neither input passes once (the orders depend
+		// on geometry only).
+		if (num_ends >= 6 && !one_passage_side(vertex))
 		{
 			vertex.bundle = build_bundle(vertex);
 		}
@@ -1287,19 +1307,152 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		}
 	}
 
-	// The orders to try: the measured order, or at six or more ends the bundle rule's admissible
-	// orders (the measured one first).
-	std::vector<std::vector<unsigned int>> measured_only;
-	if (!vertex.bundle)
+	std::vector<unsigned int> measured(num_rays);
+	for (unsigned int i = 0; i < num_rays; ++i)
 	{
-		measured_only.assign(1, std::vector<unsigned int>(num_rays));
+		measured[i] = i;
+	}
+
+	//
+	// The one-passage rule (phase4a-run4.md section 3.1; phase4b-design.md 3.7.1, case 1b): at six
+	// or more ends where one input, X, has exactly two (it passes the vertex once), any classes of
+	// the other input's rays can be realised by some order, so the measured order adds nothing and
+	// is not consulted. X's boundary divides the neighbourhood into an inside half and an outside
+	// half; walking the inside half from X's end a to its end b crosses every other ray inside X,
+	// so m_in(b) = m_in(a) xor (number of other rays inside X, mod 2), where m_in(e) is the other
+	// input's membership on the inside-X side of end e: its class for a plain ray, and for a common
+	// ray 1 if same side, 0 if opposite (inside X, the memberships agree iff same side).
+	// Combinatorial; one unknown follows, all known is checked. The order for the linking is built
+	// from the classes: a, the other rays inside X (in measured relative order), b, the rest.
+	//
+	std::vector<std::vector<unsigned int>> built_orders;
+	const boost::optional<Side> once = one_passage_side(vertex);
+	if (once)
+	{
+		solution.one_passage = true;
+
+		std::vector<unsigned int> x_ends;
+		// The other input's rays (never common: a common ray is an end of X).
+		std::vector<unsigned int> others;
 		for (unsigned int i = 0; i < num_rays; ++i)
 		{
-			measured_only[0][i] = i;
+			const bool is_x_end = (*once == SUBJECT)
+					? bool(rays[i].subject_end)
+					: bool(rays[i].clip_end);
+			(is_x_end ? x_ends : others).push_back(i);
+		}
+
+		// The class bit of a ray's piece (a common ray's lives on its subject piece).
+		const auto piece_of = [&rays](unsigned int r)
+		{
+			const Ray &ray = rays[r];
+			return (ray.is_common() || ray.subject_end)
+					? ray.subject_end->piece
+					: ray.clip_end->piece;
+		};
+		const auto m_in = [&](unsigned int r) -> boost::optional<bool>
+		{
+			const Piece &piece = d_pieces[piece_of(r)];
+			if (!piece.is_classified())
+			{
+				return boost::none;
+			}
+			return rays[r].is_common()
+					? piece.common_class == COMMON_SAME_SIDE   // (opposite ? 1 : 0) xor 1
+					: piece.piece_class == CLASS_INSIDE;
+		};
+
+		const unsigned int a = x_ends[0];
+		const unsigned int b = x_ends[1];
+		const boost::optional<bool> m_a = m_in(a);
+		const boost::optional<bool> m_b = m_in(b);
+		bool n_inside = false;
+		std::vector<unsigned int> unknown_others;
+		for (unsigned int r : others)
+		{
+			const Piece &piece = d_pieces[piece_of(r)];
+			if (!piece.is_classified())
+			{
+				unknown_others.push_back(r);
+			}
+			else if (piece.piece_class == CLASS_INSIDE)
+			{
+				n_inside = !n_inside;
+			}
+		}
+
+		const unsigned int num_unknowns = (m_a ? 0 : 1) + (m_b ? 0 : 1) + unknown_others.size();
+		if (num_unknowns == 0 && *m_b != (*m_a != n_inside))
+		{
+			solution.consistent = false;
+		}
+		else if (num_unknowns == 1 && deductions)
+		{
+			// The one unknown term follows from the relation.
+			const auto deduce_end = [&](unsigned int r, bool m)
+			{
+				// For a common ray, m_in = same side, so the deduced class is m itself.
+				deductions->push_back(Deduction{
+						piece_of(r),
+						m,
+						rays[r].is_common() ? METHOD_SECTOR : METHOD_DEDUCED});
+			};
+			if (!m_a)
+			{
+				deduce_end(a, *m_b != n_inside);
+			}
+			else if (!m_b)
+			{
+				deduce_end(b, *m_a != n_inside);
+			}
+			else
+			{
+				// The parity the unknown ray must contribute: inside X iff it is odd.
+				deductions->push_back(Deduction{
+						piece_of(unknown_others.front()),
+						(*m_a != *m_b) != n_inside,
+						METHOD_DEDUCED});
+			}
+		}
+
+		if (!solution.consistent || num_unknowns != 0)
+		{
+			solution.order = measured;
+			solution.in_subject.assign(num_rays, boost::none);
+			solution.in_clip.assign(num_rays, boost::none);
+			solution.num_consistent_orders = solution.consistent ? 1 : 0;
+			return solution;
+		}
+
+		// Every class known and consistent: the order for the linking, and its mirror (the other
+		// realisation, if the walk finds no placement on the first).
+		std::vector<unsigned int> inside, outside;
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			const unsigned int r = (a + i) % num_rays;  // the measured order, from a
+			if (std::find(others.begin(), others.end(), r) != others.end())
+			{
+				(d_pieces[piece_of(r)].piece_class == CLASS_INSIDE ? inside : outside).push_back(r);
+			}
+		}
+		for (unsigned int mirror = 0; mirror < 2; ++mirror)
+		{
+			const std::vector<unsigned int> &first = mirror ? outside : inside;
+			const std::vector<unsigned int> &second = mirror ? inside : outside;
+			std::vector<unsigned int> order(1, a);
+			order.insert(order.end(), first.begin(), first.end());
+			order.push_back(b);
+			order.insert(order.end(), second.begin(), second.end());
+			built_orders.push_back(order);
 		}
 	}
-	const std::vector<std::vector<unsigned int>> &orders =
-			vertex.bundle ? vertex.bundle->orders : measured_only;
+
+	// The orders to try: the one-passage rule's, or at six or more ends the bundle rule's
+	// admissible orders (the measured one first), or the measured order.
+	const std::vector<std::vector<unsigned int>> measured_only(1, measured);
+	const std::vector<std::vector<unsigned int>> &orders = once
+			? built_orders
+			: (vertex.bundle ? vertex.bundle->orders : measured_only);
 
 	// For each order, the prefix parities, and the starts (memberships of the sector after the
 	// order's first ray) that meet every constraint.
@@ -1398,7 +1551,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		return count;
 	};
 	unsigned int chosen = consistent_orders.front();
-	if (vertex.bundle && consistent_orders.size() > 1)
+	if (!once && vertex.bundle && consistent_orders.size() > 1)
 	{
 		unsigned int fewest = inversions(orders[chosen]);
 		for (unsigned int o : consistent_orders)
@@ -1411,8 +1564,21 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 			}
 		}
 	}
-	solution.num_consistent_orders = consistent_orders.size();
-	solution.moved = (chosen != 0);
+	solution.num_consistent_orders = once ? 1 : consistent_orders.size();
+	if (once)
+	{
+		// Whether the built order differs from the measured one, cyclically.
+		const std::vector<unsigned int> &order = orders[chosen];
+		const unsigned int start = std::find(order.begin(), order.end(), 0u) - order.begin();
+		for (unsigned int i = 0; i < num_rays; ++i)
+		{
+			solution.moved = solution.moved || order[(start + i) % num_rays] != i;
+		}
+	}
+	else
+	{
+		solution.moved = (chosen != 0);
+	}
 
 	if (deductions)
 	{
@@ -1685,6 +1851,20 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 		{
 			++d_diagnostics.check_failures;
 		}
+		if (solution.one_passage)
+		{
+			++d_diagnostics.one_passage_vertices;
+			d_diagnostics.one_passage_moved += (solution.consistent && solution.moved) ? 1 : 0;
+		}
+		{
+			unsigned int subject_ends = 0, clip_ends = 0;
+			for (const Ray &ray : d_vertices[v].rays)
+			{
+				subject_ends += ray.subject_end ? 1 : 0;
+				clip_ends += ray.clip_end ? 1 : 0;
+			}
+			d_diagnostics.both_pass_twice += (subject_ends >= 4 && clip_ends >= 4) ? 1 : 0;
+		}
 
 		const boost::optional<Bundle> &bundle = d_vertices[v].bundle;
 		if (bundle && !bundle->floating.empty())
@@ -1875,7 +2055,9 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 	std::vector<unsigned int> anchored_by_certainty;
 	for (unsigned int r : certainty)
 	{
-		bool separable = has_direction(r);
+		// A ray with no direction, or a cone of pi (an arc no longer than its offset), never
+		// anchors (phase4a-run4.md).
+		bool separable = has_direction(r) && rays[r].cone < PI;
 		for (unsigned int a : anchored_by_certainty)
 		{
 			if (!separable)
@@ -2064,4 +2246,33 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 	}
 	bundle.orders = orders;
 	return bundle;
+}
+
+
+boost::optional<GPlatesMaths::PolygonOverlay::Side>
+GPlatesMaths::PolygonOverlay::Overlay::one_passage_side(
+		const Vertex &vertex)
+{
+	// Ends per input, a common ray counting as an end of both.
+	unsigned int subject_ends = 0;
+	unsigned int clip_ends = 0;
+	for (const Ray &ray : vertex.rays)
+	{
+		subject_ends += ray.subject_end ? 1 : 0;
+		clip_ends += ray.clip_end ? 1 : 0;
+	}
+
+	if (subject_ends + clip_ends < 6)
+	{
+		return boost::none;
+	}
+	if (subject_ends == 2 && clip_ends >= 4)
+	{
+		return SUBJECT;
+	}
+	if (clip_ends == 2 && subject_ends >= 4)
+	{
+		return CLIP;
+	}
+	return boost::none;
 }

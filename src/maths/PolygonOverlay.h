@@ -403,8 +403,12 @@ namespace GPlatesMaths
 			//! The number of orders with a consistent placement (0 if inconsistent; 1 unbundled).
 			unsigned int num_consistent_orders = 0;
 
-			//! The order used is not the measured one (the bundle rule moved a ray).
+			//! The order used is not the measured one (the bundle rule moved a ray, or the
+			//! one-passage rule built another).
 			bool moved = false;
+
+			//! Solved by the one-passage rule (six or more ends, one input passing once).
+			bool one_passage = false;
 		};
 
 
@@ -446,6 +450,11 @@ namespace GPlatesMaths
 			unsigned int bundle_ambiguous = 0;        // vertices with several consistent orders
 			unsigned int bundle_capped = 0;           // vertices with too many floating rays
 			unsigned int bundle_moved = 0;            // vertices not using the measured order
+
+			// The one-passage rule, counted once per vertex by the final check.
+			unsigned int one_passage_vertices = 0;
+			unsigned int one_passage_moved = 0;       // its built order is not the measured one
+			unsigned int both_pass_twice = 0;         // both inputs pass more than once
 		};
 
 
@@ -663,6 +672,12 @@ namespace GPlatesMaths
 			sort_rays_anticlockwise(
 					const PointOnSphere &centre,
 					const std::vector<Ray> &rays);
+
+			//! The input with exactly two ends at a vertex of six or more ends (it passes once).
+			static
+			boost::optional<Side>
+			one_passage_side(
+					const Vertex &vertex);
 
 			//! The bundle rule's anchored and floating rays and admissible orders at a vertex.
 			static

@@ -4858,10 +4858,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -4898,10 +4898,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -4938,10 +4938,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -4978,10 +4978,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5018,10 +5018,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5058,10 +5058,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5098,10 +5098,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5138,10 +5138,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5178,10 +5178,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5218,10 +5218,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5258,10 +5258,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5298,10 +5298,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5338,10 +5338,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5378,10 +5378,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5418,10 +5418,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5458,10 +5458,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5498,10 +5498,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5538,10 +5538,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5578,10 +5578,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5618,10 +5618,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5658,10 +5658,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5698,10 +5698,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5738,10 +5738,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -5778,10 +5778,10 @@ piece P 0 0 0 0 out vertex 7 8,9
 piece P 0 0 1 0 none none 8,9 10,11
 piece P 0 0 1 0 none none 10,11 12,13
 piece P 0 0 1 0 none none 12,13 15,16
-piece P 0 0 0 0 in deduced 15,16 14
+piece P 0 0 0 0 in midpoint 15,16 14
 piece P 0 0 0 1 opposite sector 14 17
 piece P 0 0 0 1 opposite sector 17 18
-piece P 0 0 0 0 in deduced 18 19,20
+piece P 0 0 0 0 in midpoint 18 19,20
 piece P 0 0 1 0 none none 19,20 21,22
 piece P 0 0 0 0 in vertex 21,22 23
 piece P 0 0 0 0 out vertex 23 0
@@ -7770,8 +7770,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -7791,9 +7791,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -7810,8 +7810,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -7831,9 +7831,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -7850,8 +7850,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -7871,9 +7871,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -7890,8 +7890,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -7911,9 +7911,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -7930,8 +7930,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -7951,9 +7951,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -7970,8 +7970,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -7991,9 +7991,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -8010,8 +8010,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -8031,9 +8031,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -8050,8 +8050,8 @@ piece P 0 0 0 1 same sector 4 3
 piece P 0 0 0 1 same sector 3 5
 piece P 0 0 0 0 out vertex 5 6
 piece P 0 0 0 1 same sector 6 7,8
-piece P 0 0 0 1 opposite sector 7,8 9
-piece P 0 0 0 1 opposite sector 9 16,18
+piece P 0 0 0 1 same sector 7,8 9
+piece P 0 0 0 1 same sector 9 16,18
 piece P 0 0 0 1 same sector 16,18 17
 piece P 0 0 0 1 same sector 17 15
 piece P 0 0 0 1 same sector 15 14
@@ -8071,9 +8071,9 @@ piece Q 0 0 0 1 same sector 14 15
 piece Q 0 0 0 1 same sector 15 17
 piece Q 0 0 0 1 same sector 17 16
 piece Q 0 0 0 0 in midpoint 16 7
-piece Q 0 0 0 1 opposite sector 7 9
-piece Q 0 0 0 1 opposite sector 9 18
-piece Q 0 0 0 0 out deduced 18 8
+piece Q 0 0 0 1 same sector 7 9
+piece Q 0 0 0 1 same sector 9 18
+piece Q 0 0 0 0 in midpoint 18 8
 piece Q 0 0 0 1 same sector 8 6
 piece Q 0 0 0 0 in deduced 6 5
 piece Q 0 0 0 1 same sector 5 3
@@ -8309,12 +8309,12 @@ LL 13 3
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8325,7 +8325,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8334,12 +8334,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8350,7 +8350,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8359,12 +8359,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8375,7 +8375,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8384,12 +8384,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8400,7 +8400,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8409,12 +8409,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8425,7 +8425,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8434,12 +8434,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8450,7 +8450,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8459,12 +8459,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8475,7 +8475,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8484,12 +8484,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8500,7 +8500,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8509,12 +8509,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8525,7 +8525,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8534,12 +8534,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8550,7 +8550,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8559,12 +8559,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8575,7 +8575,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8584,12 +8584,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8600,7 +8600,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8609,12 +8609,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8625,7 +8625,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8634,12 +8634,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8650,7 +8650,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8659,12 +8659,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8675,7 +8675,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8684,12 +8684,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8700,7 +8700,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8709,12 +8709,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8725,7 +8725,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8734,12 +8734,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8750,7 +8750,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8759,12 +8759,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8775,7 +8775,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8784,12 +8784,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8800,7 +8800,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8809,12 +8809,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8825,7 +8825,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8834,12 +8834,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8850,7 +8850,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8859,12 +8859,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8875,7 +8875,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -8884,12 +8884,12 @@ endorder
 order 0 0
 piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 1 0 none none 1 3,4
-piece P 0 0 0 0 out deduced 3,4 2
+piece P 0 0 0 0 in midpoint 3,4 2
 piece P 0 0 0 0 in vertex 2 7
 piece P 0 0 0 0 in deduced 7 6
 piece P 0 0 0 1 same sector 6 5
 piece P 0 0 0 0 out vertex 5 8
-piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 in midpoint 8 9
 piece P 0 0 1 0 none none 9 10
 piece P 0 0 0 0 in deduced 10 11
 piece P 0 0 0 0 out vertex 11 0
@@ -8900,7 +8900,7 @@ piece Q 0 0 0 0 in deduced 11 13
 piece Q 0 0 0 0 out midpoint 13 9,10
 piece Q 0 0 0 0 out vertex 9,10 5,8
 piece Q 0 0 0 1 same sector 5,8 2,6
-piece Q 0 0 0 0 in deduced 2,6 3,7
+piece Q 0 0 0 0 out midpoint 2,6 3,7
 piece Q 0 0 1 0 none none 3,7 1,4
 piece Q 0 0 0 0 out midpoint 1,4 12
 piece Q 0 0 0 0 in deduced 12 0
@@ -11612,8 +11612,8 @@ LL 2 3
 LL 3 3
 LL 3 7
 order 0 0
-piece P 0 0 0 1 opposite sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 same sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 5
@@ -11629,15 +11629,15 @@ piece Q 0 0 0 0 in deduced 6 0
 piece Q 0 0 0 0 out vertex 0 9
 piece Q 0 0 0 0 in deduced 9 8
 piece Q 0 0 0 0 out vertex 8 7
-piece Q 1 0 0 1 opposite sector 1 2
+piece Q 1 0 0 1 same sector 1 2
 piece Q 1 0 0 0 out vertex 2 10
 piece Q 1 0 0 0 in vertex 10 1
-piece Q 2 0 0 0 out deduced 4 3
+piece Q 2 0 0 0 in deduced 4 3
 piece Q 2 0 0 0 in vertex 3 4
 endorder
 order 0 0
 piece P 0 0 0 1 opposite sector 1,3 4
-piece P 0 0 0 0 in deduced 4 2
+piece P 0 0 0 0 in midpoint 4 2
 piece P 0 0 0 0 in deduced 2 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 5
@@ -11660,8 +11660,8 @@ piece Q 2 0 0 1 opposite sector 4 3
 piece Q 2 0 0 0 in vertex 3 4
 endorder
 order 0 0
-piece P 0 0 0 1 opposite sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 same sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 5
@@ -11677,15 +11677,15 @@ piece Q 0 0 0 0 in deduced 6 0
 piece Q 0 0 0 0 out vertex 0 9
 piece Q 0 0 0 0 in deduced 9 8
 piece Q 0 0 0 0 out vertex 8 7
-piece Q 1 0 0 1 opposite sector 1 2
+piece Q 1 0 0 1 same sector 1 2
 piece Q 1 0 0 0 out vertex 2 10
 piece Q 1 0 0 0 in vertex 10 1
-piece Q 2 0 0 0 out deduced 4 3
+piece Q 2 0 0 0 in deduced 4 3
 piece Q 2 0 0 0 in vertex 3 4
 endorder
 order 0 0
 piece P 0 0 0 1 opposite sector 1,3 4
-piece P 0 0 0 0 in deduced 4 2
+piece P 0 0 0 0 in midpoint 4 2
 piece P 0 0 0 0 in deduced 2 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 5
@@ -11900,8 +11900,8 @@ LL 2 7
 LL 3 3
 LL 3 7
 order 0 0
-piece P 0 0 0 1 opposite sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 same sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 8
@@ -11922,18 +11922,18 @@ piece Q 0 0 0 0 out vertex 0 13
 piece Q 0 0 0 0 in deduced 13 10
 piece Q 0 0 0 0 out vertex 10 9
 piece Q 1 0 0 0 in vertex 11 1
-piece Q 1 0 0 1 opposite sector 1 2
+piece Q 1 0 0 1 same sector 1 2
 piece Q 1 0 0 0 out vertex 2 14
 piece Q 1 0 0 0 in deduced 14 12
 piece Q 1 0 0 0 out vertex 12 11
 piece Q 2 0 0 0 out vertex 7 8
 piece Q 2 0 0 0 in deduced 8 4
-piece Q 2 0 0 0 out deduced 4 3
+piece Q 2 0 0 0 in deduced 4 3
 piece Q 2 0 0 0 in vertex 3 7
 endorder
 order 0 0
-piece P 0 0 0 1 opposite sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 same sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 8
@@ -11954,13 +11954,13 @@ piece Q 0 0 0 0 out vertex 0 13
 piece Q 0 0 0 0 in deduced 13 10
 piece Q 0 0 0 0 out vertex 10 9
 piece Q 1 0 0 0 in vertex 11 1
-piece Q 1 0 0 1 opposite sector 1 2
+piece Q 1 0 0 1 same sector 1 2
 piece Q 1 0 0 0 out vertex 2 14
 piece Q 1 0 0 0 in deduced 14 12
 piece Q 1 0 0 0 out vertex 12 11
 piece Q 2 0 0 0 out vertex 7 8
 piece Q 2 0 0 0 in deduced 8 4
-piece Q 2 0 0 0 out deduced 4 3
+piece Q 2 0 0 0 in deduced 4 3
 piece Q 2 0 0 0 in vertex 3 7
 endorder
 endcase
@@ -12407,8 +12407,8 @@ LL 2 1
 LL 3 1
 LL 3 9
 order 0 0
-piece P 0 0 0 1 same sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 opposite sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 5
 piece P 0 0 0 0 in deduced 5 6
@@ -12424,15 +12424,15 @@ piece Q 0 0 0 0 out vertex 9 0
 piece Q 0 0 0 0 in deduced 0 5
 piece Q 0 0 0 0 out vertex 5 6
 piece Q 0 0 0 0 in vertex 6 7
-piece Q 1 0 0 1 same sector 1 2
+piece Q 1 0 0 1 opposite sector 1 2
 piece Q 1 0 0 0 in vertex 2 1
 piece Q 2 0 0 0 out vertex 10 4
-piece Q 2 0 0 0 in deduced 4 3
+piece Q 2 0 0 0 out deduced 4 3
 piece Q 2 0 0 0 in vertex 3 10
 endorder
 order 0 0
 piece P 0 0 0 1 same sector 1,3 4
-piece P 0 0 0 0 in deduced 4 2
+piece P 0 0 0 0 in midpoint 4 2
 piece P 0 0 0 0 in deduced 2 0
 piece P 0 0 0 0 out vertex 0 5
 piece P 0 0 0 0 in deduced 5 6
@@ -12455,8 +12455,8 @@ piece Q 2 0 0 1 same sector 4 3
 piece Q 2 0 0 0 in vertex 3 10
 endorder
 order 0 0
-piece P 0 0 0 1 same sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 opposite sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 5
 piece P 0 0 0 0 in deduced 5 6
@@ -12472,15 +12472,15 @@ piece Q 0 0 0 0 out vertex 9 0
 piece Q 0 0 0 0 in deduced 0 5
 piece Q 0 0 0 0 out vertex 5 6
 piece Q 0 0 0 0 in vertex 6 7
-piece Q 1 0 0 1 same sector 1 2
+piece Q 1 0 0 1 opposite sector 1 2
 piece Q 1 0 0 0 in vertex 2 1
 piece Q 2 0 0 0 out vertex 10 4
-piece Q 2 0 0 0 in deduced 4 3
+piece Q 2 0 0 0 out deduced 4 3
 piece Q 2 0 0 0 in vertex 3 10
 endorder
 order 0 0
 piece P 0 0 0 1 same sector 1,3 4
-piece P 0 0 0 0 in deduced 4 2
+piece P 0 0 0 0 in midpoint 4 2
 piece P 0 0 0 0 in deduced 2 0
 piece P 0 0 0 0 out vertex 0 5
 piece P 0 0 0 0 in deduced 5 6
@@ -12547,13 +12547,13 @@ piece P 0 0 0 0 in deduced 3 2
 piece P 0 0 0 0 out vertex 2 5
 piece P 0 0 0 0 in deduced 5 4
 piece P 0 0 0 0 out vertex 4 0
-piece P 1 0 0 1 opposite sector 6 7
+piece P 1 0 0 1 same sector 6 7
 piece P 1 0 0 0 out vertex 7 8
 piece P 1 0 0 0 in vertex 8 6
-piece P 2 0 0 0 out deduced 9 10
+piece P 2 0 0 0 in deduced 9 10
 piece P 2 0 0 0 in vertex 10 9
-piece Q 0 0 0 1 opposite sector 6,10 7
-piece Q 0 0 0 0 out deduced 7 9
+piece Q 0 0 0 1 same sector 6,10 7
+piece Q 0 0 0 0 in midpoint 7 9
 piece Q 0 0 0 0 in deduced 9 2
 piece Q 0 0 0 0 out vertex 2 3
 piece Q 0 0 0 0 in deduced 3 1
@@ -12571,13 +12571,13 @@ piece P 0 0 0 0 in deduced 3 2
 piece P 0 0 0 0 out vertex 2 5
 piece P 0 0 0 0 in deduced 5 4
 piece P 0 0 0 0 out vertex 4 0
-piece P 1 0 0 0 in deduced 6 7
+piece P 1 0 0 0 out deduced 6 7
 piece P 1 0 0 0 out vertex 7 8
 piece P 1 0 0 0 in vertex 8 6
-piece P 2 0 0 1 same sector 9 10
+piece P 2 0 0 1 opposite sector 9 10
 piece P 2 0 0 0 in vertex 10 9
-piece Q 0 0 0 1 same sector 6,10 9
-piece Q 0 0 0 0 out deduced 9 7
+piece Q 0 0 0 1 opposite sector 6,10 9
+piece Q 0 0 0 0 in midpoint 9 7
 piece Q 0 0 0 0 in deduced 7 2
 piece Q 0 0 0 0 out vertex 2 3
 piece Q 0 0 0 0 in deduced 3 1
@@ -12595,13 +12595,13 @@ piece P 0 0 0 0 in deduced 3 2
 piece P 0 0 0 0 out vertex 2 5
 piece P 0 0 0 0 in deduced 5 4
 piece P 0 0 0 0 out vertex 4 0
-piece P 1 0 0 1 opposite sector 6 7
+piece P 1 0 0 1 same sector 6 7
 piece P 1 0 0 0 out vertex 7 8
 piece P 1 0 0 0 in vertex 8 6
-piece P 2 0 0 0 out deduced 9 10
+piece P 2 0 0 0 in deduced 9 10
 piece P 2 0 0 0 in vertex 10 9
-piece Q 0 0 0 1 opposite sector 6,10 7
-piece Q 0 0 0 0 out deduced 7 9
+piece Q 0 0 0 1 same sector 6,10 7
+piece Q 0 0 0 0 in midpoint 7 9
 piece Q 0 0 0 0 in deduced 9 2
 piece Q 0 0 0 0 out vertex 2 3
 piece Q 0 0 0 0 in deduced 3 1
@@ -12619,13 +12619,13 @@ piece P 0 0 0 0 in deduced 3 2
 piece P 0 0 0 0 out vertex 2 5
 piece P 0 0 0 0 in deduced 5 4
 piece P 0 0 0 0 out vertex 4 0
-piece P 1 0 0 0 in deduced 6 7
+piece P 1 0 0 0 out deduced 6 7
 piece P 1 0 0 0 out vertex 7 8
 piece P 1 0 0 0 in vertex 8 6
-piece P 2 0 0 1 same sector 9 10
+piece P 2 0 0 1 opposite sector 9 10
 piece P 2 0 0 0 in vertex 10 9
-piece Q 0 0 0 1 same sector 6,10 9
-piece Q 0 0 0 0 out deduced 9 7
+piece Q 0 0 0 1 opposite sector 6,10 9
+piece Q 0 0 0 0 in midpoint 9 7
 piece Q 0 0 0 0 in deduced 7 2
 piece Q 0 0 0 0 out vertex 2 3
 piece Q 0 0 0 0 in deduced 3 1
@@ -12851,8 +12851,8 @@ LL 2 1
 LL 3 3
 LL 3 7
 order 0 0
-piece P 0 0 0 1 opposite sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 same sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 5
@@ -12868,15 +12868,15 @@ piece Q 0 0 0 0 out vertex 5 6
 piece Q 0 0 0 0 in deduced 6 0
 piece Q 0 0 0 0 out vertex 0 9
 piece Q 0 0 0 0 in vertex 9 7
-piece Q 1 0 0 1 opposite sector 1 2
+piece Q 1 0 0 1 same sector 1 2
 piece Q 1 0 0 0 out vertex 2 10
 piece Q 1 0 0 0 in vertex 10 1
-piece Q 2 0 0 0 out deduced 4 3
+piece Q 2 0 0 0 in deduced 4 3
 piece Q 2 0 0 0 in vertex 3 4
 endorder
 order 0 0
-piece P 0 0 0 1 opposite sector 1,3 2
-piece P 0 0 0 0 out deduced 2 4
+piece P 0 0 0 1 same sector 1,3 2
+piece P 0 0 0 0 in midpoint 2 4
 piece P 0 0 0 0 in deduced 4 0
 piece P 0 0 0 0 out vertex 0 6
 piece P 0 0 0 0 in deduced 6 5
@@ -12892,10 +12892,10 @@ piece Q 0 0 0 0 out vertex 5 6
 piece Q 0 0 0 0 in deduced 6 0
 piece Q 0 0 0 0 out vertex 0 9
 piece Q 0 0 0 0 in vertex 9 7
-piece Q 1 0 0 1 opposite sector 1 2
+piece Q 1 0 0 1 same sector 1 2
 piece Q 1 0 0 0 out vertex 2 10
 piece Q 1 0 0 0 in vertex 10 1
-piece Q 2 0 0 0 out deduced 4 3
+piece Q 2 0 0 0 in deduced 4 3
 piece Q 2 0 0 0 in vertex 3 4
 endorder
 endcase
@@ -19993,6 +19993,4685 @@ piece Q 1 0 0 0 in deduced 6 4
 piece Q 1 0 0 0 out vertex 4 5
 piece Q 1 0 0 0 in deduced 5 7
 piece Q 1 0 0 0 out vertex 7 6
+endorder
+endcase
+case chain#41 seed 1
+ring P 7
+-0.04877449007000854 -0.02239010850671475 0.9985588275907775
+-0.048945297859185596 -0.016738847108717803 0.9986611881989539
+-0.04894800542963244 -0.016737615275306254 0.9986610761411283
+-0.04894979967915629 -0.016735412299012178 0.9986610251164069
+-0.0491191297646228 -0.01108362407255146 0.998731427546257
+-0.043641955137082994 -0.005262577519221043 0.9990333753332103
+-0.05424578181437891 -0.02820992568322145 0.9981290473923169
+ring P 5
+-0.04886242717944354 -0.019329228453823767 0.998618467753082
+-0.048259221366090184 -0.017023012635878833 0.9986897739508187
+-0.04980914765541921 -0.014583275354898353 0.9986522802706475
+-0.05295098097352486 -0.015830059324047387 0.9984716334657376
+-0.051638065988913955 -0.01913109944656552 0.9984826043426545
+ring Q 7
+-0.058822754746252794 -0.007422829644348846 0.9982408452493482
+-0.06935311632411642 -0.016693229610060856 0.9974524957817889
+-0.06221073527949449 -0.02622970805760571 0.9977183103617963
+-0.04603458067993139 -0.019482540018598626 0.9987498425612125
+-0.04894451773669696 -0.01674007300661211 0.9986612058847861
+-0.04894656706852308 -0.016738141261640083 0.9986611378236925
+-0.04894861640004462 -0.016736209516456144 0.9986610697546704
+ring Q 5
+-0.054964637010924404 -0.014905479074082793 0.9983770406874496
+-0.05755308091403237 -0.012754138890437671 0.9982609753057895
+-0.0595895165346059 -0.015176272267718739 0.9981075945404022
+-0.05928675194927533 -0.01812476548733295 0.9980764369121908
+-0.056571402537765436 -0.018886941030498174 0.9982198955507852
+records 12
+LL 0 2
+LS 0 4
+SL 1 4
+LS 1 5
+SL 2 5
+LS 2 6
+SL 3 6
+LL 5 2
+LS 5 5
+LS 5 6
+LL 7 3
+LL 9 6
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 1 opposite sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 1 same sector 5 6
+piece P 0 0 0 0 out vertex 6 9
+piece P 0 0 0 0 in midpoint 9 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 7 0
+piece Q 0 0 0 0 out vertex 0 10
+piece Q 0 0 0 0 in deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 2
+piece Q 0 0 0 1 opposite sector 2 3,8
+piece Q 0 0 0 1 opposite sector 3,8 4
+piece Q 0 0 0 1 opposite sector 4 5,9
+piece Q 0 0 0 1 same sector 5,9 6
+piece Q 0 0 0 0 in deduced 6 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 1 opposite sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 1 same sector 5 6
+piece P 0 0 0 0 out vertex 6 9
+piece P 0 0 0 0 in midpoint 9 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 7 0
+piece Q 0 0 0 0 out vertex 0 10
+piece Q 0 0 0 0 in deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 2
+piece Q 0 0 0 1 opposite sector 2 3,8
+piece Q 0 0 0 1 opposite sector 3,8 4
+piece Q 0 0 0 1 opposite sector 4 5,9
+piece Q 0 0 0 1 same sector 5,9 6
+piece Q 0 0 0 0 in deduced 6 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 1 opposite sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 1 same sector 5 6
+piece P 0 0 0 0 out vertex 6 9
+piece P 0 0 0 0 in midpoint 9 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 7 0
+piece Q 0 0 0 0 out vertex 0 10
+piece Q 0 0 0 0 in deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 2
+piece Q 0 0 0 1 opposite sector 2 3,8
+piece Q 0 0 0 1 opposite sector 3,8 4
+piece Q 0 0 0 1 opposite sector 4 5,9
+piece Q 0 0 0 1 same sector 5,9 6
+piece Q 0 0 0 0 in deduced 6 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 1 opposite sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 1 same sector 5 6
+piece P 0 0 0 0 out vertex 6 9
+piece P 0 0 0 0 in midpoint 9 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 7 0
+piece Q 0 0 0 0 out vertex 0 10
+piece Q 0 0 0 0 in deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 2
+piece Q 0 0 0 1 opposite sector 2 3,8
+piece Q 0 0 0 1 opposite sector 3,8 4
+piece Q 0 0 0 1 opposite sector 4 5,9
+piece Q 0 0 0 1 same sector 5,9 6
+piece Q 0 0 0 0 in deduced 6 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#107 seed 1
+ring P 11
+0.5113714396507761 -0.4436108888544108 -0.7360085801125503
+0.5065154660562946 -0.44473334551083776 -0.7386841910021579
+0.506518164266896 -0.44472933223721794 -0.7386847570618552
+0.5065145824856403 -0.4447325934187762 -0.7386852496702548
+0.5065172806956212 -0.44472858014460365 -0.7386858157290408
+0.5065136989137341 -0.4447318413256157 -0.7386863083365321
+0.5065163971230944 -0.4447278280508901 -0.7386868743944063
+0.5016437296562648 -0.4458356877166693 -0.7413394013909937
+0.4963843799433746 -0.45186215080561365 -0.7412308304553693
+0.505351904147213 -0.45949319732455685 -0.7304008862174537
+0.5165658629285678 -0.4375276020394474 -0.7360226264935574
+ring P 5
+0.5034414075451399 -0.4478119566106632 -0.7389257071488973
+0.5056112399132295 -0.444231545374621 -0.7396050352502223
+0.5095664330054941 -0.444158674923969 -0.7369295229829251
+0.5086197611825725 -0.4476345164845988 -0.7354789447606114
+0.5063127794062837 -0.44913041076519145 -0.736158436435917
+ring Q 7
+0.5072257314872252 -0.4530925391549093 -0.7330956337882572
+0.5002348625283117 -0.4509572861796027 -0.7391905088357191
+0.4959832165037964 -0.4462488935154665 -0.7448909812736155
+0.5002190113830302 -0.43818095975460475 -0.746845624717396
+0.5111959778120441 -0.43355733876398334 -0.7420961570259482
+0.5116535100114419 -0.4401424940578197 -0.7378924519315355
+0.5132281366499505 -0.44555638460317487 -0.7335369028823074
+ring Q 5
+0.506383294737452 -0.44045559604322115 -0.7413331415261654
+0.5102647501255094 -0.4401144248921991 -0.7388702036089696
+0.5094202759514829 -0.4438185369265267 -0.7372354364312069
+0.5065157106991958 -0.44473039875975073 -0.7386857973684631
+0.5042930747579554 -0.44283839352800897 -0.7413384193259509
+records 12
+SL 2 9
+LS 2 10
+LS 3 10
+LS 4 10
+LS 5 10
+LL 6 10
+LL 7 1
+LL 9 5
+LL 9 6
+LL 10 5
+LL 12 9
+LL 12 10
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 8
+piece P 0 0 0 0 in deduced 8 7
+piece P 0 0 0 0 out vertex 7 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 out deduced 11 10
+piece P 1 0 0 0 in vertex 10 11
+piece Q 0 0 0 0 out vertex 6 9
+piece Q 0 0 0 0 in deduced 9 7
+piece Q 0 0 0 0 out vertex 7 8
+piece Q 0 0 0 0 in vertex 8 6
+piece Q 1 0 0 0 in deduced 10 0
+piece Q 1 0 0 1 opposite sector 0 1,2,3,4
+piece Q 1 0 0 0 out deduced 1,2,3,4 5
+piece Q 1 0 0 0 in deduced 5 11
+piece Q 1 0 0 0 out vertex 11 10
+endorder
+endcase
+case chain#182 seed 1
+ring P 7
+0.39768045891155335 0.1183927526319415 -0.9098535094860757
+0.3996431569390595 0.11309047607050074 -0.9096680116030957
+0.39963797739524415 0.11309128630000312 -0.9096701863788046
+0.3996419436023454 0.11308742774017351 -0.9096689236204845
+0.40158663637941616 0.10778244503062528 -0.9094564959494692
+0.4083168073881905 0.10432686332673036 -0.9068590245416986
+0.39089861506920726 0.12183432652437483 -0.9123347355095759
+ring P 4
+0.3987325944762642 0.11572333367674922 -0.9097364608198172
+0.40179265225482547 0.11274903810491331 -0.9087630708828619
+0.3983261278050964 0.11046610626525673 -0.9105676994460056
+0.39672062147074505 0.11457680997711844 -0.9107606178987612
+ring Q 7
+0.40210984012803924 0.12218584710860114 -0.9074019480024033
+0.4060530141588929 0.1132656712656051 -0.9068030863452273
+0.40203439326971335 0.10687577369296812 -0.9093656666192005
+0.39479916223026673 0.10270948379012265 -0.9130084246280787
+0.3892647521001674 0.10820601331917272 -0.9147482776447116
+0.3868794012831119 0.12107892691890726 -0.9141467181579699
+0.39482569519776095 0.12291750100220272 -0.9104965449462059
+ring Q 5
+0.3986381949063421 0.11057608050078388 -0.9104177722248711
+0.3947666351139018 0.11134284443084068 -0.9120099093731914
+0.39578146737795555 0.1159979748525458 -0.9109892973631799
+0.39814299859464086 0.11602536527547186 -0.9099561897601232
+0.3996399605004186 0.11308935702052957 -0.909669555003303
+records 10
+SL 2 10
+LS 2 11
+LL 4 1
+LL 5 1
+LL 5 9
+LS 5 11
+LL 8 7
+LL 8 11
+LL 9 7
+LL 10 10
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in deduced 3 5
+piece P 0 0 0 0 out deduced 5 4
+piece P 0 0 0 0 in vertex 4 0
+piece P 1 0 0 0 out deduced 7 6
+piece P 1 0 0 0 in vertex 6 8
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 7
+piece Q 0 0 0 0 in deduced 3 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 4
+piece Q 1 0 0 0 in vertex 4 9
+piece Q 1 0 0 0 out deduced 9 0
+piece Q 1 0 0 1 same sector 0 1,5
+piece Q 1 0 0 0 in deduced 1,5 7
+piece Q 1 0 0 0 out vertex 7 6
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in deduced 3 5
+piece P 0 0 0 0 out deduced 5 4
+piece P 0 0 0 0 in vertex 4 0
+piece P 1 0 0 0 out deduced 7 6
+piece P 1 0 0 0 in vertex 6 8
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 7
+piece Q 0 0 0 0 in deduced 3 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 4
+piece Q 1 0 0 0 in vertex 4 9
+piece Q 1 0 0 0 out deduced 9 0
+piece Q 1 0 0 1 same sector 0 1,5
+piece Q 1 0 0 0 in deduced 1,5 7
+piece Q 1 0 0 0 out vertex 7 6
+endorder
+endcase
+case chain#288 seed 1
+ring P 7
+-0.08224561297560722 -0.9921416547324265 -0.09428995753031962
+-0.0852553460166854 -0.9914259063065858 -0.09902625045784491
+-0.08524855948505326 -0.9914264458637154 -0.09902669108762892
+-0.08525451573737645 -0.9914256120382414 -0.09902991134492628
+-0.08825466675940417 -0.9906786950956362 -0.10376336963877951
+-0.09602125886226326 -0.9897776453172142 -0.10545203021666723
+-0.07446748390274316 -0.9929159066392956 -0.09258831559036132
+ring P 3
+-0.0850567246206888 -0.9918092818879113 -0.09528747009857065
+-0.08899283305161751 -0.9913552530654869 -0.09641077680898065
+-0.0847785556369546 -0.9912229284861694 -0.10143817105712176
+ring Q 4
+-0.07117202896710646 -0.9924103608731804 -0.10028069567104765
+-0.08437627840750873 -0.9927021209525009 -0.08615766186767868
+-0.09378367368362321 -0.9907351503400444 -0.09822669917641232
+-0.08298348848455118 -0.9909574989421471 -0.10543707094404034
+ring Q 5
+-0.08005239425950232 -0.9919152221583305 -0.09846728504387041
+-0.08274834936264633 -0.9918924242919255 -0.0964475469363757
+-0.08525153761173694 -0.9914260289567425 -0.09902830121686784
+-0.08455838297510311 -0.9911756142099506 -0.10208222991374662
+-0.08106398280467159 -0.9916211452303598 -0.10057899892061696
+records 10
+SL 2 5
+LS 2 6
+LL 3 2
+LL 5 0
+LL 5 2
+LL 5 4
+LS 5 6
+LL 6 0
+LL 9 5
+LL 9 6
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 4
+piece P 0 0 0 0 in deduced 4 6
+piece P 0 0 0 0 out deduced 6 5
+piece P 0 0 0 0 in deduced 5 3
+piece P 0 0 0 0 out vertex 3 7
+piece P 0 0 0 0 in vertex 7 0
+piece P 1 0 0 0 out deduced 9 8
+piece P 1 0 0 0 in vertex 8 9
+piece Q 0 0 0 0 in deduced 3 7
+piece Q 0 0 0 0 out vertex 7 4
+piece Q 0 0 0 0 in deduced 4 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 1 0 0 0 in vertex 5 8
+piece Q 1 0 0 0 out deduced 8 0
+piece Q 1 0 0 1 same sector 0 1,6
+piece Q 1 0 0 0 in deduced 1,6 9
+piece Q 1 0 0 0 out vertex 9 5
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 in vertex 1 2
+piece P 0 0 0 0 out vertex 2 4
+piece P 0 0 0 0 in deduced 4 6
+piece P 0 0 0 0 out deduced 6 5
+piece P 0 0 0 0 in deduced 5 3
+piece P 0 0 0 0 out vertex 3 7
+piece P 0 0 0 0 in vertex 7 0
+piece P 1 0 0 0 out deduced 9 8
+piece P 1 0 0 0 in vertex 8 9
+piece Q 0 0 0 0 in deduced 3 7
+piece Q 0 0 0 0 out vertex 7 4
+piece Q 0 0 0 0 in deduced 4 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 1 0 0 0 in vertex 5 8
+piece Q 1 0 0 0 out deduced 8 0
+piece Q 1 0 0 1 same sector 0 1,6
+piece Q 1 0 0 0 in deduced 1,6 9
+piece Q 1 0 0 0 out vertex 9 5
+endorder
+endcase
+case chain#28 seed 2
+ring P 4
+0.7919223683800424 0.6028406378887856 -0.09717061165386702
+0.786625365009668 0.6062571442762728 -0.1169307920839724
+0.7785305362201764 0.6184386459128104 -0.10688239057138434
+0.7839163380986343 0.6131924686136665 -0.09731480513007872
+ring P 4
+0.7872074767649497 0.6075522261373768 -0.10575765239867364
+0.7853618023773933 0.609844297162043 -0.10628627656224607
+0.7840598373403376 0.6122565391268534 -0.10194165863988816
+0.7864764638487441 0.6092007642745705 -0.10163267495866879
+ring Q 9
+0.7886175921778987 0.6054009738290637 -0.10757301796619369
+0.785361896325088 0.609843852261906 -0.10628813508110951
+0.7853622711717826 0.6098435655982547 -0.106287010110863
+0.7853614741151314 0.609844599158417 -0.10628696934722212
+0.7853610864746453 0.6098451714837547 -0.10628654980435734
+0.785362095153032 0.6098441707652151 -0.10628483843205061
+0.7820808668154352 0.6142681261613392 -0.10499612823078162
+0.7775058112518914 0.6193265302428085 -0.10917583252231935
+0.7930922224186395 0.6002644137064076 -0.10337969034953577
+ring Q 4
+0.7859825589057703 0.6094260742059258 -0.10407342203411464
+0.7873345891544626 0.606939087756084 -0.10830137799117043
+0.7852652329400807 0.6093050875422406 -0.11002647059096075
+0.7830917490222806 0.6127060164492062 -0.106576967587609
+records 13
+LL 0 7
+LL 0 8
+LL 1 6
+LL 1 7
+LS 4 5
+LL 4 9
+SS 5 2
+SS 5 3
+SS 5 4
+LS 5 5
+SL 5 7
+LL 5 12
+LL 7 7
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 out vertex 1 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 out vertex 2 0
+piece P 1 0 0 0 out deduced 5 4
+piece P 1 0 0 0 in midpoint 4 6,7,8,10
+piece P 1 0 0 0 in midpoint 6,7,8,10 9
+piece P 1 0 0 0 in deduced 9 11
+piece P 1 0 0 0 out vertex 11 12
+piece P 1 0 0 0 in vertex 12 5
+piece Q 0 0 1 0 none none 6 7
+piece Q 0 0 1 0 none none 7 8
+piece Q 0 0 0 0 out deduced 8 4,9
+piece Q 0 0 0 0 in vertex 4,9 2
+piece Q 0 0 0 0 out vertex 2 3
+piece Q 0 0 0 0 in deduced 3 10
+piece Q 0 0 0 0 out deduced 10 12
+piece Q 0 0 0 0 in deduced 12 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 1 0 0 0 in vertex 5 11
+piece Q 1 0 0 0 out vertex 11 5
+endorder
+endcase
+case chain#52 seed 2
+ring P 9
+0.7693899847068885 -0.6380585540384169 -0.03033699146485367
+0.7658847327418308 -0.6423196634695532 -0.02908652735089991
+0.7658863914284527 -0.6423174163856583 -0.029092473809489813
+0.7658838243838086 -0.6423207070518433 -0.02908740001532555
+0.765885483069371 -0.6423184599671274 -0.02909334647395774
+0.7658829160237258 -0.642321750632428 -0.029088272679684345
+0.7623549113111515 -0.6465599465427786 -0.02784285772627202
+0.7597138657349309 -0.6499157372079185 -0.021080245244659318
+0.7719337955991435 -0.6346195937840443 -0.03709698636377839
+ring P 4
+0.7674205299012616 -0.6403175173990473 -0.03254546355465623
+0.7685190843561499 -0.6391898837968761 -0.028543115319126296
+0.7668831978523738 -0.6412501809706133 -0.026236734874462632
+0.7656409855917252 -0.6425860833669939 -0.029614297985916783
+ring Q 6
+0.7716194063014734 -0.6352739153814478 -0.03210209112950327
+0.7658846537307011 -0.6423195835129789 -0.02909037324472406
+0.7623994206318881 -0.6462939162540062 -0.03242371405654905
+0.7587579971562526 -0.6501011517507487 -0.04067916227974835
+0.7653189293307486 -0.6420062221825346 -0.045988553868833534
+0.7700301798117272 -0.6365385389129401 -0.043269049650976325
+ring Q 5
+0.7657471685437304 -0.6422741707947176 -0.03339406230480945
+0.7633119463070732 -0.6451167096640547 -0.03434098916937946
+0.7637010567212397 -0.6444593438605993 -0.03785300613725936
+0.7658577972202983 -0.64181449756925 -0.03919164639057014
+0.7671219321605481 -0.6405146821241895 -0.03556519621225561
+records 10
+SL 2 0
+LS 2 1
+LS 3 1
+LS 4 1
+LS 7 1
+LL 7 5
+LL 8 0
+LL 8 5
+LL 9 0
+LL 11 1
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in vertex 9 8
+piece Q 0 0 0 0 in deduced 6 8
+piece Q 0 0 0 0 out deduced 8 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 9
+piece Q 0 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#119 seed 2
+ring P 7
+0.5368267672284456 0.24979783574788172 -0.8058647921597835
+0.5387427292724016 0.2543733882149767 -0.8031503290319667
+0.5387447275411712 0.25437460323041605 -0.8031486037950621
+0.5387472562564178 0.25437418249896593 -0.8031470408052094
+0.5406457361010351 0.2589420083530925 -0.8004069117304253
+0.5381546523996579 0.26649997347818216 -0.7996044861284431
+0.5392490427691443 0.2422058264265757 -0.8065648191668051
+ring P 3
+0.5404335762587854 0.25621832904634173 -0.8014260524295674
+0.5369449875361874 0.2526273555325674 -0.8049034101035885
+0.5365335978224495 0.25774531579414045 -0.8035540122442776
+ring Q 8
+0.5355994241796277 0.2535869929973721 -0.8054979166956311
+0.5387415824289578 0.25437323619031177 -0.8031511464674693
+0.538743795365469 0.2543737892449787 -0.8031494868954105
+0.5387460082977227 0.25437434229762884 -0.8031478273169385
+0.5438042380278959 0.2556359863041188 -0.79932921453505
+0.5512813928553508 0.24782618486119473 -0.7966624178336829
+0.5440691318407916 0.23781577877086266 -0.8046318631185415
+0.5371297046140235 0.24499812770968668 -0.8071354271991781
+ring Q 3
+0.5446272372035093 0.24885927285715298 -0.8009058838646909
+0.5437152262697322 0.24562457483796143 -0.8025224738025253
+0.5402730655747338 0.24942987190759222 -0.8036726657132502
+records 12
+LS 0 1
+SL 1 1
+LS 1 2
+SL 2 2
+LS 2 3
+SL 3 3
+LS 5 2
+LS 5 3
+LL 5 6
+LL 6 6
+LL 7 0
+LL 8 0
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 out midpoint 7 6
+piece P 0 0 0 0 in deduced 6 8
+piece P 0 0 0 0 out vertex 8 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 in vertex 10 11
+piece P 1 0 0 0 out vertex 11 10
+piece Q 0 0 0 0 in deduced 11 10
+piece Q 0 0 0 0 out deduced 10 0
+piece Q 0 0 0 1 same sector 0 1
+piece Q 0 0 0 1 same sector 1 2,6
+piece Q 0 0 0 1 opposite sector 2,6 3
+piece Q 0 0 0 1 opposite sector 3 4,7
+piece Q 0 0 0 1 opposite sector 4,7 5
+piece Q 0 0 0 0 out vertex 5 8
+piece Q 0 0 0 0 in deduced 8 9
+piece Q 0 0 0 0 out vertex 9 11
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 out midpoint 7 6
+piece P 0 0 0 0 in deduced 6 8
+piece P 0 0 0 0 out vertex 8 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 in vertex 10 11
+piece P 1 0 0 0 out vertex 11 10
+piece Q 0 0 0 0 in deduced 11 10
+piece Q 0 0 0 0 out deduced 10 0
+piece Q 0 0 0 1 same sector 0 1
+piece Q 0 0 0 1 same sector 1 2,6
+piece Q 0 0 0 1 opposite sector 2,6 3
+piece Q 0 0 0 1 opposite sector 3 4,7
+piece Q 0 0 0 1 opposite sector 4,7 5
+piece Q 0 0 0 0 out vertex 5 8
+piece Q 0 0 0 0 in deduced 8 9
+piece Q 0 0 0 0 out vertex 9 11
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 out midpoint 7 6
+piece P 0 0 0 0 in deduced 6 8
+piece P 0 0 0 0 out vertex 8 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 in vertex 10 11
+piece P 1 0 0 0 out vertex 11 10
+piece Q 0 0 0 0 in deduced 11 10
+piece Q 0 0 0 0 out deduced 10 0
+piece Q 0 0 0 1 same sector 0 1
+piece Q 0 0 0 1 same sector 1 2,6
+piece Q 0 0 0 1 opposite sector 2,6 3
+piece Q 0 0 0 1 opposite sector 3 4,7
+piece Q 0 0 0 1 opposite sector 4,7 5
+piece Q 0 0 0 0 out vertex 5 8
+piece Q 0 0 0 0 in deduced 8 9
+piece Q 0 0 0 0 out vertex 9 11
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 1 opposite sector 2 3
+piece P 0 0 0 1 opposite sector 3 4
+piece P 0 0 0 1 opposite sector 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 out midpoint 7 6
+piece P 0 0 0 0 in deduced 6 8
+piece P 0 0 0 0 out vertex 8 9
+piece P 0 0 0 0 in vertex 9 0
+piece P 1 0 0 0 in vertex 10 11
+piece P 1 0 0 0 out vertex 11 10
+piece Q 0 0 0 0 in deduced 11 10
+piece Q 0 0 0 0 out deduced 10 0
+piece Q 0 0 0 1 same sector 0 1
+piece Q 0 0 0 1 same sector 1 2,6
+piece Q 0 0 0 1 opposite sector 2,6 3
+piece Q 0 0 0 1 opposite sector 3 4,7
+piece Q 0 0 0 1 opposite sector 4,7 5
+piece Q 0 0 0 0 out vertex 5 8
+piece Q 0 0 0 0 in deduced 8 9
+piece Q 0 0 0 0 out vertex 9 11
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#220 seed 3
+ring P 9
+-0.5794595938887726 0.3914324576992138 -0.7148476831534197
+-0.5785943456482587 0.3965938333398859 -0.7127004381510076
+-0.5785906068433068 0.39659097428796025 -0.7127050643751737
+-0.5785928017508455 0.39659548294447433 -0.7127007735860443
+-0.5785890629442288 0.3965926238915851 -0.7127053998084389
+-0.5785912578503704 0.39659713254703965 -0.712701109017372
+-0.5777037806705985 0.4017428311429443 -0.710535741130697
+-0.5813173628234924 0.40624942877440495 -0.7050046278574414
+-0.5757714744817776 0.38687356555066144 -0.720288868060029
+ring P 3
+-0.5743055640259762 0.3956305670580418 -0.7166935004157199
+-0.5787268921386254 0.39193637235240714 -0.7151650609074823
+-0.5783239794401093 0.3972752708523826 -0.712540338488792
+ring Q 7
+-0.5650274501136627 0.40587450594677604 -0.718338267141959
+-0.5620566635752049 0.39937894408428226 -0.724285003263793
+-0.5645981826289704 0.39104955981603007 -0.7268487696486478
+-0.5694887521784778 0.3891155207631508 -0.724066069252953
+-0.577264409785142 0.38850468297134116 -0.7182129993983326
+-0.57859093235075 0.39659405342023685 -0.7127030867010441
+-0.5725030249019522 0.4030579218743329 -0.7139920154262644
+ring Q 3
+-0.5727176261391437 0.3938291257896606 -0.7189528081795743
+-0.5694733053984206 0.39866026831538237 -0.7188672651507402
+-0.5677210183740639 0.39546582491519433 -0.7220108216782215
+records 12
+SL 2 4
+LS 2 5
+LS 3 5
+LS 4 5
+LL 7 3
+LS 7 5
+LL 8 3
+LL 8 4
+LL 9 4
+LL 10 4
+LL 10 5
+LL 11 5
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 5
+piece P 0 0 0 0 in deduced 5 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 0
+piece P 1 0 0 0 out vertex 8 9
+piece P 1 0 0 0 in deduced 9 10
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 8
+piece Q 0 0 0 0 in deduced 4 6
+piece Q 0 0 0 0 out vertex 6 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out deduced 8 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 1 same sector 0 1,2,3,5
+piece Q 0 0 0 0 out deduced 1,2,3,5 10
+piece Q 0 0 0 0 in deduced 10 11
+piece Q 0 0 0 0 out vertex 11 4
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#249 seed 3
+ring P 13
+-0.13405084543578724 0.8890694275756447 0.43770529330619945
+-0.13380463683602747 0.8865897453485978 0.44278091942165615
+-0.13380068046186908 0.8865913575926635 0.44277888674815846
+-0.13380282806082475 0.8865892190579615 0.44278251981432076
+-0.13379887168614713 0.8865908312993164 0.44278048713950935
+-0.1338010192847659 0.8865886927618969 0.4427841202043143
+-0.13379706290956908 0.8865903050005409 0.442782087528189
+-0.13379921050785096 0.8865881664604041 0.44278572059163657
+-0.1337952541321349 0.8865897786963371 0.44278368791419737
+-0.13379740173007987 0.886587640153483 0.44278732097628754
+-0.13354296125038595 0.884081257524026 0.44784663401125896
+-0.1388795595367908 0.8807403597838529 0.45277907039822013
+-0.12869642827711472 0.8922975990206687 0.43271494558272816
+ring P 3
+-0.13211598983308506 0.8870948559997865 0.4422760243209461
+-0.13805272362605606 0.8856538496016654 0.4433494154560018
+-0.1331339981941529 0.8848682575786615 0.4464118112847632
+ring Q 5
+-0.13379904109757917 0.8865894988836843 0.4427831038675097
+-0.12457797697249363 0.8838392956040978 0.45089735772068235
+-0.11985083047692334 0.8874179807275053 0.44511246434525814
+-0.12015319342865821 0.8913061856282696 0.43719159823775255
+-0.1323289280746206 0.8916340968420464 0.4329869422318528
+ring Q 3
+-0.12804574387265125 0.8885267299775176 0.440595662247779
+-0.12563663392857613 0.886054785939456 0.4462312769505093
+-0.12258803583406575 0.8883746836855625 0.44245066940498856
+records 12
+LS 4 0
+SL 4 4
+LS 5 0
+LS 6 0
+LL 7 0
+LL 8 0
+LS 11 0
+LL 11 3
+LL 12 3
+LL 12 4
+LL 13 4
+LL 15 0
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in deduced 6 7
+piece P 0 0 0 0 out vertex 7 8
+piece P 0 0 0 0 in deduced 8 9
+piece P 0 0 0 0 out vertex 9 1
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 in deduced 0,2,3,6 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 11
+piece Q 0 0 0 0 out vertex 11 7
+piece Q 0 0 0 0 in deduced 7 8
+piece Q 0 0 0 0 out vertex 8 9
+piece Q 0 0 0 0 in deduced 9 10
+piece Q 0 0 0 0 out deduced 10 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#281 seed 3
+ring P 10
+-0.15297900388990118 0.6077335180882061 0.7792672169166273
+-0.15183908371744226 0.6034651733771312 0.7827992572663546
+-0.15183577298146173 0.6034682484944799 0.7827975288043049
+-0.15183760514890218 0.6034645374896263 0.7828000342712547
+-0.15183429441257063 0.6034676126060035 0.7827983058079823
+-0.15183612657985163 0.6034639016001827 0.7828008112736675
+-0.15183281584316904 0.6034669767155885 0.7827990828091727
+-0.1506873504315237 0.5991792003858797 0.7863063068835612
+-0.15500310004568918 0.5934339614488199 0.7898165434930992
+-0.14864309701328549 0.6134034743645584 0.7756554694887335
+ring P 3
+-0.1551969902340289 0.6016467361580441 0.78354010688201
+-0.14952162596172328 0.6025933539664582 0.7839161518461125
+-0.1519301941433144 0.6054433618853452 0.7812525530560178
+ring Q 7
+-0.15183558013896678 0.6034659160772382 0.7827993642926157
+-0.14517087808121887 0.6005821839931631 0.7862737795622655
+-0.13781002143710597 0.6052220324654893 0.7840374285771352
+-0.13103467820432704 0.611667179851715 0.7801879095449623
+-0.13680630592911716 0.6158577914630912 0.7758886616984632
+-0.14428101749791494 0.6168251457336973 0.7737633537331484
+-0.15256550241437972 0.6107151995233339 0.7770139719105585
+ring Q 4
+-0.14409130299146872 0.608012155310636 0.7807425410445723
+-0.13975678215061532 0.6095674269843382 0.7803176236652605
+-0.14169546511991712 0.6113307644525048 0.778586598650636
+-0.1448189947919448 0.6102723564962993 0.7788421596471934
+records 10
+LS 2 0
+SL 2 6
+LS 3 0
+LS 4 0
+LS 5 0
+LL 6 0
+LS 8 0
+LL 9 6
+LL 10 0
+LL 12 6
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in vertex 4 5
+piece P 0 0 0 0 out vertex 5 6
+piece P 0 0 0 0 in vertex 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 out deduced 0,2,3,4,6 5
+piece Q 0 0 0 0 in deduced 5 8
+piece Q 0 0 0 0 out vertex 8 7
+piece Q 0 0 0 0 in deduced 7 9
+piece Q 0 0 0 0 out deduced 9 1
+piece Q 0 0 0 1 opposite sector 1 0,2,3,4,6
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#108 seed 5
+ring P 11
+0.22131826427263032 -0.7027687725585271 -0.6761170595510303
+0.21981513052373203 -0.6992308233011113 -0.6802628640007367
+0.21981920312307696 -0.69923044475833 -0.6802619370958539
+0.2198167368395546 -0.6992285095972408 -0.6802647231568245
+0.2198208094378015 -0.6992281310503917 -0.6802637962481068
+0.21981834315295282 -0.699226195885292 -0.680266582305256
+0.21982241575010164 -0.6992258173343753 -0.6802656553927033
+0.21981994946392658 -0.6992238821652649 -0.6802684414460312
+0.21831383199281618 -0.6956631274664259 -0.6843916158488821
+0.21148882486897924 -0.6939973525685246 -0.6882151927874138
+0.2281157567424989 -0.7043454904938303 -0.6722057955319952
+ring P 3
+0.22147372718057495 -0.700114965926307 -0.6788139823653828
+0.21694007555425845 -0.6992211438783932 -0.6811951229801224
+0.2217823448975395 -0.6968363852916772 -0.6820789130484669
+ring Q 5
+0.21981957629585527 -0.6992271634693751 -0.6802651892781831
+0.2259266555912422 -0.6903464724778575 -0.6872982571131218
+0.23690695070545056 -0.6880489442479947 -0.6859035989311218
+0.2358255189886604 -0.6976693066720131 -0.6764938012439743
+0.22607406599066615 -0.7021786735426555 -0.6751560020530994
+ring Q 4
+0.23124802124123955 -0.6940612541641259 -0.681764862793714
+0.22816947472815127 -0.6967940760398178 -0.6800122840052937
+0.2254668919157188 -0.695559938259597 -0.6821737703387393
+0.22672667703797023 -0.6933344996326767 -0.6840192143049971
+records 7
+LS 4 0
+SL 4 4
+LL 5 0
+LL 6 0
+LS 9 0
+LL 12 0
+LL 13 4
+order 0 0
+piece P 0 0 0 1 same sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 out vertex 4 1
+piece P 1 0 0 0 in vertex 5 6
+piece P 1 0 0 0 out vertex 6 5
+piece Q 0 0 0 0 in deduced 0,4 2
+piece Q 0 0 0 0 out deduced 2 3
+piece Q 0 0 0 0 in deduced 3 5
+piece Q 0 0 0 0 out vertex 5 6
+piece Q 0 0 0 0 in deduced 6 1
+piece Q 0 0 0 1 same sector 1 0,4
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 same sector 1 0
+piece P 0 0 0 0 out vertex 0 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 out vertex 4 1
+piece P 1 0 0 0 in vertex 5 6
+piece P 1 0 0 0 out vertex 6 5
+piece Q 0 0 0 0 in deduced 0,4 2
+piece Q 0 0 0 0 out deduced 2 3
+piece Q 0 0 0 0 in deduced 3 5
+piece Q 0 0 0 0 out vertex 5 6
+piece Q 0 0 0 0 in deduced 6 1
+piece Q 0 0 0 1 same sector 1 0,4
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#163 seed 5
+ring P 12
+0.7041602089269912 0.42623649278953424 0.5678739757889717
+0.7024689192551355 0.4313386257098204 0.5661134227796453
+0.7024666991336624 0.4313354271745609 0.5661186146669226
+0.7024675905233942 0.43133995896905347 0.566114055699761
+0.7024653704004608 0.4313367604329723 0.5661192475859941
+0.7024662617888596 0.4313412922266086 0.5661146886176552
+0.7024640416644659 0.4313380936897056 0.5661198805028438
+0.7024649330515317 0.43134262548248586 0.5661153215333278
+0.7024627129256776 0.43133942694476113 0.5661205134174719
+0.7007483029905655 0.436428361398645 0.5643421845146227
+0.7026438852197077 0.44122082080656655 0.558225543888968
+0.7021746845845805 0.4213878358939588 0.5739189873920802
+ring P 3
+0.7037064087820717 0.42690974101827056 0.5679307733014237
+0.7048723480985427 0.42887078195639916 0.5649998453717961
+0.7017229123677857 0.4314893292507998 0.5669231985029082
+ring Q 4
+0.6938285621613759 0.4399122644724 0.570157106327583
+0.6932375713874401 0.42916932549726583 0.5789951292274106
+0.7034670671142581 0.41973249713595984 0.5735492274719542
+0.7024654839144624 0.431339359646333 0.5661171263340403
+ring Q 3
+0.6970045601392084 0.4300722488523817 0.5737791421027811
+0.6988474022967679 0.42572338089030815 0.5747798807077237
+0.6996591606994645 0.4290617332798113 0.5712994730299031
+records 11
+SL 2 2
+SL 4 2
+LS 4 3
+LS 5 3
+LL 6 3
+LL 7 3
+LL 8 3
+LS 10 3
+LL 11 2
+LL 13 2
+LL 14 2
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 0 in vertex 7 8
+piece P 0 0 0 0 out vertex 8 0
+piece P 1 0 0 0 in vertex 9 10
+piece P 1 0 0 0 out vertex 10 9
+piece Q 0 0 0 0 in deduced 8 10
+piece Q 0 0 0 0 out deduced 10 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 0 in deduced 0 1
+piece Q 0 0 0 1 same sector 1 2,3,7
+piece Q 0 0 0 0 in deduced 2,3,7 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 6
+piece Q 0 0 0 0 out vertex 6 8
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 0 in vertex 7 8
+piece P 0 0 0 0 out vertex 8 0
+piece P 1 0 0 0 in vertex 9 10
+piece P 1 0 0 0 out vertex 10 9
+piece Q 0 0 0 0 in deduced 8 10
+piece Q 0 0 0 0 out deduced 10 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 0 in deduced 0 1
+piece Q 0 0 0 1 same sector 1 2,3,7
+piece Q 0 0 0 0 in deduced 2,3,7 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 6
+piece Q 0 0 0 0 out vertex 6 8
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 0 in vertex 7 8
+piece P 0 0 0 0 out vertex 8 0
+piece P 1 0 0 0 in vertex 9 10
+piece P 1 0 0 0 out vertex 10 9
+piece Q 0 0 0 0 in deduced 8 10
+piece Q 0 0 0 0 out deduced 10 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 0 in deduced 0 1
+piece Q 0 0 0 1 same sector 1 2,3,7
+piece Q 0 0 0 0 in deduced 2,3,7 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 6
+piece Q 0 0 0 0 out vertex 6 8
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 0 in vertex 7 8
+piece P 0 0 0 0 out vertex 8 0
+piece P 1 0 0 0 in vertex 9 10
+piece P 1 0 0 0 out vertex 10 9
+piece Q 0 0 0 0 in deduced 8 10
+piece Q 0 0 0 0 out deduced 10 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 0 in deduced 0 1
+piece Q 0 0 0 1 same sector 1 2,3,7
+piece Q 0 0 0 0 in deduced 2,3,7 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 6
+piece Q 0 0 0 0 out vertex 6 8
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 0 in vertex 7 8
+piece P 0 0 0 0 out vertex 8 0
+piece P 1 0 0 0 in vertex 9 10
+piece P 1 0 0 0 out vertex 10 9
+piece Q 0 0 0 0 in deduced 8 10
+piece Q 0 0 0 0 out deduced 10 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 0 in deduced 0 1
+piece Q 0 0 0 1 same sector 1 2,3,7
+piece Q 0 0 0 0 in deduced 2,3,7 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 6
+piece Q 0 0 0 0 out vertex 6 8
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 1 same sector 1 2
+piece P 0 0 0 0 out vertex 2 3
+piece P 0 0 0 0 in vertex 3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in vertex 5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 0 in vertex 7 8
+piece P 0 0 0 0 out vertex 8 0
+piece P 1 0 0 0 in vertex 9 10
+piece P 1 0 0 0 out vertex 10 9
+piece Q 0 0 0 0 in deduced 8 10
+piece Q 0 0 0 0 out deduced 10 9
+piece Q 0 0 0 0 in deduced 9 0
+piece Q 0 0 0 0 in deduced 0 1
+piece Q 0 0 0 1 same sector 1 2,3,7
+piece Q 0 0 0 0 in deduced 2,3,7 4
+piece Q 0 0 0 0 out deduced 4 5
+piece Q 0 0 0 0 in deduced 5 6
+piece Q 0 0 0 0 out vertex 6 8
+piece Q 1 1 0 0 out vertex - -
+endorder
+endcase
+case chain#30 seed 11
+ring P 9
+0.8114793767657548 -0.5622044542676063 0.1594596271334072
+0.8081702526097975 -0.5664799705006396 0.1611250626631711
+0.808171922807156 -0.5664789795650806 0.16112016911947794
+0.8081695930263825 -0.5664811041305833 0.16112438540012067
+0.8081712632228449 -0.5664801131944452 0.16111949185619875
+0.8081689334411992 -0.5664822377593053 0.16112370813671162
+0.8048357006428952 -0.570738534152533 0.16277905456193706
+0.8017156825370997 -0.5730919437212199 0.1697574399427216
+0.8144967439153008 -0.5597777695926246 0.15245951207215522
+ring P 5
+0.8060821654324825 -0.5687673448646249 0.16350917401578663
+0.8061936277762747 -0.5696769195640318 0.1597499353645104
+0.8079373273015654 -0.5679065829987435 0.15722400624425797
+0.810080069779835 -0.564133127537473 0.15976262066042476
+0.8086410267297084 -0.5651075276717618 0.1635639693154698
+ring Q 5
+0.8141568400450646 -0.5593337431661487 0.155866621069361
+0.8081704281273978 -0.5664806086644864 0.16112193862876478
+0.8036173820643161 -0.5742062487949714 0.15648094800614687
+0.806727675900804 -0.5724687974740075 0.14652621899971047
+0.8128865098657561 -0.5650278946960349 0.14127632601974244
+ring Q 3
+0.8093914344904858 -0.5683377679121426 0.14791107915932866
+0.810846889053381 -0.5649274859478455 0.15291912284963252
+0.808928476790149 -0.5676055803513674 0.153162086013336
+records 10
+SL 2 0
+LS 2 1
+LS 3 1
+LS 4 1
+LS 7 1
+LL 7 4
+LL 8 0
+LL 8 4
+LL 10 1
+LL 11 0
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out vertex 1 2
+piece P 0 0 0 0 in vertex 2 3
+piece P 0 0 0 0 out vertex 3 4
+piece P 0 0 0 0 in deduced 4 5
+piece P 0 0 0 0 out vertex 5 7
+piece P 0 0 0 0 in deduced 7 6
+piece P 0 0 0 0 out vertex 6 0
+piece P 1 0 0 0 in vertex 8 9
+piece P 1 0 0 0 out vertex 9 8
+piece Q 0 0 0 0 in deduced 6 9
+piece Q 0 0 0 0 out deduced 9 0
+piece Q 0 0 0 1 opposite sector 0 1,2,3,4
+piece Q 0 0 0 0 in deduced 1,2,3,4 8
+piece Q 0 0 0 0 out vertex 8 5
+piece Q 0 0 0 0 in deduced 5 7
+piece Q 0 0 0 0 out vertex 7 6
+piece Q 1 1 0 0 out vertex - -
 endorder
 endcase
 case tinyhole#0 seed 1

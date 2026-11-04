@@ -50,8 +50,10 @@
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
 // Python implementation in exact rational arithmetic, kept outside this repository) on its
 // catalogue of configurations with several records at or near one point. The prototype ran the
-// chosen configuration (identity vertices with the loop and spike rules, the LL rule, midpoint
-// tests in order of margin, the bundle rule, option 3 for anchorless chains), and the file holds
+// chosen configuration ('r4t': identity vertices with the loop rule and the spike rule where the
+// other input passes the tip at most once, the LL rule, the one-passage rule, midpoint tests in
+// order of margin, the bundle rule where both inputs pass more than once, option 3 for anchorless
+// chains), and the file holds
 // every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect orders
 // records along a segment by a cosine in doubles, so records whose cosines agree within a few ulps
 // come out in either order. Format, per case: 'case <name>'; 'ring P|Q <n>' then n lines 'x y z';
@@ -585,24 +587,30 @@ TEST(PolygonOverlayPrototypeTest, File)
 }
 
 
-// The bundle rule on run 2's residue (phase4a-run3.md section 4.1): without it each of these fails
-// a vertex check; with it each is consistent, and the bundle's measurements are run 3's.
-TEST(PolygonOverlayPrototypeTest, BundleRuleResidue)
+// The one-passage rule (phase4a-run4.md) on run 2's residue and run 4's chain failures: each has a
+// vertex of six or more ends where one input passes once, which the sector walk on the measured
+// order got wrong (run 2's residue was cleared by the bundle rule, the chain cases by nothing
+// before run 4). Each is now consistent, and the counts are the prototype's, which are the same in
+// every tie order: one-passage vertices, those whose built order is not the measured one, and no
+// bundle (both inputs pass more than once nowhere here).
+TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 {
 	class Expected
 	{
 	public:
 		const char *name;
-		unsigned int floating_max;
-		unsigned int placements_max;
+		unsigned int one_passage_vertices;
+		unsigned int one_passage_moved;
 	};
 	const Expected expected[] = {
-			{ "shared#28 seed 1", 3, 4 },
-			{ "shared#169 seed 1", 4, 12 },
-			// Run 3's table says 8 placements; the prototype gives 4 in every tie order.
-			{ "shared#234 seed 1", 2, 4 },
-			{ "shared#247 seed 1", 2, 4 },
-			{ "six#5 seed 7", 1, 1 } };
+			{ "shared#28 seed 1", 3, 3 },
+			{ "shared#169 seed 1", 3, 2 },
+			{ "shared#234 seed 1", 1, 1 },
+			{ "shared#247 seed 1", 2, 1 },
+			{ "six#5 seed 7", 2, 2 },
+			{ "six#188 seed 7", 2, 2 },
+			{ "chain#41 seed 1", 2, 2 },
+			{ "chain#182 seed 1", 1, 1 } };
 
 	const std::vector<PrototypeCase> cases =
 			read_cases(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt");
@@ -628,14 +636,10 @@ TEST(PolygonOverlayPrototypeTest, BundleRuleResidue)
 
 		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
 		EXPECT_EQ(diagnostics.check_failures, 0u);
-		EXPECT_GE(diagnostics.bundle_vertices, 1u);
-		EXPECT_EQ(diagnostics.bundle_floating_max, e.floating_max);
-		EXPECT_EQ(diagnostics.bundle_placements_max, e.placements_max);
-		EXPECT_EQ(diagnostics.bundle_capped, 0u);
-		std::cout << e.name << ": bundle vertices " << diagnostics.bundle_vertices
-				<< ", floating max " << diagnostics.bundle_floating_max
-				<< ", admissible max " << diagnostics.bundle_admissible_max
-				<< ", placements max " << diagnostics.bundle_placements_max
-				<< ", moved " << diagnostics.bundle_moved << std::endl;
+		EXPECT_EQ(diagnostics.unresolved_pieces, 0u);
+		EXPECT_EQ(diagnostics.one_passage_vertices, e.one_passage_vertices);
+		EXPECT_EQ(diagnostics.one_passage_moved, e.one_passage_moved);
+		EXPECT_EQ(diagnostics.both_pass_twice, 0u);
+		EXPECT_EQ(diagnostics.bundle_vertices, 0u);
 	}
 }
