@@ -9,8 +9,12 @@ repository (`plans/polygon-intersection-tools/overlay_proto.py`, `overlay_polyli
 code. Every decision in PLAN.md's Status entries of 2026-10-30 and 2026-10-31 is taken as given and is
 not reargued here; section 13 records what was rejected and why, for the design doc later.
 
-Where the walk-through, the run reports and the survey disagree, the later document wins (run 3 over
-run 2 over the walk-through for the vertex rules). The two places it matters: run 3 corrects the
+**Amended 2026-11-04 by run 4** (`phase4a-run4.md`, adopted by the developer: `CONFIGS['r4t']`): the
+one-passage rule (3.7.1 case 1b), the spike rule's tip condition (3.4), and the bundle rule only where
+both polygons pass more than once (3.6, 3.8). The passages so amended say so.
+
+Where the walk-through, the run reports and the survey disagree, the later document wins (run 4 over
+run 3 over run 2 over the walk-through for the vertex rules). The two places it matters: run 3 corrects the
 walk-through's 7.6 and 7.7 mechanism ("along one thick plane" becomes "a short first arc leaving
 from off the vertex's output position", run 3 section 2), and the walk-through's 7.4 is read with the
 claim check's correction that the `LL` rule fixes only its own polygon's other class (run 2 section 12,
@@ -460,8 +464,12 @@ Combinatorial, on piece ends (`_contract` under V1b, `:578-606`):
   (walk-through 7.3). A loop *with* an interior original vertex (the wedge tip `x, v, x`) is not.
 - **Spike**: two consecutive pieces of one ring, neither closed, neither with an interior stop, going
   from vertex `A` to `B` and straight back to `A` (`a.end == b.start && b.end == a.start && A != B`),
-  are both internal (7.6, run 2 section 1 item 6). A piece with a dangling end is skipped (run 3
-  section 1 item 5: a dangling end is not a vertex).
+  are both internal (7.6, run 2 section 1 item 6), **but only if the other polygon has at most two
+  ends at the tip `B`** (ends of its pieces not yet internal, counted when the spike is tested; run 4
+  sections 2.4 and 3.3, `spike_tip_once` in `_contract`). With two passages of the other polygon at the
+  tip, the tip is a self-touch of that polygon, the hairpin can lie between its passages, and removing
+  it removes a crossing (`chain#28` seed 2). A piece with a dangling end is skipped (run 3 section 1
+  item 5: a dangling end is not a vertex).
 
 After both, each vertex's `d_ends` drops the ends of internal pieces (`:604-605`). The count of ends at
 a vertex stays even for each polygon (6.2).
@@ -502,7 +510,8 @@ direction relative to the first ray (`dot(c, cross(d0, d))`, ties broken by `dot
 rounded decision; measured (run 2 section 5, run 3 `bndflt`): no disagreement with the exact order at
 any vertex where the order was used, down to rays `1.8e-15` rad apart, and a swap of two rays that
 close changes neither the memberships between them nor the pairing (walk-through 7.6). The order is
-used only at six or more ends (3.7); at four it is not consulted.
+used only at six or more ends where **both** polygons pass more than once (3.7, 3.8): at four ends it
+is not consulted, and where one polygon passes once (3.7.1 case 1b, run 4) neither.
 
 Each ray also records the bundle rule's quantities (`_ray_cone`, `:652-680`): `delta` = angle from the
 vertex's output position `c` to the arc's start `s_r` (exactly `0` when `s_r` *is* the vertex's output
@@ -559,8 +568,22 @@ the deductions, the per-sector memberships and the order used:
      equal known classes of one polygon are a check failure. Nothing is said about the other polygon.
    - otherwise (touch records): `P` crosses iff `P`'s two classes differ, and the same for `Q`, and the
      two must agree. Three known classes fix the fourth; four that disagree are a check failure.
+1b. **Six or more ends, one polygon with exactly two ends** (it passes once; a common ray counts as an
+   end of both): the one-passage rule (run 4 section 3.1; `_is_once`, `_solve_once`), combinatorial.
+   Any classes of the other polygon's rays can be realised by some order, so the measured order adds
+   nothing and is not consulted. Let `X` be that polygon, `a` and `b` its two ends, and `m_in(e)` the
+   other polygon's membership on the inside-`X` side of end `e`: the end's class for a plain ray, and
+   for a common ray `1` if same side, `0` if opposite. The one relation is
+   `m_in(b) = m_in(a) xor n`, `n` the number of the other polygon's rays classified inside `X`, mod 2.
+   With exactly one term unknown (an end's class, or the one unclassified other ray's) it is deduced;
+   with all known, a false relation is a check failure. Memberships for linking: the sector walk on
+   the order `a, [other rays inside X, in measured relative order], b, [the rays outside]`, or its
+   mirror if that has no solution. Run 4 found the sector walk wrong at such vertices in three ways,
+   all with an exact but uninformative order (a crossing counted at both ends of a band arc; a long
+   ray inside a `2h` common ray's direction gap; a corner cut off by the spike rule), in 0.8% of
+   `chain` cases.
 2. **Otherwise** the sector walk (`_walk`, `:895-921`), on the measured order of rays or, at six or more
-   ends with the bundle rule, on every admissible order (3.8). Each classified ray contributes a
+   ends where both polygons pass more than once, with the bundle rule, on every admissible order (3.8). Each classified ray contributes a
    constraint on the two sectors beside it: a `P` ray with class `c` fixes `in Q = c` there, a `Q` ray
    fixes `in P`, a common ray with class same/opposite fixes `in P xor in Q = 0/1`. Walking round the
    order from a start `(a, b)` and flipping `P` at each `P` ray, `Q` at each `Q` ray, both at a common
@@ -576,11 +599,14 @@ which is how a chain's class travels from its end along the chain (walk-through 
 ### 3.8 The bundle rule (six or more ends)
 
 Run 3 section 3.1, built in `_bundle_split`, `_ray_angles`, `_admissible`, `_bundle_orders` and
-`_choose_order` (`:923-1062`). At a vertex with six or more ends (a common ray counting two):
+`_choose_order` (`:923-1062`). At a vertex with six or more ends (a common ray counting two) where both
+polygons pass more than once (run 4: where one passes once, 3.7.1 case 1b applies instead; the hunts
+reach this in about 1 vertex in 3500 cases, and run 3's residue vertices are all one-passage ones):
 
 1. **Anchored and floating rays** (`_bundle_split`). Rays in order of certainty (smallest cone, then
    largest reach); a ray is anchored if, against every ray already anchored, the angle between their
-   directions is at least the sum of their cones; else it floats. At a vertex whose rays all start at
+   directions is at least the sum of their cones; else it floats. A ray with a cone of `pi` (or no
+   direction) never anchors (run 4). At a vertex whose rays all start at
    its output position every cone is `0`, every ray is anchored, and nothing below changes anything.
    Rounded: the separability test. A flip at the margin moves one ray between anchored and floating,
    which either changes nothing (one consistent placement, the usual case: run 3 section 4.2, the
@@ -1182,7 +1208,9 @@ throws in the unit tests and the pygplates module, AGENTS.md) and are not checke
 What the data can get wrong is the classes, and the checks of 3.9 test them. A check failure after
 repair means the classes describe no consistent arrangement: a missed or spurious intersection (R9,
 R11), a band piece's midpoint test propagated where the margin order should have prevented it, or a
-vertex the bundle rule could not resolve. None was seen in any normal run (run 3 section 7).
+vertex the bundle rule could not resolve. None was seen in any normal run (run 3 section 7). Run 4
+found, and the one-passage rule removes, a fourth: the sector walk at a six-end vertex where one
+polygon passes once, on an order that is exact but uninformative there (19 of 2393 `chain` cases).
 
 ### 9.2 What happens then: never a silent wrong answer
 
@@ -1324,7 +1352,7 @@ The hunt's generators (`overlay_hunt.py`'s `near`, `chain`, `tinyhole`, `rays`, 
 Record for record, piece for piece, class for class, as PLAN.md Phase 5 requires. The wiring:
 
 1. The prototype gains an exporter (`overlay_export.py`, in the planning repository) that runs
-   `run_overlay` under `CONFIGS['bnd']` on a case from any generator or the catalogue, skips cases
+   `run_overlay` under the chosen configuration (`--config`, now `r4t`; it was `bnd` until run 4) on a case from any generator or the catalogue, skips cases
    `arc_ref` flags ambiguous (as the PR A hunt did), and writes one text file per case: the inputs
    as doubles (lat/lon or xyz), the records (kind, both segment indices) in both orders, the vertices
    as sets of record indices, each piece as (polygon, ring, start record, end record, internal), each
@@ -1448,6 +1476,10 @@ For the design doc later (Phase 6, doc 5.3 onwards). Each with where the evidenc
 | **A parallel list of provenance tables beside the geometry lists** | couples two lists by position across three consumers | 8.2 |
 | **Deciding the result from the records alone** (any record means `INTERSECTING`, today's rule) | a touch from one side would split a geometry at a boundary it only touches, and the cascade would re-split it at every shared boundary | survey Q4, decided |
 | **Repairing silently and returning in release builds** (walk-through 9.3's first proposal) | the developer's requirement: never a silent wrong answer | section 9 |
+| **The sector walk at a six-end vertex where one polygon passes once** (the chosen configuration before run 4) | the order there is exact but carries no information; 19 of 2393 `chain` cases fail (a crossing counted at both ends of a band arc, a ray inside a common ray's direction gap, a corner cut off by the spike rule) | run 4 section 2 |
+| **One local rule per mechanism**: the along rule, the gap cone (a common ray's cone at least its two tangents' angle), silent one-polygon vertices | each fixes one mechanism only; silent vertices break `tinyhole#123` | run 4 section 2.6 |
+| **No spike rule** (`r4n`) | as clean, but 77 against 48 degenerate rings dropped in the catalogue and 10 to 40 more midpoint tests per 300 dense shared edges | run 4 section 3.3 |
+| **Chord directions for the rotational order; a one-sided cone for common rays** | chords of snapped arcs can cross without a record; the one-sided cone needs an exact symbolic tie (reasoning only, not built) | run 4 section 7 |
 
 ## 14. Open questions for the developer
 

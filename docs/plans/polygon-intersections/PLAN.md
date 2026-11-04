@@ -372,11 +372,21 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   snapshots. **Checkpoint:** the developer adopts `r4t` or `r4n` (no spike rule; run 4 open question 1),
   then the design (run 4 section 7) and the C++ change, before step 5.
 
+- 2026-11-04: **Decided (developer): `r4t`** (the one-passage rule and the restricted spike rule; run
+  4's recommendation, over `r4n`). The chosen configuration is now `CONFIGS['r4t']`; `phase4b-design.md`
+  is amended (its header, 3.4, 3.6, 3.7.1 case 1b, 3.8, 9.1, 11.2, 13). **Phase 5 step 4b done**
+  (`8b643ba6e`): the C++ has the rule, the snapshots are re-exported under `r4t` (the catalogue's is
+  byte-identical to `bnd`'s), and the comparison agrees in every committed case and in 6291 uncommitted
+  ones, including `chain` at seven seeds (no prototype failure left). Within a half at a one-passage
+  vertex the linking order keeps the measured relative order of the rays, as the prototype does (run 4
+  open question 2: ring structure only). The bundle rule is now reached in about 1 vertex in 3500 cases,
+  so its step 4 verification (against `bnd`, before 4b) is what covers it.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
-    are done (Status, 2026-11-04). Open: adopting run 4's rule (Status, run 4 entry). Then step 5 (anchorless
-    chains) and 6 (repair and `InconsistentOverlayException`). The prototype comparison is
+    and 4b (run 4's rule) are done (Status, 2026-11-04). Next: step 5 (anchorless chains), then 6
+    (repair and `InconsistentOverlayException`). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
