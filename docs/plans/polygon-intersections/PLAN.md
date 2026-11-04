@@ -390,11 +390,22 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   `overlay_export.py --anchorless`, planning `c5d4ad4`) agree with the prototype; inverting the class
   fails 47. No hunt generator produces an anchorless chain (every hunt export had none).
 
+- 2026-11-04: **Phase 5 step 6 done: repair and failure** (`e9b54acac`). Repair as the prototype's
+  (first failing vertex, least reliable class by method then length, 20 rounds), plus the design's
+  whole-chain candidate (no prototype counterpart), tried before single flips of its rank: the test
+  chain needs 6 single flips without it, 1 with it. What repair cannot fix (or an unresolved piece)
+  throws `InconsistentOverlayException` with the diagnostics and the failing vertex;
+  `Options::max_repair_rounds` and `Options::throw_if_inconsistent` (count instead) are for tests and
+  hunts. The prototype comparison now fails a case on any C++ repair (generated data must need none):
+  still 0 in all 6291 uncommitted cases. Not yet done from design 9: the debug-only all-vertices
+  assertion (counted only), and the debug dump's comparison form (9.3); the partitioner's and the
+  products' handling of the exception (steps 11 to 13).
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
-    and 4b (run 4's rule) and 5 (anchorless chains) are done (Status, 2026-11-04). Next: step 6
-    (repair and `InconsistentOverlayException`), then 7 (linking). The prototype comparison is
+    and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
+    2026-11-04). Next: a Fable review of steps 4 to 6, then step 7 (linking, split, clean-up). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries
