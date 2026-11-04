@@ -448,13 +448,50 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   committed and 6291 uncommitted cases pass. **Open, for PR C**: output rings that cross themselves
   (where the input's do) have no orientation with the output on the left all round.
 
+- 2026-11-05: **Fable review 3** of steps 7 and 8 (`phase5-review-3.md`), and its fixes, all done (the
+  developer chose the root cause for 1.2, in the prototype too, and every test gap):
+  - **1.2, a silent wrong answer** (upstream, step 2): where an input touches itself on a stretch it
+    shares with the other (a hole's tip on its own exterior's edge), `GeometryIntersect`, which never
+    intersects an input with itself, cuts only the other's segment, so nothing pairs; the band
+    classes then let the sector walk deduce wrong common classes that every check accepted. Fixed by
+    **self-touch cuts** (design 3.5; prototype configuration `r5c`, planning `bc564e1`): an unpaired
+    single arc whose ends the other input joins by a chain within the thickness of its segment is cut
+    at the chain's vertices, and the pieces built again. Measured (cases with a cut): `shared` 256 of
+    598, `rays` 226 of 598, `chain` 82 of 598 (266 of 2099 in the chain set), `near` 2, `six` 4,
+    `tinyhole`, `zero` and `holes` none; catalogue `d4` 13 of 49; bundle 7 of 15. The C++ and the
+    prototype agree on every case of every set. Getting them to agree found three traps, each now a
+    comment at the code: the prototype's `T_SINE` is the old thickness (PR A made it `s`, `S_SINE`,
+    larger by sqrt 2); a segment `GreatCircleArc` calls zero length has no rotation axis (its own
+    plane, in doubles: `Vector3D` will not normalise so short a normal); a chain vertex at a segment's
+    end needs a margin of `1e-12` rad or doubles and the prototype disagree. And one in the tools:
+    `CONFIGS` already had an `r4s`, and a later duplicate key silently won.
+  - **The guard**: a hemisphere-check failure now throws for every operation under
+    `throw_if_inconsistent` (counted otherwise), with a message that names both causes it cannot tell
+    apart (an output over a hemisphere, or wrong classes).
+  - **1.1, a false throw**: at a vertex whose rays are all common (identical inputs that touch
+    themselves) the sector walk knows the memberships only up to swapping both; consecutive kept rays
+    pair, either phase, and the split decomposes.
+  - **Tests**: identical self-touching inputs, the self-touch on a shared edge (both inputs, on and
+    `0.5h` off), a four-kept bounce, a vertex both inputs pass twice, the wedge's split pinned, the
+    area-sum oracle (design 11.3: robust ring areas, parity by depth, a tolerance of `2h` times the
+    perimeters over the area; skipped for degenerate input rings, isoperimetric ratio under `1e-3`),
+    the orientation checked by the vector area rather than `PolygonOrientation`, review 3's four hunt
+    cases, `chain#146` seed 2, and a new hunt generator `holes` (non-crossing inputs with holes and
+    islands; 300 pass, 20 committed). The ring comparison now skips cases whose prototype rings depend
+    on the tie order (design 11.2 item 4; 14 catalogue, 8 hunt, 2 bundle cases). Every mutation of the
+    new code fails a committed test. All 798 committed and 6591 uncommitted cases pass.
+  - **Now unreachable**: a non-common ray without a direction. Its one case (`d4 hole-between`) is
+    now a self-touch cut, and no committed or constructed case reaches one; `RaysWithoutDirection` was
+    replaced by `ShortSegmentSelfTouch`. The code stays (real data can have short segments).
+  - **For step 9**: the walk would index a polyline's dangling end (review 3 1.4).
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
     2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
-    Next: a Fable review of steps 7 and 8 (ask about the usage limit first), then step 9 (polylines);
-    open: the three bundle-vertex failures (Status, review 2 entry). The prototype comparison is
+    Review 3 (steps 7 and 8) and its fixes done, 2026-11-05. Next: step 9 (polylines); open: the
+    three bundle-vertex failures (Status, review 2 entry), not yet re-run under `r5c`. The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries

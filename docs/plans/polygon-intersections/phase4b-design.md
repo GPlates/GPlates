@@ -484,6 +484,24 @@ would itself be a record, so a piece with an interior vertex is not on the other
 confirmed in every Phase 4a run (requirements "R4 is confirmed by use"). Direction is not needed:
 the linking uses none (6.3).
 
+**Self-touch cuts** (review 3, finding 1.2; configuration `r5c`, which the prototype comparison now
+runs). The argument fails for a vertex of *another ring of the same input*: `GeometryIntersect` never
+intersects an input with itself, so where an input touches itself on a stretch it shares with the
+other input (a hole's tip on its own exterior's edge), the other input's segment is cut there (a
+record names the tip) and the touched segment is not. Its one piece then faces a chain of the other
+input's pieces, nothing pairs, all of them are band pieces with arbitrary classes, and the sector
+walk could deduce wrong classes from them that every check accepted: a silent wrong intersection and
+difference. So after the pairing, a single-arc piece with no partner, whose two vertices the other
+input joins by a chain of single-arc pieces through vertices within the thickness of the piece's
+segment (its own plane, also for a segment `GreatCircleArc` calls zero length) and in order along it
+(each further than the last by more than rounding, `1e-12` radians, so that a vertex at the
+segment's end is not taken for one inside it differently in doubles and in the prototype's
+arithmetic), is cut at those vertices (a stop of the vertex that no record of the ring names), and
+the stops, pieces, loops, spikes and pairs are built again, once (`Overlay::find_self_touch_cuts`,
+`Diagnostics::self_touch_cuts`). The chain's arcs lie within the thickness of the piece, so the cut
+pieces run with the chain's as common pairs; without the cut they were band pieces anyway. How often
+it fires is measured in PLAN.md (the review 3 entry).
+
 ### 3.6 Rays and the rotational order
 
 For each end at a vertex, one ray, except that the `Q` end of a common pair joins its `P` end's ray
@@ -713,13 +731,16 @@ an opposite-sides chain iff `f(1, 0) != f(0, 1)`. Section 5 lists `f` per operat
 | two kept ends | the one pairing | none |
 | four ends, two per polygon, none common (the free rule) | at a crossing, the sector `(mP, mQ)` with `f(mP, mQ)` is bounded by the `P` piece whose class is `mQ` and the `Q` piece whose class is `mP`; pair those. At a bounce, `P`'s two ends pair and `Q`'s two pair (the split pairing of 6.4, so the cut of 3.11 is never needed here) | none |
 | only one polygon has ends left (the other's were a loop or spike) | **ring continuity** (run 3 section 5): each arriving end pairs with the end leaving from the same stop of its ring, the ring passing straight through | none |
-| otherwise (six or more ends, or common rays) | `solve_vertex` without the free rule, on the chosen order (3.8): output membership per sector is `f(mP, mQ)`; a ray is kept iff the output differs across it (asserted equal to the table, `keep_mismatch`); pair consecutive kept rays across the output sectors | the rotational order |
+| otherwise (six or more ends, or common rays) | `solve_vertex` without the free rule, on the chosen order (3.8): output membership per sector is `f(mP, mQ)`; a ray is kept iff the output differs across it (counted if not as the table says, `keep_mismatches`); pair consecutive kept rays across the output sectors | the rotational order |
+| every ray common (identical inputs that touch themselves; review 3 1.1) | the sector walk knows the memberships only up to swapping both (a common ray fixes `mP != mQ`), so not which sectors are the output: pair consecutive kept rays in the order used, either phase; the split (3.11) then cuts a ring through the vertex twice into the one non-crossing decomposition | the rotational order |
 
 The walk: start at any unused kept ray, append its vertex's position, then the piece's interior stop
 positions (reversed when walking from the piece's end), arrive at the piece's other end's ray, take
 its pair, until back at the start. Every kept piece has two ends and each is paired, so every walk
-closes (9.1, an assertion). Kept closed pieces (rings with no record) are rings on their own. Each
-output point records the stop it came from, for provenance (section 7).
+closes (9.1; a walk that does not is a pairing failure). Kept closed pieces (rings with no record)
+are rings on their own. Along a common pair the walk follows the subject's piece, so the output's
+positions there are the subject's (the clip's can differ by up to `h`), which is right for
+partitioning; provenance (step 10, section 7) gives such a point both locations.
 
 ### 3.11 Split and clean-up
 
@@ -780,8 +801,9 @@ of the output (points inside an odd number of output rings) is what the oracle v
 3. Even depth is an exterior, odd depth a hole, and a hole belongs to its parent (which has even
    depth). An island inside a hole is an exterior of its own.
 
-`O(R_out^2)` bounding-circle checks and at most that many point tests; `R_out` is small. This agrees
-with walk-through section 11 ("the smallest exterior that contains it").
+`O(R_out^2)` containment tests, each a distance scan of one ring's vertices against the other and a
+point test; `R_out` is small. This agrees with walk-through section 11 ("the smallest exterior that
+contains it").
 
 ### 4.3 The output side, and the hemisphere check
 
@@ -796,12 +818,18 @@ with walk-through section 11 ("the smallest exterior that contains it").
 - **The hemisphere check** is the oracle at one point: a reference point farther than `10h` from both
   inputs' outlines (the first of the inputs' bounding-circle centres, their antipodes and the six
   axis points that is), read by parity over the output rings, must be in the output exactly when
-  `f(in P, in Q)`. An output exceeding a hemisphere is read as its complement, which flips every
-  point (its outer ring's smaller side is the complement, and every other ring is then at depth 0),
-  so one point detects it. Parity also reads an input whose rings cross correctly, so the check
-  does not misfire there. For `UNION` and `SYMMETRIC_DIFFERENCE` a failure throws; for the others it
-  is counted (`hemisphere_check_failures`), since their output lies inside an input. No point clear
-  of both outlines (never seen) is counted too (`hemisphere_check_skipped`).
+  `f(in P, in Q)`. Why one point suffices (review 3's statement): given rings along the right edges,
+  the parity over their smaller sides is everywhere either the output or its complement, since each
+  ring whose output side is its larger side complements the reading (its smaller side differs from
+  its output side by the whole sphere), and an even number of them cancel. So the check neither
+  misses nor misfires on a correct output, touching rings and crossing inputs included. What it
+  detects is an odd number of rings read by the wrong side: an output exceeding a hemisphere (a
+  union or a symmetric difference), or wrong classes (the only cause for the intersection and the
+  differences, which lie inside an input). It cannot tell the two apart, and its message says so. A
+  failure throws `InconsistentOverlayException` for every operation, unless
+  `Options::throw_if_inconsistent` is false (then counted, `hemisphere_check_failures`, and the rings
+  returned as read, as every other failure is). No point clear of both outlines (never seen) is
+  counted too (`hemisphere_check_skipped`).
 
 Measured: all 774 committed and 6291 uncommitted prototype cases pass the oracle read polygon by
 polygon, with every ring oriented, where no input ring crosses another (the hunt's generators move
@@ -1227,8 +1255,10 @@ items in API terms, plus `partition_geometry()` accepting and returning coverage
 By construction (assertions on the overlay's own code, never on data): every polygon has an even
 number of ends at every vertex (6.2), every walk closes (3.10), the kept rays at a sector-walked
 vertex equal the keep-rule's (`keep_mismatch`), and the whole-chain and single flips of repair only
-ever touch classified pieces. These are `GPlatesGlobal::Assert` in debug builds (`GPLATES_DEBUG`, which
-throws in the unit tests and the pygplates module, AGENTS.md) and are not checked in release builds.
+ever touch classified pieces. As built, the first three are counted in every build and not asserted
+(`Diagnostics::pairing_failures`, `keep_mismatches`), and a pairing failure throws
+`InconsistentOverlayException` (counted when not throwing): review 3 found inputs on which the first
+was false (the all-common vertex of 3.10, since fixed).
 
 What the data can get wrong is the classes, and the checks of 3.9 test them. A check failure after
 repair means the classes describe no consistent arrangement: a missed or spurious intersection (R9,
@@ -1246,8 +1276,9 @@ as follows.
   `src/maths/`, derived from `GPlatesMaths::MathematicalException`, `src/maths/MathematicalException.h:38`,
   as the other maths exceptions are) carrying the `Diagnostics` and the failing vertex's position and
   record kinds, so that a report can be made from it. `extract()` throws the same on a hemisphere
-  failure (5.2). Linking's `unresolved` and `pairing_failure` cannot occur once `classify()` has
-  passed its checks; they are assertions.
+  failure (5.2), and on a pairing failure. Review 3 found one consistent input that reached the
+  latter (identical inputs touching themselves: the all-common vertex of 3.10), since fixed; none is
+  known now.
 - **`PolygonPartitioner`**: lets it propagate; with no lists requested (the result-only path) it
   returns `GEOMETRY_INTERSECTING` instead, the conservative answer for the one caller of that path
   (8.5 marks the node as possibly intersecting, which costs rendering work and nothing else). The
@@ -1407,9 +1438,13 @@ As PLAN.md Phase 5: no new exact reference. For random points `p` away from both
 - `p` is inside the inside output exactly when it is inside `P` and inside `Q` (`is_point_in_polygon`,
   threshold off, parity over each output polygon's rings), and inside the outside output exactly when
   inside `P` and not `Q`; for each operation `f`, inside the output exactly when `f(p in P, p in Q)`;
-- the inside and outside outputs are disjoint and their areas sum to `P`'s (`get_area()`), within a
-  tolerance, with the parity-area caveat for self-crossing rings and only with the sliver filter off
-  (4.5);
+- the inside and outside outputs are disjoint and their areas sum to `P`'s, with the sliver filter
+  off (4.5) and for inputs whose rings do not cross. As built (`PolygonOverlayOracle::area_sum_error`):
+  each ring's area by a fan from its vertices' mean, Van Oosterom and Strackee's formula per triangle
+  (`SphericalArea`'s fan drops the triangle of every edge that is zero length to `GreatCircleArc`), and
+  each polygon's rings signed by their depth among its rings (as point-in-polygon reads them, so an
+  island in a hole adds); within `2h` times both inputs' perimeters over `P`'s area, since an output
+  ring runs through its vertices' output positions, up to `h` off an input's edge;
 - for a polyline, points sampled along it (spherically, `overlay_polyline.py:271-282`) lie in exactly
   one output polyline whose class is their parity against `Q`.
 
