@@ -37,6 +37,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonOverlay.h"
+#include "maths/PolygonOrientation.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -214,6 +215,88 @@ namespace PolygonOverlayOracle
 			}
 		}
 		return num_failures;
+	}
+
+
+	/**
+	 * The number of samples whose membership of the output, read as @a polygons (each by parity
+	 * over its exterior and holes, as point-in-polygon reads a polygon, and the union over the
+	 * polygons), is not f(in subject, in clip). This checks the grouping as well as the rings.
+	 */
+	inline
+	unsigned int
+	count_failures(
+			const GPlatesMaths::PolygonOnSphere &subject,
+			const GPlatesMaths::PolygonOnSphere &clip,
+			GPlatesMaths::PolygonOverlay::Operation operation,
+			const std::vector<GPlatesMaths::PolygonOverlay::OutputPolygon> &polygons,
+			const std::vector<GPlatesMaths::PointOnSphere> &samples)
+	{
+		using namespace GPlatesMaths;
+
+		std::vector<PolygonOnSphere::non_null_ptr_to_const_type> output_polygons;
+		for (const PolygonOverlay::OutputPolygon &polygon : polygons)
+		{
+			std::vector<std::vector<PointOnSphere>> interiors;
+			for (const PolygonOverlay::OutputRing &interior : polygon.interiors)
+			{
+				interiors.push_back(interior.points);
+			}
+			output_polygons.push_back(PolygonOnSphere::create(polygon.exterior.points, interiors));
+		}
+
+		unsigned int num_failures = 0;
+		for (const PointOnSphere &p : samples)
+		{
+			const bool in_subject =
+					subject.is_point_in_polygon(p, PolygonOnSphere::ADAPTIVE, false);
+			const bool in_clip = clip.is_point_in_polygon(p, PolygonOnSphere::ADAPTIVE, false);
+			unsigned int num_containing = 0;
+			for (const auto &output_polygon : output_polygons)
+			{
+				if (output_polygon->is_point_in_polygon(p, PolygonOnSphere::ADAPTIVE, false))
+				{
+					++num_containing;
+				}
+			}
+			// The output polygons are disjoint, so no point is in two of them.
+			const bool in_output = PolygonOverlay::is_in_output(operation, in_subject, in_clip);
+			if (num_containing > 1 || (num_containing == 1) != in_output)
+			{
+				++num_failures;
+			}
+		}
+		return num_failures;
+	}
+
+
+	/**
+	 * The number of rings of @a polygons not oriented with the output on their left: an exterior
+	 * not anticlockwise, or a hole not clockwise. (With the grouping checked by the oracle, the
+	 * orientation says which side is the output.)
+	 */
+	inline
+	unsigned int
+	count_misoriented_rings(
+			const std::vector<GPlatesMaths::PolygonOverlay::OutputPolygon> &polygons)
+	{
+		using namespace GPlatesMaths;
+
+		const auto anticlockwise = [](const PolygonOverlay::OutputRing &ring)
+		{
+			return PolygonOrientation::calculate_polygon_orientation(
+					*PolygonOnSphere::create(ring.points)) == PolygonOrientation::COUNTERCLOCKWISE;
+		};
+		unsigned int num_misoriented = 0;
+		for (const PolygonOverlay::OutputPolygon &polygon : polygons)
+		{
+			num_misoriented += anticlockwise(polygon.exterior) ? 0 : 1;
+			for (const PolygonOverlay::OutputRing &interior : polygon.interiors)
+			{
+				num_misoriented += anticlockwise(interior) ? 1 : 0;
+			}
+		}
+		return num_misoriented;
 	}
 }
 

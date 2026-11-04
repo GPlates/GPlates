@@ -510,6 +510,12 @@ namespace GPlatesMaths
 			unsigned int rings_split = 0;             // cuts of a ring passing a vertex twice
 			unsigned int repeated_positions_removed = 0;
 			unsigned int collapsed_rings_dropped = 0; // fewer than three distinct positions
+
+			// Grouping and the hemisphere check, accumulated over every extract.
+			unsigned int coincident_rings = 0;        // ring pairs with no vertex off the other
+			unsigned int grouping_failures = 0;       // a hole whose parent is not an exterior
+			unsigned int hemisphere_check_failures = 0;  // intersection and differences only
+			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
 		};
 
 
@@ -572,11 +578,23 @@ namespace GPlatesMaths
 		};
 
 
-		//! One output ring (phase4b-design.md section 2.8), not yet grouped into polygons.
+		/**
+		 * One output ring (phase4b-design.md section 2.8). In an OutputPolygon it has the output on
+		 * its left: an exterior runs anticlockwise seen from outside the sphere, a hole clockwise.
+		 */
 		class OutputRing
 		{
 		public:
 			std::vector<PointOnSphere> points;
+		};
+
+
+		//! One output polygon: an exterior ring and its holes (phase4b-design.md section 4.2).
+		class OutputPolygon
+		{
+		public:
+			OutputRing exterior;
+			std::vector<OutputRing> interiors;
 		};
 
 
@@ -733,10 +751,29 @@ namespace GPlatesMaths
 
 
 			/**
+			 * The output of one operation as polygons with holes (phase4b-design.md sections 3.10
+			 * to 4.3): the rings of @a extract_rings grouped by containment with parity depth (an
+			 * even depth is an exterior, an odd depth a hole of the ring containing it, and an
+			 * island in a hole an exterior of its own), each oriented with the output on its left.
+			 * Appended to @a polygons.
+			 *
+			 * Call after @a classify. @throws InconsistentOverlayException if the union or the
+			 * symmetric difference exceeds a hemisphere (its rings would be read as its
+			 * complement, section 5.2), whatever Options::throw_if_inconsistent says: it never
+			 * returns the complement. For the other operations, whose output lies inside an input,
+			 * that is counted instead (Diagnostics::hemisphere_check_failures). Also throws as
+			 * @a extract_rings does.
+			 */
+			void
+			extract(
+					Operation operation,
+					std::vector<OutputPolygon> &polygons) const;
+
+			/**
 			 * The rings of one operation's output (phase4b-design.md sections 3.10 and 3.11): the
 			 * kept ends paired at every vertex and walked into rings, rings passing a vertex twice
 			 * cut there, repeated positions removed and collapsed rings dropped. Appended to
-			 * @a rings. Not yet grouped into polygons, nor oriented.
+			 * @a rings. Not grouped into polygons, and in the direction walked (arbitrary).
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if a vertex's ends
 			 * cannot be paired (which consistent classes rule out), unless

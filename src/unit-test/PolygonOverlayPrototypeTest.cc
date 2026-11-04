@@ -37,6 +37,7 @@
 
 #include "maths/GeometryDistance.h"
 #include "maths/GeometryIntersect.h"
+#include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonOverlay.h"
@@ -81,6 +82,7 @@
 
 namespace
 {
+	using GPlatesMaths::GreatCircleArc;
 	using GPlatesMaths::GeometryIntersect::Intersection;
 	using GPlatesMaths::PointOnSphere;
 	using GPlatesMaths::PolygonOnSphere;
@@ -295,6 +297,71 @@ namespace
 	}
 
 
+	//! Whether two points are the same stored position, coordinate for coordinate.
+	bool
+	same_position(
+			const PointOnSphere &a,
+			const PointOnSphere &b)
+	{
+		return a.position_vector().x().dval() == b.position_vector().x().dval() &&
+				a.position_vector().y().dval() == b.position_vector().y().dval() &&
+				a.position_vector().z().dval() == b.position_vector().z().dval();
+	}
+
+
+	/**
+	 * Whether two segments of a polygon's rings cross (clearly: each segment's ends on opposite
+	 * sides of the other's great circle by more than rounding, so that segments meeting at a
+	 * vertex or touching do not count). The catalogue's twists cross themselves, and the hunt's
+	 * generators move vertices onto the other polygon and place holes near their ring's vertex
+	 * centroid, which can reach outside it. The output side and the hemisphere
+	 * check assume rings that do not cross (phase4b-design.md section 4.3).
+	 */
+	bool
+	rings_cross(
+			const PolygonOnSphere &polygon)
+	{
+		const std::vector<GreatCircleArc> arcs(polygon.begin(), polygon.end());
+		for (unsigned int i = 0; i < arcs.size(); ++i)
+		{
+			for (unsigned int j = i + 1; j < arcs.size(); ++j)
+			{
+				const GreatCircleArc &a = arcs[i];
+				const GreatCircleArc &b = arcs[j];
+				if (a.is_zero_length() || b.is_zero_length() ||
+					same_position(a.start_point(), b.start_point()) ||
+					same_position(a.start_point(), b.end_point()) ||
+					same_position(a.end_point(), b.start_point()) ||
+					same_position(a.end_point(), b.end_point()))
+				{
+					continue;  // a zero-length segment, or two meeting at a vertex
+				}
+				const auto midpoint = [](const GreatCircleArc &arc)
+				{
+					return Vector3D(arc.start_point().position_vector()) +
+							Vector3D(arc.end_point().position_vector());
+				};
+				const auto side = [](const GreatCircleArc &arc, const PointOnSphere &point)
+				{
+					return dot(arc.rotation_axis(), point.position_vector()).dval();
+				};
+				const auto opposite = [](double x, double y)
+				{
+					return (x > 1e-14 && y < -1e-14) || (x < -1e-14 && y > 1e-14);
+				};
+				if (opposite(side(a, b.start_point()), side(a, b.end_point())) &&
+					opposite(side(b, a.start_point()), side(b, a.end_point())) &&
+					// The same crossing of the two great circles, not its antipode.
+					dot(midpoint(a), midpoint(b)).dval() > 0)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+
 	//! A ring without points within 1e-9 radians of the one before (cyclically).
 	std::vector<PointOnSphere>
 	without_near_repeats(
@@ -353,6 +420,9 @@ namespace
 	 */
 	//! Ring sets not compared because their decomposition is ambiguous (see compare_rings).
 	unsigned int num_ambiguous_ring_sets = 0;
+
+	//! Cases whose input rings cross, not checked as polygons (see rings_cross).
+	unsigned int num_crossing_inputs = 0;
 
 
 	std::string
@@ -693,6 +763,13 @@ namespace
 				// The output of every operation, by the oracle (phase4b-design.md section 11.3).
 				const std::vector<PointOnSphere> samples =
 						PolygonOverlayOracle::get_samples(*P, *Q, overlay);
+				// Grouping and orientation only where no input rings cross: otherwise the output
+				// crosses itself where the input does, and its rings have no consistent side.
+				const bool input_rings_cross = rings_cross(*P) || rings_cross(*Q);
+				if (input_rings_cross)
+				{
+					++num_crossing_inputs;
+				}
 				std::stringstream oracle_report;
 				for (Overlay::Operation operation : {
 						Overlay::INTERSECTION, Overlay::DIFFERENCE, Overlay::REVERSE_DIFFERENCE,
@@ -707,13 +784,51 @@ namespace
 						oracle_report << "operation " << operation << ": " << failures << " of "
 								<< samples.size() << " samples wrong; ";
 					}
+
+					// Grouped into polygons, with the output on the left of every ring. (Where
+					// input rings cross, only that no hemisphere failure is found: the output rings
+					// cross where the input's do, and their grouping into polygons means nothing.)
+					std::vector<Overlay::OutputPolygon> polygons;
+					try
+					{
+						overlay.extract(operation, polygons);
+					}
+					catch (const Overlay::InconsistentOverlayException &)
+					{
+						oracle_report << "operation " << operation << ": over a hemisphere; ";
+						continue;
+					}
+					if (input_rings_cross)
+					{
+						continue;
+					}
+					const unsigned int polygon_failures = PolygonOverlayOracle::count_failures(
+							*P, *Q, operation, polygons, samples);
+					const unsigned int misoriented =
+							PolygonOverlayOracle::count_misoriented_rings(polygons);
+					if (polygon_failures != 0 || misoriented != 0)
+					{
+						oracle_report << "operation " << operation << ": " << polygon_failures
+								<< " samples wrong as polygons, " << misoriented
+								<< " rings misoriented; ";
+					}
 				}
-				if (overlay.get_diagnostics().pairing_failures != 0 ||
-					overlay.get_diagnostics().keep_mismatches != 0)
+				const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+				if (diagnostics.pairing_failures != 0 || diagnostics.keep_mismatches != 0)
 				{
-					oracle_report << overlay.get_diagnostics().pairing_failures
-							<< " pairing failures, "
-							<< overlay.get_diagnostics().keep_mismatches << " keep mismatches; ";
+					oracle_report << diagnostics.pairing_failures << " pairing failures, "
+							<< diagnostics.keep_mismatches << " keep mismatches; ";
+				}
+				if (diagnostics.hemisphere_check_failures != 0 ||
+					diagnostics.hemisphere_check_skipped != 0 ||
+					(!input_rings_cross &&
+						(diagnostics.coincident_rings != 0 || diagnostics.grouping_failures != 0)))
+				{
+					oracle_report << diagnostics.hemisphere_check_failures
+							<< " hemisphere check failures, "
+							<< diagnostics.hemisphere_check_skipped << " skipped, "
+							<< diagnostics.coincident_rings << " coincident rings, "
+							<< diagnostics.grouping_failures << " grouping failures; ";
 				}
 				if (!oracle_report.str().empty())
 				{
@@ -773,6 +888,7 @@ namespace
 		unsigned int num_prototype_failures = 0;
 		unsigned int num_oracle_failures = 0;
 		num_ambiguous_ring_sets = 0;
+		num_crossing_inputs = 0;
 		for (PrototypeCase &prototype_case : cases)
 		{
 			// A case the prototype itself fails in every tie order (a check failure, or repair) is
@@ -811,7 +927,8 @@ namespace
 		}
 		std::cout << cases.size() << " prototype cases, " << num_failures << " differ ("
 				<< num_oracle_failures << " in output only; " << num_ambiguous_ring_sets
-				<< " ring sets not compared, touching at two vertices); "
+				<< " ring sets not compared, touching at two vertices; " << num_crossing_inputs
+				<< " with crossing input rings not checked as polygons); "
 				<< num_band_differences << " band pieces have the other class; "
 				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
 	}
@@ -826,7 +943,8 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 
 
 // Generated cases from the Phase 4a hunt: run 2's residue, which the bundle rule clears
-// (phase4a-run3.md section 4.1), and a sample of every generator.
+// (phase4a-run3.md section 4.1), a sample of every generator, and two 'chain' cases with an
+// output ring all of whose vertices lie on another ring (grouping decides by an edge midpoint).
 TEST(PolygonOverlayPrototypeTest, Hunt)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);

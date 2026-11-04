@@ -34,10 +34,14 @@
 
 #include "PolygonOverlay.h"
 
+#include "AngularDistance.h"
+#include "AngularExtent.h"
 #include "GeometryDistance.h"
 #include "LatLonPoint.h"
 #include "MathsUtils.h"
 #include "PointInPolygon.h"
+#include "PolygonOrientation.h"
+#include "SmallCircleBounds.h"
 #include "UnitVector3D.h"
 #include "Vector3D.h"
 
@@ -171,6 +175,76 @@ namespace GPlatesMaths
 				}
 				return index;
 			}
+
+
+			/**
+			 * Whether a ring (its points) lies inside another ring (a polygon of that ring alone),
+			 * for the grouping of phase4b-design.md section 4.2.
+			 *
+			 * The rings do not cross, so one point of the ring decides, tested exactly (threshold
+			 * off): the first vertex farther from the other ring's outline than the
+			 * point-on-polygon threshold, so that the test has a margin; else (a ring thinner than
+			 * the threshold along the other, the 'six' hunt's necks) the farthest of its vertices
+			 * and its edges' midpoints (every vertex can be a shared overlay vertex: a triangle of
+			 * three touches, in the 'chain' hunt), unless all of those are on the other ring. None
+			 * then: the rings coincide.
+			 */
+			boost::optional<bool>
+			is_ring_inside_ring(
+					const std::vector<PointOnSphere> &ring_points,
+					const PolygonOnSphere &other_ring)
+			{
+				static const AngularExtent threshold = AngularExtent::create_from_cosine(
+						PointInPolygon::get_point_on_polygon_threshold_cosine());
+
+				boost::optional<PointOnSphere> farthest;
+				double farthest_distance = 0;
+				const auto consider = [&](const PointOnSphere &point)
+				{
+					const boost::optional<AngularDistance> distance =
+							minimum_distance(point, other_ring, false, threshold);
+					const double angle = distance
+							? distance->calculate_angle().dval()
+							: (std::numeric_limits<double>::max)();  // farther than the threshold
+					if (angle > farthest_distance)
+					{
+						farthest = point;
+						farthest_distance = angle;
+					}
+					return !distance;
+				};
+				for (const PointOnSphere &point : ring_points)
+				{
+					if (consider(point))
+					{
+						return other_ring.is_point_in_polygon(
+								point, PolygonOnSphere::ADAPTIVE, false);
+					}
+				}
+				for (unsigned int j = 0; j < ring_points.size(); ++j)
+				{
+					const Vector3D sum =
+							Vector3D(ring_points[j].position_vector()) +
+							Vector3D(ring_points[(j + 1) % ring_points.size()].position_vector());
+					if (sum.magSqrd().dval() > 0)
+					{
+						consider(PointOnSphere(sum.get_normalisation()));
+					}
+				}
+				if (!farthest)
+				{
+					return boost::none;
+				}
+				return other_ring.is_point_in_polygon(*farthest, PolygonOnSphere::ADAPTIVE, false);
+			}
+
+
+			/**
+			 * The hemisphere check's reference point's distance from both inputs' outlines: ten
+			 * times the thickness, so that its point-in-polygon tests, threshold off, have a
+			 * margin.
+			 */
+			const double HEMISPHERE_CHECK_MARGIN = 10.0;
 		}
 	}
 }
@@ -3226,6 +3300,189 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 						+ std::to_string(num_pairing_failures) + " vertices.",
 				d_diagnostics,
 				boost::none);
+	}
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::extract(
+		Operation operation,
+		std::vector<OutputPolygon> &polygons) const
+{
+	// Only a polygon subject's output is rings.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_subject_polygon,
+			GPLATES_ASSERTION_SOURCE);
+
+	std::vector<OutputRing> rings;
+	extract_rings(operation, rings);
+	const unsigned int num_rings = rings.size();
+
+	std::vector<PolygonOnSphere::non_null_ptr_to_const_type> ring_polygons;
+	for (const OutputRing &ring : rings)
+	{
+		ring_polygons.push_back(PolygonOnSphere::create(ring.points));
+	}
+
+	//
+	// The hemisphere check (phase4b-design.md sections 4.3 and 5.2): the output read by parity
+	// over its rings must be f(in subject, in clip). A ring means its smaller side, so an output
+	// exceeding a hemisphere (a union or a symmetric difference) is read as its complement, which
+	// flips every point; one point clear of both inputs' outlines detects it. (Not the output
+	// side of each ring from its pieces' classes: a band piece's class can put the output on the
+	// side opposite to the ring's own, the thickness-sized rings of the 'tinyhole' hunt all of
+	// whose pieces are band pieces, and a ring of an input whose rings cross has no one side.)
+	//
+	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+	const AngularExtent margin = AngularExtent::create_from_angle(HEMISPHERE_CHECK_MARGIN * h);
+	boost::optional<UnitVector3D> reference_point;
+	{
+		std::vector<UnitVector3D> candidates;
+		for (const PolygonOnSphere *polygon : { d_subject_polygon, &d_clip })
+		{
+			const UnitVector3D &centre = polygon->get_bounding_small_circle().get_centre();
+			candidates.push_back(centre);
+			candidates.push_back(-centre);
+		}
+		for (const UnitVector3D &axis : {
+				UnitVector3D::xBasis(), UnitVector3D::yBasis(), UnitVector3D::zBasis() })
+		{
+			candidates.push_back(axis);
+			candidates.push_back(-axis);
+		}
+		for (const UnitVector3D &candidate : candidates)
+		{
+			const PointOnSphere point(candidate);
+			if (!minimum_distance(point, *d_subject_polygon, false, margin) &&
+				!minimum_distance(point, d_clip, false, margin))
+			{
+				reference_point = candidate;
+				break;
+			}
+		}
+	}
+	if (reference_point)
+	{
+		const PointOnSphere point(*reference_point);
+		bool read_in_output = false;
+		for (const auto &ring_polygon : ring_polygons)
+		{
+			if (ring_polygon->is_point_in_polygon(point, PolygonOnSphere::ADAPTIVE, false))
+			{
+				read_in_output = !read_in_output;
+			}
+		}
+		const bool in_output = is_in_output(
+				operation,
+				d_subject_polygon->is_point_in_polygon(point, PolygonOnSphere::ADAPTIVE, false),
+				d_clip.is_point_in_polygon(point, d_options.clip_speed, false));
+		if (read_in_output != in_output)
+		{
+			if (operation == UNION || operation == SYMMETRIC_DIFFERENCE)
+			{
+				throw InconsistentOverlayException(
+						GPLATES_EXCEPTION_SOURCE,
+						std::string("The ") +
+								(operation == UNION ? "union" : "symmetric difference") +
+								" exceeds a hemisphere, so its rings would mean its complement.",
+						d_diagnostics,
+						point);
+			}
+			// The intersection and the differences lie inside an input: a bug.
+			++d_diagnostics.hemisphere_check_failures;
+		}
+	}
+	else
+	{
+		++d_diagnostics.hemisphere_check_skipped;
+	}
+
+	//
+	// Grouping (section 4.2): by containment with parity depth, as the output is read. A ring's
+	// depth is the number of rings containing it, and its parent the containing ring of greatest
+	// depth. (The rings do not cross, and the number of rings is small: every pair is tested.)
+	//
+	std::vector<std::vector<unsigned int>> containers(num_rings);
+	for (unsigned int r = 0; r < num_rings; ++r)
+	{
+		for (unsigned int other = 0; other < num_rings; ++other)
+		{
+			if (other == r)
+			{
+				continue;
+			}
+			const boost::optional<bool> inside =
+					is_ring_inside_ring(rings[r].points, *ring_polygons[other]);
+			if (!inside)
+			{
+				++d_diagnostics.coincident_rings;  // a degenerate output clean-up did not catch
+			}
+			else if (*inside)
+			{
+				containers[r].push_back(other);
+			}
+		}
+	}
+	std::vector<boost::optional<unsigned int>> parent(num_rings);
+	for (unsigned int r = 0; r < num_rings; ++r)
+	{
+		for (unsigned int other : containers[r])
+		{
+			if (!parent[r] || containers[other].size() > containers[*parent[r]].size())
+			{
+				parent[r] = other;
+			}
+		}
+	}
+
+	//
+	// Orientation (section 4.3, developer's decision): the output on each ring's left, so an
+	// exterior anticlockwise (its interior, the smaller side, on its left) and a hole clockwise.
+	// By PolygonOrientation, which projects a ring onto a tangent plane where it can: the spherical
+	// area is zero for a ring the thickness across, since every edge of it is zero length to
+	// GreatCircleArc. A ring crossing itself (where an input ring does) has an area weighted by
+	// winding number, and no orientation has the output on its left all round.
+	//
+	const auto oriented = [&](unsigned int r, bool exterior)
+	{
+		OutputRing ring = rings[r];
+		const bool interior_on_left =
+				PolygonOrientation::calculate_polygon_orientation(*ring_polygons[r]) ==
+						PolygonOrientation::COUNTERCLOCKWISE;
+		if (interior_on_left != exterior)
+		{
+			std::reverse(ring.points.begin(), ring.points.end());
+		}
+		return ring;
+	};
+
+	// Even depth is an exterior; odd depth a hole of its parent, which has even depth (an island
+	// inside a hole is an exterior of its own).
+	std::vector<boost::optional<unsigned int>> polygon_of_ring(num_rings);
+	for (unsigned int r = 0; r < num_rings; ++r)
+	{
+		if (containers[r].size() % 2 == 0)
+		{
+			polygon_of_ring[r] = polygons.size();
+			polygons.push_back(OutputPolygon{ oriented(r, true), std::vector<OutputRing>() });
+		}
+	}
+	for (unsigned int r = 0; r < num_rings; ++r)
+	{
+		if (containers[r].size() % 2 == 0)
+		{
+			continue;
+		}
+		if (!parent[r] || !polygon_of_ring[*parent[r]])
+		{
+			// The containment is not a nesting (it is, for rings that do not cross): kept as an
+			// exterior, and counted.
+			++d_diagnostics.grouping_failures;
+			polygon_of_ring[r] = polygons.size();
+			polygons.push_back(OutputPolygon{ oriented(r, true), std::vector<OutputRing>() });
+			continue;
+		}
+		polygons[*polygon_of_ring[*parent[r]]].interiors.push_back(oriented(r, false));
 	}
 }
 

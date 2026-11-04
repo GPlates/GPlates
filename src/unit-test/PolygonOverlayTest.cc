@@ -1395,7 +1395,8 @@ namespace
 		return sizes;
 	}
 
-	//! Every operation's output passes the oracle.
+	//! Every operation's output passes the oracle, as rings and as polygons, and its polygons'
+	//! rings have the output on their left.
 	void
 	check_oracle(
 			const PolygonOnSphere &P,
@@ -1410,9 +1411,20 @@ namespace
 			std::vector<Overlay::OutputRing> rings;
 			overlay.extract_rings(operation, rings);
 			EXPECT_EQ(PolygonOverlayOracle::count_failures(P, Q, operation, rings, samples), 0u);
+
+			// Grouped into polygons, and oriented with the output on the left.
+			std::vector<Overlay::OutputPolygon> polygons;
+			overlay.extract(operation, polygons);
+			EXPECT_EQ(PolygonOverlayOracle::count_failures(P, Q, operation, polygons, samples), 0u);
+			EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
 		}
-		EXPECT_EQ(overlay.get_diagnostics().pairing_failures, 0u);
-		EXPECT_EQ(overlay.get_diagnostics().keep_mismatches, 0u);
+		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+		EXPECT_EQ(diagnostics.pairing_failures, 0u);
+		EXPECT_EQ(diagnostics.keep_mismatches, 0u);
+		EXPECT_EQ(diagnostics.coincident_rings, 0u);
+		EXPECT_EQ(diagnostics.grouping_failures, 0u);
+		EXPECT_EQ(diagnostics.hemisphere_check_failures, 0u);
+		EXPECT_EQ(diagnostics.hemisphere_check_skipped, 0u);
 	}
 }
 
@@ -1511,5 +1523,332 @@ TEST(PolygonOverlayTest, LinkCatalogueFamilies)
 		Overlay::Overlay overlay(*P, *Q);
 		classify_and_check(overlay);
 		check_oracle(*P, *Q, overlay);
+	}
+}
+
+
+
+//
+// Grouping, the output side and orientation (phase4b-design.md sections 4.2 and 4.3): output
+// polygons with holes, checked by the oracle read polygon by polygon.
+//
+
+namespace
+{
+	//! The number of holes of each output polygon of @a operation, sorted.
+	std::vector<unsigned int>
+	polygon_holes(
+			const Overlay::Overlay &overlay,
+			Overlay::Operation operation)
+	{
+		std::vector<Overlay::OutputPolygon> polygons;
+		overlay.extract(operation, polygons);
+		std::vector<unsigned int> holes;
+		for (const Overlay::OutputPolygon &polygon : polygons)
+		{
+			holes.push_back(polygon.interiors.size());
+		}
+		std::sort(holes.begin(), holes.end());
+		return holes;
+	}
+
+	ring_type
+	reversed(
+			ring_type ring)
+	{
+		std::reverse(ring.begin(), ring.end());
+		return ring;
+	}
+
+	//! A ring of @a num_points round a small circle of angular @a radius, anticlockwise.
+	ring_type
+	cap(
+			const PointOnSphere &centre,
+			double radius,
+			unsigned int num_points)
+	{
+		const UnitVector3D &c = centre.position_vector();
+		const UnitVector3D east = cross(UnitVector3D(0, 0, 1), c).get_normalisation();
+		const UnitVector3D north = cross(c, east).get_normalisation();
+		ring_type ring;
+		for (unsigned int i = 0; i < num_points; ++i)
+		{
+			const double a = 2 * GPlatesMaths::PI * i / num_points;
+			const Vector3D along = std::cos(a) * Vector3D(east) + std::sin(a) * Vector3D(north);
+			const Vector3D point = std::cos(radius) * Vector3D(c) + std::sin(radius) * along;
+			ring.push_back(PointOnSphere(point.get_normalisation()));
+		}
+		return ring;
+	}
+
+	//! Whether two rings are the same cyclic sequence of points in the same direction, within
+	//! @a tolerance radians point for point.
+	bool
+	same_directed_ring(
+			const std::vector<PointOnSphere> &a,
+			const std::vector<PointOnSphere> &b,
+			double tolerance)
+	{
+		const unsigned int n = a.size();
+		if (b.size() != n)
+		{
+			return false;
+		}
+		for (unsigned int start = 0; start < n; ++start)
+		{
+			bool same = true;
+			for (unsigned int i = 0; same && i < n; ++i)
+			{
+				same = PolygonOverlayOracle::angle_between(
+						a[i].position_vector(), b[(start + i) % n].position_vector()) <= tolerance;
+			}
+			if (same)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+
+// Holes in both polygons, each wholly inside the other polygon: the intersection is one polygon
+// with both holes; in each difference the other's hole is an island; the union fills both.
+TEST(PolygonOverlayTest, GroupHolesInBoth)
+{
+	const auto P = polygon(
+			square(-0.03, -0.02, 0.01, 0.02),
+			{ square(-0.008, -0.005, -0.002, 0.005) });
+	const auto Q = polygon(
+			square(-0.01, -0.025, 0.03, 0.025),
+			{ square(0.002, -0.005, 0.008, 0.005) });
+	Overlay::Overlay overlay(*P, *Q);
+	classify_and_check(overlay);
+	check_oracle(*P, *Q, overlay);
+
+	EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 2 }));
+	EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 0, 0 }));
+	EXPECT_EQ(
+			polygon_holes(overlay, Overlay::REVERSE_DIFFERENCE),
+			(std::vector<unsigned int>{ 0, 0 }));
+	EXPECT_EQ(polygon_holes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 0 }));
+	EXPECT_EQ(
+			polygon_holes(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+			(std::vector<unsigned int>{ 0, 0, 0, 0 }));
+}
+
+
+// Holes in both polygons, each crossing the other's outline: in the intersection they are
+// notches, in the union holes.
+TEST(PolygonOverlayTest, GroupHolesCrossing)
+{
+	const auto P = polygon(
+			square(-0.03, -0.02, 0.01, 0.02),
+			{ square(-0.015, -0.005, -0.005, 0.005) });
+	const auto Q = polygon(
+			square(-0.01, -0.025, 0.03, 0.025),
+			{ square(0.005, -0.008, 0.015, 0.008) });
+	Overlay::Overlay overlay(*P, *Q);
+	classify_and_check(overlay);
+	check_oracle(*P, *Q, overlay);
+
+	EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 0 }));
+	EXPECT_EQ(polygon_holes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 2 }));
+}
+
+
+// An island in a hole: the clip inside the subject's hole is an exterior of its own in the union.
+// And the subject's own island in its hole (an interior ring inside an interior ring, which
+// point-in-polygon reads by parity as inside): the output side of its pieces needs its depth
+// among the subject's rings, not whether it is an interior ring.
+TEST(PolygonOverlayTest, GroupIslandsInHoles)
+{
+	{
+		SCOPED_TRACE("clip in the subject's hole");
+		const auto P = polygon(
+				square(-0.03, -0.03, 0.03, 0.03),
+				{ square(-0.02, -0.02, 0.02, 0.02) });
+		const auto Q = polygon(square(-0.01, -0.01, 0.01, 0.01));
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+
+		EXPECT_EQ(polygon_holes(overlay, Overlay::UNION), (std::vector<unsigned int>{ 0, 1 }));
+		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), std::vector<unsigned int>());
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 1 }));
+		EXPECT_EQ(
+				polygon_holes(overlay, Overlay::REVERSE_DIFFERENCE),
+				(std::vector<unsigned int>{ 0 }));
+		EXPECT_EQ(
+				polygon_holes(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+				(std::vector<unsigned int>{ 0, 1 }));
+	}
+	{
+		SCOPED_TRACE("the subject's island in its hole");
+		const auto P = polygon(
+				square(-0.03, -0.03, 0.03, 0.03),
+				{ square(-0.02, -0.02, 0.02, 0.02), square(-0.012, -0.012, 0.012, 0.012) });
+		const auto Q = polygon(square(0.005, -0.004, 0.04, 0.004));
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+
+		// The clip cuts the island and the annulus.
+		EXPECT_EQ(
+				polygon_holes(overlay, Overlay::INTERSECTION),
+				(std::vector<unsigned int>{ 0, 0 }));
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 0, 0 }));
+	}
+	{
+		SCOPED_TRACE("a hole three deep");
+		const auto P = polygon(
+				square(-0.03, -0.03, 0.03, 0.03),
+				{ square(-0.02, -0.02, 0.02, 0.02), square(-0.012, -0.012, 0.012, 0.012) });
+		const auto Q = polygon(square(-0.005, -0.005, 0.005, 0.005));
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay);
+
+		// The clip's ring is inside three rings: a hole of the island, not of the exterior.
+		std::vector<Overlay::OutputPolygon> polygons;
+		overlay.extract(Overlay::DIFFERENCE, polygons);
+		ASSERT_EQ(polygons.size(), 2u);
+		for (const Overlay::OutputPolygon &output_polygon : polygons)
+		{
+			EXPECT_EQ(output_polygon.interiors.size(), 1u);
+		}
+	}
+}
+
+
+// The orientation does not depend on the inputs': with input rings reversed, every operation's
+// polygons have the same rings in the same direction (the output on the left).
+TEST(PolygonOverlayTest, OrientationIndependentOfInputs)
+{
+	const ring_type P_exterior = square(-0.03, -0.02, 0.01, 0.02);
+	const ring_type P_hole = square(-0.015, -0.005, -0.005, 0.005);
+	const ring_type Q_exterior = square(-0.01, -0.025, 0.03, 0.025);
+	const ring_type Q_hole = square(0.005, -0.008, 0.015, 0.008);
+	const auto P = polygon(P_exterior, { P_hole });
+	const auto Q = polygon(Q_exterior, { Q_hole });
+	const auto P_reversed = polygon(reversed(P_exterior), { reversed(P_hole) });
+	const auto Q_reversed = polygon(reversed(Q_exterior), { Q_hole });  // a hole the same way
+	Overlay::Overlay overlay(*P, *Q);
+	Overlay::Overlay overlay_reversed(*P_reversed, *Q_reversed);
+	classify_and_check(overlay);
+	classify_and_check(overlay_reversed);
+
+	for (Overlay::Operation operation : ALL_OPERATIONS)
+	{
+		SCOPED_TRACE(operation);
+		const auto all_rings = [operation](const Overlay::Overlay &o)
+		{
+			std::vector<Overlay::OutputPolygon> polygons;
+			o.extract(operation, polygons);
+			std::vector<Overlay::OutputRing> rings;
+			for (const Overlay::OutputPolygon &polygon : polygons)
+			{
+				rings.push_back(polygon.exterior);
+				rings.insert(rings.end(), polygon.interiors.begin(), polygon.interiors.end());
+			}
+			return rings;
+		};
+		const std::vector<Overlay::OutputRing> rings = all_rings(overlay);
+		const std::vector<Overlay::OutputRing> rings_reversed = all_rings(overlay_reversed);
+		ASSERT_EQ(rings.size(), rings_reversed.size());
+		for (const Overlay::OutputRing &ring : rings)
+		{
+			bool found = false;
+			for (const Overlay::OutputRing &ring_reversed : rings_reversed)
+			{
+				found = found || same_directed_ring(ring.points, ring_reversed.points, 1e-12);
+			}
+			EXPECT_TRUE(found);
+		}
+	}
+}
+
+
+// A union over a hemisphere throws, never returning its complement (phase4b-design.md section
+// 5.2); the intersection and the differences of the same inputs do not. The symmetric difference
+// of two overlapping caps is two crescents, each inside an input; but that of two polygons sharing
+// an edge is joined across it (the opposite-sides chain is not kept), and exceeds a hemisphere
+// with their union. Under a hemisphere, the union is returned.
+TEST(PolygonOverlayTest, UnionOverHemisphereThrows)
+{
+	{
+		SCOPED_TRACE("over a hemisphere");
+		const double radius = 80.0 * GPlatesMaths::PI / 180.0;
+		const auto P = polygon(cap(lat_lon_radians(0.1, 0.0), radius, 72));
+		const double longitude = 100.0 * GPlatesMaths::PI / 180.0;
+		const auto Q = polygon(cap(lat_lon_radians(-0.1, longitude), radius, 72));
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+
+		std::vector<Overlay::OutputPolygon> polygons;
+		EXPECT_THROW(
+				overlay.extract(Overlay::UNION, polygons),
+				Overlay::InconsistentOverlayException);
+
+		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 0 }));
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 0 }));
+		EXPECT_EQ(
+				polygon_holes(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+				(std::vector<unsigned int>{ 0, 0 }));
+		for (Overlay::Operation operation : ALL_OPERATIONS)
+		{
+			if (operation == Overlay::UNION)
+			{
+				continue;
+			}
+			polygons.clear();
+			overlay.extract(operation, polygons);
+			EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
+		}
+		EXPECT_EQ(overlay.get_diagnostics().hemisphere_check_failures, 0u);
+	}
+	{
+		SCOPED_TRACE("sharing an edge, over a hemisphere");
+		const double degree = GPlatesMaths::PI / 180.0;
+		const PointOnSphere A = lat_lon_radians(-60 * degree, 0.0);
+		const PointOnSphere B = lat_lon_radians(60 * degree, 0.0);
+		const auto P = polygon(ring_type{
+				A,
+				lat_lon_radians(-60 * degree, 120 * degree),
+				lat_lon_radians(60 * degree, 120 * degree),
+				B });
+		const auto Q = polygon(ring_type{
+				B,
+				lat_lon_radians(60 * degree, -120 * degree),
+				lat_lon_radians(-60 * degree, -120 * degree),
+				A });
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		EXPECT_EQ(overlay.get_diagnostics().common_pairs, 1u);
+
+		std::vector<Overlay::OutputPolygon> polygons;
+		EXPECT_THROW(
+				overlay.extract(Overlay::UNION, polygons),
+				Overlay::InconsistentOverlayException);
+		EXPECT_THROW(
+				overlay.extract(Overlay::SYMMETRIC_DIFFERENCE, polygons),
+				Overlay::InconsistentOverlayException);
+		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), std::vector<unsigned int>());
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 0 }));
+	}
+	{
+		SCOPED_TRACE("under a hemisphere");
+		const double radius = 50.0 * GPlatesMaths::PI / 180.0;
+		const auto P = polygon(cap(lat_lon_radians(0.1, 0.0), radius, 72));
+		const double longitude = 60.0 * GPlatesMaths::PI / 180.0;
+		const auto Q = polygon(cap(lat_lon_radians(-0.1, longitude), radius, 72));
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		std::vector<Overlay::OutputPolygon> polygons;
+		overlay.extract(Overlay::UNION, polygons);
+		ASSERT_EQ(polygons.size(), 1u);
+		EXPECT_TRUE(polygons[0].interiors.empty());
+		EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
+		EXPECT_EQ(overlay.get_diagnostics().hemisphere_check_failures, 0u);
 	}
 }

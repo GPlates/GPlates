@@ -38157,3 +38157,762 @@ ringout 2 3 Q1.2
 ringout 6 7 Q1.0
 endorder
 endcase
+case chain#236 seed 5
+ring P 8
+0.5833021085895997 -0.6787250666310621 -0.4461960712977949
+0.582802733950687 -0.6759194209128994 -0.45108082394663546
+0.5828033884177632 -0.675918175212252 -0.45108184497551335
+0.5828040720623496 -0.6759169280448681 -0.45108283049782766
+0.5822860666845924 -0.673089887822088 -0.4559527820472595
+0.5771732548129448 -0.6733017826383794 -0.46209927875361617
+0.5690168210196875 -0.6850364040788197 -0.4549120601648292
+0.5883414324374991 -0.6784269669557043 -0.43999001055100695
+ring P 5
+0.5801329357033409 -0.6796948615599073 -0.44884370562733955
+0.5770522715215349 -0.6813870298284015 -0.4502470338752563
+0.5771831756075738 -0.6789026997162857 -0.4538179217632283
+0.5792452840979633 -0.6773663302957619 -0.45348622408174943
+0.5821375444880328 -0.6763357487568518 -0.4513156702918171
+ring Q 10
+0.5831041618124824 -0.6848441691371335 -0.4370102979059324
+0.5801284263718112 -0.6827687275878088 -0.44415973876916254
+0.5807671900463961 -0.6788597026092397 -0.4492871855939225
+0.5828020912853672 -0.675920059596331 -0.4510806972468394
+0.5828029573585941 -0.675918803274614 -0.45108146079604106
+0.5828038234301165 -0.6759175469509405 -0.4510822243439226
+0.5857823810442003 -0.6715704700039423 -0.45370927462073224
+0.592288888659478 -0.6694827798459424 -0.44831537990600956
+0.5937280407419727 -0.6733677650144144 -0.44052567084812555
+0.5910092627137497 -0.6804970503290512 -0.4331648830180151
+ring Q 3
+0.5835131732784103 -0.6802532625875004 -0.44358525150146877
+0.5836216577512001 -0.677947182904702 -0.4469601523573655
+0.5878264556915849 -0.6769782267991833 -0.4429001449863193
+records 10
+SS 1 3
+SS 1 4
+SS 2 4
+SS 2 5
+SS 3 5
+LL 6 1
+LL 6 10
+LL 6 12
+LL 7 10
+LL 7 12
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 9 P0.7 7
+ringout 6 8 P0.0 0 Q0.2 5
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 6 8 9
+ringout 5 P0.6 P0.5 P0.4 0 Q0.2
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 9 Q1.2 Q1.1
+ringout 7 6 Q1.0
+ringout 5 P0.6 P0.5 P0.4 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 5 Q0.2 0 P0.0 8 6
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 9 8 6
+ringout 5 Q0.2 0 P0.4 P0.5 P0.6
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 6 7 Q1.0
+ringout 9 Q1.2 Q1.1 8
+ringout 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1 5 P0.6 P0.5 P0.4
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 5 Q0.2 0 P0.0 8 6
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 6 7 9
+ringout 5 Q0.2 0 P0.4 P0.5 P0.6
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 5 P0.6 P0.5 P0.4 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1
+ringout 6 7 Q1.0
+ringout 9 8 Q1.1 Q1.2
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 9 P0.7 7
+ringout 8 P0.0 0 Q0.2 5 6
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 9 7 6
+ringout 5 P0.6 P0.5 P0.4 0 Q0.2
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 6 Q1.0
+ringout 8 9 Q1.2 Q1.1
+ringout 5 P0.6 P0.5 P0.4 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 0 P0.0 8 6 5 Q0.2
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 9 8 6
+ringout 5 Q0.2 0 P0.4 P0.5 P0.6
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 6 Q1.0
+ringout 0 P0.4 P0.5 P0.6 5 Q0.1 Q0.0 Q0.9 Q0.8 Q0.7 Q0.6
+ringout 8 Q1.1 Q1.2 9
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 5 Q0.2 0 P0.0 8 6
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 9 8 6
+ringout 5 Q0.2 0 P0.4 P0.5 P0.6
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 Q1.1 Q1.2 9
+ringout 6 Q1.0 7
+ringout 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1 5 P0.6 P0.5 P0.4
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 5 Q0.2 0 P0.0 8 6
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 5 Q0.2 0 P0.4 P0.5 P0.6
+ringout 8 9 7 6
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 Q1.1 Q1.2 9
+ringout 6 Q1.0 7
+ringout 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1 5 P0.6 P0.5 P0.4
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 5 Q0.2 0 P0.0 8 6
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 9 8 6
+ringout 5 Q0.2 0 P0.4 P0.5 P0.6
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 Q1.1 Q1.2 9
+ringout 6 Q1.0 7
+ringout 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1 5 P0.6 P0.5 P0.4
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 6 5 Q0.2 0 P0.0 8
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 5 Q0.2 0 P0.4 P0.5 P0.6
+ringout 8 9 7 6
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 6 Q1.0 7
+ringout 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1 5 P0.6 P0.5 P0.4
+ringout 8 9 Q1.2 Q1.1
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 9 P0.7
+ringout 6 5 Q0.2 0 P0.0 8
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 9 7 6
+ringout 0 P0.4 P0.5 P0.6 5 Q0.2
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 6 Q1.0 7
+ringout 8 9 Q1.2 Q1.1
+ringout 0 P0.4 P0.5 P0.6 5 Q0.1 Q0.0 Q0.9 Q0.8 Q0.7 Q0.6
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 P0.7 9
+ringout 6 5 Q0.2 0 P0.0 8
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 9 7 6
+ringout 0 P0.4 P0.5 P0.6 5 Q0.2
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 6 Q1.0 7
+ringout 8 9 Q1.2 Q1.1
+ringout 0 P0.4 P0.5 P0.6 5 Q0.1 Q0.0 Q0.9 Q0.8 Q0.7 Q0.6
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 6 5 Q0.2 0 P0.0 8
+ringout 9 7 P0.7
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 0 P0.4 P0.5 P0.6 5 Q0.2
+ringout 9 7 6 8
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 6 Q1.0 7
+ringout 9 8 Q1.1 Q1.2
+ringout 0 P0.4 P0.5 P0.6 5 Q0.1 Q0.0 Q0.9 Q0.8 Q0.7 Q0.6
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 P0.7 9
+ringout 5 6 8 P0.0 0 Q0.2
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 0 P0.4 P0.5 P0.6 5 Q0.2
+ringout 9 8 6 7
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 Q1.0 6
+ringout 0 P0.4 P0.5 P0.6 5 Q0.1 Q0.0 Q0.9 Q0.8 Q0.7 Q0.6
+ringout 9 8 Q1.1 Q1.2
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 P0.7 9
+ringout 5 6 8 P0.0 0 Q0.2
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 0 P0.4 P0.5 P0.6 5 Q0.2
+ringout 9 8 6 7
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 6 Q1.0 7
+ringout 0 P0.4 P0.5 P0.6 5 Q0.1 Q0.0 Q0.9 Q0.8 Q0.7 Q0.6
+ringout 9 8 Q1.1 Q1.2
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 P0.7 9
+ringout 0 P0.0 8 6 5 Q0.2
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 7 6 8 9
+ringout 0 P0.4 P0.5 P0.6 5 Q0.2
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 8 9 Q1.2 Q1.1
+ringout 7 6 Q1.0
+ringout 0 P0.4 P0.5 P0.6 5 Q0.1 Q0.0 Q0.9 Q0.8 Q0.7 Q0.6
+endorder
+order 0 0
+piece P 0 0 1 0 none none 0,1 2,3
+piece P 0 0 1 0 none none 2,3 4
+piece P 0 0 0 0 out vertex 4 5
+piece P 0 0 0 0 in deduced 5 6
+piece P 0 0 0 0 out deduced 6 7
+piece P 0 0 0 0 in vertex 7 9
+piece P 0 0 0 0 out deduced 9 8
+piece P 0 0 0 0 in vertex 8 0,1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 in vertex 5 0
+piece Q 0 0 1 0 none none 0 1,2
+piece Q 0 0 1 0 none none 1,2 3,4
+piece Q 0 0 0 0 out vertex 3,4 5
+piece Q 1 0 0 0 in deduced 6 8
+piece Q 1 0 0 0 out vertex 8 9
+piece Q 1 0 0 0 in deduced 9 7
+piece Q 1 0 0 0 out vertex 7 6
+output and 2
+ringout 7 P0.7 9
+ringout 8 P0.0 0 Q0.2 5 6
+output diff 3
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 5 P0.6 P0.5 P0.4 0 Q0.2
+ringout 7 6 8 9
+output or 4
+ringout P1.0 P1.1 P1.2 P1.3 P1.4
+ringout 5 P0.6 P0.5 P0.4 0 Q0.6 Q0.7 Q0.8 Q0.9 Q0.0 Q0.1
+ringout 8 9 Q1.2 Q1.1
+ringout 7 6 Q1.0
+endorder
+endcase
+case chain#227 seed 11
+ring P 4
+0.16979639319857406 0.9662630792117439 -0.1936616807966785
+0.1787283619124794 0.9634396031525404 -0.19960036003313583
+0.17130872908807068 0.9623761075296272 -0.21091597140651341
+0.1598753120662733 0.9675187798143717 -0.19582465446981207
+ring P 3
+0.17181993616990512 0.9648100096277393 -0.1990466147832994
+0.16665554413076208 0.9649064063568178 -0.2029323941169846
+0.16626423548390332 0.9658689172537727 -0.1986288968956383
+ring Q 12
+0.16190833336599247 0.965860026101554 -0.2022377352665725
+0.16625996281272332 0.9658704573889398 -0.19862498410016738
+0.16626050775725015 0.96586887886203 -0.1986322038494934
+0.16626262961181384 0.9658699568069659 -0.19862518604717394
+0.16626317455577982 0.9658683782764527 -0.19863240579585553
+0.16626529640973797 0.9658694562178295 -0.19862538799271498
+0.16626584135314304 0.9658678776837131 -0.1986326077407521
+0.16626796320649545 0.9658689556215303 -0.19862558993679033
+0.17061491469390433 0.9658469020073635 -0.19501362200310618
+0.17146976606369702 0.9672436743165246 -0.18718385032029325
+0.1557801817981254 0.9701247085981896 -0.18598544224272137
+0.16103208600791297 0.9643396374871992 -0.21004221205985557
+ring Q 4
+0.1625256675406489 0.9676277353410894 -0.1930854038738845
+0.16665200679933737 0.9665930767301759 -0.1947432480140086
+0.1667311230149333 0.9658900101396196 -0.1981343507084647
+0.16283654991601945 0.9665433393470415 -0.19818736381343174
+records 10
+LL 0 8
+LL 2 0
+LL 3 12
+LL 3 15
+LS 5 4
+LS 5 6
+SL 6 3
+SL 6 4
+SL 6 5
+LL 6 6
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 0 in vertex 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in vertex 2 0
+piece P 1 0 0 0 out midpoint 5 4
+piece P 1 0 0 0 out deduced 4 6,7,8
+piece P 1 0 0 0 in deduced 6,7,8 9
+piece P 1 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 0 0 1 0 none none 6 4
+piece Q 0 0 1 0 none none 4 7
+piece Q 0 0 0 0 in vertex 7 8
+piece Q 0 0 0 0 out deduced 8 5
+piece Q 0 0 0 0 out deduced 5 9
+piece Q 0 0 0 0 in vertex 9 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 6 Q0.3 Q0.2 Q0.1 1 P0.3 3 Q1.3 Q1.2 Q1.1 2 P0.0 0 Q0.8 Q0.7 9
+output diff 2
+ringout 6 4 5 P1.1 P1.0 9 Q0.7 Q0.8 0 P0.1 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 2 3 Q1.3 Q1.2 Q1.1
+output or 4
+ringout 0 P0.1 P0.2 1 Q0.0 Q0.11 Q0.10 Q0.9
+ringout 5 6 4
+ringout 5 P1.1 P1.0 9
+ringout 2 3 Q1.0
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 0 in vertex 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in vertex 2 0
+piece P 1 0 0 0 out midpoint 5 4
+piece P 1 0 0 0 out deduced 4 6,7,8
+piece P 1 0 0 0 in deduced 6,7,8 9
+piece P 1 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 0 0 1 0 none none 6 4
+piece Q 0 0 1 0 none none 4 7
+piece Q 0 0 0 0 in vertex 7 8
+piece Q 0 0 0 0 out deduced 8 5
+piece Q 0 0 0 0 out deduced 5 9
+piece Q 0 0 0 0 in vertex 9 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 6 9 Q0.7 Q0.8 0 P0.0 2 Q1.1 Q1.2 Q1.3 3 P0.3 1 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 6 4 5 P1.1 P1.0 9 Q0.7 Q0.8 0 P0.1 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 2 Q1.1 Q1.2 Q1.3 3
+output or 4
+ringout 1 P0.2 P0.1 0 Q0.9 Q0.10 Q0.11 Q0.0
+ringout 5 P1.1 P1.0 9
+ringout 5 6 4
+ringout 2 Q1.0 3
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 0 in vertex 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in vertex 2 0
+piece P 1 0 0 0 out midpoint 5 4
+piece P 1 0 0 0 out deduced 4 6,7,8
+piece P 1 0 0 0 in deduced 6,7,8 9
+piece P 1 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 0 0 1 0 none none 6 4
+piece Q 0 0 1 0 none none 4 7
+piece Q 0 0 0 0 in vertex 7 8
+piece Q 0 0 0 0 out deduced 8 5
+piece Q 0 0 0 0 out deduced 5 9
+piece Q 0 0 0 0 in vertex 9 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 6 Q0.3 Q0.2 Q0.1 1 P0.3 3 Q1.3 Q1.2 Q1.1 2 P0.0 0 Q0.8 Q0.7 9
+output diff 2
+ringout 3 2 Q1.1 Q1.2 Q1.3
+ringout 6 Q0.3 Q0.2 Q0.1 1 P0.2 P0.1 0 Q0.8 Q0.7 9 P1.0 P1.1 5 4
+output or 4
+ringout 3 Q1.0 2
+ringout 5 6 4
+ringout 5 P1.1 P1.0 9
+ringout 1 P0.2 P0.1 0 Q0.9 Q0.10 Q0.11 Q0.0
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 0 in vertex 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in vertex 2 0
+piece P 1 0 0 0 out midpoint 5 4
+piece P 1 0 0 0 out deduced 4 6,7,8
+piece P 1 0 0 0 in deduced 6,7,8 9
+piece P 1 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 0 0 1 0 none none 6 4
+piece Q 0 0 1 0 none none 4 7
+piece Q 0 0 0 0 in vertex 7 8
+piece Q 0 0 0 0 out deduced 8 5
+piece Q 0 0 0 0 out deduced 5 9
+piece Q 0 0 0 0 in vertex 9 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 6 9 Q0.7 Q0.8 0 P0.0 2 Q1.1 Q1.2 Q1.3 3 P0.3 1 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 3 Q1.3 Q1.2 Q1.1 2
+ringout 6 4 5 P1.1 P1.0 9 Q0.7 Q0.8 0 P0.1 P0.2 1 Q0.1 Q0.2 Q0.3
+output or 4
+ringout 1 P0.2 P0.1 0 Q0.9 Q0.10 Q0.11 Q0.0
+ringout 2 Q1.0 3
+ringout 5 6 4
+ringout 5 P1.1 P1.0 9
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 0 in vertex 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in vertex 2 0
+piece P 1 0 0 0 out midpoint 5 4
+piece P 1 0 0 0 out deduced 4 6,7,8
+piece P 1 0 0 0 in deduced 6,7,8 9
+piece P 1 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 0 0 1 0 none none 6 4
+piece Q 0 0 1 0 none none 4 7
+piece Q 0 0 0 0 in vertex 7 8
+piece Q 0 0 0 0 out deduced 8 5
+piece Q 0 0 0 0 out deduced 5 9
+piece Q 0 0 0 0 in vertex 9 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 6 9 Q0.7 Q0.8 0 P0.0 2 Q1.1 Q1.2 Q1.3 3 P0.3 1 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 6 4 5 P1.1 P1.0 9 Q0.7 Q0.8 0 P0.1 P0.2 1 Q0.1 Q0.2 Q0.3
+ringout 3 2 Q1.1 Q1.2 Q1.3
+output or 4
+ringout 1 P0.2 P0.1 0 Q0.9 Q0.10 Q0.11 Q0.0
+ringout 5 6 4
+ringout 5 P1.1 P1.0 9
+ringout 3 2 Q1.0
+endorder
+order 0 0
+piece P 0 0 0 0 out vertex 0 1
+piece P 0 0 0 0 in vertex 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in vertex 2 0
+piece P 1 0 0 0 out midpoint 5 4
+piece P 1 0 0 0 out deduced 4 6,7,8
+piece P 1 0 0 0 in deduced 6,7,8 9
+piece P 1 0 0 0 out vertex 9 5
+piece Q 0 0 0 0 in vertex 1 6
+piece Q 0 0 1 0 none none 6 4
+piece Q 0 0 1 0 none none 4 7
+piece Q 0 0 0 0 in vertex 7 8
+piece Q 0 0 0 0 out deduced 8 5
+piece Q 0 0 0 0 out deduced 5 9
+piece Q 0 0 0 0 in vertex 9 0
+piece Q 0 0 0 0 out vertex 0 1
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 6 9 Q0.7 Q0.8 0 P0.0 2 Q1.1 Q1.2 Q1.3 3 P0.3 1 Q0.1 Q0.2 Q0.3
+output diff 2
+ringout 3 Q1.3 Q1.2 Q1.1 2
+ringout 6 4 5 P1.1 P1.0 9 Q0.7 Q0.8 0 P0.1 P0.2 1 Q0.1 Q0.2 Q0.3
+output or 4
+ringout 5 6 4
+ringout 5 P1.1 P1.0 9
+ringout 2 Q1.0 3
+ringout 0 Q0.9 Q0.10 Q0.11 Q0.0 1 P0.2 P0.1
+endorder
+endcase
