@@ -485,13 +485,39 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     replaced by `ShortSegmentSelfTouch`. The code stays (real data can have short segments).
   - **For step 9**: the walk would index a polyline's dangling end (review 3 1.4).
 
+- 2026-11-05: **Phase 5 step 9 done: polylines, CitcomS** (design 6.1, 6.2). A polyline subject is
+  classified by its own rules (`classify_polyline_pieces`: the along class of Q2, inside unless
+  `Options::polyline_along_is_inside` says otherwise; vertex tests at interior vertices and dangling
+  ends; deduction only across a vertex that is one crossing; midpoints by margin) and output as runs of
+  one class (`extract_polylines`); `extract_rings` and `extract` now assert a polygon subject (review 3
+  1.4). **Deviation from design 6.1**: a run's points are the stops' own positions, not the vertices'
+  output positions (an identity vertex along a dense run of touches can put its position far off the
+  polyline; the oracle found 78 of 300 samples uncovered). The prototype's polyline overlay now runs
+  `r5c`'s rules (the restricted spike rule and the self-touch cuts) and the exporter writes polyline
+  cases (`--polyline GEN:SEED:INDICES`, `opened-<base>` for opened hunt rings; planning repository);
+  `prototype-polyline.txt` (189 cases: 30 of each of `ends`, `along`, `touch`, `pinch`, 10 opened rings of
+  each hunt generator) and 1899 uncommitted cases agree with the prototype in pieces, classes and runs,
+  and pass the new oracle along the polyline (`count_polyline_failures`: within `2h` of a run of the
+  right class, as many runs as the polyline passes the point). Hand tests: across, no record, along
+  (both settings of the option), a touch and an end on the edge, a pinch. Mutations: each of the along
+  class, deduction across touches, deduction from along pieces, untested dangling ends, vertex
+  positions and internal pieces' class fails a committed test; **reversing the midpoint margin order
+  changes no polyline case in either set** (not pinned). CitcomS uses `GeometryIntersect::intersect`;
+  `citcoms_meshes` covers it (verified: it fails if the intersection's point is replaced).
+  **`PolylineIntersections` stays until step 11**: `PolygonPartitioner` still calls it (design 12
+  amended). Trap: a source restored by copying can keep an older time than its object, so ninja does
+  not rebuild it (a stale CitcomS object failed ctest after a mutation check); touch it.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
     2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
-    Review 3 (steps 7 and 8) and its fixes done, 2026-11-05. Next: step 9 (polylines); open: the
-    three bundle-vertex failures (Status, review 2 entry), not yet re-run under `r5c`. The prototype comparison is
+    Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; step 9 (polylines, CitcomS) done. Next:
+    step 10 (provenance); open: two
+    bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
+    for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
+    under `r5c` (the self-touch cuts fixed it). The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries

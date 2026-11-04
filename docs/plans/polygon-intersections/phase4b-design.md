@@ -981,10 +981,14 @@ debug builds, and the tested classes kept (both have margin).
 Output (`output`, `overlay_polyline.py:238-266`): an internal piece (a loop or spike inside an
 identity vertex) takes the class of the piece before it (or after it, at the start) so the outputs
 cover the polyline without a gap; consecutive pieces of one class are joined into one polyline, with
-a repeated position at the join dropped. A polyline whose end point is a record (236 of 300 `ends`
-cases) starts its output at that vertex's output position, which *is* the end point: a record at a
-polyline vertex names that `P` vertex, and the position rule prefers `P`'s vertex (2.5), so run 3's
-open question 5 has no choice to make. `extract_polylines` returns each run with its class and
+a repeated position at the join dropped. **As built (step 9)**, each point is its stop's own position
+(a record's position on the polyline, or the polyline's vertex), not its vertex's output position as a
+polygon's rings use: an identity vertex can extend far along a dense run of touches (the `along`
+generator's), so its output position can be far off the polyline, which the oracle found (78 of 300
+samples uncovered in one case); a polygon's rings must share a vertex's position, a polyline's
+adjacent runs only the stop between them. A polyline whose end point is a record (236 of 300 `ends`
+cases) therefore starts its output at the end point itself, so run 3's open question 5 has no choice
+to make. `extract_polylines` returns each run with its class and
 provenance; the partition layer (8.1) builds `PolylineOnSphere`s (`PolylineOnSphere::create` needs two
 points; a run has at least two distinct stops or is a whole-polyline piece).
 
@@ -993,6 +997,14 @@ Result contract: `RESULT_INSIDE` iff no run is outside, `RESULT_OUTSIDE` iff non
 Measured (run 3 section 6.2): no failure in 3395 cases; a misclassified point never farther than
 `1.09h` from `Q`'s boundary.
 
+As built (step 9, `Overlay::classify_polyline_pieces`, `extract_polylines`): the polygon core's rules
+apply to a polyline subject unchanged, the spike rule restricted (3.4) and the self-touch cuts (3.5)
+included, and the prototype's polyline overlay now runs them too (`r5c`). The comparison test covers
+polylines (`prototype-polyline.txt`: the four generators and an opened ring of each hunt generator):
+pieces, classes and runs agree with the prototype in all 189 committed and 1899 uncommitted cases, and
+the oracle along the polyline passes (sampled points beyond `M` lie within `2h` of a run of their
+class; an opened ring can pass a point twice, then as many runs may cover it).
+
 ### 6.2 CitcomS
 
 `GenerateVelocityDomainCitcoms.cc:272-277` partitions two two-point polylines with
@@ -1000,8 +1012,9 @@ Measured (run 3 section 6.2): no failure in 3395 cases; a misclassified point ne
 `GeometryIntersect::intersect(graph, *line_1, *line_2)` and `graph.unordered_intersections[0].position`
 (`GeometryIntersect.h:159`). Same semantics (the first record found). `GenerateVelocityDomainCitcomsTest.citcoms_meshes`
 (`src/unit-test/GenerateVelocityDomainCitcomsTest.cc:172`) compares generated meshes with stored
-files, so it covers the change if those meshes exercise `find_intersections`; *unverified* that they
-do, Phase 5 checks. `PolylineIntersections` then has no caller and is deleted from
+files; done in step 9, and verified to cover the change (it fails when the intersection's point is
+replaced by a line's end). `PolylineIntersections` keeps one caller, `PolygonPartitioner`, until the
+partition layer moves onto the overlay (step 11), and is deleted there, with
 `src/maths/CMakeLists.txt:95-96` (the pyGPlates source closure test will say if a list is stale).
 
 ### 6.3 The three hooks for an open clip arc (Q7)
@@ -1492,11 +1505,13 @@ PR is one.
    6.4's pinch, the two squares under five operations, the oracle (11.3) on the catalogue.
 8. **Grouping, output side, hemisphere check, orientation** (4.2, 4.3), output polygons. Tests:
    holes in both polygons, islands in holes, a union over a hemisphere throws.
-9. **Polylines** (6.1), `PolylineIntersections` deleted, CitcomS switched (6.2), source lists fixed as
-   the closure test says. Tests: run 3's polyline generators as cases; `citcoms_meshes` still passes.
+9. **Polylines** (6.1), CitcomS switched (6.2); `PolylineIntersections` is deleted in step 11, since
+   `PolygonPartitioner` uses it until then. Tests: run 3's polyline generators as cases;
+   `citcoms_meshes` still passes.
 10. **Provenance** (7.1, 7.2) in the overlay and composed through `PolygonPartitioner`. Tests: 11.1's
     provenance rows.
 11. **The partition layer** (8.1) and the result contract (5.3), the result-only path (10.2),
+    `PolylineIntersections` deleted (6.2),
     `GeometryCookieCutter` with polygons and provenance (8.2), `GLReconstructedStaticPolygonMeshes`
     unchanged in behaviour (8.5). Tests: doc 5.1's four bugs; the contract cases; a two-plate cascade.
     Both products build; the GPlates visual check waits for Phase 6.
