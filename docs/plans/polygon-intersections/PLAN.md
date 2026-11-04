@@ -508,13 +508,30 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   amended). Trap: a source restored by copying can keep an older time than its object, so ninja does
   not rebuild it (a stale CitcomS object failed ctest after a mutation check); touch it.
 
+- 2026-11-05: **Phase 5 step 10 done: provenance** (design 7.1, 7.2, both amended "as built"). Every
+  output point of a ring or a polyline can carry a `Provenance` (`Options::want_provenance`): its
+  location on the subject (a vertex, or a segment and ratio; none for a cut point) and on the clip,
+  with the clip's index; through a cascade it is composed with the subject's own table
+  (`Options::subject_provenance`, with the original's and the earlier clips' ring sizes for the
+  wrap-around). Found: the composition's induction fails where an identity vertex holds two vertices
+  of one input (a piece's edge spans the group): counted, never a wrong value (0.2% of second-step
+  points in the large set, 3% in the chain set); and guessing the wrap-around without the ring's size
+  gave a wrong segment (now an option, or a mismatch); and a vertex's clip location must be set
+  before composing. Checked: every committed and generated case's points resolve to them, polygons and
+  polylines; a second cascade step on every polygon case (the difference's pieces against the clip
+  again); hand tests of each kind of point, a two-plate cascade beside and across plate 1, and a
+  polyline cascade. Six mutations each fail a committed test. **Moved to step 11**: provenance through
+  `PolygonPartitioner` and `GeometryCookieCutter` (`PartitionedGeometry`, 8.2), with the partition
+  layer itself.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
     2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
-    Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; step 9 (polylines, CitcomS) done. Next:
-    step 10 (provenance); open: two
+    Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
+    (provenance) done. Next: a Fable review of steps 9 and 10 (ask about the usage limit), then step
+    11 (the partition layer); open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is

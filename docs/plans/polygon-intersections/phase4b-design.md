@@ -1053,6 +1053,18 @@ vertex is that vertex exactly, whatever else it holds. The provenance of the poi
 *position* is; the clip location is extra information for callers (and for the cut interpolation,
 which only needs to know the point has no subject value).
 
+As built (step 10, `Overlay::get_vertex_provenance`, `Options::want_provenance`; `Location`,
+`Provenance`, `provenance_seq_type` as in 2.8, without the `d_` prefixes): at a vertex holding no `P`
+vertex the subject location comes from the **walked** subject piece (the one the output ring arrives
+or leaves along), its stop's segment and the ratio of the output position's projection onto it; if
+neither walked piece is a subject piece the point is a cut (no subject location), even where the
+vertex lies on `P`. The clip location is the vertex's `Q` vertex, else a walked clip piece's stop,
+else the clip segment of the vertex's first record, by projection: every vertex lies on `Q`. A
+polyline's output is at its stops (6.1), so its points' locations are the stops': the polyline's
+vertex, or its segment at the stop's ratio. Checked on every committed and generated case: each
+point's provenance resolves to it (a subject vertex exactly; a location by ratio within the oracle's
+margin `M`, since an output vertex is at its identity group's position).
+
 ### 7.2 Composition through the cascade
 
 `GeometryCookieCutter` feeds plate `N`'s outside pieces to plate `N + 1`
@@ -1077,6 +1089,30 @@ and the overlay composes as it fills each output point:
 
 If `table[a]` and `table[b]` do not share a location (which the induction says cannot happen), the
 point gets `d_subject` none and the mismatch is counted: a diagnostic, never a wrong value.
+
+As built (step 10, `Overlay::compose_subject_location`, `Options::subject_provenance`):
+
+- **The induction fails**, measured: where an identity vertex holds two original vertices of one input
+  (dense shared edges), a piece's edge spans the group, from a vertex before it to one after it, so
+  its ends lie on no one segment. Such points get no subject location and are counted
+  (`provenance_mismatches`): 44 of 22670 second-step points in the large generated set, 124 of 3646 in
+  the chain set, none in the `holes` set, every one in a case with such a vertex. A coverage then
+  interpolates them along their run (7.3 step 2), as cut points.
+- **The wrap-around needs the ring's size**: whether vertex 0 ends a ring's last segment cannot be told
+  from the table, and guessing turned a span across an identity group into a wrong segment (0.03 rad
+  off, the `six` generator). `Options::subject_ring_sizes` (the original subject's rings) and
+  `clip_ring_sizes` (each earlier clip's, by clip index) give it; without them no wrap-around is
+  assumed, so such an edge is a mismatch.
+- **Subject first, then the earlier clip**: an edge whose ends share a subject segment is along the
+  subject; else, if they share an earlier clip's segment, it is a cut edge of that clip (an edge
+  from the subject's outline to a cut point is along the earlier clip though one end is on the
+  subject too).
+- **A vertex's clip location is always this clip's** (every vertex lies on this clip), set before
+  composing, so that the table's earlier clip location does not replace it.
+- **Checked**: on every committed and generated polygon case whose rings do not cross, each piece of
+  the difference, with its table, is overlaid with the clip again (the pieces run along it, the
+  hardest case), and every point of both outputs must resolve against the original subject; and a
+  hand two-plate cascade, polygon and polyline (`ProvenanceCascade`, `ProvenancePolyline`).
 
 The piece returned to the cascade carries its composed table, which becomes the next step's
 `d_subject_provenance`. A geometry entering the cascade has the identity table. The cookie cutter
@@ -1508,10 +1544,12 @@ PR is one.
 9. **Polylines** (6.1), CitcomS switched (6.2); `PolylineIntersections` is deleted in step 11, since
    `PolygonPartitioner` uses it until then. Tests: run 3's polyline generators as cases;
    `citcoms_meshes` still passes.
-10. **Provenance** (7.1, 7.2) in the overlay and composed through `PolygonPartitioner`. Tests: 11.1's
-    provenance rows.
+10. **Provenance** (7.1, 7.2) in the overlay, with its composition (the overlay's own; the wiring
+    through `PolygonPartitioner` and the cookie cutter is step 11's, with the partition layer).
+    Tests: 11.1's provenance rows.
 11. **The partition layer** (8.1) and the result contract (5.3), the result-only path (10.2),
-    `PolylineIntersections` deleted (6.2),
+    `PolylineIntersections` deleted (6.2), provenance through the partitioner and the cookie
+    cutter (7.2, 8.2: the tables and the ring sizes),
     `GeometryCookieCutter` with polygons and provenance (8.2), `GLReconstructedStaticPolygonMeshes`
     unchanged in behaviour (8.5). Tests: doc 5.1's four bugs; the contract cases; a two-plate cascade.
     Both products build; the GPlates visual check waits for Phase 6.
