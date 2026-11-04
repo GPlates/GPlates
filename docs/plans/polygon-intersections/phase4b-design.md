@@ -1058,12 +1058,19 @@ As built (step 10, `Overlay::get_vertex_provenance`, `Options::want_provenance`;
 vertex the subject location comes from the **walked** subject piece (the one the output ring arrives
 or leaves along), its stop's segment and the ratio of the output position's projection onto it; if
 neither walked piece is a subject piece the point is a cut (no subject location), even where the
-vertex lies on `P`. The clip location is the vertex's `Q` vertex, else a walked clip piece's stop,
-else the clip segment of the vertex's first record, by projection: every vertex lies on `Q`. A
-polyline's output is at its stops (6.1), so its points' locations are the stops': the polyline's
-vertex, or its segment at the stop's ratio. Checked on every committed and generated case: each
-point's provenance resolves to it (a subject vertex exactly; a location by ratio within the oracle's
-margin `M`, since an output vertex is at its identity group's position).
+vertex lies on `P`. The walked pieces are those of the ring **after the split** (3.11): each vertex
+entry of the walk keeps the stop it leaves from and the leaving piece's far stop, and an entry
+arrives at the previous vertex entry's far stop, cyclically, so each half of a split ring has its
+own (review 4 found the provenance filled before the split, wrong at 611 of 4192 large-set cases).
+The clip location is the vertex's `Q` vertex, else a walked clip piece's stop, else the clip segment
+of the vertex's first record, by projection: every vertex lies on `Q`. A polyline's output is at
+its stops (6.1), so its points' locations are the stops': the polyline's vertex, or its segment at
+the stop's ratio; and the clip location is the stop's own record's (its `Q` vertex, or its `Q`
+segment by projection), not its identity vertex's, which along a dense run of touches can name a `Q`
+vertex up to `12h` away (review 4). Checked on every committed and generated case: each point's
+provenance resolves to it (a subject vertex exactly; a location by ratio within `2h`, measured
+within `1.0h`), and a point beside an output edge clearly along the subject's outline (its midpoint
+within `h` of it and farther than `2h` from the clip's) has a subject location.
 
 ### 7.2 Composition through the cascade
 
@@ -1095,9 +1102,14 @@ As built (step 10, `Overlay::compose_subject_location`, `Options::subject_proven
 - **The induction fails**, measured: where an identity vertex holds two original vertices of one input
   (dense shared edges), a piece's edge spans the group, from a vertex before it to one after it, so
   its ends lie on no one segment. Such points get no subject location and are counted
-  (`provenance_mismatches`): 44 of 22670 second-step points in the large generated set, 124 of 3646 in
-  the chain set, none in the `holes` set, every one in a case with such a vertex. A coverage then
-  interpolates them along their run (7.3 step 2), as cut points.
+  (`provenance_subject_mismatches`): 44 of 22670 second-step points in the large generated set, 124 of
+  3646 in the chain set, none in the `holes` set, every one in a case with such a vertex. A coverage
+  then interpolates them along their run (7.3 step 2), as cut points. **A second cause** (review 4):
+  a point at an input's corner within `h` of both its segments but naming one holds one location, so
+  the edge along the other cannot compose; against a clip moved off the first (a second step that
+  cuts the pieces anew) it loses a subject location in pieces with no such vertex too. A mismatch
+  whose two ends were both cut points loses nothing (the point's clip location is this clip's) and
+  is counted apart (`provenance_clip_mismatches`).
 - **The wrap-around needs the ring's size**: whether vertex 0 ends a ring's last segment cannot be told
   from the table, and guessing turned a span across an identity group into a wrong segment (0.03 rad
   off, the `six` generator). `Options::subject_ring_sizes` (the original subject's rings) and
@@ -1111,8 +1123,14 @@ As built (step 10, `Overlay::compose_subject_location`, `Options::subject_proven
   composing, so that the table's earlier clip location does not replace it.
 - **Checked**: on every committed and generated polygon case whose rings do not cross, each piece of
   the difference, with its table, is overlaid with the clip again (the pieces run along it, the
-  hardest case), and every point of both outputs must resolve against the original subject; and a
-  hand two-plate cascade, polygon and polyline (`ProvenanceCascade`, `ProvenancePolyline`).
+  hardest case), and with the clip moved by 0.37 of its bounding radius (cutting the pieces anew;
+  its locations by clip index 1), and every point of both outputs must resolve against the original
+  subject, within `3h` (measured within `1.63h`); and a hand two-plate cascade, polygon and polyline
+  (`ProvenanceCascade`, `ProvenancePolyline`), and a split at a vertex holding no subject vertex
+  (`ProvenanceAtSplit`).
+- **For step 11** (review 4's suggestion, not yet decided): hand the composition the original
+  subject and clip geometries instead of their ring sizes; the cookie cutter has them, and they would
+  give the segment lengths a geometric fallback for the corner cause needs.
 
 The piece returned to the cascade carries its composed table, which becomes the next step's
 `d_subject_provenance`. A geometry entering the cascade has the identity table. The cookie cutter

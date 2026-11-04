@@ -524,14 +524,32 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   `PolygonPartitioner` and `GeometryCookieCutter` (`PartitionedGeometry`, 8.2), with the partition
   layer itself.
 
+- 2026-11-05: **Fable review 4** of steps 9 and 10 (`phase5-review-4.md`), and its fixes. The polyline
+  path is a faithful translation of the prototype; CitcomS is right. Fixed: **provenance was filled
+  before the split** (3.11), so a split ring's vertex could lose its subject location or take the
+  other passage's (wrong at 611 of 4192 large-set cases; the oracle accepted a point with only a clip
+  location): now filled per ring after the split, from stored stops (the leaving stop and its piece's
+  far stop), which also removes the guess at a loop piece's end. **A polyline stop's clip location**
+  was its identity vertex's (up to `12h` off along dense touches): now its own record's. A **second
+  cause of composition mismatches** (an input's corner within `h` of both segments, naming one),
+  found by a second step against a moved clip; mismatches now counted apart, subject (a location
+  lost) and clip (nothing lost). Tests: tolerances `2h` (first step) and `3h` (second; measured `1.0h`
+  and `1.63h`, against `M >= 10h` before), a check that a point beside an edge clearly along the
+  subject has a subject location (the old computation and three mutations fail committed tests),
+  the second step also against the clip moved by 0.37 of its radius (clip index 1, so the clip
+  locations are checked against the right clip), a split at a vertex holding no subject vertex
+  (`ProvenanceAtSplit`), and a polyline's run points against its pieces' stops exactly. All 987
+  committed and 8490 uncommitted cases pass. **Open, for step 11**: the review suggests handing the
+  composition the original geometries rather than ring sizes (design 7.2 as built); to decide there.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
     2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
     Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
-    (provenance) done. Next: a Fable review of steps 9 and 10 (ask about the usage limit), then step
-    11 (the partition layer); open: two
+    (provenance) done, and review 4 with its fixes. Next: step 11 (the partition layer; first decide
+    how the composition gets the original geometries, review 4); open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
