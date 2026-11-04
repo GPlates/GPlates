@@ -27,11 +27,13 @@
 #define GPLATES_MATHS_POLYGONOVERLAY_H
 
 #include <iosfwd>
+#include <string>
 #include <vector>
 #include <boost/optional.hpp>
 
 #include "GeometryIntersect.h"
 #include "GreatCircleArc.h"
+#include "MathematicalException.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolylineOnSphere.h"
@@ -441,7 +443,11 @@ namespace GPlatesMaths
 			unsigned int unresolved_pieces = 0;   // left unclassified (a common pair counts once)
 			unsigned int anchorless_resolved = 0; // common chains classified by option 3
 			unsigned int anchorless_arcs_max = 0; // most arcs in one such chain
-			unsigned int check_failures = 0;      // vertices with no consistent placement
+			unsigned int check_failures = 0;      // vertices still inconsistent after repair
+			unsigned int check_failures_before_repair = 0;
+			unsigned int repairs = 0;             // successful flips (a whole chain counts once)
+			unsigned int whole_chain_repairs = 0; // of which, a common chain flipped at once
+			unsigned int trusted_flipped = 0;     // repairs that flipped a vertex-tested class
 			unsigned int piece_side_disagreements = 0;  // debug builds: a piece's vertices disagree
 
 			// The bundle rule, counted once per vertex by the final check.
@@ -460,12 +466,80 @@ namespace GPlatesMaths
 		};
 
 
+		/**
+		 * Thrown when the overlay's classes describe no consistent arrangement, after repair
+		 * (phase4b-design.md section 9.2): never a silent wrong answer.
+		 *
+		 * Carries the diagnostics and the first failing vertex, for a report.
+		 */
+		class InconsistentOverlayException :
+				public MathematicalException
+		{
+		public:
+			InconsistentOverlayException(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					const std::string &message,
+					const Diagnostics &diagnostics,
+					const boost::optional<PointOnSphere> &vertex_position) :
+				MathematicalException(exception_source),
+				d_message(message),
+				d_diagnostics(diagnostics),
+				d_vertex_position(vertex_position)
+			{  }
+
+			~InconsistentOverlayException() throw()
+			{  }
+
+			const Diagnostics &
+			get_diagnostics() const
+			{
+				return d_diagnostics;
+			}
+
+			//! The first failing vertex's output position (none if only pieces were unresolved).
+			const boost::optional<PointOnSphere> &
+			get_vertex_position() const
+			{
+				return d_vertex_position;
+			}
+
+		protected:
+
+			const char *
+			exception_name() const override
+			{
+				return "InconsistentOverlayException";
+			}
+
+			void
+			write_message(
+					std::ostream &os) const override
+			{
+				write_string_message(os, d_message);
+			}
+
+		private:
+			std::string d_message;
+			Diagnostics d_diagnostics;
+			boost::optional<PointOnSphere> d_vertex_position;
+		};
+
+
 		//! What the caller asks of an overlay.
 		class Options
 		{
 		public:
 			//! The speed of point-in-polygon tests against the clip (the partitioner's choice).
 			PolygonOnSphere::PointInPolygonSpeedAndMemory clip_speed = PolygonOnSphere::ADAPTIVE;
+
+			//! The most rounds of repair (phase4b-design.md section 3.9).
+			unsigned int max_repair_rounds = 20;
+
+			/**
+			 * Whether an inconsistency left after repair throws InconsistentOverlayException (the
+			 * default); if false it is only counted in the diagnostics (for hunts and tests).
+			 */
+			bool throw_if_inconsistent = true;
 		};
 
 
@@ -561,13 +635,36 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Classify every piece (phase4b-design.md section 3.7), then check every vertex.
+			 * Classify every piece (phase4b-design.md section 3.7), then check every vertex and
+			 * repair (@a check_and_repair).
 			 *
 			 * The result is RESULT_INSIDE when the difference (subject minus clip) keeps no piece,
 			 * RESULT_OUTSIDE when the intersection keeps none, and RESULT_INTERSECTING otherwise.
+			 *
+			 * @throws InconsistentOverlayException if a vertex is still inconsistent after repair,
+			 * or a piece is left unclassified (unless Options::throw_if_inconsistent is false).
 			 */
 			Result
 			classify();
+
+			/**
+			 * Check every vertex, repair what fails (section 3.9) and return the result; the second
+			 * half of @a classify, public so that a test can set a class by hand and run it again.
+			 *
+			 * @throws InconsistentOverlayException as @a classify does.
+			 */
+			Result
+			check_and_repair();
+
+			/**
+			 * Set a piece's class (a common pair's, on both its pieces) and the method recorded for
+			 * it; for tests that provoke an inconsistency, and for diagnostics.
+			 */
+			void
+			set_piece_class(
+					unsigned int piece_index,
+					bool inside_or_same_side,
+					Method method);
 
 			/**
 			 * The sector walk at one vertex, on the current classes; with @a deductions, also the
@@ -658,6 +755,22 @@ namespace GPlatesMaths
 			is_inside_other(
 					Side side,
 					const PointOnSphere &point) const;
+
+			//! Steps (a) to (e) of classification (phase4b-design.md section 3.7).
+			void
+			classify_pieces();
+
+			//! Up to Options::max_repair_rounds of repair at the first failing vertex.
+			void
+			repair();
+
+			//! The result from the classes (what the intersection and the difference keep).
+			Result
+			get_result_from_classes() const;
+
+			//! The first vertex with no consistent placement, if any.
+			boost::optional<unsigned int>
+			find_failing_vertex() const;
 
 			//! Apply deductions at every vertex until nothing changes; true if anything did.
 			bool

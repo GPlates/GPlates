@@ -278,6 +278,7 @@ namespace
 	{
 		const Overlay::Result result = overlay.classify();
 		EXPECT_EQ(overlay.get_diagnostics().check_failures, 0u);
+		EXPECT_EQ(overlay.get_diagnostics().repairs, 0u);
 		EXPECT_EQ(overlay.get_diagnostics().unresolved_pieces, 0u);
 		EXPECT_EQ(overlay.get_diagnostics().piece_side_disagreements, 0u);
 		return result;
@@ -1227,5 +1228,137 @@ TEST(PolygonOverlayTest, ClassifyAnchorless)
 					ring_classes(overlay, Overlay::SUBJECT, 0),
 					"opposite opposite opposite opposite");
 		}
+	}
+}
+
+
+
+//
+// Repair and failure (phase4b-design.md sections 3.9 and 9). No normal input needs repair, so the
+// inconsistencies are provoked: a class set wrong by hand, then the check and repair run again.
+//
+
+namespace
+{
+	//! The pieces of one ring whose class is @a piece_class (by ring_classes' names).
+	std::vector<unsigned int>
+	pieces_with_class(
+			const Overlay::Overlay &overlay,
+			Overlay::Side side,
+			const std::string &piece_class)
+	{
+		std::vector<unsigned int> pieces;
+		for (unsigned int p = 0; p < overlay.get_pieces().size(); ++p)
+		{
+			const Overlay::Piece &piece = overlay.get_pieces()[p];
+			const std::string name = piece.common
+					? (piece.common_class == Overlay::COMMON_SAME_SIDE ? "same" : "opposite")
+					: (piece.piece_class == Overlay::CLASS_INSIDE ? "in" : "out");
+			if (overlay.get_rings()[piece.ring].side == side &&
+				!piece.internal &&
+				name == piece_class)
+			{
+				pieces.push_back(p);
+			}
+		}
+		return pieces;
+	}
+}
+
+
+// One class set wrong (as if deduced) is flipped back: the two crossings it ends at fail the LL
+// rule, and the least reliable class there is the wrong one.
+TEST(PolygonOverlayTest, RepairSingleFlip)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.005, 0.005));
+	const auto Q = polygon(square(-0.005, -0.005, 0.02, 0.02));
+	Overlay::Overlay overlay(*P, *Q);
+	ASSERT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+
+	const std::vector<unsigned int> inside = pieces_with_class(overlay, Overlay::SUBJECT, "in");
+	ASSERT_EQ(inside.size(), 1u);
+	overlay.set_piece_class(inside.front(), false, Overlay::METHOD_DEDUCED);
+
+	EXPECT_EQ(overlay.check_and_repair(), Overlay::RESULT_INTERSECTING);
+	const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+	EXPECT_EQ(diagnostics.check_failures_before_repair, 2u);
+	EXPECT_EQ(diagnostics.check_failures, 0u);
+	EXPECT_EQ(diagnostics.repairs, 1u);
+	EXPECT_EQ(diagnostics.trusted_flipped, 0u);
+	EXPECT_EQ(overlay.get_pieces()[inside.front()].piece_class, Overlay::CLASS_INSIDE);
+	EXPECT_EQ(overlay.get_pieces()[inside.front()].method, Overlay::METHOD_REPAIRED);
+}
+
+
+// A common chain set wrong as a whole is flipped back as a whole: neighbouring plates share an
+// edge cut into several common pairs by each other's vertices; set every one 'same', and the
+// chain's interior vertices stay consistent while both its ends fail.
+TEST(PolygonOverlayTest, RepairWholeChain)
+{
+	const auto P = polygon(ring_type{
+			F.at(-0.02, -0.01), F.at(0.0, -0.01), F.at(0.0, -0.005), F.at(0.0, 0.005),
+			F.at(0.0, 0.01), F.at(-0.02, 0.01) });
+	const auto Q = polygon(ring_type{
+			F.at(0.0, -0.01), F.at(0.02, -0.01), F.at(0.02, 0.01), F.at(0.0, 0.01),
+			F.at(0.0, 0.003), F.at(0.0, 0.0), F.at(0.0, -0.003) });
+	Overlay::Overlay overlay(*P, *Q);
+	ASSERT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+
+	const std::vector<unsigned int> chain =
+			pieces_with_class(overlay, Overlay::SUBJECT, "opposite");
+	ASSERT_GT(chain.size(), 2u);
+	for (unsigned int p : chain)
+	{
+		overlay.set_piece_class(p, true/*same side*/, Overlay::METHOD_SECTOR);
+	}
+
+	EXPECT_EQ(overlay.check_and_repair(), Overlay::RESULT_OUTSIDE);
+	const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+	EXPECT_EQ(diagnostics.check_failures_before_repair, 2u);
+	EXPECT_EQ(diagnostics.check_failures, 0u);
+	EXPECT_EQ(diagnostics.repairs, 1u);
+	EXPECT_EQ(diagnostics.whole_chain_repairs, 1u);
+	for (unsigned int p : chain)
+	{
+		EXPECT_EQ(overlay.get_pieces()[p].common_class, Overlay::COMMON_OPPOSITE_SIDES);
+		EXPECT_EQ(overlay.get_pieces()[p].method, Overlay::METHOD_REPAIRED);
+	}
+}
+
+
+// Without repair (no rounds), the inconsistency is never a silent wrong answer: it throws, with
+// the diagnostics and the failing vertex; counted instead when asked not to throw.
+TEST(PolygonOverlayTest, InconsistentOverlayThrows)
+{
+	const auto P = polygon(square(-0.02, -0.02, 0.005, 0.005));
+	const auto Q = polygon(square(-0.005, -0.005, 0.02, 0.02));
+	Overlay::Options options;
+	options.max_repair_rounds = 0;
+	{
+		Overlay::Overlay overlay(*P, *Q, options);
+		overlay.classify();
+		const std::vector<unsigned int> inside = pieces_with_class(overlay, Overlay::SUBJECT, "in");
+		ASSERT_EQ(inside.size(), 1u);
+		overlay.set_piece_class(inside.front(), false, Overlay::METHOD_DEDUCED);
+		try
+		{
+			overlay.check_and_repair();
+			ADD_FAILURE() << "no exception";
+		}
+		catch (const Overlay::InconsistentOverlayException &exception)
+		{
+			EXPECT_EQ(exception.get_diagnostics().check_failures, 2u);
+			EXPECT_EQ(exception.get_diagnostics().repairs, 0u);
+			ASSERT_TRUE(exception.get_vertex_position());
+		}
+	}
+	{
+		options.throw_if_inconsistent = false;
+		Overlay::Overlay overlay(*P, *Q, options);
+		overlay.classify();
+		const std::vector<unsigned int> inside = pieces_with_class(overlay, Overlay::SUBJECT, "in");
+		overlay.set_piece_class(inside.front(), false, Overlay::METHOD_DEDUCED);
+		EXPECT_NO_THROW(overlay.check_and_repair());
+		EXPECT_EQ(overlay.get_diagnostics().check_failures, 2u);
 	}
 }

@@ -256,15 +256,21 @@ namespace
 		const PolygonOnSphere::non_null_ptr_to_const_type P = polygon(prototype_case.rings[0]);
 		const PolygonOnSphere::non_null_ptr_to_const_type Q = polygon(prototype_case.rings[1]);
 
-		Overlay::Overlay overlay(*P, *Q);
+		// Count an inconsistency rather than throw, so that the case's report is complete.
+		Overlay::Options options;
+		options.throw_if_inconsistent = false;
+		Overlay::Overlay overlay(*P, *Q, options);
 		overlay.classify();
 
+		// The design requires no repair on generated data (phase4b-design.md section 12, step 15).
 		std::stringstream report;
 		if (overlay.get_diagnostics().check_failures != 0 ||
-			overlay.get_diagnostics().unresolved_pieces != 0)
+			overlay.get_diagnostics().unresolved_pieces != 0 ||
+			overlay.get_diagnostics().repairs != 0)
 		{
 			report << overlay.get_diagnostics().check_failures << " check failures, "
-					<< overlay.get_diagnostics().unresolved_pieces << " unresolved pieces";
+					<< overlay.get_diagnostics().unresolved_pieces << " unresolved pieces, "
+					<< overlay.get_diagnostics().repairs << " repairs";
 			return report.str();
 		}
 
@@ -624,6 +630,7 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 
 		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
 		EXPECT_EQ(diagnostics.check_failures, 0u);
+		EXPECT_EQ(diagnostics.check_failures_before_repair, 0u);
 		EXPECT_EQ(diagnostics.unresolved_pieces, 0u);
 		EXPECT_EQ(diagnostics.one_passage_vertices, e.one_passage_vertices);
 		EXPECT_EQ(diagnostics.one_passage_moved, e.one_passage_moved);

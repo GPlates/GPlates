@@ -27,12 +27,14 @@
 #include <cmath>
 #include <map>
 #include <ostream>
+#include <sstream>
 #include <unordered_map>
 #include <utility>
 
 #include "PolygonOverlay.h"
 
 #include "GeometryDistance.h"
+#include "LatLonPoint.h"
 #include "MathsUtils.h"
 #include "PointInPolygon.h"
 #include "UnitVector3D.h"
@@ -1705,6 +1707,14 @@ GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
 GPlatesMaths::PolygonOverlay::Result
 GPlatesMaths::PolygonOverlay::Overlay::classify()
 {
+	classify_pieces();
+	return check_and_repair();
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
+{
 	// A polyline subject is classified by its own rules (phase4b-design.md section 6.1).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_subject_polygon != nullptr,
@@ -1871,6 +1881,37 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 		}
 	}
 
+}
+
+
+GPlatesMaths::PolygonOverlay::Result
+GPlatesMaths::PolygonOverlay::Overlay::check_and_repair()
+{
+	// This pass's counters (it can run again, after a class is set by hand in a test).
+	d_diagnostics.unresolved_pieces = 0;
+	d_diagnostics.check_failures = 0;
+	d_diagnostics.one_passage_vertices = 0;
+	d_diagnostics.one_passage_moved = 0;
+	d_diagnostics.both_pass_twice = 0;
+	d_diagnostics.bundle_vertices = 0;
+	d_diagnostics.bundle_floating_max = 0;
+	d_diagnostics.bundle_admissible_max = 0;
+	d_diagnostics.bundle_placements_max = 0;
+	d_diagnostics.bundle_ambiguous = 0;
+	d_diagnostics.bundle_capped = 0;
+	d_diagnostics.bundle_moved = 0;
+
+	unsigned int num_failing_before_repair = 0;
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		num_failing_before_repair += solve_vertex(v).consistent ? 0 : 1;
+	}
+	d_diagnostics.check_failures_before_repair = num_failing_before_repair;
+	if (num_failing_before_repair != 0)
+	{
+		repair();
+	}
+
 	for (const Piece &piece : d_pieces)
 	{
 		// A common pair counts once, as its subject piece.
@@ -1922,6 +1963,47 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 		}
 	}
 
+	// Never a silent wrong answer (phase4b-design.md section 9.2).
+	if ((d_diagnostics.check_failures != 0 || d_diagnostics.unresolved_pieces != 0) &&
+		d_options.throw_if_inconsistent)
+	{
+		static const char *const kinds[] = { "LL", "SS", "SL", "LS" };
+		std::ostringstream message;
+		message << "The overlay's classes are inconsistent after " << d_diagnostics.repairs
+				<< " repairs: " << d_diagnostics.check_failures
+				<< " vertices have no consistent arrangement and "
+				<< d_diagnostics.unresolved_pieces << " pieces are unresolved.";
+		boost::optional<PointOnSphere> position;
+		const boost::optional<unsigned int> failing = find_failing_vertex();
+		if (failing)
+		{
+			const Vertex &vertex = d_vertices[*failing];
+			position = vertex.position;
+			const LatLonPoint lat_lon = make_lat_lon_point(vertex.position);
+			message << " The first is at latitude " << lat_lon.latitude() << ", longitude "
+					<< lat_lon.longitude() << ", with records";
+			for (unsigned int r : get_vertex_records(vertex))
+			{
+				const GeometryIntersect::Intersection &record = d_graph.unordered_intersections[r];
+				message << " " << kinds[record.type] << "(" << record.segment_index1 << ","
+						<< record.segment_index2 << ")";
+			}
+			message << ".";
+		}
+		throw InconsistentOverlayException(
+				GPLATES_EXCEPTION_SOURCE,
+				message.str(),
+				d_diagnostics,
+				position);
+	}
+
+	return get_result_from_classes();
+}
+
+
+GPlatesMaths::PolygonOverlay::Result
+GPlatesMaths::PolygonOverlay::Overlay::get_result_from_classes() const
+{
 	//
 	// The result, from what the intersection and the difference keep (phase4b-design.md section
 	// 5.1): the intersection keeps subject pieces inside the clip, clip pieces inside the subject
@@ -2449,4 +2531,221 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	piece.common_class = (in_subject == in_clip) ? COMMON_SAME_SIDE : COMMON_OPPOSITE_SIDES;
 	piece.method = METHOD_ANCHORLESS;
 	return true;
+}
+
+
+boost::optional<unsigned int>
+GPlatesMaths::PolygonOverlay::Overlay::find_failing_vertex() const
+{
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		if (!solve_vertex(v).consistent)
+		{
+			return v;
+		}
+	}
+	return boost::none;
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::set_piece_class(
+		unsigned int piece_index,
+		bool inside_or_same_side,
+		Method method)
+{
+	Piece &piece = d_pieces[piece_index];
+	if (piece.common)
+	{
+		Piece &partner = d_pieces[*piece.common];
+		piece.common_class = partner.common_class =
+				inside_or_same_side ? COMMON_SAME_SIDE : COMMON_OPPOSITE_SIDES;
+		piece.method = partner.method = method;
+	}
+	else
+	{
+		piece.piece_class = inside_or_same_side ? CLASS_INSIDE : CLASS_OUTSIDE;
+		piece.method = method;
+	}
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::repair()
+{
+	//
+	// Repair (phase4b-design.md section 3.9; walk-through 9.3): at the first failing vertex, flip
+	// the least reliable classified piece there (by method, then shortest first) whose flip makes
+	// the vertex consistent; repeat, up to the round cap. A common piece's flip flips its partner.
+	// Where the vertex is a common chain's end, one more candidate flips the whole chain at once,
+	// ranked with the sector classes and tried before any single piece of that rank: flipping a
+	// chain piece by piece fails the chain's interior vertices the next round, towards the cap
+	// (run 3's inversion residue). Measured: no repair in any normal Phase 4a run of the chosen
+	// configuration, so this is a safety net; every flip is counted.
+	//
+	const auto rank = [](Method method)
+	{
+		switch (method)
+		{
+		case METHOD_MIDPOINT_TEST:
+			return 0;
+		case METHOD_DEDUCED:
+			return 1;
+		case METHOD_SECTOR:
+		case METHOD_ANCHORLESS:
+			return 2;
+		case METHOD_REPAIRED:
+			return 3;
+		case METHOD_VERTEX_TEST:
+			return 4;
+		default:
+			return 5;
+		}
+	};
+
+	const auto piece_length = [this](unsigned int p)
+	{
+		const std::vector<PointOnSphere> points = get_piece_points(d_pieces[p]);
+		double length = 0;
+		for (unsigned int i = 0; i + 1 < points.size(); ++i)
+		{
+			length += angle_between(points[i].position_vector(), points[i + 1].position_vector());
+		}
+		return length;
+	};
+
+	const auto flip = [this](unsigned int p)
+	{
+		Piece &piece = d_pieces[p];
+		if (piece.common)
+		{
+			const CommonClass flipped = (piece.common_class == COMMON_SAME_SIDE)
+					? COMMON_OPPOSITE_SIDES
+					: COMMON_SAME_SIDE;
+			piece.common_class = d_pieces[*piece.common].common_class = flipped;
+		}
+		else
+		{
+			piece.piece_class = (piece.piece_class == CLASS_INSIDE) ? CLASS_OUTSIDE : CLASS_INSIDE;
+		}
+	};
+
+	class Candidate
+	{
+	public:
+		int rank;
+		bool whole_chain;
+		double length;
+		std::vector<unsigned int> pieces;
+	};
+
+	for (unsigned int round = 0; round < d_options.max_repair_rounds; ++round)
+	{
+		const boost::optional<unsigned int> failing = find_failing_vertex();
+		if (!failing)
+		{
+			return;
+		}
+		const Vertex &vertex = d_vertices[*failing];
+
+		// The classified pieces at the vertex (a common pair as its subject piece), each once.
+		std::vector<Candidate> candidates;
+		std::vector<unsigned int> seen;
+		bool has_non_common_ray = false;
+		for (const Ray &ray : vertex.rays)
+		{
+			has_non_common_ray = has_non_common_ray || !ray.is_common();
+			for (const boost::optional<End> &end : { ray.subject_end, ray.clip_end })
+			{
+				if (!end)
+				{
+					continue;
+				}
+				const Piece &piece = d_pieces[end->piece];
+				const bool counts = !piece.common || d_rings[piece.ring].side == SUBJECT;
+				if (!counts ||
+					!piece.is_classified() ||
+					std::find(seen.begin(), seen.end(), end->piece) != seen.end())
+				{
+					continue;
+				}
+				seen.push_back(end->piece);
+				candidates.push_back(Candidate{
+						rank(piece.method),
+						false,
+						piece_length(end->piece),
+						std::vector<unsigned int>(1, end->piece)});
+			}
+		}
+
+		// At a chain's end, each chain through the vertex flipped as a whole.
+		if (has_non_common_ray)
+		{
+			for (const Ray &ray : vertex.rays)
+			{
+				if (ray.is_common() && d_pieces[ray.subject_end->piece].is_classified())
+				{
+					const std::vector<unsigned int> chain =
+							get_common_chain(ray.subject_end->piece);
+					if (chain.size() > 1)
+					{
+						candidates.push_back(Candidate{ rank(METHOD_SECTOR), true, 0.0, chain });
+					}
+				}
+			}
+		}
+
+		std::stable_sort(
+				candidates.begin(),
+				candidates.end(),
+				[](const Candidate &a, const Candidate &b)
+				{
+					if (a.rank != b.rank)
+					{
+						return a.rank < b.rank;
+					}
+					if (a.whole_chain != b.whole_chain)
+					{
+						return a.whole_chain;
+					}
+					return a.length < b.length;
+				});
+
+		bool fixed = false;
+		for (const Candidate &candidate : candidates)
+		{
+			for (unsigned int p : candidate.pieces)
+			{
+				flip(p);
+			}
+			if (solve_vertex(*failing).consistent)
+			{
+				for (unsigned int p : candidate.pieces)
+				{
+					Piece &piece = d_pieces[p];
+					if (piece.method == METHOD_VERTEX_TEST)
+					{
+						++d_diagnostics.trusted_flipped;
+					}
+					piece.method = METHOD_REPAIRED;
+					if (piece.common)
+					{
+						d_pieces[*piece.common].method = METHOD_REPAIRED;
+					}
+				}
+				++d_diagnostics.repairs;
+				d_diagnostics.whole_chain_repairs += candidate.whole_chain ? 1 : 0;
+				fixed = true;
+				break;
+			}
+			for (unsigned int p : candidate.pieces)
+			{
+				flip(p);  // back
+			}
+		}
+		if (!fixed)
+		{
+			return;
+		}
+	}
 }
