@@ -2005,3 +2005,178 @@ TEST(PolygonOverlayTest, LinkBothPassTwice)
 			(std::vector<unsigned int>{ 3, 3, 3, 3 }));
 	EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), std::vector<unsigned int>());
 }
+
+
+//
+// A polyline subject (phase4b-design.md section 6.1): classification and output, checked by the
+// oracle along the polyline (section 11.3).
+//
+
+namespace
+{
+	//! The class (inside?) and point count of each output polyline, in order.
+	std::vector<std::pair<bool, unsigned int>>
+	polyline_runs(
+			const Overlay::Overlay &overlay)
+	{
+		std::vector<Overlay::OutputPolyline> polylines;
+		overlay.extract_polylines(polylines);
+		std::vector<std::pair<bool, unsigned int>> runs;
+		for (const Overlay::OutputPolyline &polyline : polylines)
+		{
+			runs.push_back(std::make_pair(polyline.inside, unsigned(polyline.points.size())));
+		}
+		return runs;
+	}
+
+	//! The output passes the oracle along the polyline.
+	void
+	check_polyline_oracle(
+			const PolylineOnSphere &L,
+			const PolygonOnSphere &Q,
+			const Overlay::Overlay &overlay)
+	{
+		std::vector<Overlay::OutputPolyline> polylines;
+		overlay.extract_polylines(polylines);
+		unsigned int num_tested = 0;
+		EXPECT_EQ(
+				PolygonOverlayOracle::count_polyline_failures(L, Q, overlay, polylines, num_tested),
+				0u);
+		EXPECT_GT(num_tested, 100u);
+		EXPECT_EQ(overlay.get_diagnostics().ll_disagreements, 0u);
+	}
+
+	typedef std::vector<std::pair<bool, unsigned int>> runs_type;
+}
+
+
+// A polyline across the clip, in and out twice: each piece with an original vertex is tested there;
+// and a straight one across it, whose middle piece, a single arc between two crossings, is deduced.
+TEST(PolygonOverlayTest, PolylineAcross)
+{
+	const auto Q = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	{
+		const auto L = PolylineOnSphere::create(ring_type{
+				F.at(-0.02, 0.0), F.at(0.0, 0.005), F.at(0.02, 0.0), F.at(0.005, -0.02),
+				F.at(0.0, 0.0) });
+		Overlay::Overlay overlay(*L, *Q);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_INTERSECTING);
+		EXPECT_EQ(
+				polyline_runs(overlay),
+				(runs_type{ { false, 2 }, { true, 3 }, { false, 4 }, { true, 2 } }));
+		EXPECT_EQ(overlay.get_diagnostics().vertex_tests, 4u);
+		check_polyline_oracle(*L, *Q, overlay);
+	}
+	{
+		const auto L = PolylineOnSphere::create(ring_type{ F.at(-0.02, 0.003), F.at(0.02, 0.003) });
+		Overlay::Overlay overlay(*L, *Q);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_INTERSECTING);
+		EXPECT_EQ(
+				polyline_runs(overlay),
+				(runs_type{ { false, 2 }, { true, 2 }, { false, 2 } }));
+		EXPECT_EQ(overlay.get_diagnostics().deduced, 1u);
+		check_polyline_oracle(*L, *Q, overlay);
+	}
+}
+
+
+// A polyline with no record: wholly inside or wholly outside, one run, the polyline itself.
+TEST(PolygonOverlayTest, PolylineNoRecord)
+{
+	const auto Q = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	{
+		const auto L = PolylineOnSphere::create(
+				ring_type{ F.at(-0.005, 0.0), F.at(0.0, 0.005), F.at(0.005, 0.0) });
+		Overlay::Overlay overlay(*L, *Q);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_INSIDE);
+		EXPECT_EQ(polyline_runs(overlay), (runs_type{ { true, 3 } }));
+	}
+	{
+		const auto L = PolylineOnSphere::create(
+				ring_type{ F.at(0.02, 0.0), F.at(0.03, 0.005), F.at(0.04, 0.0) });
+		Overlay::Overlay overlay(*L, *Q);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_OUTSIDE);
+		EXPECT_EQ(polyline_runs(overlay), (runs_type{ { false, 3 } }));
+	}
+}
+
+
+// Along the clip's edge (requirements Q2): the piece along it is inside, decided, so that a
+// polyline running along a plate boundary goes to the inside list only; outside if asked. It is
+// never a source of deduction, so its class does not leak to the pieces beside it.
+TEST(PolygonOverlayTest, PolylineAlong)
+{
+	const auto Q = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	const auto L = PolylineOnSphere::create(ring_type{
+			F.at(-0.02, 0.01), F.at(-0.005, 0.01), F.at(0.005, 0.01), F.at(0.02, 0.01) });
+	for (bool along_is_inside : { true, false })
+	{
+		SCOPED_TRACE(along_is_inside);
+		Overlay::Options options;
+		options.polyline_along_is_inside = along_is_inside;
+		Overlay::Overlay overlay(*L, *Q, options);
+		overlay.classify();
+		// Corner to vertex, vertex to vertex, vertex to corner.
+		EXPECT_EQ(overlay.get_diagnostics().along_pieces, 3u);
+		if (along_is_inside)
+		{
+			EXPECT_EQ(
+					polyline_runs(overlay),
+					(runs_type{ { false, 2 }, { true, 4 }, { false, 2 } }));
+		}
+		else
+		{
+			EXPECT_EQ(polyline_runs(overlay), (runs_type{ { false, 4 + 2 } }));
+		}
+		check_polyline_oracle(*L, *Q, overlay);
+	}
+}
+
+
+// A touch: a vertex of the polyline on the clip's edge with both neighbours outside. No deduction
+// across a touch (the polyline bounces), so both pieces are tested and the polyline is outside.
+// And an end on the clip's edge: the output starts at the end point itself.
+TEST(PolygonOverlayTest, PolylineTouchAndEnd)
+{
+	const auto Q = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	{
+		SCOPED_TRACE("touch");
+		const auto L = PolylineOnSphere::create(
+				ring_type{ F.at(-0.01, 0.02), F.at(0.0, 0.01), F.at(0.01, 0.02) });
+		Overlay::Overlay overlay(*L, *Q);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_OUTSIDE);
+		EXPECT_EQ(overlay.get_diagnostics().deduced, 0u);
+		EXPECT_EQ(polyline_runs(overlay), (runs_type{ { false, 3 } }));
+		check_polyline_oracle(*L, *Q, overlay);
+	}
+	{
+		SCOPED_TRACE("end on the edge");
+		const PointOnSphere end = F.at(0.0, 0.01);
+		const auto L =
+				PolylineOnSphere::create(ring_type{ F.at(0.0, 0.03), F.at(0.005, 0.02), end });
+		Overlay::Overlay overlay(*L, *Q);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_OUTSIDE);
+		std::vector<Overlay::OutputPolyline> polylines;
+		overlay.extract_polylines(polylines);
+		ASSERT_EQ(polylines.size(), 1u);
+		EXPECT_TRUE(same(polylines[0].points.back(), end));
+		check_polyline_oracle(*L, *Q, overlay);
+	}
+}
+
+
+// Through the point where the clip's exterior and a hole touch (a pinch): outside before it, inside
+// after (the hole is beside, not ahead). The crossing of the exterior's edge and the hole's vertex
+// are two vertices at one point (no original vertex in common), so the inside run starts with
+// both (near-zero output edges, PLAN.md, step 14).
+TEST(PolygonOverlayTest, PolylinePinch)
+{
+	const auto Q = polygon(
+			square(-0.02, -0.02, 0.02, 0.02),
+			{ ring_type{ F.at(0.0, -0.02), F.at(0.01, 0.0), F.at(-0.01, 0.0) } });
+	const auto L = PolylineOnSphere::create(ring_type{ F.at(-0.01, -0.03), F.at(0.01, -0.01) });
+	Overlay::Overlay overlay(*L, *Q);
+	overlay.classify();
+	EXPECT_EQ(polyline_runs(overlay), (runs_type{ { false, 2 }, { true, 3 } }));
+	check_polyline_oracle(*L, *Q, overlay);
+}

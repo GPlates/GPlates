@@ -38,6 +38,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonOverlay.h"
+#include "maths/PolylineOnSphere.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -81,6 +82,33 @@ namespace PolygonOverlayOracle
 	}
 
 
+	//! The oracle's margin M: max(10h, twice the widest record cluster, the records of a vertex).
+	inline
+	double
+	get_margin(
+			const GPlatesMaths::PolygonOverlay::Overlay &overlay)
+	{
+		using namespace GPlatesMaths;
+		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+		double cluster_width = 0;
+		const auto &records = overlay.get_graph().unordered_intersections;
+		for (const auto &vertex : overlay.get_vertices())
+		{
+			const std::vector<unsigned int> vertex_records = overlay.get_vertex_records(vertex);
+			for (unsigned int a : vertex_records)
+			{
+				for (unsigned int b : vertex_records)
+				{
+					cluster_width = (std::max)(cluster_width, angle_between(
+							records[a].position.position_vector(),
+							records[b].position.position_vector()));
+				}
+			}
+		}
+		return (std::max)(10 * h, 2 * cluster_width);
+	}
+
+
 	/**
 	 * Sample points: uniform in a disc over both inputs, and in annuli (radius M to 30 M) round
 	 * every overlay vertex, where the hard regions are; those within M of either outline dropped.
@@ -95,7 +123,6 @@ namespace PolygonOverlayOracle
 			unsigned int num_per_vertex = 12)
 	{
 		using namespace GPlatesMaths;
-		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
 
 		std::vector<PointOnSphere> vertices;
 		add_ring_points(subject, vertices);
@@ -113,23 +140,7 @@ namespace PolygonOverlayOracle
 		}
 		radius = 1.3 * radius + 1e-4;
 
-		// The widest record cluster (the records of one overlay vertex).
-		double cluster_width = 0;
-		const auto &records = overlay.get_graph().unordered_intersections;
-		for (const auto &vertex : overlay.get_vertices())
-		{
-			const std::vector<unsigned int> vertex_records = overlay.get_vertex_records(vertex);
-			for (unsigned int a : vertex_records)
-			{
-				for (unsigned int b : vertex_records)
-				{
-					cluster_width = (std::max)(cluster_width, angle_between(
-							records[a].position.position_vector(),
-							records[b].position.position_vector()));
-				}
-			}
-		}
-		const double margin = (std::max)(10 * h, 2 * cluster_width);
+		const double margin = get_margin(overlay);
 
 		std::mt19937 random(12345);
 		std::uniform_real_distribution<double> unit(0.0, 1.0);
@@ -308,6 +319,120 @@ namespace PolygonOverlayOracle
 			}
 		}
 		return num_misoriented;
+	}
+
+
+	/**
+	 * The oracle for a polyline subject (phase4b-design.md section 11.3): points sampled along it
+	 * (spherically), farther than M from the clip's outline, must each lie on an output polyline,
+	 * and every output they lie on must have the point's class against the clip (threshold off);
+	 * on exactly one, unless the subject passes the point more than once (an opened ring of the
+	 * hunt can double back on itself), then on at most as many as it passes. Returns the number
+	 * that do not, of @a num_samples drawn; @a num_tested is set to how many were beyond M.
+	 */
+	inline
+	unsigned int
+	count_polyline_failures(
+			const GPlatesMaths::PolylineOnSphere &subject,
+			const GPlatesMaths::PolygonOnSphere &clip,
+			const GPlatesMaths::PolygonOverlay::Overlay &overlay,
+			const std::vector<GPlatesMaths::PolygonOverlay::OutputPolyline> &polylines,
+			unsigned int &num_tested,
+			unsigned int num_samples = 300)
+	{
+		using namespace GPlatesMaths;
+
+		const double margin = get_margin(overlay);
+		// An output polyline runs through its vertices' output positions, up to h off the subject
+		// (a clip vertex touching it, say), so a sample of the subject lies within h of the output
+		// that covers it; and a sample beyond M is farther than 9h from every record, so from any
+		// other output.
+		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+		const AngularExtent on_polyline = AngularExtent::create_from_angle(2 * h);
+		const AngularExtent margin_extent = AngularExtent::create_from_angle(margin);
+
+		std::vector<PolylineOnSphere::non_null_ptr_to_const_type> outputs;
+		for (const PolygonOverlay::OutputPolyline &polyline : polylines)
+		{
+			if (polyline.points.size() >= 2)
+			{
+				outputs.push_back(PolylineOnSphere::create(polyline.points));
+			}
+			else
+			{
+				outputs.push_back(PolylineOnSphere::create(std::vector<PointOnSphere>{
+						polyline.points.front(), polyline.points.front() }));
+			}
+		}
+
+		std::vector<double> lengths;
+		double total = 0;
+		for (auto arc = subject.begin(); arc != subject.end(); ++arc)
+		{
+			lengths.push_back(angle_between(
+					arc->start_point().position_vector(), arc->end_point().position_vector()));
+			total += lengths.back();
+		}
+
+		std::mt19937 random(54321);
+		std::uniform_real_distribution<double> unit(0.0, 1.0);
+		unsigned int num_failures = 0;
+		num_tested = 0;
+		for (unsigned int i = 0; i < num_samples; ++i)
+		{
+			double x = total * unit(random);
+			unsigned int k = 0;
+			while (k + 1 < lengths.size() && x > lengths[k])
+			{
+				x -= lengths[k];
+				++k;
+			}
+			const GreatCircleArc &arc = *std::next(subject.begin(), k);
+			const double angle = lengths[k];
+			if (!(angle > 0))
+			{
+				continue;
+			}
+			const double t = (std::min)(1.0, x / angle);
+			const Vector3D start(arc.start_point().position_vector());
+			const Vector3D end(arc.end_point().position_vector());
+			const Vector3D v = (std::sin((1 - t) * angle) / std::sin(angle)) * start +
+					(std::sin(t * angle) / std::sin(angle)) * end;
+			const PointOnSphere point(v.get_normalisation());
+			if (minimum_distance(point, clip, false, margin_extent))
+			{
+				continue;  // within M of the clip's outline
+			}
+			++num_tested;
+			const bool in_clip = clip.is_point_in_polygon(point, PolygonOnSphere::ADAPTIVE, false);
+			unsigned int num_covering = 0;
+			bool classes_right = true;
+			for (unsigned int r = 0; r < outputs.size(); ++r)
+			{
+				if (minimum_distance(point, *outputs[r], on_polyline))
+				{
+					++num_covering;
+					classes_right = classes_right && polylines[r].inside == in_clip;
+				}
+			}
+			// The subject's passes near the point: runs of consecutive segments within 2h of it.
+			unsigned int num_passes = 0;
+			bool previous_near = false;
+			for (auto segment = subject.begin(); segment != subject.end(); ++segment)
+			{
+				const bool near = bool(minimum_distance(
+						point, *PolylineOnSphere::create(std::vector<PointOnSphere>{
+								segment->start_point(), segment->end_point() }),
+						on_polyline));
+				num_passes += (near && !previous_near) ? 1 : 0;
+				previous_near = near;
+			}
+			if (num_covering == 0 || num_covering > (std::max)(1u, num_passes) || !classes_right)
+			{
+				++num_failures;
+			}
+		}
+		return num_failures;
 	}
 
 

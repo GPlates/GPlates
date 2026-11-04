@@ -486,6 +486,8 @@ namespace GPlatesMaths
 			unsigned int unresolved_pieces = 0;   // left unclassified (a common pair counts once)
 			unsigned int anchorless_resolved = 0; // common chains classified by option 3
 			unsigned int anchorless_arcs_max = 0; // most arcs in one such chain
+			unsigned int along_pieces = 0;        // a polyline's pieces along the clip's outline
+			unsigned int ll_disagreements = 0;    // a polyline's tested pieces at a crossing agree
 			unsigned int check_failures = 0;      // vertices still inconsistent after repair
 			unsigned int check_failures_before_repair = 0;
 			unsigned int repairs = 0;             // successful flips (a whole chain counts once)
@@ -593,6 +595,18 @@ namespace GPlatesMaths
 		};
 
 
+		/**
+		 * One output polyline of a polyline subject (phase4b-design.md section 6.1): a run of the
+		 * subject's consecutive pieces of one class, in the subject's direction.
+		 */
+		class OutputPolyline
+		{
+		public:
+			std::vector<PointOnSphere> points;
+			bool inside;
+		};
+
+
 		//! One output polygon: an exterior ring and its holes (phase4b-design.md section 4.2).
 		class OutputPolygon
 		{
@@ -617,6 +631,13 @@ namespace GPlatesMaths
 			 * default); if false it is only counted in the diagnostics (for hunts and tests).
 			 */
 			bool throw_if_inconsistent = true;
+
+			/**
+			 * The class of a polyline subject's piece along the clip's outline (a common pair):
+			 * inside (requirements Q2, decided), so that partitioning puts it in the inside list
+			 * only; false for a caller that wants such pieces outside.
+			 */
+			bool polyline_along_is_inside = true;
 		};
 
 
@@ -713,7 +734,9 @@ namespace GPlatesMaths
 
 			/**
 			 * Classify every piece (phase4b-design.md section 3.7), then check every vertex and
-			 * repair (@a check_and_repair).
+			 * repair (@a check_and_repair). For a polyline subject, its pieces by its own rules
+			 * (section 6.1: no sector walk, no checks but one counted, no repair); the result is
+			 * RESULT_INSIDE when no piece is outside, RESULT_OUTSIDE when none is inside.
 			 *
 			 * The result is RESULT_INSIDE when the difference (subject minus clip) keeps no piece,
 			 * RESULT_OUTSIDE when the intersection keeps none, and RESULT_INTERSECTING otherwise.
@@ -789,6 +812,20 @@ namespace GPlatesMaths
 			extract_rings(
 					Operation operation,
 					std::vector<OutputRing> &rings) const;
+
+			/**
+			 * A polyline subject's output (phase4b-design.md section 6.1): its consecutive pieces
+			 * of one class joined into polylines, in its direction, a repeated position at a join
+			 * dropped; an internal piece (a loop or spike within a vertex) takes the class of the
+			 * piece before it (or after it, at the start), so that the runs cover the polyline.
+			 * A record's point is its position on the polyline (not its vertex's output position,
+			 * which a dense run of touches can put far off it). Appended to @a polylines.
+			 *
+			 * Call after @a classify.
+			 */
+			void
+			extract_polylines(
+					std::vector<OutputPolyline> &polylines) const;
 
 		private:
 
@@ -903,6 +940,10 @@ namespace GPlatesMaths
 			//! Steps (a) to (e) of classification (phase4b-design.md section 3.7).
 			void
 			classify_pieces();
+
+			//! A polyline subject's classification (phase4b-design.md section 6.1).
+			void
+			classify_polyline_pieces();
 
 			//! Up to Options::max_repair_rounds of repair at the first failing vertex.
 			void

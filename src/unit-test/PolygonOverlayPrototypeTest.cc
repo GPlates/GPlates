@@ -28,6 +28,7 @@
 #include <fstream>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -41,6 +42,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonOverlay.h"
+#include "maths/PolylineOnSphere.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -87,6 +89,7 @@ namespace
 	using GPlatesMaths::GeometryIntersect::Intersection;
 	using GPlatesMaths::PointOnSphere;
 	using GPlatesMaths::PolygonOnSphere;
+	using GPlatesMaths::PolylineOnSphere;
 	using GPlatesMaths::UnitVector3D;
 	using GPlatesMaths::Vector3D;
 	namespace Overlay = GPlatesMaths::PolygonOverlay;
@@ -124,6 +127,9 @@ namespace
 		//! The output rings of 'and', 'diff' and 'or' (intersection, difference, union), each ring
 		//! a cyclic sequence of named points (a record index, or P|Q<ring>.<vertex>).
 		std::vector<std::vector<std::string>> outputs[3];
+
+		//! A polyline subject's output: each run's class (inside?) and its named points, in order.
+		std::vector<std::pair<bool, std::vector<std::string>>> runs;
 	};
 
 	class PrototypeCase
@@ -131,6 +137,9 @@ namespace
 	public:
 		std::string name;
 		std::vector<std::vector<PointOnSphere>> rings[2];  // P's rings, Q's rings
+
+		//! The subject is a polyline (rings[0] holds its points, as one ring).
+		bool polyline = false;
 		std::vector<record_key_type> records;
 		std::vector<std::vector<std::string>> raw_pieces;  // per order, the unparsed 'piece' lines
 		std::vector<PrototypeOrder> orders;
@@ -173,8 +182,9 @@ namespace
 				cases.push_back(PrototypeCase());
 				cases.back().name = line.substr(5);
 			}
-			else if (keyword == "ring")
+			else if (keyword == "ring" || keyword == "polyline")
 			{
+				cases.back().polyline = cases.back().polyline || keyword == "polyline";
 				std::string polygon;
 				unsigned int num_points;
 				stream >> polygon >> num_points;
@@ -213,6 +223,17 @@ namespace
 			else if (keyword == "piece")
 			{
 				cases.back().raw_pieces.back().push_back(line);
+			}
+			else if (keyword == "run")
+			{
+				std::string inside, name;
+				stream >> inside;
+				std::vector<std::string> names;
+				while (stream >> name)
+				{
+					names.push_back(name);
+				}
+				cases.back().orders.back().runs.push_back(std::make_pair(inside == "in", names));
 			}
 			else if (keyword == "output")
 			{
@@ -301,10 +322,12 @@ namespace
 	}
 
 
-	//! A ring without points within 1e-9 radians of the one before (cyclically).
+	//! A ring without points within 1e-9 radians of the one before (cyclically, unless not
+	//! @a cyclic: a polyline).
 	std::vector<PointOnSphere>
 	without_near_repeats(
-			const std::vector<PointOnSphere> &ring)
+			const std::vector<PointOnSphere> &ring,
+			bool cyclic = true)
 	{
 		std::vector<PointOnSphere> out;
 		for (const PointOnSphere &point : ring)
@@ -314,7 +337,7 @@ namespace
 				out.push_back(point);
 			}
 		}
-		while (out.size() > 1 && same_point(out.front(), out.back()))
+		while (cyclic && out.size() > 1 && same_point(out.front(), out.back()))
 		{
 			out.pop_back();
 		}
@@ -468,6 +491,139 @@ namespace
 
 
 	/**
+	 * A polyline subject's output (phase4b-design.md section 6.1), by the oracle along it and,
+	 * where no band piece differs and the prototype's runs are the same in every clean tie order,
+	 * against the prototype's runs: their classes and their named points, in order.
+	 */
+	std::string
+	compare_polyline_output(
+			const PrototypeCase &prototype_case,
+			const PrototypeOrder &order,
+			const PolylineOnSphere &L,
+			const PolygonOnSphere &Q,
+			const Overlay::Overlay &overlay,
+			const std::vector<unsigned int> &overlay_record_of_prototype,
+			bool compare_runs,
+			unsigned int &num_oracle_failures)
+	{
+		std::vector<Overlay::OutputPolyline> polylines;
+		overlay.extract_polylines(polylines);
+
+		unsigned int num_tested = 0;
+		const unsigned int failures = PolygonOverlayOracle::count_polyline_failures(
+				L, Q, overlay, polylines, num_tested);
+		if (failures != 0 || overlay.get_diagnostics().ll_disagreements != 0)
+		{
+			++num_oracle_failures;
+			return "classes agree, but the output does not: " + std::to_string(failures) + " of " +
+					std::to_string(num_tested) + " samples wrong, " +
+					std::to_string(overlay.get_diagnostics().ll_disagreements) +
+					" LL disagreements";
+		}
+
+		bool tie_dependent = false;
+		for (const PrototypeOrder &other : prototype_case.orders)
+		{
+			tie_dependent = tie_dependent || other.runs != order.runs;
+		}
+		if (tie_dependent)
+		{
+			++num_tie_dependent_ring_sets;
+		}
+		if (!compare_runs || tie_dependent)
+		{
+			return std::string();
+		}
+
+		// The prototype names a run's points (a vertex by its lowest record, a polyline vertex
+		// 'P0.<index>'), so the overlay's runs are named alike, from its pieces in order: the
+		// positions differ by design (each stop's own, against the prototype's float ones).
+		std::map<unsigned int, unsigned int> prototype_record_of_overlay;
+		for (unsigned int r = 0; r < overlay_record_of_prototype.size(); ++r)
+		{
+			prototype_record_of_overlay[overlay_record_of_prototype[r]] = r;
+		}
+		const auto stop_name = [&](const Overlay::Stop &stop)
+		{
+			if (stop.kind != Overlay::Stop::RECORD)
+			{
+				return "P0." + std::to_string(stop.segment_out);
+			}
+			unsigned int lowest = 0xffffffff;
+			for (unsigned int r : overlay.get_vertex_records(overlay.get_vertices()[stop.vertex]))
+			{
+				lowest = (std::min)(lowest, prototype_record_of_overlay[r]);
+			}
+			return std::to_string(lowest);
+		};
+		std::vector<std::pair<bool, std::vector<std::string>>> runs;
+		const std::vector<Overlay::Piece> &pieces = overlay.get_pieces();
+		boost::optional<bool> previous_inside;
+		for (unsigned int p = 0; p < pieces.size(); ++p)
+		{
+			if (overlay.get_rings()[pieces[p].ring].side != Overlay::SUBJECT)
+			{
+				continue;
+			}
+			bool inside = pieces[p].piece_class == Overlay::CLASS_INSIDE;
+			if (pieces[p].internal)
+			{
+				inside = previous_inside.get_value_or(false);
+				if (!previous_inside)
+				{
+					for (unsigned int q = p + 1; q < pieces.size(); ++q)
+					{
+						if (!pieces[q].internal &&
+							overlay.get_rings()[pieces[q].ring].side == Overlay::SUBJECT)
+						{
+							inside = pieces[q].piece_class == Overlay::CLASS_INSIDE;
+							break;
+						}
+					}
+				}
+			}
+			if (runs.empty() || runs.back().first != inside)
+			{
+				runs.push_back(std::make_pair(inside, std::vector<std::string>()));
+			}
+			for (unsigned int stop = pieces[p].start_stop; stop <= pieces[p].end_stop; ++stop)
+			{
+				const std::string name = stop_name(overlay.get_stops()[stop]);
+				if (runs.back().second.empty() || runs.back().second.back() != name)
+				{
+					runs.back().second.push_back(name);
+				}
+			}
+			previous_inside = inside;
+		}
+
+		std::stringstream report;
+		if (polylines.size() != runs.size())
+		{
+			report << "extract_polylines gave " << polylines.size() << " polylines, the pieces "
+					<< runs.size() << "; ";
+		}
+		for (unsigned int r = 0; r < polylines.size() && r < runs.size(); ++r)
+		{
+			if (polylines[r].inside != runs[r].first)
+			{
+				report << "output polyline " << r << "'s class is not its pieces'; ";
+			}
+		}
+		if (runs != order.runs)
+		{
+			report << "the runs differ from the prototype's";
+		}
+		if (!report.str().empty())
+		{
+			++num_oracle_failures;
+			return "classes agree, but the output polylines do not: " + report.str();
+		}
+		return std::string();
+	}
+
+
+	/**
 	 * Compare one case; returns an empty string if it matches, else what differed.
 	 */
 	std::string
@@ -482,13 +638,23 @@ namespace
 					rings.front(),
 					std::vector<std::vector<PointOnSphere>>(rings.begin() + 1, rings.end()));
 		};
-		const PolygonOnSphere::non_null_ptr_to_const_type P = polygon(prototype_case.rings[0]);
+		// A polyline subject's polygon stands in where a polygon is needed (it is never used then).
+		const PolygonOnSphere::non_null_ptr_to_const_type P = polygon(prototype_case.polyline
+				? std::vector<std::vector<PointOnSphere>>{ prototype_case.rings[1].front() }
+				: prototype_case.rings[0]);
 		const PolygonOnSphere::non_null_ptr_to_const_type Q = polygon(prototype_case.rings[1]);
+		typedef boost::optional<PolylineOnSphere::non_null_ptr_to_const_type> polyline_type;
+		const polyline_type L = prototype_case.polyline
+				? polyline_type(PolylineOnSphere::create(prototype_case.rings[0].front()))
+				: boost::none;
 
 		// Count an inconsistency rather than throw, so that the case's report is complete.
 		Overlay::Options options;
 		options.throw_if_inconsistent = false;
-		Overlay::Overlay overlay(*P, *Q, options);
+		const std::unique_ptr<Overlay::Overlay> overlay_ptr(L
+				? new Overlay::Overlay(**L, *Q, options)
+				: new Overlay::Overlay(*P, *Q, options));
+		Overlay::Overlay &overlay = *overlay_ptr;
 		overlay.classify();
 
 		// The design requires no repair on generated data (phase4b-design.md section 12, step 15).
@@ -676,7 +842,12 @@ namespace
 					continue;
 				}
 
-				const std::string overlay_class = piece_class(piece);
+				const bool clip_piece = overlay.get_rings()[piece.ring].side == Overlay::CLIP;
+				const std::string overlay_class = !prototype_case.polyline
+						? piece_class(piece)
+						: (clip_piece
+								? std::string("none")
+								: (piece.piece_class == Overlay::CLASS_INSIDE ? "in" : "out"));
 				if (overlay_class == prototype_piece.piece_class)
 				{
 					continue;
@@ -718,6 +889,19 @@ namespace
 				differences << common_differences.str();
 			}
 
+			if (differences.str().empty() && prototype_case.polyline)
+			{
+				num_band_differences += band_differences;
+				return compare_polyline_output(
+						prototype_case,
+						order,
+						**L,
+						*Q,
+						overlay,
+						overlay_record_of_prototype,
+						band_differences == 0,
+						num_oracle_failures);
+			}
 			if (differences.str().empty())
 			{
 				num_band_differences += band_differences + num_common_differences;
@@ -960,6 +1144,17 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 TEST(PolygonOverlayPrototypeTest, Hunt)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);
+}
+
+
+// A polyline subject (phase4b-design.md section 6.1), the prototype's polyline generators of
+// Phase 4a run 3 section 6.1: an end on or near the clip's edge or vertex ('ends'), along a clip
+// edge, dense in 40% ('along'), touches ('touch'), through a pinch of the clip ('pinch'), 30 of
+// each, and 10 opened rings of each hunt generator ('opened-<generator>'). Classes, runs and the
+// oracle along the polyline.
+TEST(PolygonOverlayPrototypeTest, Polyline)
+{
+	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-polyline.txt", 150);
 }
 
 

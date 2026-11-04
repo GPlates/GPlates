@@ -1976,8 +1976,198 @@ GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
 GPlatesMaths::PolygonOverlay::Result
 GPlatesMaths::PolygonOverlay::Overlay::classify()
 {
+	if (d_subject_polyline)
+	{
+		classify_polyline_pieces();
+
+		bool any_inside = false;
+		bool any_outside = false;
+		const std::pair<unsigned int, unsigned int> range =
+				ring_piece_range(d_side_rings_begin[SUBJECT]);
+		for (unsigned int p = range.first; p < range.second; ++p)
+		{
+			if (!d_pieces[p].internal)
+			{
+				(d_pieces[p].piece_class == CLASS_INSIDE ? any_inside : any_outside) = true;
+			}
+		}
+		return !any_inside ? RESULT_OUTSIDE : (!any_outside ? RESULT_INSIDE : RESULT_INTERSECTING);
+	}
+
 	classify_pieces();
 	return check_and_repair();
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
+{
+	//
+	// A polyline subject (phase4b-design.md section 6.1). The clip's pieces bound nothing here and
+	// are not classified. There is no sector walk: a polyline divides nothing, so the vertex rules
+	// of the polygon overlay do not apply.
+	//
+	const std::pair<unsigned int, unsigned int> range =
+			ring_piece_range(d_side_rings_begin[SUBJECT]);
+
+	// (1) A piece along the clip's outline (a common pair) gets requirements Q2's class.
+	for (unsigned int p = range.first; p < range.second; ++p)
+	{
+		Piece &piece = d_pieces[p];
+		if (!piece.internal && piece.common)
+		{
+			piece.piece_class = d_options.polyline_along_is_inside ? CLASS_INSIDE : CLASS_OUTSIDE;
+			piece.method = METHOD_ALONG;
+			++d_diagnostics.along_pieces;
+		}
+	}
+
+	// (2) A piece with a test point is tested there, exactly (threshold off): its interior original
+	// vertices, then a dangling end (an end point that is no record is more than the thickness from
+	// the clip's outline). Exact with margin.
+	for (unsigned int p = range.first; p < range.second; ++p)
+	{
+		Piece &piece = d_pieces[p];
+		if (piece.internal || piece.common)
+		{
+			continue;
+		}
+		std::vector<unsigned int> test_stops;
+		for (unsigned int s = piece.start_stop + 1; s < piece.end_stop; ++s)
+		{
+			if (d_stops[s].kind == Stop::ORIGINAL_VERTEX)
+			{
+				test_stops.push_back(s);
+			}
+		}
+		for (unsigned int s : { piece.start_stop, piece.end_stop })
+		{
+			if (d_stops[s].kind == Stop::DANGLING_END)
+			{
+				test_stops.push_back(s);
+			}
+		}
+		if (test_stops.empty())
+		{
+			continue;
+		}
+		const bool inside = is_inside_other(SUBJECT, d_stops[test_stops.front()].position);
+		piece.piece_class = inside ? CLASS_INSIDE : CLASS_OUTSIDE;
+		piece.method = METHOD_VERTEX_TEST;
+		++d_diagnostics.vertex_tests;
+#ifdef GPLATES_DEBUG
+		for (unsigned int s : test_stops)
+		{
+			if (is_inside_other(SUBJECT, d_stops[s].position) != inside)
+			{
+				++d_diagnostics.piece_side_disagreements;
+				break;
+			}
+		}
+#endif
+	}
+
+	//
+	// (3) Deduction only across a vertex that is one crossing (one LL record) with exactly two of
+	// the polyline's pieces, neither along the outline: their classes differ. Never across a touch
+	// (the polyline can bounce), never from an along piece (so that Q2's class cannot leak). Two
+	// tested pieces there with one class mean a missed intersection: counted (both have a margin,
+	// and are kept). Then (4) the stalled pieces at their chords' midpoints, by margin, as 3.7(c).
+	//
+	const GeometryIntersect::intersection_seq_type &records = d_graph.unordered_intersections;
+	std::vector<bool> disagreement_counted(d_vertices.size(), false);
+	std::vector<boost::optional<double>> margins(d_pieces.size());
+	while (true)
+	{
+		bool changed = true;
+		while (changed)
+		{
+			changed = false;
+			for (unsigned int v = 0; v < d_vertices.size(); ++v)
+			{
+				const Vertex &vertex = d_vertices[v];
+				if (vertex.num_records != 1 ||
+					records[d_vertex_records[vertex.first_record]].type !=
+							GeometryIntersect::Intersection::SEGMENTS_CROSS)
+				{
+					continue;
+				}
+				std::vector<unsigned int> polyline_pieces;
+				for (const End &end : vertex.ends)
+				{
+					if (d_rings[d_pieces[end.piece].ring].side == SUBJECT)
+					{
+						polyline_pieces.push_back(end.piece);
+					}
+				}
+				if (polyline_pieces.size() != 2)
+				{
+					continue;
+				}
+				Piece &a = d_pieces[polyline_pieces[0]];
+				Piece &b = d_pieces[polyline_pieces[1]];
+				if (a.common || b.common)
+				{
+					continue;
+				}
+				const bool a_known = a.piece_class != CLASS_UNKNOWN;
+				const bool b_known = b.piece_class != CLASS_UNKNOWN;
+				if (a_known != b_known)
+				{
+					Piece &unknown = a_known ? b : a;
+					const Piece &known = a_known ? a : b;
+					unknown.piece_class =
+							(known.piece_class == CLASS_INSIDE) ? CLASS_OUTSIDE : CLASS_INSIDE;
+					unknown.method = METHOD_DEDUCED;
+					++d_diagnostics.deduced;
+					changed = true;
+				}
+				else if (a_known && a.piece_class == b.piece_class && !disagreement_counted[v])
+				{
+					disagreement_counted[v] = true;
+					++d_diagnostics.ll_disagreements;
+				}
+			}
+		}
+
+		boost::optional<unsigned int> best_piece;
+		double best_margin = -1.0;
+		for (unsigned int p = range.first; p < range.second; ++p)
+		{
+			const Piece &piece = d_pieces[p];
+			if (piece.internal || piece.piece_class != CLASS_UNKNOWN)
+			{
+				continue;
+			}
+			if (!margins[p])
+			{
+				const Vector3D sum =
+						Vector3D(d_stops[piece.start_stop].position.position_vector()) +
+						Vector3D(d_stops[piece.end_stop].position.position_vector());
+				const boost::optional<AngularDistance> distance =
+						minimum_distance(PointOnSphere(sum.get_normalisation()), d_clip);
+				margins[p] = distance ? distance->calculate_angle().dval() : 0.0;
+			}
+			if (*margins[p] > best_margin)
+			{
+				best_margin = *margins[p];
+				best_piece = p;
+			}
+		}
+		if (!best_piece)
+		{
+			break;
+		}
+		Piece &piece = d_pieces[*best_piece];
+		const Vector3D sum =
+				Vector3D(d_stops[piece.start_stop].position.position_vector()) +
+				Vector3D(d_stops[piece.end_stop].position.position_vector());
+		piece.piece_class = is_inside_other(SUBJECT, PointOnSphere(sum.get_normalisation()))
+				? CLASS_INSIDE
+				: CLASS_OUTSIDE;
+		piece.method = METHOD_MIDPOINT_TEST;
+		++d_diagnostics.midpoint_tests;
+	}
 }
 
 
@@ -3070,6 +3260,11 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		Operation operation,
 		std::vector<OutputRing> &rings) const
 {
+	// A polyline subject's output is extract_polylines' (review 3 1.4: a dangling end has no ray).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_subject_polygon,
+			GPLATES_ASSERTION_SOURCE);
+
 	// A ray, as (vertex, index into its rays).
 	typedef std::pair<unsigned int, unsigned int> ray_ref_type;
 	const ray_ref_type no_ray((std::numeric_limits<unsigned int>::max)(), 0);
@@ -3713,6 +3908,78 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 			continue;
 		}
 		polygons[*polygon_of_ring[*parent[r]]].interiors.push_back(oriented(r, false));
+	}
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::extract_polylines(
+		std::vector<OutputPolyline> &polylines) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_subject_polyline,
+			GPLATES_ASSERTION_SOURCE);
+
+	const std::pair<unsigned int, unsigned int> range =
+			ring_piece_range(d_side_rings_begin[SUBJECT]);
+
+	// The class of each piece; an internal one takes the class before it (after it, at the start).
+	std::vector<Class> classes;
+	for (unsigned int p = range.first; p < range.second; ++p)
+	{
+		classes.push_back(d_pieces[p].internal ? CLASS_UNKNOWN : d_pieces[p].piece_class);
+	}
+	for (unsigned int i = 0; i < classes.size(); ++i)
+	{
+		if (d_pieces[range.first + i].internal)
+		{
+			if (i > 0)
+			{
+				classes[i] = classes[i - 1];  // already the class of a non-internal piece before
+			}
+			else
+			{
+				for (unsigned int j = 1; j < classes.size(); ++j)
+				{
+					if (!d_pieces[range.first + j].internal)
+					{
+						classes[i] = classes[j];
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// Each stop's own position (the record's on the polyline, or the polyline's vertex), not its
+	// vertex's output position as a polygon's rings use (where every ring through the vertex must
+	// share it): an identity vertex can extend far along a dense run of touches (the 'along'
+	// generator's), so its output position can be far off the polyline, and a polyline's adjacent
+	// runs need only share the stop between them.
+	const auto stop_position = [](const Stop &stop) -> const PointOnSphere &
+	{
+		return stop.position;
+	};
+
+	boost::optional<Class> run_class;
+	for (unsigned int i = 0; i < classes.size(); ++i)
+	{
+		const Piece &piece = d_pieces[range.first + i];
+		if (!run_class || *run_class != classes[i])
+		{
+			polylines.push_back(
+					OutputPolyline{ std::vector<PointOnSphere>(), classes[i] == CLASS_INSIDE });
+			run_class = classes[i];
+		}
+		std::vector<PointOnSphere> &points = polylines.back().points;
+		for (unsigned int s = piece.start_stop; s <= piece.end_stop; ++s)
+		{
+			const PointOnSphere &position = stop_position(d_stops[s]);
+			if (points.empty() || !is_same_position(points.back(), position))
+			{
+				points.push_back(position);
+			}
+		}
 	}
 }
 
