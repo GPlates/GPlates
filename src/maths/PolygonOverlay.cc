@@ -1837,6 +1837,9 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 	// arc of the chain is classified by exact crossing parities from each input's reference point,
 	// and deduction then carries the class along the chain.
 	//
+	// Each pass classifies at least one unclassified piece, or sets aside a chain none of whose
+	// unclassified arcs has a direction (left unresolved, and counted below), so the loop ends.
+	std::vector<bool> set_aside(d_pieces.size(), false);
 	while (true)
 	{
 		boost::optional<unsigned int> start;
@@ -1846,7 +1849,8 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 			if (!piece.internal &&
 				piece.common &&
 				d_rings[piece.ring].side == SUBJECT &&
-				!piece.is_classified())
+				!piece.is_classified() &&
+				!set_aside[p])
 			{
 				start = p;
 				break;
@@ -1862,9 +1866,11 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 				(std::max)(d_diagnostics.anchorless_arcs_max, unsigned(chain.size()));
 		if (!classify_anchorless_chain(chain))
 		{
-			// No arc of the chain has a direction (every one on a zero-length segment): left
-			// unclassified, and counted below.
-			break;
+			for (unsigned int p : chain)
+			{
+				set_aside[p] = true;
+			}
+			continue;
 		}
 		++d_diagnostics.anchorless_resolved;
 		deduce_to_fixed_point();
@@ -1890,6 +1896,9 @@ GPlatesMaths::PolygonOverlay::Overlay::check_and_repair()
 	// This pass's counters (it can run again, after a class is set by hand in a test).
 	d_diagnostics.unresolved_pieces = 0;
 	d_diagnostics.check_failures = 0;
+	d_diagnostics.repairs = 0;
+	d_diagnostics.whole_chain_repairs = 0;
+	d_diagnostics.trusted_flipped = 0;
 	d_diagnostics.one_passage_vertices = 0;
 	d_diagnostics.one_passage_moved = 0;
 	d_diagnostics.both_pass_twice = 0;
@@ -2196,13 +2205,18 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 	std::sort(bundle.anchored.begin(), bundle.anchored.end());  // back in the measured cyclic order
 
 	bundle.orders.push_back(measured);
-	if (bundle.floating.empty() || bundle.anchored.empty())
+	if (bundle.floating.empty())
 	{
 		return bundle;
 	}
 	if (bundle.floating.size() > BUNDLE_CAP)
 	{
 		bundle.capped = true;
+		return bundle;
+	}
+	if (bundle.anchored.empty())
+	{
+		// Every ray floats: no frame to place them in, so the measured order is kept.
 		return bundle;
 	}
 
@@ -2452,9 +2466,12 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	double best_score = -1.0;
 	for (unsigned int p : chain)
 	{
+		// Only an unclassified arc: on consistent data every arc of the chain is, but on
+		// inconsistent data deduction can have reached part of it, and its class must not be
+		// overwritten (nor the loop above make no progress).
 		const Piece &piece = d_pieces[p];
 		const GreatCircleArc &segment = d_rings[piece.ring].segments[*piece.single_arc_segment];
-		if (segment.is_zero_length())
+		if (segment.is_zero_length() || piece.is_classified())
 		{
 			continue;
 		}
@@ -2592,7 +2609,7 @@ GPlatesMaths::PolygonOverlay::Overlay::repair()
 		case METHOD_DEDUCED:
 			return 1;
 		case METHOD_SECTOR:
-		case METHOD_ANCHORLESS:
+		case METHOD_ANCHORLESS:  // a chain's class, like the sector walk's (the prototype has none)
 			return 2;
 		case METHOD_REPAIRED:
 			return 3;

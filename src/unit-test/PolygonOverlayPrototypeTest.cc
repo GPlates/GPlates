@@ -501,7 +501,8 @@ namespace
 	void
 	compare_file(
 			const std::string &filename,
-			unsigned int minimum_num_cases)
+			unsigned int minimum_num_cases,
+			bool allow_prototype_failures = false)
 	{
 		std::vector<PrototypeCase> cases = read_cases(filename);
 		ASSERT_GE(cases.size(), minimum_num_cases) << filename;
@@ -539,6 +540,11 @@ namespace
 				ADD_FAILURE() << prototype_case.name << ": " << mismatch;
 			}
 		}
+		// A committed file holds only cases the prototype is clean on.
+		if (!allow_prototype_failures)
+		{
+			EXPECT_EQ(num_prototype_failures, 0u) << filename;
+		}
 		std::cout << cases.size() << " prototype cases, " << num_failures << " differ; "
 				<< num_band_differences << " band pieces have the other class; "
 				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
@@ -569,6 +575,14 @@ TEST(PolygonOverlayPrototypeTest, Anchorless)
 }
 
 
+// Vertices where both inputs pass more than once, the only place the bundle rule applies after
+// run 4 (about 1 vertex in 900 dense shared-edge cases; Phase 5 review 2 section 1.1).
+TEST(PolygonOverlayPrototypeTest, Bundle)
+{
+	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-bundle.txt", 15);
+}
+
+
 // A larger export, not committed (a hunt): set GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES to its path.
 TEST(PolygonOverlayPrototypeTest, File)
 {
@@ -577,7 +591,7 @@ TEST(PolygonOverlayPrototypeTest, File)
 	{
 		GTEST_SKIP() << "GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES is not set";
 	}
-	compare_file(filename, 1);
+	compare_file(filename, 1, true/*allow_prototype_failures*/);
 }
 
 
@@ -636,5 +650,74 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 		EXPECT_EQ(diagnostics.one_passage_moved, e.one_passage_moved);
 		EXPECT_EQ(diagnostics.both_pass_twice, 0u);
 		EXPECT_EQ(diagnostics.bundle_vertices, 0u);
+	}
+}
+
+
+
+// The bundle rule's measurements on the bundle cases (Phase 5 review 2, section 1.1): the most
+// floating rays, admissible orders and consistent placements at one vertex, the vertices with more
+// than one consistent placement and those whose order used is not the measured one. The values are
+// the prototype's ('r4t'), so that the enumeration's size is pinned, not only the classes.
+TEST(PolygonOverlayPrototypeTest, BundleRule)
+{
+	class Expected
+	{
+	public:
+		const char *name;
+		unsigned int floating_max;
+		unsigned int admissible_max;
+		unsigned int placements_max;
+		unsigned int ambiguous;
+		unsigned int moved;
+	};
+	const Expected expected[] = {
+			{ "shared#107 seed 11", 3, 20, 4, 1, 2 },
+			{ "shared#2100 seed 11", 4, 360, 16, 1, 0 },
+			{ "shared#2893 seed 11", 3, 24, 1, 0, 1 },
+			{ "shared#1925 seed 12", 6, 720, 32, 2, 2 },
+			{ "shared#2240 seed 12", 6, 5040, 144, 2, 2 },
+			{ "shared#366 seed 13", 4, 60, 3, 1, 1 },
+			{ "shared#2729 seed 13", 1, 3, 1, 0, 0 },
+			{ "shared#2859 seed 13", 4, 360, 16, 1, 1 },
+			{ "shared#3176 seed 13", 4, 48, 2, 1, 1 },
+			{ "shared#3890 seed 13", 6, 3360, 60, 2, 2 },
+			{ "shared#1265 seed 14", 2, 6, 2, 1, 1 },
+			{ "shared#1373 seed 14", 4, 68, 8, 1, 1 },
+			{ "shared#1707 seed 14", 4, 70, 8, 1, 1 },
+			{ "shared#3346 seed 14", 3, 40, 4, 1, 1 },
+			{ "shared#3653 seed 14", 1, 2, 1, 0, 0 } };
+
+	const std::vector<PrototypeCase> cases =
+			read_cases(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-bundle.txt");
+	for (const Expected &e : expected)
+	{
+		SCOPED_TRACE(e.name);
+		const auto found = std::find_if(
+				cases.begin(),
+				cases.end(),
+				[&e](const PrototypeCase &c) { return c.name == e.name; });
+		ASSERT_TRUE(found != cases.end());
+
+		const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
+		{
+			return PolygonOnSphere::create(
+					rings.front(),
+					std::vector<std::vector<PointOnSphere>>(rings.begin() + 1, rings.end()));
+		};
+		const auto P = polygon(found->rings[0]);
+		const auto Q = polygon(found->rings[1]);
+		Overlay::Overlay overlay(*P, *Q);
+		overlay.classify();
+
+		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+		EXPECT_EQ(diagnostics.check_failures_before_repair, 0u);
+		EXPECT_GE(diagnostics.bundle_vertices, 1u);
+		EXPECT_EQ(diagnostics.bundle_floating_max, e.floating_max);
+		EXPECT_EQ(diagnostics.bundle_admissible_max, e.admissible_max);
+		EXPECT_EQ(diagnostics.bundle_placements_max, e.placements_max);
+		EXPECT_EQ(diagnostics.bundle_ambiguous, e.ambiguous);
+		EXPECT_EQ(diagnostics.bundle_moved, e.moved);
+		EXPECT_EQ(diagnostics.bundle_capped, 0u);
 	}
 }
