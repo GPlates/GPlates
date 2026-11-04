@@ -3544,8 +3544,11 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		boost::optional<unsigned int> vertex;   // an overlay vertex, or an interior stop's point
 		PointOnSphere position;
 
-		//! At a vertex: the piece the walk leaves along; else the stop (for provenance).
-		unsigned int piece_or_stop;
+		//! At a vertex: the walked piece's stop here; else the stop itself (for provenance).
+		unsigned int stop;
+
+		//! At a vertex: the walked piece's stop at its other end (where the next entry arrives).
+		unsigned int far_stop;
 
 		Provenance provenance;
 	};
@@ -3573,7 +3576,11 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				const End end = ray_end(ray);
 				const Piece &piece = d_pieces[end.piece];
 				ring.push_back(Entry{
-						ray.first, d_vertices[ray.first].position, end.piece, Provenance() });
+						ray.first,
+						d_vertices[ray.first].position,
+						end.at_end ? piece.end_stop : piece.start_stop,
+						end.at_end ? piece.start_stop : piece.end_stop,
+						Provenance() });
 
 				// The piece's interior stops, in the direction walked.
 				std::vector<unsigned int> stops;
@@ -3593,7 +3600,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				}
 				for (unsigned int s : stops)
 				{
-					ring.push_back(Entry{ boost::none, d_stops[s].position, s, Provenance() });
+					ring.push_back(Entry{ boost::none, d_stops[s].position, s, s, Provenance() });
 				}
 
 				const ray_ref_type arrive = ray_of_end[2 * end.piece + (end.at_end ? 0 : 1)];
@@ -3616,31 +3623,6 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				++num_pairing_failures;
 				continue;
 			}
-			if (d_options.want_provenance)
-			{
-				// A vertex entry arrives along the piece the previous vertex entry left along.
-				boost::optional<unsigned int> arriving;
-				for (const Entry &entry : ring)
-				{
-					if (entry.vertex)
-					{
-						arriving = entry.piece_or_stop;
-					}
-				}
-				for (Entry &entry : ring)
-				{
-					if (entry.vertex)
-					{
-						entry.provenance = get_vertex_provenance(
-								*entry.vertex, entry.position, arriving, entry.piece_or_stop);
-						arriving = entry.piece_or_stop;
-					}
-					else
-					{
-						entry.provenance = get_original_vertex_provenance(entry.piece_or_stop);
-					}
-				}
-			}
 			walked.push_back(ring);
 		}
 	}
@@ -3656,13 +3638,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			const RingView &ring_view = d_rings[piece.ring];
 			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
 			{
-				ring.push_back(Entry{
-						boost::none,
-						d_stops[s].position,
-						s,
-						d_options.want_provenance
-								? get_original_vertex_provenance(s)
-								: Provenance() });
+				ring.push_back(Entry{ boost::none, d_stops[s].position, s, s, Provenance() });
 			}
 			walked.push_back(ring);
 		}
@@ -3712,8 +3688,36 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	// from one stored position) and a last position equal to the first are removed; a ring with
 	// fewer than three distinct positions (a region the records had already collapsed) is dropped.
 	//
-	for (const std::vector<Entry> &ring : split)
+	for (std::vector<Entry> &ring : split)
 	{
+		// Provenance after the split (review 4 1.1): at a vertex, from the stops of the pieces
+		// this ring arrives and leaves along; a vertex entry arrives at the previous one's far
+		// stop, cyclically, so that each half of a split ring has its own.
+		if (d_options.want_provenance)
+		{
+			boost::optional<unsigned int> arriving_stop;
+			for (const Entry &entry : ring)
+			{
+				if (entry.vertex)
+				{
+					arriving_stop = entry.far_stop;
+				}
+			}
+			for (Entry &entry : ring)
+			{
+				if (entry.vertex)
+				{
+					entry.provenance = get_vertex_provenance(
+							*entry.vertex, entry.position, arriving_stop, entry.stop);
+					arriving_stop = entry.far_stop;
+				}
+				else
+				{
+					entry.provenance = get_original_vertex_provenance(entry.stop);
+				}
+			}
+		}
+
 		std::vector<PointOnSphere> points;
 		provenance_seq_type provenances;
 		for (const Entry &entry : ring)
@@ -4037,12 +4041,25 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_polylines(
 }
 
 
+unsigned int
+GPlatesMaths::PolygonOverlay::Overlay::ring_of_stop(
+		unsigned int stop_index) const
+{
+	unsigned int ring = 0;
+	while (!(stop_index >= d_rings[ring].first_stop && stop_index < d_rings[ring].end_stop))
+	{
+		++ring;
+	}
+	return ring;
+}
+
+
 GPlatesMaths::PolygonOverlay::Provenance
 GPlatesMaths::PolygonOverlay::Overlay::get_vertex_provenance(
 		unsigned int vertex_index,
 		const PointOnSphere &position,
-		boost::optional<unsigned int> arriving_piece,
-		boost::optional<unsigned int> leaving_piece) const
+		boost::optional<unsigned int> arriving_stop,
+		boost::optional<unsigned int> leaving_stop) const
 {
 	//
 	// phase4b-design.md section 7.1: a vertex is output at one position, so its provenance is that
@@ -4052,19 +4069,15 @@ GPlatesMaths::PolygonOverlay::Overlay::get_vertex_provenance(
 	//
 	const Vertex &vertex = d_vertices[vertex_index];
 
-	// The stop at this vertex of a walked piece of one side (none if neither walked piece is).
+	// The walked pieces' stop at this vertex of one side (none if neither walked piece is).
 	const auto stop_of_side = [&](Side side) -> boost::optional<unsigned int>
 	{
-		for (const boost::optional<unsigned int> &p : { leaving_piece, arriving_piece })
+		for (const boost::optional<unsigned int> &stop : { leaving_stop, arriving_stop })
 		{
-			if (!p || d_rings[d_pieces[*p].ring].side != side)
+			if (stop && d_rings[ring_of_stop(*stop)].side == side)
 			{
-				continue;
+				return stop;
 			}
-			const Piece &piece = d_pieces[*p];
-			return (piece.start_vertex && *piece.start_vertex == vertex_index)
-					? piece.start_stop
-					: piece.end_stop;
 		}
 		return boost::none;
 	};
@@ -4072,15 +4085,7 @@ GPlatesMaths::PolygonOverlay::Overlay::get_vertex_provenance(
 	const auto segment_location = [&](unsigned int stop_index)
 	{
 		const Stop &stop = d_stops[stop_index];
-		unsigned int ring = 0;
-		for (unsigned int r = 0; r < d_rings.size(); ++r)
-		{
-			if (stop_index >= d_rings[r].first_stop && stop_index < d_rings[r].end_stop)
-			{
-				ring = r;
-				break;
-			}
-		}
+		const unsigned int ring = ring_of_stop(stop_index);
 		const RingView &ring_view = d_rings[ring];
 		return std::make_pair(ring, Location{
 				ring_view.ring_index,
@@ -4137,12 +4142,7 @@ GPlatesMaths::PolygonOverlay::Provenance
 GPlatesMaths::PolygonOverlay::Overlay::get_original_vertex_provenance(
 		unsigned int stop_index) const
 {
-	unsigned int ring = 0;
-	while (!(stop_index >= d_rings[ring].first_stop && stop_index < d_rings[ring].end_stop))
-	{
-		++ring;
-	}
-	const RingView &ring_view = d_rings[ring];
+	const RingView &ring_view = d_rings[ring_of_stop(stop_index)];
 	const Location location{ ring_view.ring_index, d_stops[stop_index].segment_out, boost::none };
 
 	Provenance provenance;
@@ -4169,11 +4169,31 @@ GPlatesMaths::PolygonOverlay::Overlay::get_polyline_stop_provenance(
 		return get_original_vertex_provenance(stop_index);
 	}
 
-	// A record on the polyline: the stop itself (the polyline's output is at its stops).
+	// A record on the polyline: the stop itself (the polyline's output is at its stops), and the
+	// clip's location of the stop's own record, not its vertex's (an identity vertex along a dense
+	// run of touches can name a clip vertex far from the stop: review 4 1.2). A self-touch cut
+	// names no record of the polyline: its vertex's.
 	const RingView &ring_view = d_rings[d_side_rings_begin[SUBJECT]];
-	Provenance provenance =
-			get_vertex_provenance(stop.vertex, stop.position, boost::none, boost::none);
-	provenance.subject = boost::none;
+	Provenance provenance;
+	provenance.clip_index = d_options.clip_index;
+	if (stop.num_records != 0)
+	{
+		const GeometryIntersect::Intersection &record =
+				d_graph.unordered_intersections[d_stop_records[stop.first_record]];
+		const RingView &clip_ring = d_rings[ring_of_segment(CLIP, record.segment_index2)];
+		const unsigned int segment = record.segment_index2 - clip_ring.first_segment_index;
+		provenance.clip = record.is_on_segment2_start()
+				? Location{ clip_ring.ring_index, segment, boost::none }
+				: Location{
+						clip_ring.ring_index,
+						segment,
+						ratio_along_segment(clip_ring.segments[segment], stop.position) };
+	}
+	else
+	{
+		provenance.clip =
+				get_vertex_provenance(stop.vertex, stop.position, boost::none, boost::none).clip;
+	}
 	compose_subject_location(
 			ring_view,
 			stop.at_vertex
@@ -4355,10 +4375,14 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 
 	// The induction fails where an identity vertex holds two vertices of one input (dense shared
 	// edges): a piece's edge then spans the group, from a vertex before it to one after it, so
-	// its ends are on no one segment. No subject location, counted (never a wrong value; a
-	// coverage interpolates such a point along its run, as a cut point, section 7.3).
+	// its ends are on no one segment; and where a point at an input's corner lies within the
+	// thickness of both its segments but names only one (review 4 1.3). No subject location,
+	// counted (never a wrong value; a coverage interpolates such a point along its run, as a cut
+	// point, section 7.3): a subject location lost if both ends had one, else nothing lost.
 	provenance.subject = boost::none;
-	++d_diagnostics.provenance_mismatches;
+	++((a.subject && b.subject)
+			? d_diagnostics.provenance_subject_mismatches
+			: d_diagnostics.provenance_clip_mismatches);
 }
 
 

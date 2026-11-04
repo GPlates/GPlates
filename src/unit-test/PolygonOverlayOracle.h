@@ -82,6 +82,51 @@ namespace PolygonOverlayOracle
 	}
 
 
+	/**
+	 * Output points of a ring that have no subject location though an edge beside them runs along
+	 * the subject's outline: its midpoint within the thickness h of the subject's outline and
+	 * farther than 2h from the clip's, so that it is along the subject and not a cut (an edge
+	 * within 2h of both is not judged). Only for an overlay with no subject table, where every
+	 * point on the subject has its location (review 4 1.1: a split ring's vertex lost it).
+	 */
+	inline
+	unsigned int
+	count_missing_subject_locations(
+			const GPlatesMaths::PolygonOnSphere &subject,
+			const GPlatesMaths::PolygonOnSphere &clip,
+			const std::vector<GPlatesMaths::PointOnSphere> &points,
+			const GPlatesMaths::PolygonOverlay::provenance_seq_type &provenances)
+	{
+		using namespace GPlatesMaths;
+		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+		const AngularExtent near = AngularExtent::create_from_angle(h);
+		const AngularExtent far = AngularExtent::create_from_angle(2 * h);
+		const unsigned int n = points.size();
+		std::vector<bool> along_subject(n, false);  // edge i, from point i to point i + 1
+		for (unsigned int i = 0; i < n; ++i)
+		{
+			const Vector3D sum = Vector3D(points[i].position_vector()) +
+					Vector3D(points[(i + 1) % n].position_vector());
+			if (!(sum.magSqrd().dval() > 0))
+			{
+				continue;
+			}
+			const PointOnSphere midpoint(sum.get_normalisation());
+			along_subject[i] = minimum_distance(midpoint, subject, false, near) &&
+					!minimum_distance(midpoint, clip, false, far);
+		}
+		unsigned int num_missing = 0;
+		for (unsigned int i = 0; i < n && i < provenances.size(); ++i)
+		{
+			if (!provenances[i].subject && (along_subject[i] || along_subject[(i + n - 1) % n]))
+			{
+				++num_missing;
+			}
+		}
+		return num_missing;
+	}
+
+
 	//! Whether two points are the same stored position, coordinate for coordinate.
 	inline
 	bool

@@ -523,8 +523,11 @@ namespace GPlatesMaths
 			unsigned int hemisphere_check_failures = 0;  // the output read as its complement
 			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
 
-			// Provenance, accumulated over every extract.
-			unsigned int provenance_mismatches = 0;   // a segment's ends on no one input segment
+			// Provenance, accumulated over every extract: a piece's segment whose ends lie on no
+			// one segment of the original subject (a subject location lost) or, both being cut
+			// points, of an earlier clip (nothing lost: the point's clip location is this clip's).
+			unsigned int provenance_subject_mismatches = 0;
+			unsigned int provenance_clip_mismatches = 0;
 		};
 
 
@@ -705,7 +708,7 @@ namespace GPlatesMaths
 			 * (a polygon's), and of each earlier clip's rings by clip index, so that composing can
 			 * tell a ring's last segment (vertex 0 ends it). Without them a location at vertex 0 is
 			 * taken for the start of segment 0 only, and an edge needing the wrap-around is counted
-			 * as a mismatch (Diagnostics::provenance_mismatches): never a wrong location.
+			 * as a mismatch (Diagnostics::provenance_subject_mismatches): never a wrong location.
 			 */
 			std::vector<unsigned int> subject_ring_sizes;
 			std::vector<std::vector<unsigned int>> clip_ring_sizes;
@@ -1019,14 +1022,20 @@ namespace GPlatesMaths
 			void
 			classify_polyline_pieces();
 
-			//! An output point's provenance at an overlay vertex, walked from @a arriving_piece to
-			//! @a leaving_piece (either may be none), at @a position.
+			//! An output point's provenance at an overlay vertex, walked from @a arriving_stop to
+			//! @a leaving_stop (the walked pieces' stops at the vertex; either may be none), at
+			//! @a position.
 			Provenance
 			get_vertex_provenance(
 					unsigned int vertex_index,
 					const PointOnSphere &position,
-					boost::optional<unsigned int> arriving_piece,
-					boost::optional<unsigned int> leaving_piece) const;
+					boost::optional<unsigned int> arriving_stop,
+					boost::optional<unsigned int> leaving_stop) const;
+
+			//! The ring a stop belongs to.
+			unsigned int
+			ring_of_stop(
+					unsigned int stop_index) const;
 
 			//! An output point's provenance at a stop that is an original vertex of its ring.
 			Provenance

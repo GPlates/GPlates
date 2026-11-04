@@ -44,6 +44,8 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonOverlay.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/Rotation.h"
+#include "maths/SmallCircleBounds.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -96,6 +98,11 @@ namespace
 	namespace Overlay = GPlatesMaths::PolygonOverlay;
 
 	const double H = Intersection::get_on_segment_start_threshold_sine();
+
+	//! The provenance checks' tolerances: a first step's locations against their points, and a
+	//! second cascade step's (measured, review 4: within 1.0h and 1.63h).
+	const double PROVENANCE_TOLERANCE = 2 * H;
+	const double CASCADE_PROVENANCE_TOLERANCE = 3 * H;
 
 	//! Marks a stop key as a self-touch cut's (a stop no record of its ring names).
 	const unsigned int SELF_TOUCH_CUT = 0xffffffff;
@@ -555,7 +562,12 @@ namespace
 					{ prototype_case.rings[1] },
 					polyline.points,
 					polyline.provenances,
-					PolygonOverlayOracle::get_margin(overlay));
+					PROVENANCE_TOLERANCE);
+			for (const Overlay::Provenance &provenance : polyline.provenances)
+			{
+				// Every point is on the polyline.
+				provenance_failures += provenance.subject ? 0 : 1;
+			}
 		}
 		if (provenance_failures != 0)
 		{
@@ -608,6 +620,7 @@ namespace
 			return std::to_string(lowest);
 		};
 		std::vector<std::pair<bool, std::vector<std::string>>> runs;
+		std::vector<std::vector<PointOnSphere>> run_points;  // the named stops' positions
 		const std::vector<Overlay::Piece> &pieces = overlay.get_pieces();
 		boost::optional<bool> previous_inside;
 		for (unsigned int p = 0; p < pieces.size(); ++p)
@@ -636,6 +649,7 @@ namespace
 			if (runs.empty() || runs.back().first != inside)
 			{
 				runs.push_back(std::make_pair(inside, std::vector<std::string>()));
+				run_points.push_back(std::vector<PointOnSphere>());
 			}
 			for (unsigned int stop = pieces[p].start_stop; stop <= pieces[p].end_stop; ++stop)
 			{
@@ -643,6 +657,12 @@ namespace
 				if (runs.back().second.empty() || runs.back().second.back() != name)
 				{
 					runs.back().second.push_back(name);
+				}
+				const PointOnSphere &position = overlay.get_stops()[stop].position;
+				if (run_points.back().empty() ||
+					!PolygonOverlayOracle::same_position(run_points.back().back(), position))
+				{
+					run_points.back().push_back(position);
 				}
 			}
 			previous_inside = inside;
@@ -659,6 +679,16 @@ namespace
 			if (polylines[r].inside != runs[r].first)
 			{
 				report << "output polyline " << r << "'s class is not its pieces'; ";
+			}
+			bool same_points = polylines[r].points.size() == run_points[r].size();
+			for (unsigned int i = 0; same_points && i < run_points[r].size(); ++i)
+			{
+				same_points = PolygonOverlayOracle::same_position(
+						polylines[r].points[i], run_points[r][i]);
+			}
+			if (!same_points)
+			{
+				report << "output polyline " << r << "'s points are not its pieces' stops; ";
 			}
 		}
 		if (runs != order.runs)
@@ -984,7 +1014,8 @@ namespace
 								<< samples.size() << " samples wrong; ";
 					}
 
-					// Every point's provenance resolves to it (phase4b-design.md section 7.1).
+					// Every point's provenance resolves to it (phase4b-design.md section 7.1),
+					// and a point beside an edge along the subject has its subject location.
 					unsigned int provenance_failures = 0;
 					for (const Overlay::OutputRing &ring : rings)
 					{
@@ -993,7 +1024,13 @@ namespace
 								{ prototype_case.rings[1] },
 								ring.points,
 								ring.provenances,
-								PolygonOverlayOracle::get_margin(overlay));
+								PROVENANCE_TOLERANCE);
+						if (!input_rings_cross)
+						{
+							provenance_failures +=
+									PolygonOverlayOracle::count_missing_subject_locations(
+											*P, *Q, ring.points, ring.provenances);
+						}
 					}
 					if (provenance_failures != 0)
 					{
@@ -1046,6 +1083,32 @@ namespace
 				// outputs must resolve against the original subject.
 				if (!input_rings_cross)
 				{
+					// The clip moved by 0.37 of its bounding radius, for a second step that cuts
+					// the pieces anew (its locations by clip index 1, against the moved clip).
+					const GPlatesMaths::UnitVector3D &centre =
+							Q->get_bounding_small_circle().get_centre();
+					const double radius_cosine =
+							Q->get_bounding_small_circle().get_angular_extent().get_cosine().dval();
+					const double radius =
+							std::acos((std::max)(-1.0, (std::min)(1.0, radius_cosine)));
+					const GPlatesMaths::Rotation move = GPlatesMaths::Rotation::create(
+							GPlatesMaths::generate_perpendicular(centre), 0.37 * radius);
+					std::vector<std::vector<PointOnSphere>> moved;
+					for (const std::vector<PointOnSphere> &ring : prototype_case.rings[1])
+					{
+						moved.push_back(std::vector<PointOnSphere>());
+						for (const PointOnSphere &point : ring)
+						{
+							moved.back().push_back(move * point);
+						}
+					}
+					const PolygonOnSphere::non_null_ptr_to_const_type moved_clip = polygon(moved);
+					const auto moved_rings =
+							[&](const PolygonOnSphere::non_null_ptr_to_const_type &c)
+					{
+						return c.get() == Q.get() ? prototype_case.rings[1] : moved;
+					};
+
 					std::vector<Overlay::OutputPolygon> pieces;
 					overlay.extract(Overlay::DIFFERENCE, pieces);
 					for (const Overlay::OutputPolygon &piece : pieces)
@@ -1062,52 +1125,63 @@ namespace
 						}
 						const PolygonOnSphere::non_null_ptr_to_const_type S =
 								PolygonOnSphere::create(piece.exterior.points, interiors);
-						Overlay::Options second_options = options;
-						second_options.subject_provenance = &table;
-						second_options.clip_index = 1;
-						for (const std::vector<PointOnSphere> &ring : prototype_case.rings[0])
+						for (const PolygonOnSphere::non_null_ptr_to_const_type &clip_2 :
+								{ Q, moved_clip })
 						{
-							second_options.subject_ring_sizes.push_back(ring.size());
-						}
-						second_options.clip_ring_sizes.resize(1);
-						for (const std::vector<PointOnSphere> &ring : prototype_case.rings[1])
-						{
-							second_options.clip_ring_sizes[0].push_back(ring.size());
-						}
-						Overlay::Overlay second(*S, *Q, second_options);
-						second.classify();
-						unsigned int failures = 0;
-						for (Overlay::Operation operation :
-								{ Overlay::INTERSECTION, Overlay::DIFFERENCE })
-						{
-							std::vector<Overlay::OutputRing> rings;
-							second.extract_rings(operation, rings);
-							for (const Overlay::OutputRing &ring : rings)
+							Overlay::Options second_options = options;
+							second_options.subject_provenance = &table;
+							second_options.clip_index = 1;
+							for (const std::vector<PointOnSphere> &ring : prototype_case.rings[0])
 							{
-								failures += PolygonOverlayOracle::count_provenance_failures(
-										prototype_case.rings[0],
-										{ prototype_case.rings[1], prototype_case.rings[1] },
-										ring.points,
-										ring.provenances,
-										2 * PolygonOverlayOracle::get_margin(overlay));
+								second_options.subject_ring_sizes.push_back(ring.size());
 							}
-						}
-						if (failures != 0 ||
-							(second.get_diagnostics().provenance_mismatches != 0 &&
-								!holds_two_vertices_of_one_input(overlay)))
-						{
-							oracle_report << "a second step: " << failures
-									<< " points' provenance wrong, "
-									<< second.get_diagnostics().provenance_mismatches
-									<< " mismatches; ";
+							second_options.clip_ring_sizes.resize(1);
+							for (const std::vector<PointOnSphere> &ring : prototype_case.rings[1])
+							{
+								second_options.clip_ring_sizes[0].push_back(ring.size());
+							}
+							Overlay::Overlay second(*S, *clip_2, second_options);
+							second.classify();
+							unsigned int failures = 0;
+							for (Overlay::Operation operation :
+									{ Overlay::INTERSECTION, Overlay::DIFFERENCE })
+							{
+								std::vector<Overlay::OutputRing> rings;
+								second.extract_rings(operation, rings);
+								for (const Overlay::OutputRing &ring : rings)
+								{
+									failures += PolygonOverlayOracle::count_provenance_failures(
+											prototype_case.rings[0],
+											{ prototype_case.rings[1], moved_rings(clip_2) },
+											ring.points,
+											ring.provenances,
+											CASCADE_PROVENANCE_TOLERANCE);
+								}
+							}
+							// Against the same clip, a subject location is lost only where an
+							// identity vertex holds two vertices of one input; against the moved
+							// clip, also at an input's corner (review 4 1.3): there no gate, only
+							// that nothing is wrong.
+							if (failures != 0 ||
+								(clip_2.get() == Q.get() &&
+									second.get_diagnostics().provenance_subject_mismatches != 0 &&
+									!holds_two_vertices_of_one_input(overlay)))
+							{
+								oracle_report << "a second step"
+										<< (clip_2.get() == Q.get() ? "" : " (moved)")
+										<< ": " << failures << " points' provenance wrong, "
+										<< second.get_diagnostics().provenance_subject_mismatches
+										<< " subject mismatches; ";
+							}
 						}
 					}
 				}
 
 				const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
-				if (diagnostics.provenance_mismatches != 0)
+				if (diagnostics.provenance_subject_mismatches != 0 ||
+					diagnostics.provenance_clip_mismatches != 0)
 				{
-					oracle_report << diagnostics.provenance_mismatches
+					oracle_report << diagnostics.provenance_subject_mismatches
 							<< " provenance mismatches; ";
 				}
 				if (diagnostics.pairing_failures != 0 || diagnostics.keep_mismatches != 0)

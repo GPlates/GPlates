@@ -2278,7 +2278,7 @@ TEST(PolygonOverlayTest, Provenance)
 	EXPECT_GE(num_cut, 1u);
 	EXPECT_GE(num_crossing, 2u);
 	EXPECT_GE(num_subject_vertex, 1u);
-	EXPECT_EQ(overlay.get_diagnostics().provenance_mismatches, 0u);
+	EXPECT_EQ(overlay.get_diagnostics().provenance_subject_mismatches, 0u);
 }
 
 
@@ -2343,7 +2343,7 @@ TEST(PolygonOverlayTest, ProvenanceCascade)
 								2 * H),
 						0u);
 			}
-			EXPECT_EQ(second.get_diagnostics().provenance_mismatches, 0u);
+			EXPECT_EQ(second.get_diagnostics().provenance_subject_mismatches, 0u);
 		}
 	}
 }
@@ -2400,5 +2400,38 @@ TEST(PolygonOverlayTest, ProvenancePolyline)
 						2 * H),
 				0u);
 	}
-	EXPECT_EQ(second.get_diagnostics().provenance_mismatches, 0u);
+	EXPECT_EQ(second.get_diagnostics().provenance_subject_mismatches, 0u);
+}
+
+
+// Provenance at a vertex where a ring is split (review 4 1.1): the clip is the subject's square
+// with a hole whose tip touches its bottom edge, so the tip holds a clip vertex and no subject
+// vertex, and the intersection's walk passes it twice, once along the subject's (shared) edge and
+// once along the hole. After the split, each half takes its location from its own pieces: on the
+// subject's bottom edge in the exterior, a cut in the hole.
+TEST(PolygonOverlayTest, ProvenanceAtSplit)
+{
+	const auto P = polygon(square(-0.03, -0.03, 0.03, 0.03));
+	const auto Q = square_with_touching_hole(0.0);
+	Overlay::Options options;
+	options.want_provenance = true;
+	Overlay::Overlay overlay(*P, *Q, options);
+	classify_and_check(overlay);
+	for (Overlay::Operation operation : ALL_OPERATIONS)
+	{
+		SCOPED_TRACE(operation);
+		std::vector<Overlay::OutputRing> rings;
+		overlay.extract_rings(operation, rings);
+		for (const Overlay::OutputRing &ring : rings)
+		{
+			EXPECT_EQ(
+					PolygonOverlayOracle::count_provenance_failures(
+							rings_of(*P), { rings_of(*Q) }, ring.points, ring.provenances, 2 * H),
+					0u);
+			EXPECT_EQ(
+					PolygonOverlayOracle::count_missing_subject_locations(
+							*P, *Q, ring.points, ring.provenances),
+					0u);
+		}
+	}
 }
