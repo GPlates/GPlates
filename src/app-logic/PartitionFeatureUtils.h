@@ -567,9 +567,9 @@ namespace GPlatesAppLogic
 
 
 			/**
-			* Less than operator: compares area, then arc distance, then number of points (so that
-			* a feature with polygons is decided by its polygons' areas, and one with polylines by
-			* their lengths).
+			 * Less than operator: compares area, then arc distance, then number of points (so that
+			 * a feature with polygons is decided by its polygons' areas, and one with polylines by
+			 * their lengths).
 			 * Greater than operator provided by base class boost::less_than_comparable.
 			 */
 			bool

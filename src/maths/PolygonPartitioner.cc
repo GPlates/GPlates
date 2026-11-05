@@ -102,9 +102,8 @@ namespace
 	 * the intersection is (after clean-up), and only for GEOMETRY_INTERSECTING are @a inside and
 	 * @a outside filled (else the subject is returned whole by the caller).
 	 *
-	 * With @a result_only (no list wanted: section 10.2) the classification stops as soon as the
-	 * vertex tests show the result is GEOMETRY_INTERSECTING, which is then certain; otherwise the
-	 * outputs are extracted and looked at, as with lists, so that both forms give the same result.
+	 * With or without lists the overlay is the same (section 10.2 as amended after review 6): only
+	 * the output geometries are not built when no list wants them.
 	 */
 	PolygonPartitioner::Result
 	overlay_polygon(
@@ -112,8 +111,7 @@ namespace
 			const GPlatesMaths::PolygonOnSphere &partitioning_polygon,
 			const Overlay::Options &options,
 			std::vector<Overlay::OutputPolygon> &inside,
-			std::vector<Overlay::OutputPolygon> &outside,
-			bool result_only = false)
+			std::vector<Overlay::OutputPolygon> &outside)
 	{
 		if (is_outside_by_bounds(
 				subject.get_bounding_small_circle(),
@@ -124,9 +122,8 @@ namespace
 		}
 
 		Overlay::Overlay overlay(subject, partitioning_polygon, options);
-		const PolygonPartitioner::Result result =
-				to_partition_result(overlay.classify(result_only));
-		if (result != PolygonPartitioner::GEOMETRY_INTERSECTING || overlay.stopped_early())
+		const PolygonPartitioner::Result result = to_partition_result(overlay.classify());
+		if (result != PolygonPartitioner::GEOMETRY_INTERSECTING)
 		{
 			return result;
 		}
@@ -172,7 +169,7 @@ namespace
 	 * as @a overlay_polygon, with the runs of each class in @a runs for GEOMETRY_INTERSECTING. A
 	 * run at one position (if one can arise) is dropped as a collapsed region is; a side left with
 	 * no run makes the polyline whole, as for a polygon (section 5.3). A polyline's classification
-	 * is cheap and never throws, so there is no result-only form.
+	 * is cheap and never throws.
 	 */
 	PolygonPartitioner::Result
 	overlay_polyline(
@@ -685,9 +682,7 @@ GPlatesMaths::PolygonPartitioner::partition_polygon(
 			*d_partitioning_polygon,
 			options,
 			inside,
-			outside,
-			// The result-only path (phase4b-design.md section 10.2): the same result, sooner.
-			!partitioned_polygons_inside && !partitioned_polygons_outside);
+			outside);
 
 	if (result != GEOMETRY_INTERSECTING)
 	{

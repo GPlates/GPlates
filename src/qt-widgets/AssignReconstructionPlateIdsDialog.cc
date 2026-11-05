@@ -304,12 +304,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features()
 		return false;
 	}
 
-	if (!partition_features(*plate_id_assigner.get()))
-	{
-		return false;
-	}
+	const bool completed = partition_features(*plate_id_assigner.get());
 
-	// Report, once, any features left unpartitioned because a cut was inconsistent.
+	// Report, once, any features left unpartitioned because a cut was inconsistent (also when the
+	// user cancelled part-way: those already met were left as they were).
 	const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features_not_partitioned =
 			plate_id_assigner.get()->get_features_not_partitioned();
 	if (!features_not_partitioned.empty())
@@ -317,7 +315,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features()
 		pop_up_features_not_partitioned_message_box(features_not_partitioned);
 	}
 
-	return true;
+	return completed;
 }
 
 

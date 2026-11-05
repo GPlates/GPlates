@@ -191,8 +191,9 @@ namespace GPlatesMaths
 		 * as polylines, a multi-point as one multi-point inside and one outside; a geometry that
 		 * is wholly inside or outside (section 5.3) comes back itself.
 		 *
-		 * The result is the same with or without lists (phase4b-design.md section 5.3); with
-		 * neither, it is found sooner where it can be (section 10.2).
+		 * The result is the same with or without lists (phase4b-design.md section 5.3): with
+		 * neither (the result-only path, section 10.2), the cut is made the same way and only
+		 * its output geometries are not built.
 		 *
 		 * @throws PolygonOverlay::InconsistentOverlayException if the overlay's classes are
 		 * inconsistent (phase4b-design.md section 9.2), with or without lists.

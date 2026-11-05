@@ -834,32 +834,16 @@ namespace GPlatesMaths
 			 * The result is RESULT_INSIDE when the difference (subject minus clip) keeps no piece,
 			 * RESULT_OUTSIDE when the intersection keeps none, and RESULT_INTERSECTING otherwise.
 			 *
-			 * With @a stop_when_result_known (the result-only path, phase4b-design.md section
-			 * 10.2), a polygon subject's classification stops at RESULT_INTERSECTING as soon as
-			 * the vertex tests show it: a subject piece inside the clip and another outside, or a
-			 * clip piece inside the subject (@a stopped_early). Nothing can then be extracted.
-			 * Otherwise the result counts regions that clean-up would collapse, so it can be
+			 * The result counts regions that clean-up would collapse, so it can be
 			 * RESULT_INTERSECTING where the outputs leave one of them empty (a caller wanting
-			 * phase4b-design.md section 5.3's result extracts and looks).
+			 * phase4b-design.md section 5.3's result extracts and looks, as PolygonPartitioner
+			 * does).
 			 *
 			 * @throws InconsistentOverlayException if a vertex is still inconsistent after repair,
 			 * or a piece is left unclassified (unless Options::throw_if_inconsistent is false).
 			 */
 			Result
-			classify(
-					bool stop_when_result_known = false);
-
-			/**
-			 * Whether the last @a classify stopped early (@a stop_when_result_known): its
-			 * result, RESULT_INTERSECTING, is then certain (each piece that decided it has an
-			 * original vertex more than the thickness from the other outline, so its region
-			 * cannot collapse), and nothing can be extracted.
-			 */
-			bool
-			stopped_early() const
-			{
-				return d_classified_partly;
-			}
+			classify();
 
 			/**
 			 * Check every vertex, repair what fails (section 3.9) and return the result; the second
@@ -967,9 +951,6 @@ namespace GPlatesMaths
 			//! Mutable: extract_rings accumulates the linking counters.
 			mutable Diagnostics d_diagnostics;
 
-			//! Whether classify stopped early (the result-only path): nothing can be extracted.
-			bool d_classified_partly = false;
-
 			/**
 			 * Where a ring is cut at an overlay vertex that no record of its own names: the input
 			 * touches itself there, on a stretch it shares with the other input (@a
@@ -1054,24 +1035,9 @@ namespace GPlatesMaths
 					const Piece &piece,
 					Operation operation) const;
 
-			/**
-			 * Steps (a) to (e) of classification (phase4b-design.md section 3.7). With
-			 * @a stop_when_result_known, false if it stopped after the vertex tests because they
-			 * show the result is RESULT_INTERSECTING (section 10.2); else true.
-			 */
-			bool
-			classify_pieces(
-					bool stop_when_result_known);
-
-			/**
-			 * Whether a piece's own positions in an output ring (its end vertices' output positions
-			 * and its original vertices' between them; a closed piece's every vertex) are three
-			 * distinct ones, so that any ring it is walked into survives clean-up's collapsed-ring
-			 * test (section 3.11).
-			 */
-			bool
-			has_three_output_positions(
-					const Piece &piece) const;
+			//! Steps (a) to (e) of classification (phase4b-design.md section 3.7).
+			void
+			classify_pieces();
 
 			//! A polyline subject's classification (phase4b-design.md section 6.1).
 			void

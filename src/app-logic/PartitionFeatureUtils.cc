@@ -48,7 +48,6 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "maths/AngularExtent.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
 #include "maths/GeometryDistance.h"
@@ -305,9 +304,10 @@ namespace GPlatesAppLogic
 					}
 
 					/**
-					* The scalars at the nearest point of the domain's outline to @a point,
-					* interpolated along that segment (section 7.3 step 3, the developer's answer to
-					* question 2): for an output ring none of whose points has a value of its own.
+					 * The scalars at the nearest point of the domain's outline to @a point,
+					 * interpolated along that segment (section 7.3 step 3, the developer's answer
+					 * to question 2): for an output ring none of whose points has a value of its
+					 * own.
 					 */
 					value_type
 					get_nearest_outline_value(
@@ -563,20 +563,20 @@ namespace GPlatesAppLogic
 				}
 
 				/**
-				* The coverage of a partitioned geometry, from its points' provenance
-				* (phase4b-design.md
-				 * section 7.3, replacing an epsilon map of the original points and a search for the
-				 * nearest original segment, which a cut across the geometry's interior defeats):
+				 * The coverage of a partitioned geometry, from its points' provenance
+				 * (phase4b-design.md section 7.3, replacing an epsilon map of the original points and
+				 * a search for the nearest original segment, which a cut across the geometry's
+				 * interior defeats):
 				 *
-				*  1. a point at a vertex of the original takes its scalars; a point on a segment of
-				*     the original interpolates its ends' (a ring's last segment ends at its first
-				*     vertex);
-				*  2. a run of points with none (a cut, where the partitioning polygon's outline
-				*     crosses the geometry; or a hole's points under an exterior-ring-only coverage)
-				*     is interpolated by arc length between the valued points at its ends
-				*     (requirements Q1);
-				*  3. a ring none of whose points has a value takes, at each point, the value at
-				*     the nearest point of the original's outline (section 14, question 2).
+				 *  1. a point at a vertex of the original takes its scalars; a point on a segment of
+				 *     the original interpolates its ends' (a ring's last segment ends at its first
+				 *     vertex);
+				 *  2. a run of points with none (a cut, where the partitioning polygon's outline
+				 *     crosses the geometry; or a hole's points under an exterior-ring-only coverage)
+				 *     is interpolated by arc length between the valued points at its ends
+				 *     (requirements Q1);
+				 *  3. a ring none of whose points has a value takes, at each point, the value at
+				 *     the nearest point of the original's outline (section 14, question 2).
 				 */
 				void
 				partition_range(
@@ -676,7 +676,8 @@ namespace GPlatesAppLogic
 							coordinates.push_back((*value)[t]);
 						}
 
-						const GPlatesPropertyValues::GmlDataBlockCoordinateList &range_tuple_element = *geometry_range.range[t];
+						const GPlatesPropertyValues::GmlDataBlockCoordinateList &range_tuple_element =
+								*geometry_range.range[t];
 						partitioned_range.push_back(
 								GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 										range_tuple_element.get_value_object_type(),
@@ -725,9 +726,10 @@ namespace GPlatesAppLogic
 						return;
 					}
 
-					// Walk from the first valued point (once round a closed ring, to the end of a
-					// polyline),
-					// interpolating each run of points with none between its two valued ends.
+					// Walk from the first valued point (once round a closed ring, so that a run
+					// wrapping past the ring's start is interpolated too; to the end of a
+					// polyline), interpolating each run of points with none between its two
+					// valued ends.
 					std::vector<unsigned int> run;  // the run's point indices
 					std::vector<double> distances;  // arc length from the run's start to each
 					unsigned int previous = ring_start + first;
@@ -763,14 +765,18 @@ namespace GPlatesAppLogic
 					}
 
 					// A polyline's run at its end, and at its start, takes its one valued
-					// neighbour's.
-					for (unsigned int r : run)
+					// neighbour's. (A closed ring has none left: the walk went once round it, so
+					// its run past its start was interpolated, review 6 1.1.)
+					if (!closed)
 					{
-						values[r] = values[valued];
-					}
-					for (unsigned int k = 0; k < first; ++k)
-					{
-						values[ring_start + k] = values[ring_start + first];
+						for (unsigned int r : run)
+						{
+							values[r] = values[valued];
+						}
+						for (unsigned int k = 0; k < first; ++k)
+						{
+							values[ring_start + k] = values[ring_start + first];
+						}
 					}
 				}
 			};

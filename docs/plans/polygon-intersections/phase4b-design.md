@@ -1212,7 +1212,13 @@ As built (step 12, `PartitionFeatureUtils.cc`'s `partition_range` and `Range`):
 - Step 1 as designed; a point or a multi-point's point takes its own index's scalars.
 - Step 2 per output ring, cyclic (a polyline's points all lie on the input, so all have values; a run
   at a polyline's end would take its one neighbour's, none seen). Arc lengths between consecutive
-  points by `atan2` of their cross and dot products.
+  points by `atan2` of their cross and dot products. The walk starts at a ring's first valued point
+  and goes once round, so a run wrapping past the ring's start is interpolated like any other.
+  **Review 6 1.1**: the polyline's end-run loops ran for closed rings too, overwriting the points
+  before the first valued one with its value; a ring starts at a point with no value whenever a piece
+  is cut a second time (the second overlay's first stop is on the first plate's cut edge), so every
+  feature spanning three plates was affected. Fixed, and `RunAcrossRingStart` checks every run of
+  every ring against an independent arc-length interpolation, in both plate orders.
 - Step 3 by `minimum_distance` from each point to the coverage's domain, with no threshold (the
   plate inside the input can be anywhere in it), the ratio along the nearest segment that of the
   point's **projection** onto its great circle, clamped to the segment (the old fallback used the
@@ -1329,8 +1335,11 @@ propagates from the cookie cutter (9.2); the products' handling of it is steps 1
 As built (step 12): `GeometrySize` adds a polygon's area and not its arc length (its cuts would
 inflate that), and `GeometrySizeMetric::operator<` compares area, then arc length, then the number of
 points (`real_t`'s comparisons, so equal within its epsilon falls through to the next). Tested by a
-thin piece with long edges against a fat one, and a polygon against a longer polyline. pyGPlates'
-`most_overlapping_plate` is step 13's.
+thin piece with long edges against a fat one, a polygon against a longer polyline, and two
+multi-points of different sizes. pyGPlates' `most_overlapping_plate` is step 13's. Review 6 noted that
+an equality within a tolerance is not transitive, so the order is not strictly a weak ordering;
+pre-existing (the old comparison did the same), consumed only by a running maximum, with
+`real_t`'s epsilon `1e-12` on a unit sphere: left as it is.
 
 ### 8.4 pyGPlates
 
@@ -1459,8 +1468,12 @@ as follows.
   partition task and records the feature (`get_features_not_partitioned`); the task partitions every
   geometry before it modifies the feature, so the feature is left as it was. The dialog shows one
   warning at the end, naming up to ten features (`get_feature_description`: the name and the ID) and
-  counting the rest; the CLI writes one `qWarning` line per feature. Not tested: no committed input
-  is inconsistent (the two known bundle failures are uncommitted, step 15's), and the dialog is GUI.
+  counting the rest; the CLI writes one `qWarning` line per feature, and the dialog reports them
+  also when the user cancels part-way (review 6 1.2). Tested (review 6) on a committed inconsistent
+  input, `polygon-overlay/inconsistent.txt` (the bundle failure `shared#1434 seed 12`, step 15's to
+  fix, then to replace with another inconsistent input): the partitioner raises with and without
+  lists, and Assign Plate IDs leaves the feature's properties and plate ID as they were and reports
+  it (`AssignPlateIdsSkipsInconsistentFeature`). The dialog is GUI, not tested.
 
 Repairs that succeeded are not failures: the output is consistent. They are counted and, in debug
 builds, logged with the vertex, so that Phase 5's hunt can require zero on generated data.
@@ -1526,9 +1539,19 @@ geometry whole; the one caller (8.5) wants the conservative answer. With the fil
 path agree except for zero-area collapsed regions, for which this path says `INTERSECTING` and the
 full path says whole; acceptable for the same reason, and documented on `partition_polygon`.
 **Superseded (review 5, developer):** the path must give 5.3's result exactly, so step 3 extracts and
-looks, as the full path does; only steps 1 and 2 are shortcuts.
+looks, as the full path does; only steps 1 and 2 are shortcuts. **Superseded again (review 6,
+developer): step 2 is dropped too.** Its early stop returned before the checks, so on an inconsistent
+input (`shared#1434 seed 12`) the call without lists answered `INTERSECTING` where the call with lists
+raised: one contract was not met. Without it the path is the full path less the building of output
+geometries; its one caller with a need for speed builds a raster's polygon meshes once, at load.
 
-As built (step 11, amended after review 5): `Overlay::classify(stop_when_result_known)` and
+As built (after review 6): the bounding circles (4.1 as built), then the full overlay, classification
+and checks, and, when the classes say `INTERSECTING`, the extraction and 5.3's emptiness rule; only the
+`PolygonOnSphere`s are not built. The same result and the same exception as with lists in every case.
+`Overlay::classify` has no early stop, and the guard below is gone with it (no piece's region is judged
+before extraction). The account of step 11 that follows is kept for the record.
+
+As first built (step 11, amended after review 5; superseded above): `Overlay::classify(stop_when_result_known)` and
 `Overlay::stopped_early()`. Step 1's disjoint circles are the partitioner's pre-check (4.1 as built).
 Its no-record case needs no code of its own: with no records every ring is one closed piece with an
 interior vertex, so all are classified by the vertex tests and step 2 or step 3 answers at once. Step
@@ -1694,7 +1717,8 @@ PR is one.
 12. **Merge `main`** once the G1-1/G1-4 PR has landed (the `PartitionFeatureUtils.cc` conflict), then
     **coverages and area** in `PartitionFeatureUtils` (7.3, 8.3), and Assign Plate IDs' handling of
     the overlay's exception (9.2). Tests: 11.1's coverage rows through `partition_feature`. (As built:
-    the merge did not conflict in `PartitionFeatureUtils.cc`.)
+    the merge did not conflict in `PartitionFeatureUtils.cc`; and after review 6 the overlay's early
+    stop was dropped, 10.2.)
 13. **pyGPlates** (8.4): docstrings, the coverage form of `partition_geometry`, `partition_features`,
     area, tests, stub, changelog entries in both products (8.6).
 14. **The sliver filter** (4.5) behind its option, off; the real-data timing and sliver measurement
