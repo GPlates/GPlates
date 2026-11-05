@@ -610,6 +610,38 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     clip-mismatch diagnostic. Not pinned: the renderer's catch (no rendering tests) and the one-point
     run (no input makes one). GPlates 179 of 179, pyGPlates 7 of 7.
 
+- 2026-11-05: **Line length (developer)**: a new rule in `AGENTS.md`, committed straight to `main`
+  (`a46c71a01`, the developer's request) after the developer noticed wraps at 100 columns that looked
+  out of place among longer lines: tab = 4; a new or changed line may match the longest code line
+  within 30 lines either side, up to 130 (measured over `src/`: 4% of lines exceed 100, 0.4% exceed
+  130); pyGPlates docstring literals neither count as neighbours nor are bound. `main` merged into this
+  branch with G1-1/G1-4 (#109, `cb01ccbea`; no conflict in `PartitionFeatureUtils.cc`, only the
+  generated matrix), and the step-11 wraps the rule allows undone (`c40a212a0`).
+
+- 2026-11-06: **Phase 5 step 12 done: coverages, area, and Assign Plate IDs' failures** (design 7.3,
+  8.3, 9.2, each amended "as built").
+  - **Coverages from provenance**: `PartitionFeatureUtils` asks the cookie cutter for provenance when
+    a geometry property has a coverage, and each point takes its scalars from its location on the
+    original (a vertex's; a segment's ends' interpolated, a ring's last segment wrapping to its first
+    vertex, which fixes the old read past the end); runs of points with none (cuts; a hole's points
+    under an exterior-ring-only coverage) are interpolated by arc length between their valued ends;
+    a ring with none takes the nearest outline point's value, by the point's projection onto the
+    segment (the old fallback's ratio was the distance to the point itself). The epsilon map and the
+    0.5-degree search are gone.
+  - **Area**: "most overlapping" compares area (polygons), then arc length (polylines), then points.
+  - **Assign Plate IDs** catches `InconsistentOverlayException` per feature, leaves the feature as it
+    was (a task partitions before it modifies) and reports the skipped features once: the dialog in
+    one warning (up to ten by name and ID, the rest counted), the CLI a `qWarning` line each. Not
+    tested: no committed input is inconsistent, and the dialog is GUI.
+  - Tests: `PartitionFeatureUtilsTest` (a polygon with a hole cut by a plate whose corner is inside
+    it: vertices exact, the hole's too, a crossing on the closing segment, the plate's corner by arc
+    length; an exterior-ring-only coverage, with the hole opened into exterior rings and kept whole;
+    a plate inside the input, the nearest outline value; the size metric). Mutations:
+    seven, each failing a committed test (the closing segment's wrap, arc-length interpolation along a cut, the nearest-outline value and its projection, the exterior-ring-only domain, the rings' offsets, area in the size metric); the exterior-ring-only mutation survived until a piece keeping its hole was added. GPlates 185 of 185, pyGPlates 7 of 7.
+  - Trap (tools): a rewrap script took a continuation line `++i)` for four indentation markers and
+    dropped the loop's increment; the test hung (150 s) rather than failed. Rerun the tests after
+    any scripted rewrap.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -617,8 +649,11 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
     Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
     (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
-    its fixes done. Next: step 12 (G1-1/G1-4 has landed on `main`: merge `main`, then coverages and
-    area, and Assign Plate IDs' handling of `InconsistentOverlayException`); open: two
+    its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
+    done. Next: a Fable review of step 12 (ask about the usage limit), then step 13 (pyGPlates:
+    `PartitionError`, the docstrings' polyline warnings, `partition_features` carrying coverages
+    through the private helper, `most_overlapping_plate` by area, the stub, and both changelogs);
+    open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
