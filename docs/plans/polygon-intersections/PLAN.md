@@ -542,14 +542,51 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   committed and 8490 uncommitted cases pass. **Open, for step 11**: the review suggests handing the
   composition the original geometries rather than ring sizes (design 7.2 as built); to decide there.
 
+- 2026-11-05: **Decided (developer): the composition gets the original geometries** (review 4's
+  suggestion): `Options::original_subject` and `Options::cascade_clips` replace the ring sizes. The
+  developer's questions first established what the clip side is for: a coverage uses the subject
+  location alone (7.3), and no earlier clip's location is ever output (every point at an overlay vertex
+  lies on this clip), so composing an earlier clip's location only keeps a cut edge between two points
+  of the subject's outline from being counted as a lost location; provenance is offered by the cookie
+  cutter's single-geometry `partition_geometry` only (its several-geometry form mixes pieces whose
+  tables would not say which geometry they refer to). Design 7.2 amended.
+
+- 2026-11-05: **Phase 5 step 11 done: the partition layer** (design 8.1, 8.2, 5.3, 10.2, all amended
+  "as built"). `PolygonPartitioner` cuts polygons and polylines by the overlay: a polygon into polygons
+  with holes, both inputs' holes taking part; a geometry whose pieces would all be on one side (a touch
+  from either side, along the boundary, identical) comes back itself, multi-points included; with
+  neither list, the result-only path (`Overlay::classify(stop_when_result_known)`, stopping after the
+  vertex tests when a subject piece is on each side or a clip piece is inside the subject, and
+  answering `GEOMETRY_INTERSECTING` where the overlay throws). The disjoint-bounding-circle shortcut
+  of design 4.1 is built in the partitioner (it was not before). `PartitionedGeometry` carries a
+  table per piece; `GeometryCookieCutter::partition_geometry(..., want_provenance)` composes them
+  through the cascade, a clip location's index being the plate's position. `PolylineIntersections`,
+  the bend test and the polyline merger are deleted; `PolygonOverlay` joined the pyGPlates sources.
+  Trap: Windows' `WinUser.h` defines `DIFFERENCE`, breaking the `Operation` enumerator wherever
+  `<windows.h>` came first (undefined in the header, with a comment). Tests: `PolygonPartitionerTest`
+  (doc 5.1's four bugs: a partitioner inside the input, an input across a partitioner's hole, a
+  partitioner across the input's hole, along the boundary for both orientations; the contract's
+  touches and identical inputs returned as the same object; the result-only path; a multi-point's
+  provenance; and a two-plate cascade through `GeometryCookieCutter` built from features, with a hole
+  across the shared edge and the input's closing segments across both plates, every point's
+  provenance resolving and every point beside an edge along the input keeping its location). The two
+  pyGPlates tests that asserted polylines now assert polygons (design 8.4; the second's input crosses
+  itself). Mutations: seven of eight fail a committed test (the input itself returned as a copy; the bounding-circle shortcut always taken; the early stop on one subject class; the cascade's clip index unset; the piece's table, the original geometry, or a whole piece's table dropped); the eighth, skipping the classes' early return, is equivalent (the emptiness check after extraction gives the same answer). The whole piece's table was unpinned until a far plate was put between the two in the cascade, which returns the first plate's outside piece whole. All 987 committed and
+  8490 uncommitted prototype cases pass; GPlates and pyGPlates suites green. **For step 12**: the products'
+  handling of `InconsistentOverlayException` (Assign Plate IDs skips and reports; pyGPlates
+  `PartitionError` is step 13), and coverages through the new tables. **Before PR B merges**: the
+  foundation page (`spherical-geometry.md` section 5.1 and its mentions of `PolylineIntersections`)
+  describes partitioning as it was; Phase 6's distillation rewrites it.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
     2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
     Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
-    (provenance) done, and review 4 with its fixes. Next: step 11 (the partition layer; first decide
-    how the composition gets the original geometries, review 4); open: two
+    (provenance) done, and review 4 with its fixes; step 11 (the partition layer) done. Next: a Fable
+    review of step 11 (ask about the usage limit), then step 12 (merge `main` once G1-1/G1-4 lands,
+    then coverages and area); open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
