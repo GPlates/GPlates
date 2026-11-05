@@ -642,6 +642,36 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     dropped the loop's increment; the test hung (150 s) rather than failed. Rerun the tests after
     any scripted rewrap.
 
+- 2026-11-06: **Fable review 6** of step 12 (`phase5-review-6.md`), and its fixes (the developer:
+  all of them).
+  - **1.1, a silent wrong answer**: the coverage interpolation's loops for a polyline's end runs ran
+    for closed rings too, so on a ring whose first point has no value, the points before its first
+    valued point all took that point's value. A ring starts so whenever a piece is cut a second time
+    (the second overlay's first stop is on the first plate's cut edge): every feature spanning three
+    plates. The committed tests' rings all started at a crossing. Fixed with one guard;
+    `RunAcrossRingStart` checks every run of every ring against an independent arc-length
+    interpolation, in both plate orders.
+  - **The early stop dropped (decided by the developer)**: a new test on a committed inconsistent
+    input (`polygon-overlay/inconsistent.txt`, the bundle failure `shared#1434 seed 12`) showed the
+    contract decided after review 5 unmet: without lists, the overlay's early stop answered
+    "intersecting" before the checks that raise. The developer asked whether dropping it also
+    removes `stop_when_result_known`; it does, with `stopped_early` and the review-5 guard. Now the
+    result-only path is the full path less building the output geometries (design 10.2), and the
+    partitioner raises with or without lists.
+  - **Assign Plate IDs' catch tested** on that input: the feature keeps its properties and plate ID,
+    and is reported; the dialog reports also on a cancelled run.
+  - **Test gaps**: two scalar types, the nearest outline on a hole, the nearest-outline clamp (an
+    L-shaped input), a polyline, a multi-point, a point and a whole polygon through
+    `partition_feature`, and the size metric's point-count tie-break. Mutations: 14, every one
+    failing a committed test (review 6's six survivors, the fix reverted, the catch's record removed,
+    and step 12's seven).
+  - Minor: doc-comment lines the rewrap script had stripped of their leading space, two odd rewraps,
+    an unused include, and lines over the line-length rule. The developer's note on that rule: it
+    counts any code line within the window as a neighbour (the session's checker had counted only
+    existing ones, which was stricter than the rule says).
+  - All 987 committed and 8490 uncommitted cases pass, the no-list and list forms agreeing on every
+    polygon case; GPlates 191 of 191, pyGPlates 7 of 7.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -650,7 +680,7 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
     (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
     its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
-    done. Next: a Fable review of step 12 (ask about the usage limit), then step 13 (pyGPlates:
+    done, and review 6 with its fixes (the overlay's early stop dropped). Next: step 13 (pyGPlates:
     `PartitionError`, the docstrings' polyline warnings, `partition_features` carrying coverages
     through the private helper, `most_overlapping_plate` by area, the stub, and both changelogs);
     open: two
