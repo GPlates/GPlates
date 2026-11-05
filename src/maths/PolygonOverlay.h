@@ -42,6 +42,14 @@
 #include "PolylineOnSphere.h"
 #include "Vector3D.h"
 
+// Windows' WinUser.h defines DIFFERENCE (a region-combining flag nothing here uses), which turns
+// the Operation enumerator below into a number wherever <windows.h> came first. The files that
+// name the enumerator include this header after any Windows header, so undefining it here is
+// enough.
+#ifdef DIFFERENCE
+#	undef DIFFERENCE
+#endif
+
 
 namespace GPlatesMaths
 {
@@ -704,14 +712,21 @@ namespace GPlatesMaths
 			const provenance_seq_type *subject_provenance = nullptr;
 
 			/**
-			 * With @a subject_provenance: the vertex count of each ring of the original subject
-			 * (a polygon's), and of each earlier clip's rings by clip index, so that composing can
-			 * tell a ring's last segment (vertex 0 ends it). Without them a location at vertex 0 is
-			 * taken for the start of segment 0 only, and an edge needing the wrap-around is counted
-			 * as a mismatch (Diagnostics::provenance_subject_mismatches): never a wrong location.
+			 * With @a subject_provenance: the original subject (the geometry the cascade started
+			 * from, to which the table refers), and the cascade's clips by clip index, so that
+			 * composing can tell a ring's last segment (vertex 0 ends it). Without them a location
+			 * at vertex 0 is taken for the start of segment 0 only, and an edge needing the
+			 * wrap-around is counted as a mismatch (Diagnostics::provenance_subject_mismatches or
+			 * provenance_clip_mismatches): never a wrong location. Both must outlive the overlay.
+			 *
+			 * Only the subject's locations reach a caller (a coverage's values, section 7.3): every
+			 * output point at an overlay vertex lies on this overlay's clip, so its clip location is
+			 * this clip's. An earlier clip's locations are composed only to tell an edge along an
+			 * earlier cut (both ends on that clip, perhaps also both on the subject's outline) from
+			 * a mismatch.
 			 */
-			std::vector<unsigned int> subject_ring_sizes;
-			std::vector<std::vector<unsigned int>> clip_ring_sizes;
+			const GeometryOnSphere *original_subject = nullptr;
+			const std::vector<const PolygonOnSphere *> *cascade_clips = nullptr;
 
 			//! The clip's index in a cascade, recorded in every clip location it makes.
 			unsigned int clip_index = 0;
@@ -818,11 +833,19 @@ namespace GPlatesMaths
 			 * The result is RESULT_INSIDE when the difference (subject minus clip) keeps no piece,
 			 * RESULT_OUTSIDE when the intersection keeps none, and RESULT_INTERSECTING otherwise.
 			 *
+			 * With @a stop_when_result_known (the result-only path, phase4b-design.md section
+			 * 10.2), a polygon subject's classification stops at RESULT_INTERSECTING as soon as
+			 * the vertex tests show it: a subject piece inside the clip and another outside, or a
+			 * clip piece inside the subject. Nothing can then be extracted. The result counts
+			 * regions that clean-up would collapse, so it can be RESULT_INTERSECTING where the
+			 * outputs leave one of them empty (the conservative answer).
+			 *
 			 * @throws InconsistentOverlayException if a vertex is still inconsistent after repair,
 			 * or a piece is left unclassified (unless Options::throw_if_inconsistent is false).
 			 */
 			Result
-			classify();
+			classify(
+					bool stop_when_result_known = false);
 
 			/**
 			 * Check every vertex, repair what fails (section 3.9) and return the result; the second
@@ -930,6 +953,9 @@ namespace GPlatesMaths
 			//! Mutable: extract_rings accumulates the linking counters.
 			mutable Diagnostics d_diagnostics;
 
+			//! Whether classify stopped early (the result-only path): nothing can be extracted.
+			bool d_classified_partly = false;
+
 			/**
 			 * Where a ring is cut at an overlay vertex that no record of its own names: the input
 			 * touches itself there, on a stretch it shares with the other input (@a
@@ -1014,9 +1040,14 @@ namespace GPlatesMaths
 					const Piece &piece,
 					Operation operation) const;
 
-			//! Steps (a) to (e) of classification (phase4b-design.md section 3.7).
-			void
-			classify_pieces();
+			/**
+			 * Steps (a) to (e) of classification (phase4b-design.md section 3.7). With
+			 * @a stop_when_result_known, false if it stopped after the vertex tests because they
+			 * show the result is RESULT_INTERSECTING (section 10.2); else true.
+			 */
+			bool
+			classify_pieces(
+					bool stop_when_result_known);
 
 			//! A polyline subject's classification (phase4b-design.md section 6.1).
 			void

@@ -775,6 +775,12 @@ piece, classified by one vertex test, threshold off, with the full margin `h`. B
 `P`, so it is skipped. (The cascade tests every geometry against every plate, most of them far apart,
 so this is where the `O(N_P)` low-speed tests against the subject would otherwise go.)
 
+As built (step 11): the whole-pair test only, in the partitioner before any overlay is made
+(`is_outside_by_bounds` in `PolygonPartitioner.cc`), and only where each polygon's interior lies within
+its own circle (`PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon`: a polygon wrapping
+round the globe so far that its interior reaches past its outline's circle fails it). The per-ring skip
+is not built: a polygon's rings have no circles of their own.
+
 This fixes doc 5.1's three no-intersection bugs, each a regression test in Phase 5 (section 11):
 
 | Case | Today | Overlay |
@@ -1112,9 +1118,18 @@ As built (step 10, `Overlay::compose_subject_location`, `Options::subject_proven
   is counted apart (`provenance_clip_mismatches`).
 - **The wrap-around needs the ring's size**: whether vertex 0 ends a ring's last segment cannot be told
   from the table, and guessing turned a span across an identity group into a wrong segment (0.03 rad
-  off, the `six` generator). `Options::subject_ring_sizes` (the original subject's rings) and
-  `clip_ring_sizes` (each earlier clip's, by clip index) give it; without them no wrap-around is
-  assumed, so such an edge is a mismatch.
+  off, the `six` generator). The original geometries give it (step 11, the developer's decision on
+  review 4's suggestion): `Options::original_subject` (the geometry the cascade started from) and
+  `Options::cascade_clips` (the cascade's partitioning polygons, by clip index); without them no
+  wrap-around is assumed, so such an edge is a mismatch. They also give the segment lengths a
+  geometric fallback at an input's corner (the second cause above) would need, if the hunt shows one
+  is wanted.
+- **Only the subject's locations reach a caller.** A coverage takes its values from the subject
+  location alone (7.3), and every output point at an overlay vertex lies on this overlay's clip, so
+  its clip location is this clip's; an untouched piece vertex keeps its table entry by lookup. An
+  earlier clip's composed location is therefore never output: it only tells an edge along an earlier
+  cut whose two ends both lie on the subject's outline, on different segments, from a lost subject
+  location, so that `provenance_subject_mismatches` counts only real losses.
 - **Subject first, then the earlier clip**: an edge whose ends share a subject segment is along the
   subject; else, if they share an earlier clip's segment, it is a cut edge of that clip (an edge
   from the subject's outline to a cut point is along the earlier clip though one end is on the
@@ -1128,14 +1143,20 @@ As built (step 10, `Overlay::compose_subject_location`, `Options::subject_proven
   subject, within `3h` (measured within `1.63h`); and a hand two-plate cascade, polygon and polyline
   (`ProvenanceCascade`, `ProvenancePolyline`), and a split at a vertex holding no subject vertex
   (`ProvenanceAtSplit`).
-- **For step 11** (review 4's suggestion, not yet decided): hand the composition the original
-  subject and clip geometries instead of their ring sizes; the cookie cutter has them, and they would
-  give the segment lengths a geometric fallback for the corner cause needs.
 
 The piece returned to the cascade carries its composed table, which becomes the next step's
 `d_subject_provenance`. A geometry entering the cascade has the identity table. The cookie cutter
 builds tables only when asked (`PartitionFeatureUtils`, and pyGPlates' coverage form of
 `partition_geometry`, 8.4); otherwise `d_want_provenance` is false and nothing is composed.
+
+As built (step 11): `GeometryCookieCutter::partition_geometry(geometry, inside, outside,
+want_provenance)`, one geometry only. `partition_geometries` (several at once, which pyGPlates'
+`partition_features` uses to measure overlap) offers none: its pieces are mixed in the lists, and a
+table does not say which geometry it refers to, so offering it there would need a subject index in
+every piece. A geometry entering the cascade has no table (it is the original); the first partitioner
+that returns it whole gives it the identity table (`PolygonPartitioner::create_identity_provenance`),
+and later overlays compose through that. The tables' clip index is the partitioning polygon's position
+in the cookie cutter's order (after sorting).
 
 ### 7.3 Scalar coverages from provenance
 
@@ -1205,6 +1226,24 @@ For the geometry forms the layer returns:
 
 `Result` stays `GEOMETRY_INSIDE` / `GEOMETRY_OUTSIDE` / `GEOMETRY_INTERSECTING` (`:85-95`).
 
+As built (step 11):
+
+- `PartitionedGeometry` and its list are `PolygonPartitioner`'s (the cookie cutter's are typedefs of
+  them). The provenance overload is `partition_geometry(const PartitionedGeometry &, inside, outside,
+  const CascadeProvenance &)`: the input's own table travels in the `PartitionedGeometry`, and
+  `CascadeProvenance` carries the rest (the original geometry, the cascade's partitioning polygons,
+  this one's index). The plain `partition_geometry` keeps its signature and builds no tables.
+- **A multi-point** wholly on one side is returned itself too (5.3 for every geometry type); before,
+  a new multi-point of the same points. With provenance its points' locations are their indices in
+  the input (ring 0), composed through the input's table.
+- `partition_polygon` with neither list is the result-only path (10.2); with a list it is the full
+  path, both outputs extracted so that 5.3's emptiness after clean-up decides the result.
+- The bend test, `InsidePartitionedPolylineMerger` and `PolylineIntersections` are deleted;
+  `PolygonOverlay` joined the pyGPlates sources (the partitioner includes it).
+- **Trap**: Windows' `WinUser.h` defines `DIFFERENCE`, which broke `PolygonOverlay::Operation` in
+  every translation unit that included `<windows.h>` before the overlay's header; the header
+  undefines it (a comment there says why).
+
 ### 8.2 `GeometryCookieCutter` (the cascade)
 
 `partition_geometries` (`GeometryCookieCutter.cc:340-455`) keeps its shape: the outside list of one
@@ -1235,6 +1274,11 @@ block's area, in either order. No code change; a behaviour change worth a line i
 changelog under Assign Plate IDs.
 
 `partition_point` (`:458-485`) is unchanged.
+
+As built (step 11): as above, with provenance only through `partition_geometry` (7.2 as built). The
+three other sites read `.geometry` (`PartitionFeatureUtils.cc`, `PyPlatePartitioner.cc`,
+`PyGeometriesOnSphere.cc`); none asks for provenance yet (step 12's coverages will). The exception
+propagates from the cookie cutter (9.2); the products' handling of it is steps 12 and 13.
 
 ### 8.3 `PartitionFeatureUtils` (Assign Plate IDs)
 
@@ -1282,7 +1326,10 @@ changelog under Assign Plate IDs.
   (two inside polylines and one outside become one inside polygon and one outside polygon; the
   "will be fixed in future" comment goes); `pygplates/test/test_app_logic/test.py:2131-2139` (the
   intersecting polygon: 3 inside and 2 outside polygons, replacing "3 polylines outside (instead of
-  2)"). New tests: section 11.5.
+  2)"). New tests: section 11.5. **Done in step 11** (the suite must stay green there): as predicted,
+  with the pieces' areas checked against the input's in the first; the second's input crosses itself
+  (its closing edge crosses its `-30` meridian edge near `16` degrees north), so its pieces are its two
+  lobes' parts and their areas sum to its lobes' (`0.185`), not its signed area (`0.038`).
 - **Stub**: `python pygplates/stub/generate_stub.py --output ... --check ...` after the docstring and
   the coverage overload (its `:rtype:` changes).
 
@@ -1428,6 +1475,14 @@ geometry whole; the one caller (8.5) wants the conservative answer. With the fil
 path agree except for zero-area collapsed regions, for which this path says `INTERSECTING` and the
 full path says whole; acceptable for the same reason, and documented on `partition_polygon`.
 
+As built (step 11): `Overlay::classify(stop_when_result_known)`. Step 1's disjoint circles are the
+partitioner's pre-check (4.1 as built); its no-record case needs no code of its own (every ring is then
+one closed piece, vertex-tested, and step 3's answer follows at once). Step 2 also stops at a clip piece
+inside the subject (kept by both outputs). An overlay stopped early refuses to extract (an assertion).
+The partitioner catches `InconsistentOverlayException` on this path only (9.2) and answers
+`GEOMETRY_INTERSECTING`. A polyline subject has no early stop (its classification is cheap and never
+throws).
+
 ### 10.3 What Phase 5 measures
 
 Assign Plate IDs on a global coastline file by a real topology model (survey section 5 item 6), the
@@ -1567,7 +1622,7 @@ PR is one.
     Tests: 11.1's provenance rows.
 11. **The partition layer** (8.1) and the result contract (5.3), the result-only path (10.2),
     `PolylineIntersections` deleted (6.2), provenance through the partitioner and the cookie
-    cutter (7.2, 8.2: the tables and the ring sizes),
+    cutter (7.2, 8.2: the tables and the original geometries),
     `GeometryCookieCutter` with polygons and provenance (8.2), `GLReconstructedStaticPolygonMeshes`
     unchanged in behaviour (8.5). Tests: doc 5.1's four bugs; the contract cases; a two-plate cascade.
     Both products build; the GPlates visual check waits for Phase 6.

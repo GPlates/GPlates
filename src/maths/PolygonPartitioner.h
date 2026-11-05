@@ -2,10 +2,10 @@
 
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -23,36 +23,37 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifndef GPLATES_MATHS_POLYGONINTERSECTIONS_H
-#define GPLATES_MATHS_POLYGONINTERSECTIONS_H
+
+#ifndef GPLATES_MATHS_POLYGONPARTITIONER_H
+#define GPLATES_MATHS_POLYGONPARTITIONER_H
 
 #include <list>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "GeometryOnSphere.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
-#include "PolygonOrientation.h"
+#include "PolygonOverlay.h"
 #include "PolylineOnSphere.h"
 
 
 namespace GPlatesMaths
 {
-	namespace PolylineIntersections
-	{
-		class Graph;
-		class PartitionedPolyline;
-	}
-
-	class GreatCircleArc;
-
-
 	/**
 	 * Partitions @a GeometryOnSphere derived types using a @a PolygonOnSphere into
 	 * geometries that are inside or outside or both (they are clipped if they cross
 	 * the polygon boundary).
+	 *
+	 * A polygon or polyline is cut by the overlay (PolygonOverlay::Overlay): a polygon into
+	 * polygons with holes, inside (the intersection) and outside (the difference), with both
+	 * polygons' interior rings taking part; a polyline into runs inside and outside. A geometry
+	 * whose pieces would all be on one side (one that only touches the partitioning polygon,
+	 * from either side, runs along its boundary, or is identical to it) is not cut: the
+	 * geometry itself is returned, inside or outside (phase4b-design.md section 5.3). A
+	 * polyline piece along the boundary is inside.
 	 */
 	class PolygonPartitioner
 	{
@@ -95,14 +96,72 @@ namespace GPlatesMaths
 		};
 
 
+		//! Where each point of a geometry came from (phase4b-design.md section 7).
+		typedef PolygonOverlay::provenance_seq_type provenance_seq_type;
+
+
+		/**
+		 * A partitioned geometry, and where each of its points came from when that was asked for
+		 * (phase4b-design.md section 8.2).
+		 */
+		class PartitionedGeometry
+		{
+		public:
+			explicit
+			PartitionedGeometry(
+					const GeometryOnSphere::non_null_ptr_to_const_type &geometry_,
+					const boost::shared_ptr<const provenance_seq_type> &provenance_ =
+							boost::shared_ptr<const provenance_seq_type>()) :
+				geometry(geometry_),
+				provenance(provenance_)
+			{  }
+
+			GeometryOnSphere::non_null_ptr_to_const_type geometry;
+
+			/**
+			 * One per point of @a geometry (GeometryUtils::get_geometry_points order), relative to
+			 * the geometry partitioning started from (through a cascade, section 7.2); null unless
+			 * asked for. A subject location is a vertex index (ring 0) for a point or multi-point.
+			 */
+			boost::shared_ptr<const provenance_seq_type> provenance;
+		};
+
 		//! Typedef for a sequence of partitioned geometries.
-		typedef std::list<GeometryOnSphere::non_null_ptr_to_const_type> partitioned_geometry_seq_type;
+		typedef std::list<PartitionedGeometry> partitioned_geometry_seq_type;
+
+		//! Typedef for a sequence of partitioned polygons.
+		typedef std::list<PolygonOnSphere::non_null_ptr_to_const_type> partitioned_polygon_seq_type;
 
 		//! Typedef for a sequence of partitioned polylines.
 		typedef std::list<PolylineOnSphere::non_null_ptr_to_const_type> partitioned_polyline_seq_type;
 
 		//! Typedef for a sequence of partitioned points.
 		typedef std::vector<PointOnSphere> partitioned_point_seq_type;
+
+
+		/**
+		 * What the provenance of a cascade of partitioners needs (phase4b-design.md section 7.2),
+		 * beyond the input's own table.
+		 */
+		class CascadeProvenance
+		{
+		public:
+			/**
+			 * The geometry the cascade started from, to which the input's table refers (none if
+			 * the input has no table: it is then the original itself). It must outlive the call.
+			 */
+			const GeometryOnSphere *original_geometry = nullptr;
+
+			/**
+			 * The cascade's partitioning polygons by index (this one at @a clip_index), or null.
+			 * They let an edge along an earlier cut be told from a lost location
+			 * (PolygonOverlay::Options::cascade_clips); they must outlive the call.
+			 */
+			const std::vector<const PolygonOnSphere *> *partitioning_polygons = nullptr;
+
+			//! This partitioner's index in the cascade, recorded in each clip location it makes.
+			unsigned int clip_index = 0;
+		};
 
 
 		/**
@@ -119,10 +178,17 @@ namespace GPlatesMaths
 		 * Partition @a geometry_to_be_partitioned into geometries inside and outside
 		 * the partitioning polygon.
 		 *
-		 * NOTE: Unlike @a partition_polygon, if @a geometry_to_be_partitioned is a polygon and it is
-		 * entirely inside or outside (ie, doesn't intersect) then it will get added to the optional
-		 * list of inside/outside geometries (as a polygon). But like @a partition_polygon, an
-		 * intersecting polygon is still returned as inside/outside *polylines* (not polygons).
+		 * A polygon cut by the partitioning polygon comes back as polygons (with holes), a polyline
+		 * as polylines, a multi-point as one multi-point inside and one outside; a geometry that
+		 * is wholly inside or outside (section 5.3) comes back itself.
+		 *
+		 * With neither list this is the result-only path (phase4b-design.md section 10.2): it
+		 * stops as soon as the result is known, and it can say GEOMETRY_INTERSECTING where the
+		 * lists would leave one side empty (a region the cut collapses to nothing), and where the
+		 * overlay finds its classes inconsistent (the conservative answer).
+		 *
+		 * @throws PolygonOverlay::InconsistentOverlayException, when a list is given, if the
+		 * overlay's classes are inconsistent (phase4b-design.md section 9.2).
 		 */
 		Result
 		partition_geometry(
@@ -132,8 +198,25 @@ namespace GPlatesMaths
 
 
 		/**
+		 * As @a partition_geometry, with each output geometry's provenance (a table per output
+		 * geometry), composed with @a geometry_to_be_partitioned's own table when it has one (a
+		 * piece of an earlier partitioner in a cascade, @a cascade_provenance).
+		 *
+		 * @throws PolygonOverlay::InconsistentOverlayException as @a partition_geometry does.
+		 */
+		Result
+		partition_geometry(
+				const PartitionedGeometry &geometry_to_be_partitioned,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_inside,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_outside,
+				const CascadeProvenance &cascade_provenance) const;
+
+
+		/**
 		 * Partition @a polyline_to_be_partitioned into polylines inside and outside
-		 * the partitioning polygon.
+		 * the partitioning polygon (the polyline itself if it is wholly inside or outside).
+		 *
+		 * @throws PolygonOverlay::InconsistentOverlayException as @a partition_geometry does.
 		 */
 		Result
 		partition_polyline(
@@ -143,25 +226,18 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Partition @a polygon_to_be_partitioned into either polylines inside and outside
-		 * the partitioning polygon or neither if it was fully outside or inside.
+		 * Partition @a polygon_to_be_partitioned into polygons (with holes) inside and outside the
+		 * partitioning polygon (the polygon itself if it is wholly inside or outside).
 		 *
-		 * If no intersections occurred then @a GEOMETRY_INSIDE or @a GEOMETRY_OUTSIDE
-		 * is returned and the lists @a partitioned_polylines_inside and
-		 * @a partitioned_polylines_outside are not appended to - they can't be because
-		 * they contain polylines whereas the geometry being partitioned is a polygon.
+		 * With neither list this is the result-only path (see @a partition_geometry).
 		 *
-		 * If both @a partitioned_polylines_inside and @a partitioned_polylines_outside
-		 * are empty on returning then the returned result is guaranteed to be one
-		 * of @a GEOMETRY_INSIDE or @a GEOMETRY_OUTSIDE - in which case it is the caller's
-		 * responsibility to add @a polygon_to_be_partitioned to their own list of
-		 * inside/outside polygon's if they choose to do so.
+		 * @throws PolygonOverlay::InconsistentOverlayException as @a partition_geometry does.
 		 */
 		Result
 		partition_polygon(
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
-				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside = boost::none,
-				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside = boost::none) const;
+				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_inside = boost::none,
+				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_outside = boost::none) const;
 
 
 		/**
@@ -202,9 +278,18 @@ namespace GPlatesMaths
 				boost::optional<partitioned_point_seq_type &> partitioned_points_inside = boost::none,
 				boost::optional<partitioned_point_seq_type &> partitioned_points_outside = boost::none) const;
 
+
+		/**
+		 * The provenance of a geometry relative to itself: each point its own vertex (ring 0 for
+		 * a point, multi-point or polyline; a polygon's interior ring 'i' is ring 'i + 1').
+		 */
+		static
+		boost::shared_ptr<const provenance_seq_type>
+		create_identity_provenance(
+				const GeometryOnSphere &geometry);
+
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
-		PolygonOrientation::Orientation d_partitioning_polygon_orientation;
 		PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
 
 
@@ -214,26 +299,7 @@ namespace GPlatesMaths
 		PolygonPartitioner(
 				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
 				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
-
-		bool
-		is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
-				const PointOnSphere &arbitrary_point_on_geometry) const;
-
-		/**
-		 * Determines which partitioned polylines are inside/outside the
-		 * partitioning polygon and appends to the appropriate partition list.
-		 */
-		void
-		partition_intersecting_geometry(
-				const PolylineIntersections::Graph &partitioned_polylines_graph,
-				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
-				boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const;
-
-		bool
-		is_partitioned_polyline_inside_partitioning_polygon(
-				const PolylineIntersections::Graph &partitioned_polylines_graph,
-				const PolylineIntersections::PartitionedPolyline &partitioned_poly) const;
 	};
 }
 
-#endif // GPLATES_MATHS_POLYGONINTERSECTIONS_H
+#endif // GPLATES_MATHS_POLYGONPARTITIONER_H

@@ -1974,7 +1974,8 @@ GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
 
 
 GPlatesMaths::PolygonOverlay::Result
-GPlatesMaths::PolygonOverlay::Overlay::classify()
+GPlatesMaths::PolygonOverlay::Overlay::classify(
+		bool stop_when_result_known)
 {
 	if (d_subject_polyline)
 	{
@@ -1994,7 +1995,12 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 		return !any_inside ? RESULT_OUTSIDE : (!any_outside ? RESULT_INSIDE : RESULT_INTERSECTING);
 	}
 
-	classify_pieces();
+	if (!classify_pieces(stop_when_result_known))
+	{
+		d_classified_partly = true;
+		return RESULT_INTERSECTING;
+	}
+	d_classified_partly = false;
 	return check_and_repair();
 }
 
@@ -2171,8 +2177,9 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
 }
 
 
-void
-GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
+bool
+GPlatesMaths::PolygonOverlay::Overlay::classify_pieces(
+		bool stop_when_result_known)
 {
 	// A polyline subject is classified by its own rules (phase4b-design.md section 6.1).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -2231,6 +2238,36 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 			}
 		}
 #endif
+	}
+
+	// The result-only path (phase4b-design.md section 10.2): a subject piece inside the clip and
+	// another outside, or a clip piece inside the subject, put a region in both the intersection
+	// and the difference, so the result is RESULT_INTERSECTING whatever the other classes are.
+	if (stop_when_result_known)
+	{
+		bool subject_inside = false;
+		bool subject_outside = false;
+		bool clip_inside = false;
+		for (const Piece &piece : d_pieces)
+		{
+			if (piece.internal || piece.common || !piece.is_classified())
+			{
+				continue;
+			}
+			const bool inside = piece.piece_class == CLASS_INSIDE;
+			if (d_rings[piece.ring].side == SUBJECT)
+			{
+				(inside ? subject_inside : subject_outside) = true;
+			}
+			else
+			{
+				clip_inside = clip_inside || inside;
+			}
+		}
+		if ((subject_inside && subject_outside) || clip_inside)
+		{
+			return false;
+		}
 	}
 
 	//
@@ -2345,7 +2382,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 			piece.method = partner.common_class != COMMON_UNKNOWN ? METHOD_SECTOR : METHOD_NONE;
 		}
 	}
-
+	return true;
 }
 
 
@@ -3260,9 +3297,10 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		Operation operation,
 		std::vector<OutputRing> &rings) const
 {
-	// A polyline subject's output is extract_polylines' (review 3 1.4: a dangling end has no ray).
+	// A polyline subject's output is extract_polylines' (review 3 1.4: a dangling end has no ray);
+	// and a classification stopped by the result-only path left pieces unclassified.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_subject_polygon,
+			d_subject_polygon && !d_classified_partly,
 			GPLATES_ASSERTION_SOURCE);
 
 	// A ray, as (vertex, index into its rays).
@@ -4267,25 +4305,28 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 	const Provenance &a = (*table)[table_index(location.ring, a_index)];
 	const Provenance &b = (*table)[table_index(location.ring, b_index)];
 
-	// The segment two locations lie on, and their ratios along it.
-	// The segment two locations of one input lie on, and their ratios along it. @a ring_sizes are
-	// that input's rings' vertex counts, for a polygon's wrap-around (vertex 0 ends its ring's last
-	// segment); without them (or for a polyline, none) no wrap-around is assumed, so that a pair
-	// of locations on no one segment is a mismatch, never a wrong segment.
+	// The segment two locations of one input lie on, and their ratios along it. @a input is that
+	// input, for a polygon's wrap-around (vertex 0 ends its ring's last segment); without it (or
+	// for a polyline, none) no wrap-around is assumed, so that a pair of locations on no one
+	// segment is a mismatch, never a wrong segment.
 	const auto shared_segment = [](
 			const Location &x,
 			const Location &y,
-			const std::vector<unsigned int> *ring_sizes)
+			const PolygonOnSphere *input)
 			-> boost::optional<std::tuple<unsigned int, unsigned int, double, double>>
 	{
 		if (x.ring != y.ring)
 		{
 			return boost::none;
 		}
-		const boost::optional<unsigned int> last_segment =
-				(ring_sizes && x.ring < ring_sizes->size() && (*ring_sizes)[x.ring] > 0)
-						? boost::optional<unsigned int>((*ring_sizes)[x.ring] - 1)
-						: boost::none;
+		boost::optional<unsigned int> last_segment;
+		if (input && x.ring <= input->number_of_interior_rings())
+		{
+			const unsigned int num_vertices = (x.ring == 0)
+					? input->number_of_vertices_in_exterior_ring()
+					: input->number_of_vertices_in_interior_ring(x.ring - 1);
+			last_segment = num_vertices - 1;
+		}
 		const auto on_segment = [&](const Location &l, unsigned int segment)
 				-> boost::optional<double>
 		{
@@ -4339,7 +4380,7 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 		if (const auto segment = shared_segment(
 				*a.subject,
 				*b.subject,
-				d_subject_polyline ? nullptr : &d_options.subject_ring_sizes))
+				dynamic_cast<const PolygonOnSphere *>(d_options.original_subject)))
 		{
 			provenance.subject = Location{
 					std::get<0>(*segment),
@@ -4355,8 +4396,8 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 		if (const auto segment = shared_segment(
 				*a.clip,
 				*b.clip,
-				a.clip_index < d_options.clip_ring_sizes.size()
-						? &d_options.clip_ring_sizes[a.clip_index]
+				(d_options.cascade_clips && a.clip_index < d_options.cascade_clips->size())
+						? (*d_options.cascade_clips)[a.clip_index]
 						: nullptr))
 		{
 			provenance.subject = boost::none;

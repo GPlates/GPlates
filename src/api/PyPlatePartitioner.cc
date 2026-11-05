@@ -343,7 +343,8 @@ namespace GPlatesApi
 						partitioned_inside_geometry.partitioned_geometries.end();
 				for ( ; partitioned_geoms_iter != partitioned_geoms_end; ++partitioned_geoms_iter)
 				{
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geom = *partitioned_geoms_iter;
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geom =
+							partitioned_geoms_iter->geometry;
 
 					partitioned_geometries_list.append(partitioned_geom);
 				}
@@ -360,10 +361,10 @@ namespace GPlatesApi
 		{
 			// Append the outside geometries to the caller's list.
 			BOOST_FOREACH(
-					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &partitioned_outside_geometry,
+					const GPlatesAppLogic::GeometryCookieCutter::PartitionedGeometry &partitioned_outside_geometry,
 					partitioned_outside_geometries.get())
 			{
-				partitioned_outside_geometries_list->append(partitioned_outside_geometry);
+				partitioned_outside_geometries_list->append(partitioned_outside_geometry.geometry);
 			}
 		}
 

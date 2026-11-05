@@ -2323,11 +2323,9 @@ TEST(PolygonOverlayTest, ProvenanceCascade)
 			second_options.want_provenance = true;
 			second_options.subject_provenance = &table;
 			second_options.clip_index = 1;
-			for (const ring_type &ring : rings_of(*P))
-			{
-				second_options.subject_ring_sizes.push_back(ring.size());
-			}
-			second_options.clip_ring_sizes = { { 4 } };  // plate 1, a square
+			second_options.original_subject = P.get();
+			const std::vector<const PolygonOnSphere *> cascade_clips{ plate_1.get(), plate_2.get() };
+			second_options.cascade_clips = &cascade_clips;
 			Overlay::Overlay second(*S, *plate_2, second_options);
 			classify_and_check(second);
 			for (Overlay::Operation operation : { Overlay::INTERSECTION, Overlay::DIFFERENCE })

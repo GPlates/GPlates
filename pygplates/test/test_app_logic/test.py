@@ -2133,10 +2133,15 @@ class PlatePartitionerTestCase(unittest.TestCase):
         partitioned_inside_geometries = []
         partitioned_outside_geometries = []
         plate_partitioner.partition_geometry(polygon, partitioned_inside_geometries, partitioned_outside_geometries)
+        # An intersecting polygon is cut into polygons (this one crosses itself, so its pieces are
+        # each of its two lobes' parts).
         self.assertTrue(len(partitioned_inside_geometries) == 3)
-        # Note that *polylines* are returned when intersecting (not polygons) - will be fixed in future.
-        # Also we end up with 3 polylines outside (instead of 2).
-        self.assertTrue(len(partitioned_outside_geometries) == 3)
+        for recon_geom, inside_geoms in partitioned_inside_geometries:
+            self.assertTrue(len(inside_geoms) == 1)
+            self.assertTrue(isinstance(inside_geoms[0], pygplates.PolygonOnSphere))
+        self.assertTrue(len(partitioned_outside_geometries) == 2)
+        for outside_geom in partitioned_outside_geometries:
+            self.assertTrue(isinstance(outside_geom, pygplates.PolygonOnSphere))
 
     def test_partition_point(self):
         rotation_model = pygplates.RotationModel(self.rotation_features)

@@ -24,6 +24,7 @@ set(srcs
     PolygonOverlayOracle.h
     PolygonOverlayPrototypeTest.cc
     PolygonOverlayTest.cc
+    PolygonPartitionerTest.cc
     RealTest.cc
     ScribeExportUnitTest.h
     SmartNodeLinkedListTest.cc

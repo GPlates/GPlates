@@ -1852,20 +1852,17 @@ class PolygonOnSphereCase(unittest.TestCase):
         outside_geometries = []
         self.assertTrue(self.polygon.partition(polygon, inside_geometries, outside_geometries) ==
                 pygplates.PolygonOnSphere.PartitionResult.intersecting)
-        # Note that *polylines* are returned when intersecting (not polygons) - will be fixed in future.
-        # Also we end up with 2 polylines inside (instead of 1).
-        self.assertTrue(len(inside_geometries) == 2)
-        self.assertTrue(inside_geometries[0] == pygplates.PolylineOnSphere([(10, 0), (0, 0)]) or
-                        inside_geometries[0] == pygplates.PolylineOnSphere([(0, 0), (10, 0)]) or
-                        inside_geometries[0] == pygplates.PolylineOnSphere([(0, 5), (10, 5), (10, 0)]) or
-                        inside_geometries[0] == pygplates.PolylineOnSphere([(10, 0), (10, 5), (0, 5)]))
-        self.assertTrue(inside_geometries[1] == pygplates.PolylineOnSphere([(10, 0), (0, 0)]) or
-                        inside_geometries[1] == pygplates.PolylineOnSphere([(0, 0), (10, 0)]) or
-                        inside_geometries[1] == pygplates.PolylineOnSphere([(0, 5), (10, 5), (10, 0)]) or
-                        inside_geometries[1] == pygplates.PolylineOnSphere([(10, 0), (10, 5), (0, 5)]))
+        # An intersecting polygon is cut into polygons: the half north of the equator inside, the half
+        # south of it outside, together covering the input.
+        self.assertTrue(len(inside_geometries) == 1)
+        self.assertTrue(isinstance(inside_geometries[0], pygplates.PolygonOnSphere))
+        self.assertTrue(inside_geometries[0].is_point_in_polygon(pygplates.PointOnSphere(5, 2.5)))
         self.assertTrue(len(outside_geometries) == 1)
-        self.assertTrue(outside_geometries[0] == pygplates.PolylineOnSphere([(0, 0), (-10, 0), (-10, 5), (0, 5)]) or
-                        outside_geometries[0] == pygplates.PolylineOnSphere([(0, 5), (-10, 5), (-10, 0), (0, 0)]))
+        self.assertTrue(isinstance(outside_geometries[0], pygplates.PolygonOnSphere))
+        self.assertTrue(outside_geometries[0].is_point_in_polygon(pygplates.PointOnSphere(-5, 2.5)))
+        self.assertAlmostEqual(
+                inside_geometries[0].get_area() + outside_geometries[0].get_area(),
+                polygon.get_area())
         polygon = pygplates.PolygonOnSphere([(10, 0), (5, 0), (5, 5), (10,5)])
         inside_geometries = []
         self.assertTrue(self.polygon.partition(polygon, inside_geometries) ==

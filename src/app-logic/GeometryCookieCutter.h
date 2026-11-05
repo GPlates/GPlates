@@ -59,6 +59,12 @@ namespace GPlatesAppLogic
 	{
 	public:
 		/**
+		 * A partitioned geometry, with where each of its points came from when that was asked for
+		 * (see @a partition_geometry).
+		 */
+		typedef GPlatesMaths::PolygonPartitioner::PartitionedGeometry PartitionedGeometry;
+
+		/**
 		 * Typedef for a sequence of geometries resulting from partitioning a single geometry.
 		 */
 		typedef GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type partitioned_geometry_seq_type;
@@ -199,12 +205,22 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns true if @a geometry is inside any partitioning polygons (even partially)
 		 * in which case elements were appended to @a partitioned_inside_geometries.
+		 *
+		 * With @a want_provenance, every partitioned geometry carries a table of where each of its
+		 * points lies on @a geometry (phase4b-design.md section 7.2): the pieces outside one
+		 * partitioning polygon are cut by the next with their tables, and a clip location's index
+		 * is its partitioning polygon's position in the order described above.
+		 *
+		 * @throws GPlatesMaths::PolygonOverlay::InconsistentOverlayException if a cut's classes
+		 * are inconsistent (phase4b-design.md section 9.2: every plate must get an answer, and a
+		 * wrong one is worse than none).
 		 */
 		bool
 		partition_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				boost::optional<partition_seq_type &> partitioned_inside_geometries = boost::none,
-				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries = boost::none) const;
+				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries = boost::none,
+				bool want_provenance = false) const;
 
 
 		/**
@@ -212,6 +228,12 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns true if any geometry in @a geometries is inside any partitioning polygons (even partially)
 		 * in which case elements were appended to @a partitioned_inside_geometries.
+		 *
+		 * Provenance is offered by @a partition_geometry alone: the pieces of several geometries are
+		 * mixed in the lists, and a table does not say which geometry it refers to.
+		 *
+		 * @throws GPlatesMaths::PolygonOverlay::InconsistentOverlayException as
+		 * @a partition_geometry does.
 		 */
 		bool
 		partition_geometries(
@@ -329,6 +351,19 @@ namespace GPlatesAppLogic
 		double d_reconstruction_time;
 
 		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
+
+
+		/**
+		 * Partitions @a geometries through the cascade of partitioning polygons; with provenance
+		 * relative to @a original_geometry if it is given (then @a geometries is that geometry,
+		 * alone, with no table).
+		 */
+		bool
+		partition(
+				const partitioned_geometry_seq_type &geometries,
+				boost::optional<partition_seq_type &> partitioned_inside_geometries,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries,
+				const GPlatesMaths::GeometryOnSphere *original_geometry) const;
 
 
 		/**

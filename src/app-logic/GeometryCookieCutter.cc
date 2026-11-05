@@ -328,12 +328,14 @@ bool
 GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		boost::optional<partition_seq_type &> partitioned_inside_geometries,
-		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries) const
+		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries,
+		bool want_provenance) const
 {
-	return partition_geometries(
-			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>(1, geometry),
+	return partition(
+			partitioned_geometry_seq_type(1, PartitionedGeometry(geometry)),
 			partitioned_inside_geometries,
-			partitioned_outside_geometries);
+			partitioned_outside_geometries,
+			want_provenance ? geometry.get() : nullptr);
 }
 
 
@@ -343,6 +345,26 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 		boost::optional<partition_seq_type &> partitioned_inside_geometries,
 		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries) const
 {
+	partitioned_geometry_seq_type partitioned_geometries;
+	for (const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry : geometries)
+	{
+		partitioned_geometries.push_back(PartitionedGeometry(geometry));
+	}
+	return partition(
+			partitioned_geometries,
+			partitioned_inside_geometries,
+			partitioned_outside_geometries,
+			nullptr);
+}
+
+
+bool
+GPlatesAppLogic::GeometryCookieCutter::partition(
+		const partitioned_geometry_seq_type &geometries,
+		boost::optional<partition_seq_type &> partitioned_inside_geometries,
+		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries,
+		const GPlatesMaths::GeometryOnSphere *original_geometry) const
+{
 	// Return early if no partitioning polygons.
 	if (d_partitioning_geometries.empty())
 	{
@@ -350,12 +372,34 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 		// to the list of geometries partitioned outside all partitioning polygons.
 		if (partitioned_outside_geometries)
 		{
-			partitioned_outside_geometries->insert(
-					partitioned_outside_geometries->end(),
-					geometries.begin(),
-					geometries.end());
+			for (const PartitionedGeometry &geometry : geometries)
+			{
+				partitioned_outside_geometries->push_back(
+						original_geometry
+								? PartitionedGeometry(
+										geometry.geometry,
+										GPlatesMaths::PolygonPartitioner::create_identity_provenance(
+												*geometry.geometry))
+								: geometry);
+			}
 		}
 		return false;
+	}
+
+	// Provenance (phase4b-design.md section 7.2): each piece's table is composed with the next
+	// partitioning polygon's cut, and its clip locations are indexed by partitioning polygon.
+	std::vector<const GPlatesMaths::PolygonOnSphere *> partitioning_polygons;
+	GPlatesMaths::PolygonPartitioner::CascadeProvenance cascade_provenance;
+	if (original_geometry)
+	{
+		partitioning_polygons.reserve(d_partitioning_geometries.size());
+		for (const PartitioningGeometry &partitioning_geometry : d_partitioning_geometries)
+		{
+			partitioning_polygons.push_back(
+					partitioning_geometry.d_polygon_partitioner->get_partitioning_polygon().get());
+		}
+		cascade_provenance.original_geometry = original_geometry;
+		cascade_provenance.partitioning_polygons = &partitioning_polygons;
 	}
 
 	bool was_geometry_partitioned = false;
@@ -370,7 +414,8 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 			&partitioned_outside_geometries2;
 
 	// Add the geometries to be partitioned to the current list of outside geometries
-	// to start off the processing chain.
+	// to start off the processing chain. A geometry with no table is the original (its pieces'
+	// tables are relative to it).
 	current_partitioned_outside_geometries->insert(
 			current_partitioned_outside_geometries->end(),
 			geometries.begin(),
@@ -388,6 +433,7 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 		++partition_iter)
 	{
 		const PartitioningGeometry &partitioning_geometry = *partition_iter;
+		cascade_provenance.clip_index = partition_iter - d_partitioning_geometries.begin();
 
 		// Geometries partitioned inside the current partitioning polygon will be stored here.
 		Partition current_partitioned_inside_geometries(
@@ -404,16 +450,26 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 				current_partitioned_outside_geometries->end();
 		for ( ; outside_geometry_iter != outside_geometry_end; ++outside_geometry_iter)
 		{
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &outside_geometry =
-					*outside_geometry_iter;
+			const PartitionedGeometry &outside_geometry = *outside_geometry_iter;
 
 			// Partition the current outside geometry against the partitioning polygon.
 			// Geometry partitioned outside the current partitioning polygon get stored
 			// in the sequence of outside geometries used for the next partitioning polygon.
-			partitioning_geometry.d_polygon_partitioner->partition_geometry(
-					outside_geometry,
-					current_partitioned_inside_geometries.partitioned_geometries/*inside*/,
-					*next_partitioned_outside_geometries/*outside*/);
+			if (original_geometry)
+			{
+				partitioning_geometry.d_polygon_partitioner->partition_geometry(
+						outside_geometry,
+						current_partitioned_inside_geometries.partitioned_geometries/*inside*/,
+						*next_partitioned_outside_geometries/*outside*/,
+						cascade_provenance);
+			}
+			else
+			{
+				partitioning_geometry.d_polygon_partitioner->partition_geometry(
+						outside_geometry.geometry,
+						current_partitioned_inside_geometries.partitioned_geometries/*inside*/,
+						*next_partitioned_outside_geometries/*outside*/);
+			}
 		}
 
 		// Add the partitioned geometries to the caller's list if any were partitioned

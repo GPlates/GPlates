@@ -94,8 +94,6 @@ set(srcs
     PolygonProximityHitDetail.h
     PolyGreatCircleArcBoundingTree.h
     PolylineEquivalencePredicates.h
-    PolylineIntersections.cc
-    PolylineIntersections.h
     PolylineOnSphere.cc
     PolylineOnSphere.h
     PolylineProximityHitDetail.h
@@ -166,8 +164,6 @@ set(gplates_only_srcs
     PolygonFan.h
     PolygonMesh.cc
     PolygonMesh.h
-    PolygonOverlay.cc
-    PolygonOverlay.h
     PolylineEquivalencePredicates.h
     SmallCircleArc.cc
     SmallCircleArc.h

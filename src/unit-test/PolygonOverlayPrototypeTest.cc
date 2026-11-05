@@ -1131,15 +1131,10 @@ namespace
 							Overlay::Options second_options = options;
 							second_options.subject_provenance = &table;
 							second_options.clip_index = 1;
-							for (const std::vector<PointOnSphere> &ring : prototype_case.rings[0])
-							{
-								second_options.subject_ring_sizes.push_back(ring.size());
-							}
-							second_options.clip_ring_sizes.resize(1);
-							for (const std::vector<PointOnSphere> &ring : prototype_case.rings[1])
-							{
-								second_options.clip_ring_sizes[0].push_back(ring.size());
-							}
+							second_options.original_subject = P.get();
+							const std::vector<const PolygonOnSphere *> cascade_clips{
+									Q.get(), clip_2.get() };
+							second_options.cascade_clips = &cascade_clips;
 							Overlay::Overlay second(*S, *clip_2, second_options);
 							second.classify();
 							unsigned int failures = 0;

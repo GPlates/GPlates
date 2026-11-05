@@ -3698,20 +3698,20 @@ namespace GPlatesApi
 		if (partitioned_geometries_inside)
 		{
 			BOOST_FOREACH(
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geometry,
+					const GPlatesMaths::PolygonPartitioner::PartitionedGeometry &partitioned_geometry,
 					partitioned_geometries_inside.get())
 			{
-				partitioned_geometries_inside_list->append(partitioned_geometry);
+				partitioned_geometries_inside_list->append(partitioned_geometry.geometry);
 			}
 		}
 
 		if (partitioned_geometries_outside)
 		{
 			BOOST_FOREACH(
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geometry,
+					const GPlatesMaths::PolygonPartitioner::PartitionedGeometry &partitioned_geometry,
 					partitioned_geometries_outside.get())
 			{
-				partitioned_geometries_outside_list->append(partitioned_geometry);
+				partitioned_geometries_outside_list->append(partitioned_geometry.geometry);
 			}
 		}
 
