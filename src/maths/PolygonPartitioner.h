@@ -243,10 +243,8 @@ namespace GPlatesMaths
 		Result
 		partition_polygon(
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
-				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_inside =
-						boost::none,
-				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_outside =
-						boost::none) const;
+				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_inside = boost::none,
+				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_outside = boost::none) const;
 
 
 		/**

@@ -416,8 +416,7 @@ namespace GPlatesAppLogic
 							partitioned_domains_end = partitioned_domains.end();
 					for ( ; partitioned_domains_iter != partitioned_domains_end; ++partitioned_domains_iter)
 					{
-						const geometry_domain_type &partitioned_domain =
-								partitioned_domains_iter->geometry;
+						const geometry_domain_type &partitioned_domain = partitioned_domains_iter->geometry;
 
 						// If there is a geometry range associated with the geometry domain then
 						// create a partitioned range associated with the partitioned domain.

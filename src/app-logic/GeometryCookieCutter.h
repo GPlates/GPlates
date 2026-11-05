@@ -219,8 +219,7 @@ namespace GPlatesAppLogic
 		partition_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				boost::optional<partition_seq_type &> partitioned_inside_geometries = boost::none,
-				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries =
-						boost::none,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries = boost::none,
 				bool want_provenance = false) const;
 
 

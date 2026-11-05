@@ -361,8 +361,7 @@ namespace GPlatesApi
 		{
 			// Append the outside geometries to the caller's list.
 			BOOST_FOREACH(
-					const GPlatesAppLogic::GeometryCookieCutter::PartitionedGeometry &
-							partitioned_outside_geometry,
+					const GPlatesAppLogic::GeometryCookieCutter::PartitionedGeometry &partitioned_outside_geometry,
 					partitioned_outside_geometries.get())
 			{
 				partitioned_outside_geometries_list->append(partitioned_outside_geometry.geometry);
