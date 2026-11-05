@@ -701,6 +701,17 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   the PR**: the architecture page of the plate-partitioning area, and the foundation page, describe
   partitioning as it was (Phase 6's distillation).
 
+- 2026-11-06: **Fable review 7** of step 13 (`phase5-review-7.md`). Decided (developer): **each coverage
+  piece in its own feature, as Assign Plate IDs does** (`PartitionedFeatureManager::get_feature_for_partition`
+  starts a new feature for a piece with a coverage), which fixes review 7 1.1 (`AmbiguousGeometryCoverageError`
+  from two same-count pieces under one name), 1.3 (read back as no coverage) and 1.5 (a mixed list
+  refused); and **all the other fixes** (the lost `def test_partition_point`, tests pinning the three
+  surviving mutations, unused includes, coverages in `partition_features`' docstring, the range added
+  without information-model verification). **Open, asked again**: review 7 1.2, a time-dependent
+  (`GpmlPiecewiseAggregation`) geometry property silently dropped by the shared visitor (new in pyGPlates,
+  already so in Assign Plate IDs): partition its window at the partitioning time (recommended, both
+  products), or copy it whole.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
