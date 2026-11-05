@@ -707,10 +707,14 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   from two same-count pieces under one name), 1.3 (read back as no coverage) and 1.5 (a mixed list
   refused); and **all the other fixes** (the lost `def test_partition_point`, tests pinning the three
   surviving mutations, unused includes, coverages in `partition_features`' docstring, the range added
-  without information-model verification). **Open, asked again**: review 7 1.2, a time-dependent
-  (`GpmlPiecewiseAggregation`) geometry property silently dropped by the shared visitor (new in pyGPlates,
-  already so in Assign Plate IDs): partition its window at the partitioning time (recommended, both
-  products), or copy it whole.
+  without information-model verification): `851c0850f`, each of the three surviving mutations now failing
+  a test. **Review 7 1.2, decided (developer)**: time-dependent geometry is not really supported yet, and
+  partitioning one window would leave the others undefined, so a time-dependent geometry property is
+  not partitioned but kept, unchanged, on every feature returned, as Assign Plate IDs already does (only
+  pyGPlates' removal loop had dropped it; a feature with nothing else to partition is returned whole):
+  `7c89317bb`, with a test. Before 1.1, pyGPlates partitioned the window at present day and lost the
+  others. Supporting time-dependent geometry, and what partitioning should do with it, is an inbox
+  item (planning repository `db47f6c`). GPlates 191 of 191, pyGPlates 7 of 7.
 
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
@@ -720,9 +724,9 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
     (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
     its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
-    done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) done.
-    Next: a Fable review of step 13 (ask about the usage limit), then step 14 (the sliver filter and
-    the real-data measurements); open: two
+    done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) and
+    review 7 with its fixes done. Next: step 14 (the sliver filter and the real-data measurements);
+    open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
