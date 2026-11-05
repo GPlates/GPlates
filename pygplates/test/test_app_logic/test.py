@@ -2294,6 +2294,40 @@ class PlatePartitionerTestCase(unittest.TestCase):
                 [feature], partition_method=pygplates.PartitionMethod.most_overlapping_plate)
         self.assertTrue(len(partitioned) == 1 and partitioned[0].get_reconstruction_plate_id() == 2)
 
+    def test_partition_features_time_dependent_geometry(self):
+        # A time-dependent geometry property is not partitioned, and not lost: it stays, unchanged, on the features
+        # returned (review 7 1.2), whether or not the feature also has a constant geometry that is partitioned.
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        piecewise = pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(
+                        pygplates.GmlPolygon(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)])), 10, 0),
+                pygplates.GpmlTimeWindow(
+                        pygplates.GmlPolygon(pygplates.PolygonOnSphere([(-5, 20), (-5, 30), (5, 30), (5, 20)])), 50, 10)])
+        name = pygplates.PropertyName.create_gpml('outlineOf')
+
+        def windows(feature):
+            values = [property.get_time_dependent_value() for property in feature if property.get_name() == name]
+            return [len(value) for value in values if isinstance(value, pygplates.GpmlPiecewiseAggregation)]
+
+        # Only the time-dependent geometry: returned whole, unpartitioned.
+        feature = pygplates.Feature()
+        feature.add(name, piecewise, pygplates.VerifyInformationModel.no)
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature], partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(not partitioned and len(unpartitioned) == 1)
+        self.assertTrue(windows(unpartitioned[0]) == [2])
+
+        # With a constant geometry across both plates: it is partitioned, and every piece's feature keeps the
+        # time-dependent property, both its windows.
+        feature.set_geometry(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)]))
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            self.assertTrue(windows(partitioned_feature) == [2])
+
     def test_partition_point(self):
         rotation_model = pygplates.RotationModel(self.rotation_features)
         resolved_topologies = []

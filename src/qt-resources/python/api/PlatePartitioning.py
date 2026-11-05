@@ -354,15 +354,30 @@ def plate_partitioner_partition_features(
                     unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
 
             # Remove the geometry properties, and their coverages' range properties.
+            #
+            # A time-dependent geometry property is not partitioned (the shared partitioning code takes constant
+            # geometries only, and partitioning one time window would say nothing about the others): it stays,
+            # unchanged, on every feature returned, as in GPlates' Assign Plate IDs. (Before pyGPlates 1.1 the window
+            # at present day was partitioned, and the property's other windows were lost.)
             feature_without_geometry = feature.clone()
             properties_to_remove = []
+            has_time_dependent_geometry = False
             for property in feature_without_geometry:
+                if isinstance(property.get_time_dependent_value(), (GpmlPiecewiseAggregation, GpmlIrregularSampling)):
+                    has_time_dependent_geometry = has_time_dependent_geometry or bool(
+                            property.get_value() and property.get_value().get_geometry())
+                    continue
                 property_value = property.get_value()
                 if ((property_value and property_value.get_geometry()) or
                     property.get_name() in range_property_names.values()):
                     properties_to_remove.append(property)
             for property in properties_to_remove:
                 feature_without_geometry.remove(property)
+
+            # A feature with nothing partitioned but a time-dependent geometry is returned unpartitioned, whole.
+            if not partitioned_geometries and not unpartitioned_geometries and has_time_dependent_geometry:
+                unpartitioned_features.append(feature.clone())
+                continue
 
             for partitioning_plate, geometries_inside_partition in partitioned_geometries.items():
                 features_inside_partition = _plate_partitioning_set_geometries(
