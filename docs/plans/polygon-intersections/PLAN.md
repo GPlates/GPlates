@@ -578,15 +578,47 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   foundation page (`spherical-geometry.md` section 5.1 and its mentions of `PolylineIntersections`)
   describes partitioning as it was; Phase 6's distillation rewrites it.
 
+- 2026-11-05: **Fable review 5** of step 11 (`phase5-review-5.md`), and its fixes (the developer: all
+  of them). No silent wrong answer: run through the partitioner on every uncommitted case, every table
+  the right length and every location resolving (25303 polygon pieces, 13689 cut again, 5340 runs).
+  - **1.1, one contract (decided by the developer, after asking why the no-list path did not raise
+    and how the collapsed cases differed):** pyGPlates `PolygonOnSphere.partition` without lists was
+    a second caller of the result-only path, so one polygon could raise with lists and say
+    "intersecting" without, or say "intersecting" where the lists returned it whole (4 large-set
+    cases, the intersection's rings all collapsed). Now the result is 5.3's with or without lists
+    (the no-list form finishes, extracts and looks, unless the early stop or the bounding circles
+    settle it), the partitioner raises either way, and `GLReconstructedStaticPolygonMeshes` catches
+    the exception itself. **Found on the way: the early stop was not exact.** The review and the session
+    had both argued that a vertex-tested piece's region cannot collapse (its vertex is more than `h`
+    from the other outline); a probe of `shared#247 seed 1` showed a piece leaving an overlay vertex
+    and coming back to it, a tip `2e-6` rad long, whose ring has two positions. The stop now counts only
+    a piece with three distinct positions of its own in its ring (clean-up's own rule). Design 5.3,
+    8.5, 9.2 and 10.2 amended.
+  - **1.2**: the pyGPlates docstrings' polyline warnings are assigned to step 13 (design 8.4).
+  - **1.3**: the partitioner's point-in-polygon speed now reaches the overlay
+    (`Options::clip_speed`); a polyline run at one position, if one can arise, is dropped and a side
+    left empty makes the polyline whole; the test helper compares pieces point for point (and the
+    one-list forms); added lines within 100 columns.
+  - **Test gaps**: other geometry types through the cookie cutter with provenance (a multi-point over
+    three plates, a polyline cut by two, a point, a cutter with no plates), a piece keeping two holes,
+    a whole multi-point and point, the collapsed case (`PartitionerCollapsedRegion`, from the committed
+    hunt file), the helix band (an interior past its bounding circle) both ways, and in the prototype
+    comparison, on every polygon case, the partitioner's no-list and list results agree and a whole
+    result is the subject itself (all 987 committed and 8490 uncommitted cases pass). Mutations: 16 of
+    17 fail a committed test (review 5's nine, step 11's eight less the equivalent one, and the early
+    stop's new guard); the survivor, the cascade's partitioning polygons reversed, changes only the
+    clip-mismatch diagnostic. Not pinned: the renderer's catch (no rendering tests) and the one-point
+    run (no input makes one). GPlates 179 of 179, pyGPlates 7 of 7.
+
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
     2026-11-04). Review 2 done; steps 7 (linking) and 8 (grouping, orientation, hemisphere check) done.
     Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
-    (provenance) done, and review 4 with its fixes; step 11 (the partition layer) done. Next: a Fable
-    review of step 11 (ask about the usage limit), then step 12 (merge `main` once G1-1/G1-4 lands,
-    then coverages and area); open: two
+    (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
+    its fixes done. Next: step 12 (G1-1/G1-4 has landed on `main`: merge `main`, then coverages and
+    area, and Assign Plate IDs' handling of `InconsistentOverlayException`); open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
