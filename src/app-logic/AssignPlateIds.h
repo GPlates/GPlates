@@ -33,6 +33,7 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QString>
 
 #include "GeometryCookieCutter.h"
 #include "LayerProxy.h"
@@ -303,6 +304,28 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				boost::optional<const ReconstructMethodInterface::Context &> reconstruct_method_context = boost::none);
 
+
+		/**
+		 * The features left as they were, in the order met, because cutting one of their geometries
+		 * by a partitioning polygon found the cut's classes inconsistent
+		 * (GPlatesMaths::PolygonOverlay::InconsistentOverlayException; phase4b-design.md section
+		 * 9.2). Every other feature is still partitioned; the caller reports these once, at the end.
+		 */
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
+		get_features_not_partitioned() const
+		{
+			return d_features_not_partitioned;
+		}
+
+
+		/**
+		 * A feature's name and ID, for reporting it to the user (its ID alone if it has no name).
+		 */
+		static
+		QString
+		get_feature_description(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+
 	private:
 		/**
 		 * The method used to assign plate ids to features.
@@ -340,6 +363,9 @@ namespace GPlatesAppLogic
 		 * This may not apply to some feature types (eg, virtual geomagnetic poles).
 		 */
 		bool d_respect_feature_time_period;
+
+		//! See @a get_features_not_partitioned.
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> d_features_not_partitioned;
 
 
 		/**

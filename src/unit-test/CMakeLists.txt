@@ -20,6 +20,7 @@ set(srcs
     GrotFileTest.cc
     GsmlXmlQueryTest.cc
     MipmapperTest.cc
+    PartitionFeatureUtilsTest.cc
     PointInPolygonTest.cc
     PolygonOverlayOracle.h
     PolygonOverlayPrototypeTest.cc

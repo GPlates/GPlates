@@ -1202,6 +1202,30 @@ once that lands (PLAN.md 2026-10-31) and then rewrites `partition_range` as:
 Per-tuple scalars (`range_tuple_size`, `:445`) are interpolated independently, as today. A point or
 multi-point domain is unchanged (no new points, `:474-476`).
 
+As built (step 12, `PartitionFeatureUtils.cc`'s `partition_range` and `Range`):
+
+- The cookie cutter is asked for provenance only for a geometry property with a coverage
+  (`partition_geometry(..., want_provenance)`); the epsilon map of the original points and the
+  nearest-segment search within 0.5 degrees are gone. `Range` keeps the coverage's domain points and
+  its rings' sizes and offsets in `get_geometry_points` order (the exterior ring alone under
+  `exterior_ring_only`, so that a hole's location finds no scalars there).
+- Step 1 as designed; a point or a multi-point's point takes its own index's scalars.
+- Step 2 per output ring, cyclic (a polyline's points all lie on the input, so all have values; a run
+  at a polyline's end would take its one neighbour's, none seen). Arc lengths between consecutive
+  points by `atan2` of their cross and dot products.
+- Step 3 by `minimum_distance` from each point to the coverage's domain, with no threshold (the
+  plate inside the input can be anywhere in it), the ratio along the nearest segment that of the
+  point's **projection** onto its great circle, clamped to the segment (the old fallback used the
+  distance to the point itself, which is not the ratio of any point on the segment), and the ring's
+  last segment wrapping to its first vertex.
+- Tests (`PartitionFeatureUtilsTest`, through `partition_feature` with a cookie cutter of features):
+  a polygon with a hole cut by a plate whose corner is inside it (original vertices exact, the hole's
+  too; a crossing on the ring's closing segment by its segment; the plate's corner, a cut point, by
+  arc length between its neighbours), an exterior-ring-only coverage whose hole the cut opens into
+  exterior rings (each piece's coverage its exterior ring's, the hole's points interpolated), and a
+  plate wholly inside the input (each point the projected nearest outline value). Mutations:
+  seven, each failing a committed test (the closing segment's wrap, arc-length interpolation along a cut, the nearest-outline value and its projection, the exterior-ring-only domain, the rings' offsets, area in the size metric); the exterior-ring-only mutation survived until a piece keeping its hole was added.
+
 ## 8. The consumers
 
 ### 8.1 `PolygonPartitioner` (the partition layer)
@@ -1301,6 +1325,12 @@ propagates from the cookie cutter (9.2); the products' handling of it is steps 1
   tuple `(arc_length, num_points)` (`PlatePartitioning.py:369-372`); the two then agree. A feature
   with polygons and polylines is decided by its polygons.
 - **Failure**: section 9.2.
+
+As built (step 12): `GeometrySize` adds a polygon's area and not its arc length (its cuts would
+inflate that), and `GeometrySizeMetric::operator<` compares area, then arc length, then the number of
+points (`real_t`'s comparisons, so equal within its epsilon falls through to the next). Tested by a
+thin piece with long edges against a fat one, and a polygon against a longer polyline. pyGPlates'
+`most_overlapping_plate` is step 13's.
 
 ### 8.4 pyGPlates
 
@@ -1424,7 +1454,13 @@ as follows.
   (section 14, question 3): catch `InconsistentOverlayException` per feature in `AssignPlateIds`,
   leave that feature unpartitioned, and report the features so skipped once at the end (the dialog
   has no such report today; the CLI writes to `qWarning`). The alternative, aborting the whole
-  operation, loses the work on every other feature for a case no run has produced.
+  operation, loses the work on every other feature for a case no run has produced. As built (step
+  12, the developer's answer to question 3): `AssignPlateIds` catches it around each feature's
+  partition task and records the feature (`get_features_not_partitioned`); the task partitions every
+  geometry before it modifies the feature, so the feature is left as it was. The dialog shows one
+  warning at the end, naming up to ten features (`get_feature_description`: the name and the ID) and
+  counting the rest; the CLI writes one `qWarning` line per feature. Not tested: no committed input
+  is inconsistent (the two known bundle failures are uncommitted, step 15's), and the dialog is GUI.
 
 Repairs that succeeded are not failures: the output is consistent. They are counted and, in debug
 builds, logged with the vertex, so that Phase 5's hunt can require zero on generated data.
@@ -1656,8 +1692,9 @@ PR is one.
     unchanged in behaviour (8.5). Tests: doc 5.1's four bugs; the contract cases; a two-plate cascade.
     Both products build; the GPlates visual check waits for Phase 6.
 12. **Merge `main`** once the G1-1/G1-4 PR has landed (the `PartitionFeatureUtils.cc` conflict), then
-    **coverages and area** in `PartitionFeatureUtils` (7.3, 8.3). Tests: 11.1's coverage rows through
-    `partition_feature`.
+    **coverages and area** in `PartitionFeatureUtils` (7.3, 8.3), and Assign Plate IDs' handling of
+    the overlay's exception (9.2). Tests: 11.1's coverage rows through `partition_feature`. (As built:
+    the merge did not conflict in `PartitionFeatureUtils.cc`.)
 13. **pyGPlates** (8.4): docstrings, the coverage form of `partition_geometry`, `partition_features`,
     area, tests, stub, changelog entries in both products (8.6).
 14. **The sliver filter** (4.5) behind its option, off; the real-data timing and sliver measurement

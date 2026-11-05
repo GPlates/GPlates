@@ -550,8 +550,8 @@ namespace GPlatesAppLogic
 
 			/**
 			 * For points and multipoints adds number of points to current total
-			 * number of points; for polylines and polygons adds the
-			 * arc distance (unit sphere) to the current total arc distance.
+			 * number of points; for polylines adds the arc distance (unit sphere) to the current
+			 * total arc distance; for polygons adds the area (unit sphere) to the current total area.
 			 */
 			void
 			accumulate(
@@ -567,7 +567,9 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Less than operator.
+			* Less than operator: compares area, then arc distance, then number of points (so that
+			* a feature with polygons is decided by its polygons' areas, and one with polylines by
+			* their lengths).
 			 * Greater than operator provided by base class boost::less_than_comparable.
 			 */
 			bool
@@ -577,7 +579,7 @@ namespace GPlatesAppLogic
 		private:
 			unsigned int d_num_points;
 			GPlatesMaths::real_t d_arc_distance;
-			bool d_using_arc_distance;
+			GPlatesMaths::real_t d_area;
 		};
 	}
 }

@@ -24,7 +24,9 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <map>
+#include <numeric>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -43,11 +45,15 @@
 #include "ReconstructMethodRegistry.h"
 #include "ScalarCoverageFeatureProperties.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/AngularExtent.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
 #include "maths/GeometryDistance.h"
 #include "maths/MathsUtils.h"
+#include "maths/Vector3D.h"
 
 #include "model/Gpgim.h"
 #include "model/ModelUtils.h"
@@ -170,30 +176,16 @@ namespace GPlatesAppLogic
 				boost::shared_ptr<PartitionedFeature> d_partition_results;
 
 
-				/**
-				 * Distance threshold used when determining interpolated scalar values for points in
-				 * partitioned geometries that don't correspond to any point in original geometry.
-				 */
-				static const GPlatesMaths::AngularExtent POLY_GEOMETRY_DISTANCE_THRESHOLD;
+				//! One value per element of a coverage's tuple (its scalar types).
+				typedef std::vector<double> value_type;
 
 
 				/**
-				 * Typedef for mapping points in the geometry domain to indices into geometry domain/range.
-				 *
-				 * NOTE: Since 'GPlatesMaths::PointOnSphereMapPredicate' uses an epsilon test it's
-				 * possible that two points close enough together will map to the same map entry.
-				 * This means we lose a mapping to one of the point's associated range.
-				 * TODO: We should build in a mapping into the geometry partitioning process itself
-				 * (eg, something similar to DateLineWrapper which provides information mapping the
-				 * points in the wrapped/clipped geometries back to the original unwrapped geometries).
+				 * A geometry property's scalar coverage, and what carrying it to the partitioned
+				 * geometries needs (phase4b-design.md section 7.3): its domain's rings, so that a
+				 * point's provenance (a vertex, or a segment and ratio, of the geometry property)
+				 * finds its scalars.
 				 */
-				typedef std::map<
-						GPlatesMaths::PointOnSphere,
-						unsigned int/*point index*/,
-						GPlatesMaths::PointOnSphereMapPredicate>
-								domain_to_range_map_type;
-
-				//! Contains the geometry range and information to map the associated domain to this range.
 				struct Range
 				{
 					// Number of scalars in range should match number of points in domain.
@@ -238,18 +230,157 @@ namespace GPlatesAppLogic
 						// Get the geometry domain points (a polygon's exterior ring, then its interior rings).
 						domain_type = GeometryUtils::get_geometry_points(*domain_, domain_points);
 
-						// Map the geometry domain points to their indices into geometry domain/range.
-						const unsigned int num_domain_points = domain_points.size();
-						for (unsigned int n = 0; n < num_domain_points; ++n)
+						// The domain's rings, in the same order (a polyline or multi-point is one).
+						if (const GPlatesMaths::PolygonOnSphere *polygon =
+								dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(domain_.get()))
 						{
-							domain_to_range_map.insert(std::make_pair(domain_points[n], n));
+							ring_sizes.push_back(polygon->number_of_vertices_in_exterior_ring());
+							for (unsigned int i = 0; i < polygon->number_of_interior_rings(); ++i)
+							{
+								ring_sizes.push_back(
+										polygon->number_of_vertices_in_interior_ring(i));
+							}
 						}
+						else
+						{
+							ring_sizes.push_back(domain_points.size());
+						}
+						unsigned int offset = 0;
+						for (unsigned int size : ring_sizes)
+						{
+							ring_offsets.push_back(offset);
+							offset += size;
+						}
+					}
+
+					//! The scalars of a vertex of the domain, if it has them (none for a hole's vertex
+					//! under an exterior-ring-only coverage, whose domain is the exterior ring alone).
+					boost::optional<value_type>
+					get_vertex_value(
+							unsigned int ring,
+							unsigned int index) const
+					{
+						if (ring >= ring_sizes.size() || index >= ring_sizes[ring])
+						{
+							return boost::none;
+						}
+						value_type value;
+						for (const auto &element : range)
+						{
+							value.push_back(element->get_coordinates()[ring_offsets[ring] + index]);
+						}
+						return value;
+					}
+
+					//! The scalars at @a ratio along a segment of the domain, interpolated between
+					//! its ends (a polygon's ring's last segment ends at the ring's first vertex).
+					boost::optional<value_type>
+					get_segment_value(
+							unsigned int ring,
+							unsigned int segment,
+							double ratio) const
+					{
+						if (ring >= ring_sizes.size())
+						{
+							return boost::none;
+						}
+						unsigned int next = segment + 1;
+						if (domain_type == GPlatesMaths::GeometryType::POLYGON &&
+							next == ring_sizes[ring])
+						{
+							next = 0;
+						}
+						const boost::optional<value_type> start = get_vertex_value(ring, segment);
+						const boost::optional<value_type> end = get_vertex_value(ring, next);
+						if (!start || !end)
+						{
+							return boost::none;
+						}
+						value_type value(start->size());
+						for (unsigned int t = 0; t < value.size(); ++t)
+						{
+							value[t] = (1.0 - ratio) * (*start)[t] + ratio * (*end)[t];
+						}
+						return value;
+					}
+
+					/**
+					* The scalars at the nearest point of the domain's outline to @a point,
+					* interpolated along that segment (section 7.3 step 3, the developer's answer to
+					* question 2): for an output ring none of whose points has a value of its own.
+					 */
+					value_type
+					get_nearest_outline_value(
+							const GPlatesMaths::PointOnSphere &point) const
+					{
+						unsigned int closest_point_index = 0;  // to be ignored (zero)
+						unsigned int closest_domain_index = 0; // a segment (or a point)
+						minimum_distance(
+								*point.get_geometry_on_sphere(),
+								*domain,
+								false/*geometry1_interior_is_solid*/,
+								false/*geometry2_interior_is_solid*/,
+								boost::none/*minimum_distance_threshold*/,
+								boost::none/*closest_positions*/,
+								boost::make_tuple(
+										boost::ref(closest_point_index),
+										boost::ref(closest_domain_index)));
+
+						if (domain_type != GPlatesMaths::GeometryType::POLYGON &&
+							domain_type != GPlatesMaths::GeometryType::POLYLINE)
+						{
+							return *get_vertex_value(
+									0,
+									(domain_type == GPlatesMaths::GeometryType::MULTIPOINT)
+											? closest_domain_index
+											: 0);
+						}
+
+						// The segment's ring (segments are numbered like the points).
+						unsigned int ring = 0;
+						while (ring + 1 < ring_offsets.size() &&
+							closest_domain_index >= ring_offsets[ring + 1])
+						{
+							++ring;
+						}
+						const unsigned int segment = closest_domain_index - ring_offsets[ring];
+						const unsigned int next =
+								(domain_type == GPlatesMaths::GeometryType::POLYGON &&
+									segment + 1 == ring_sizes[ring])
+										? 0
+										: segment + 1;
+						const GPlatesMaths::PointOnSphere &start =
+								domain_points[ring_offsets[ring] + segment];
+						const GPlatesMaths::PointOnSphere &end =
+								domain_points[ring_offsets[ring] + next];
+						// The ratio along the segment of the point's projection onto its great
+						// circle (as the overlay's ratios are, phase4b-design.md section 2.8),
+						// within the segment.
+						const GPlatesMaths::Vector3D a(start.position_vector());
+						const GPlatesMaths::Vector3D b(end.position_vector());
+						const GPlatesMaths::Vector3D p(point.position_vector());
+						const GPlatesMaths::Vector3D normal = cross(a, b);
+						const double segment_angle =
+								std::atan2(normal.magnitude().dval(), dot(a, b).dval());
+						double ratio = 0.0;
+						if (normal.magSqrd().dval() > 0 && segment_angle > 0)
+						{
+							const GPlatesMaths::Vector3D n =
+									(1.0 / normal.magnitude().dval()) * normal;
+							const GPlatesMaths::Vector3D projection = p - dot(p, n).dval() * n;
+							const double along = std::atan2(
+									dot(cross(a, projection), n).dval(),
+									dot(a, projection).dval());
+							ratio = (std::max)(0.0, (std::min)(1.0, along / segment_angle));
+						}
+						return *get_segment_value(ring, segment, ratio);
 					}
 
 					geometry_domain_type domain;
 					GPlatesMaths::GeometryType::Value domain_type;
 					std::vector<GPlatesMaths::PointOnSphere> domain_points;
-					domain_to_range_map_type domain_to_range_map;
+					std::vector<unsigned int> ring_sizes;
+					std::vector<unsigned int> ring_offsets;
 					geometry_range_type range;
 
 					//! See 'ScalarCoverageFeatureProperties::Coverage::exterior_ring_only'.
@@ -366,13 +497,15 @@ namespace GPlatesAppLogic
 						const boost::optional<Range> &geometry_range,
 						PartitionedFeature::GeometryProperty &partitioned_geometry_property)
 				{
-					// Partition the current geometry property and store results.
+					// Partition the current geometry property and store results; with a coverage, each
+					// piece with where its points came from (phase4b-design.md section 7.2).
 					GeometryCookieCutter::partition_seq_type partitioned_inside_domains;
 					GeometryCookieCutter::partitioned_geometry_seq_type partitioned_outside_domains;
 					d_cookie_cut_geometry.partition_geometry(
 							geometry_domain,
 							partitioned_inside_domains,
-							partitioned_outside_domains);
+							partitioned_outside_domains,
+							static_cast<bool>(geometry_range)/*want_provenance*/);
 
 					// Iterate over the partitioned polygons and add the partitioned *inside* geometries.
 					GeometryCookieCutter::partition_seq_type::const_iterator partitioned_inside_domains_iter =
@@ -389,7 +522,6 @@ namespace GPlatesAppLogic
 								partitioned_geometry_property.partitioned_inside_geometries.back();
 
 						partition_geometries(
-								geometry_domain,
 								geometry_range,
 								partitioned_inside_domain.partitioned_geometries,
 								partition.partitioned_geometries);
@@ -397,7 +529,6 @@ namespace GPlatesAppLogic
 
 					// Add the partitioned *outside* geometries.
 					partition_geometries(
-							geometry_domain,
 							geometry_range,
 							partitioned_outside_domains,
 							partitioned_geometry_property.partitioned_outside_geometries);
@@ -405,213 +536,245 @@ namespace GPlatesAppLogic
 
 				void
 				partition_geometries(
-						const geometry_domain_type &geometry_domain,
 						const boost::optional<Range> &geometry_range,
 						const GeometryCookieCutter::partitioned_geometry_seq_type &partitioned_domains,
 						PartitionedFeature::partitioned_geometry_seq_type &partitioned_geometries)
 				{
-					GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator
-							partitioned_domains_iter = partitioned_domains.begin();
-					GeometryCookieCutter::partitioned_geometry_seq_type::const_iterator
-							partitioned_domains_end = partitioned_domains.end();
-					for ( ; partitioned_domains_iter != partitioned_domains_end; ++partitioned_domains_iter)
+					for (const GeometryCookieCutter::PartitionedGeometry &partitioned :
+							partitioned_domains)
 					{
-						const geometry_domain_type &partitioned_domain = partitioned_domains_iter->geometry;
-
 						// If there is a geometry range associated with the geometry domain then
 						// create a partitioned range associated with the partitioned domain.
 						boost::optional<geometry_range_type> partitioned_range;
 						if (geometry_range)
 						{
 							partitioned_range = geometry_range_type();
-							partition_range(partitioned_range.get(), partitioned_domain, geometry_range.get(), geometry_domain);
+							partition_range(
+									partitioned_range.get(),
+									partitioned,
+									geometry_range.get());
 						}
 
 						partitioned_geometries.push_back(
-								PartitionedFeature::PartitionedGeometry(partitioned_domain, partitioned_range));
+								PartitionedFeature::PartitionedGeometry(
+										partitioned.geometry,
+										partitioned_range));
 					}
 				}
 
+				/**
+				* The coverage of a partitioned geometry, from its points' provenance
+				* (phase4b-design.md
+				 * section 7.3, replacing an epsilon map of the original points and a search for the
+				 * nearest original segment, which a cut across the geometry's interior defeats):
+				 *
+				*  1. a point at a vertex of the original takes its scalars; a point on a segment of
+				*     the original interpolates its ends' (a ring's last segment ends at its first
+				*     vertex);
+				*  2. a run of points with none (a cut, where the partitioning polygon's outline
+				*     crosses the geometry; or a hole's points under an exterior-ring-only coverage)
+				*     is interpolated by arc length between the valued points at its ends
+				*     (requirements Q1);
+				*  3. a ring none of whose points has a value takes, at each point, the value at
+				*     the nearest point of the original's outline (section 14, question 2).
+				 */
 				void
 				partition_range(
 						geometry_range_type &partitioned_range,
-						const geometry_domain_type &partitioned_domain,
-						const Range &geometry_range,
-						const geometry_domain_type &geometry_domain)
+						const GeometryCookieCutter::PartitionedGeometry &partitioned,
+						const Range &geometry_range)
 				{
-					// Get the partitioned domain points (only a polygon's exterior ring for an exterior-ring-only
-					// coverage, so that the partitioned coverage is read the same way as the original).
-					std::vector<GPlatesMaths::PointOnSphere> partitioned_domain_points;
-					if (geometry_range.exterior_ring_only)
+					// The partitioned domain's points and rings (only a polygon's exterior ring for
+					// an exterior-ring-only coverage, so that the partitioned coverage is read the
+					// same way as the original).
+					std::vector<GPlatesMaths::PointOnSphere> points;
+					std::vector<unsigned int> ring_sizes;
+					bool rings_are_closed = false;
+					if (const GPlatesMaths::PolygonOnSphere *polygon =
+							dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(
+									partitioned.geometry.get()))
 					{
-						GeometryUtils::get_geometry_exterior_points(*partitioned_domain, partitioned_domain_points);
+						rings_are_closed = true;
+						ring_sizes.push_back(polygon->number_of_vertices_in_exterior_ring());
+						if (!geometry_range.exterior_ring_only)
+						{
+							for (unsigned int i = 0; i < polygon->number_of_interior_rings(); ++i)
+							{
+								ring_sizes.push_back(
+										polygon->number_of_vertices_in_interior_ring(i));
+							}
+						}
+						GeometryUtils::get_geometry_points(*polygon, points);
+						points.erase(
+								points.begin() +
+										std::accumulate(ring_sizes.begin(), ring_sizes.end(), 0u),
+								points.end());
 					}
 					else
 					{
-						GeometryUtils::get_geometry_points(*partitioned_domain, partitioned_domain_points);
-					}
-
-					const unsigned int num_partitioned_domain_points = partitioned_domain_points.size();
-
-					std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type> partitioned_range_coordinates;
-
-					// Allocated memory for partitioned range.
-					const unsigned int range_tuple_size = geometry_range.range.size();
-					partitioned_range_coordinates.resize(range_tuple_size);
-					for (unsigned int t = 0; t < range_tuple_size; ++t)
-					{
-						partitioned_range_coordinates[t].reserve(num_partitioned_domain_points);
-					}
-
-					// Map the geometry domain points to their indices into geometry domain/range and
-					// copy the associated range scalars into the partitioned range.
-					for (unsigned int n = 0; n < num_partitioned_domain_points; ++n)
-					{
-						const GPlatesMaths::PointOnSphere &partitioned_domain_point = partitioned_domain_points[n];
-
-						domain_to_range_map_type::const_iterator iter =
-								geometry_range.domain_to_range_map.find(partitioned_domain_point);
-						if (iter != geometry_range.domain_to_range_map.end())
+						GeometryUtils::get_geometry_points(*partitioned.geometry, points);
+						if (dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(
+								partitioned.geometry.get()))
 						{
-							// Look up the range scalar values in the original, unpartitioned range
-							// and add them to the partitioned range.
-							const unsigned int range_scalar_index = iter->second;
-							for (unsigned int t = 0; t < range_tuple_size; ++t)
-							{
-								partitioned_range_coordinates[t].push_back(
-										geometry_range.range[t]->get_coordinates()[range_scalar_index]);
-							}
+							ring_sizes.push_back(points.size());
 						}
 						else
 						{
-							// Partitioned domain point not found in original, unpartitioned domain geometry.
-							// This most likely happens where a polyline or polygon intersected the
-							// partitioning polygon (note that this shouldn't happen for a point or multi-point
-							// geometry since partitioning those types does not generate any new points).
-							// So we'll find the segment that the intersection point lies on and use that to
-							// interpolate the scalar values of that segment's end points.
-							unsigned int closest_point_index; // To be ignored - will also be zero.
-							unsigned int closest_domain_index; // Should be segment index into polyline/polygon.
-							// Since the current implementation of the partitioner generates polylines
-							// even when a polygon is partitioned (against a partitioning polygon)
-							// we know that all intersection points should lie *on* the partitioned polylines.
-							// Hence we can speed up the minimum distance test by using an arbitrarily
-							// small threshold since the minimum distance should theoretically be zero.
-							// We'll back it up with a slower non-threshold test just to be sure though.
-							//
-							// TODO: This needs to be changed once the partitioner is properly implemented
-							// to generate partitioned *polygons* instead of polylines. When that happens
-							// we can get partitioned points that don't fall on the original polygon.
-							// In this case we really should get the partitioner itself to generate
-							// interpolate information similar to what DateLineWrapper does.
-							GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-									partitioned_domain_point_geometry = partitioned_domain_point.get_geometry_on_sphere();
-							if (!minimum_distance(
-									*partitioned_domain_point_geometry,  // const GeometryOnSphere &
-									*geometry_range.domain,              // const GeometryOnSphere &
-									false/*geometry1_interior_is_solid*/,
-									false/*geometry2_interior_is_solid*/,
-									POLY_GEOMETRY_DISTANCE_THRESHOLD,
-									boost::none/*closest_positions*/,
-									boost::make_tuple(boost::ref(closest_point_index), boost::ref(closest_domain_index))))
-							{
-								// The minimum distance exceeded our threshold. This shouldn't happen
-								// but if it does then we'll do the test again without a threshold.
-								minimum_distance(
-										*partitioned_domain_point_geometry,  // const GeometryOnSphere &
-										*geometry_range.domain,              // const GeometryOnSphere &
-										false/*geometry1_interior_is_solid*/,
-										false/*geometry2_interior_is_solid*/,
-										boost::none/*minimum_distance_threshold*/,
-										boost::none/*closest_positions*/,
-										boost::make_tuple(boost::ref(closest_point_index), boost::ref(closest_domain_index)));
-							}
-
-							if (geometry_range.domain_type == GPlatesMaths::GeometryType::POLYGON ||
-								geometry_range.domain_type == GPlatesMaths::GeometryType::POLYLINE)
-							{
-								const unsigned int closest_segment_index = closest_domain_index;
-
-								// Calculate the interpolation ratio of the point along the great circle arc of the segment.
-								//
-								// NOTE: A polygon's segments are numbered through its exterior ring then each interior
-								// ring, like its points, but a ring's closing segment ends at the ring's *first* point,
-								// not at 'closest_segment_index + 1' (the next ring's first point, or one past the end
-								// for the last ring). An intersection on a closing segment is therefore wrong here.
-								// To be fixed with the partitioner change the TODO above asks for.
-								const GPlatesMaths::PointOnSphere &segment_start_point = geometry_range.domain_points[closest_segment_index];
-								const GPlatesMaths::PointOnSphere &segment_end_point = geometry_range.domain_points[closest_segment_index + 1];
-								const GPlatesMaths::AngularDistance segment_len = minimum_distance(segment_start_point, segment_end_point).get();
-								if (segment_len != GPlatesMaths::AngularDistance::ZERO)
-								{
-									const double interpolate_ratio =
-											minimum_distance(segment_start_point, partitioned_domain_point)->calculate_angle().dval() /
-											segment_len.calculate_angle().dval();
-
-									// Interpolate the scalar values of segment's end points.
-									const unsigned int range_scalar_start_index = closest_segment_index;
-									for (unsigned int t = 0; t < range_tuple_size; ++t)
-									{
-										const GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type &
-												range_scalars = geometry_range.range[t]->get_coordinates();
-										const double interpolated_scalar =
-												(1.0 - interpolate_ratio) * range_scalars[range_scalar_start_index] +
-													interpolate_ratio * range_scalars[range_scalar_start_index + 1];
-
-										partitioned_range_coordinates[t].push_back(interpolated_scalar);
-									}
-								}
-								else // zero length segment...
-								{
-									// Both end points of the segment are the same (within numerical tolerance)
-									// so just pick the segment start point.
-									const unsigned int range_scalar_index = closest_segment_index;
-									for (unsigned int t = 0; t < range_tuple_size; ++t)
-									{
-										partitioned_range_coordinates[t].push_back(
-												geometry_range.range[t]->get_coordinates()[range_scalar_index]);
-									}
-								}
-							}
-							else if (geometry_range.domain_type == GPlatesMaths::GeometryType::MULTIPOINT)
-							{
-								// We shouldn't be able to get here but if we do then we'll just
-								// use the scalar value of the closest point.
-								// For multipoints the closest index is a point index into multipoint.
-								const unsigned int range_scalar_index = closest_domain_index;
-								for (unsigned int t = 0; t < range_tuple_size; ++t)
-								{
-									partitioned_range_coordinates[t].push_back(
-											geometry_range.range[t]->get_coordinates()[range_scalar_index]);
-								}
-							}
-							else // geometry_range.domain_type == GPlatesMaths::GeometryType::POINT
-							{
-								for (unsigned int t = 0; t < range_tuple_size; ++t)
-								{
-									partitioned_range_coordinates[t].push_back(
-											geometry_range.range[t]->get_coordinates()[0/*range_scalar_index*/]);
-								}
-							}
+							// A (multi-)point: each point its own ring (valued by step 1).
+							ring_sizes.assign(points.size(), 1);
 						}
 					}
 
+					// The cookie cutter gives every piece a table when asked (section 7.2).
+					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+							partitioned.provenance &&
+								partitioned.provenance->size() >= points.size(),
+							GPLATES_ASSERTION_SOURCE);
+					const GPlatesMaths::PolygonOverlay::provenance_seq_type &provenance =
+							*partitioned.provenance;
+
+					// Step 1.
+					std::vector<boost::optional<value_type>> values(points.size());
+					for (unsigned int i = 0; i < points.size(); ++i)
+					{
+						const boost::optional<GPlatesMaths::PolygonOverlay::Location> &location =
+								provenance[i].subject;
+						if (!location)
+						{
+							continue;  // a cut point
+						}
+						values[i] = location->ratio
+								? geometry_range.get_segment_value(
+										location->ring,
+										location->index,
+										*location->ratio)
+								: geometry_range.get_vertex_value(location->ring, location->index);
+					}
+
+					// Steps 2 and 3, ring by ring.
+					unsigned int ring_start = 0;
+					for (unsigned int ring_size : ring_sizes)
+					{
+						interpolate_ring_values(
+								values,
+								points,
+								ring_start,
+								ring_size,
+								rings_are_closed,
+								geometry_range);
+						ring_start += ring_size;
+					}
+
 					// Create partitioned GmlDataBlockCoordinateList's.
+					const unsigned int range_tuple_size = geometry_range.range.size();
 					for (unsigned int t = 0; t < range_tuple_size; ++t)
 					{
-						const GPlatesPropertyValues::GmlDataBlockCoordinateList &range_tuple_element = *geometry_range.range[t];
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type coordinates;
+						coordinates.reserve(points.size());
+						for (const boost::optional<value_type> &value : values)
+						{
+							coordinates.push_back((*value)[t]);
+						}
 
+						const GPlatesPropertyValues::GmlDataBlockCoordinateList &range_tuple_element = *geometry_range.range[t];
 						partitioned_range.push_back(
 								GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 										range_tuple_element.get_value_object_type(),
 										range_tuple_element.get_value_object_xml_attributes(),
-										partitioned_range_coordinates[t]));
+										coordinates));
+					}
+				}
+
+				/**
+				 * Steps 2 and 3 of @a partition_range on one ring of @a values (cyclic if @a closed, else
+				 * a polyline): a run of points with no value between two that have one is interpolated
+				 * by arc length between them (a polyline's run at an end takes its one neighbour's); a
+				 * ring with no value at all takes each point's nearest outline value.
+				 */
+				static
+				void
+				interpolate_ring_values(
+						std::vector<boost::optional<value_type>> &values,
+						const std::vector<GPlatesMaths::PointOnSphere> &points,
+						unsigned int ring_start,
+						unsigned int ring_size,
+						bool closed,
+						const Range &geometry_range)
+				{
+					const auto angle = [&points](unsigned int a, unsigned int b)
+					{
+						const GPlatesMaths::UnitVector3D &u = points[a].position_vector();
+						const GPlatesMaths::UnitVector3D &v = points[b].position_vector();
+						return std::atan2(cross(u, v).magnitude().dval(), dot(u, v).dval());
+					};
+
+					// The ring's first point with a value; none means step 3.
+					unsigned int first = 0;
+					while (first < ring_size && !values[ring_start + first])
+					{
+						++first;
+					}
+					if (first == ring_size)
+					{
+						for (unsigned int k = 0; k < ring_size; ++k)
+						{
+							values[ring_start + k] =
+									geometry_range.get_nearest_outline_value(
+										points[ring_start + k]);
+						}
+						return;
+					}
+
+					// Walk from the first valued point (once round a closed ring, to the end of a
+					// polyline),
+					// interpolating each run of points with none between its two valued ends.
+					std::vector<unsigned int> run;  // the run's point indices
+					std::vector<double> distances;  // arc length from the run's start to each
+					unsigned int previous = ring_start + first;
+					unsigned int valued = previous;
+					double distance = 0.0;
+					const unsigned int num_steps = closed ? ring_size : ring_size - first - 1;
+					for (unsigned int step = 1; step <= num_steps; ++step)
+					{
+						const unsigned int k = ring_start + (first + step) % ring_size;
+						distance += angle(previous, k);
+						previous = k;
+						if (!values[k])
+						{
+							run.push_back(k);
+							distances.push_back(distance);
+							continue;
+						}
+						for (unsigned int r = 0; r < run.size(); ++r)
+						{
+							const double ratio = (distance > 0) ? distances[r] / distance : 0.0;
+							value_type value(values[valued]->size());
+							for (unsigned int t = 0; t < value.size(); ++t)
+							{
+								value[t] = (1.0 - ratio) * (*values[valued])[t] +
+										ratio * (*values[k])[t];
+							}
+							values[run[r]] = value;
+						}
+						run.clear();
+						distances.clear();
+						valued = k;
+						distance = 0.0;
+					}
+
+					// A polyline's run at its end, and at its start, takes its one valued
+					// neighbour's.
+					for (unsigned int r : run)
+					{
+						values[r] = values[valued];
+					}
+					for (unsigned int k = 0; k < first; ++k)
+					{
+						values[ring_start + k] = values[ring_start + first];
 					}
 				}
 			};
 
-			const GPlatesMaths::AngularExtent PartitionFeatureGeometryProperties::POLY_GEOMETRY_DISTANCE_THRESHOLD =
-					GPlatesMaths::AngularExtent::create_from_angle(GPlatesMaths::convert_deg_to_rad(0.5));
 
 
 			/**
@@ -635,6 +798,11 @@ namespace GPlatesAppLogic
 			}
 
 
+			/**
+			 * Accumulates a geometry's size: a polygon's area, a polyline's arc length, a point's or
+			 * multi-point's number of points (phase4b-design.md section 8.3). A polygon's arc length
+			 * is not used: its cuts would inflate it.
+			 */
 			class GeometrySize :
 					public GPlatesMaths::ConstGeometryOnSphereVisitor
 			{
@@ -642,10 +810,10 @@ namespace GPlatesAppLogic
 				GeometrySize(
 						unsigned int &num_points,
 						GPlatesMaths::real_t &arc_distance,
-						bool &using_arc_distance) :
+						GPlatesMaths::real_t &area) :
 					d_num_points(num_points),
 					d_arc_distance(arc_distance),
-					d_using_arc_distance(using_arc_distance)
+					d_area(area)
 				{  }
 
 				virtual
@@ -669,8 +837,7 @@ namespace GPlatesAppLogic
 				visit_polygon_on_sphere(
 						GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 				{
-					d_arc_distance += polygon_on_sphere->get_arc_length();
-					d_using_arc_distance = true;
+					d_area += polygon_on_sphere->get_area();
 				}
 
 				virtual
@@ -679,12 +846,11 @@ namespace GPlatesAppLogic
 						GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 				{
 					d_arc_distance += polyline_on_sphere->get_arc_length();
-					d_using_arc_distance = true;
 				}
 
 				unsigned int &d_num_points;
 				GPlatesMaths::real_t &d_arc_distance;
-				bool &d_using_arc_distance;
+				GPlatesMaths::real_t &d_area;
 			};
 
 
@@ -1468,7 +1634,7 @@ GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::assign_proper
 GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric::GeometrySizeMetric() :
 	d_num_points(0),
 	d_arc_distance(0),
-	d_using_arc_distance(false)
+	d_area(0)
 {
 }
 
@@ -1477,7 +1643,7 @@ void
 GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric::accumulate(
 		const GPlatesMaths::GeometryOnSphere &geometry)
 {
-	GeometrySize geometry_size(d_num_points, d_arc_distance, d_using_arc_distance);
+	GeometrySize geometry_size(d_num_points, d_arc_distance, d_area);
 	geometry.accept_visitor(geometry_size);
 }
 
@@ -1488,11 +1654,7 @@ GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric::accumulate(
 {
 	d_num_points += geometry_size_metric.d_num_points;
 	d_arc_distance += geometry_size_metric.d_arc_distance;
-
-	if (geometry_size_metric.d_using_arc_distance)
-	{
-		d_using_arc_distance = true;
-	}
+	d_area += geometry_size_metric.d_area;
 }
 
 
@@ -1500,12 +1662,15 @@ bool
 GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric::operator<(
 		const GeometrySizeMetric &rhs) const
 {
-	// Prefer to compare arc distance if we have visited any
-	// line geometry.
-	if (d_using_arc_distance || rhs.d_using_arc_distance)
+	// Area (polygons) first, then arc length (polylines), then the number of points: so a feature
+	// with polygons is decided by them (phase4b-design.md section 8.3).
+	if (d_area != rhs.d_area)
+	{
+		return d_area < rhs.d_area;
+	}
+	if (d_arc_distance != rhs.d_arc_distance)
 	{
 		return d_arc_distance < rhs.d_arc_distance;
 	}
-
 	return d_num_points < rhs.d_num_points;
 }

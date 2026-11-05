@@ -342,6 +342,10 @@ namespace GPlatesQtWidgets
 		set_up_general_options_page();
 
 		void
+		pop_up_features_not_partitioned_message_box(
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features_not_partitioned);
+
+		void
 		pop_up_no_partitioning_layers_found_or_selected_message_box();
 
 		void

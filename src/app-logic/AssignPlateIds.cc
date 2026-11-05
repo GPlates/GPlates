@@ -44,7 +44,15 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/PolygonOverlay.h"
+
 #include "model/NotificationGuard.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValueFinder.h"
+
+#include "property-values/XsString.h"
+
+#include "utils/UnicodeStringUtils.h"
 
 #include "utils/Profile.h"
 
@@ -279,15 +287,52 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_id_internal(
 
 		if (assign_task->can_partition_feature(feature_ref))
 		{
-			assign_task->partition_feature(
-					feature_ref,
-					feature_collection_ref,
-					*d_geometry_cookie_cutter,
-					reconstruct_method_context,
-					d_reconstruction_time,
-					d_respect_feature_time_period);
+			try
+			{
+				assign_task->partition_feature(
+						feature_ref,
+						feature_collection_ref,
+						*d_geometry_cookie_cutter,
+						reconstruct_method_context,
+						d_reconstruction_time,
+						d_respect_feature_time_period);
+			}
+			catch (const GPlatesMaths::PolygonOverlay::InconsistentOverlayException &)
+			{
+				// Leave the feature as it was, and go on with the others (phase4b-design.md
+				// section 9.2): a task partitions every geometry of the feature before it modifies
+				// the feature, so the exception leaves it untouched. The caller reports it.
+				d_features_not_partitioned.push_back(feature_ref);
+			}
 
 			return;
 		}
 	}
+}
+
+
+QString
+GPlatesAppLogic::AssignPlateIds::get_feature_description(
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+{
+	if (!feature_ref.is_valid())
+	{
+		return QString();
+	}
+
+	const QString feature_id =
+			GPlatesUtils::make_qstring_from_icu_string(feature_ref->feature_id().get());
+
+	static const GPlatesModel::PropertyName name_property =
+			GPlatesModel::PropertyName::create_gml("name");
+	const boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+			GPlatesModel::get_property_value<GPlatesPropertyValues::XsString>(
+					feature_ref,
+					name_property);
+	if (!name || name.get()->get_value().get().isEmpty())
+	{
+		return feature_id;
+	}
+
+	return QString("%1 (%2)").arg(GPlatesUtils::make_qstring(name.get()->get_value()), feature_id);
 }
