@@ -18,24 +18,50 @@
 
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
-def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grouped_by_property_name):
+def _plate_partitioning_set_geometry(feature, geometries, geometry_property_name, range_property_name):
+    # Each geometry is a geometry, or a (geometry, scalars) coverage. A coverage whose scalars cover a
+    # polygon's exterior ring only (an older file's, kept in that form for its pieces, as GPlates' Assign Plate IDs
+    # writes them) cannot go through 'set_geometry()', which needs a scalar for every point of every ring: so then
+    # the geometries are set alone and each coverage's scalars are added as its range property.
+    def is_exterior_ring_only(coverage):
+        geometry, scalars = coverage
+        num_scalars = len(next(iter(scalars.values())))
+        if num_scalars == len(geometry.get_points()):
+            return False
+        if isinstance(geometry, PolygonOnSphere) and num_scalars == len(geometry.get_exterior_ring_points()):
+            return True
+        raise AssertionError('A partitioned coverage has {0} scalars for a geometry of {1} points.'.format(
+                num_scalars, len(geometry.get_points())))
+
+    if any(isinstance(geometry, tuple) and is_exterior_ring_only(geometry) for geometry in geometries):
+        feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name)
+        for geometry, scalars in geometries:
+            feature.add(range_property_name, GmlDataBlock(scalars))
+    else:
+        feature.set_geometry(geometries, geometry_property_name)
+
+
+# This function is private in this 'pygplates' module (function name prefixed with a single underscore).
+def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grouped_by_property_name, range_property_names):
     features = [feature_without_geometry.clone()]
-    
+
     for geometry_property_name, geometries_with_property_name in geometries_grouped_by_property_name.items():
-            
+        range_property_name = range_property_names.get(geometry_property_name)
+
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
         # If so then try again by cloning one feature per extra geometry.
         try:
             feature = features[-1] # most recent feature
-            feature.set_geometry(geometries_with_property_name, geometry_property_name)
+            _plate_partitioning_set_geometry(feature, geometries_with_property_name, geometry_property_name, range_property_name)
         except InformationModelError:
-            feature.set_geometry(geometries_with_property_name[0], geometry_property_name)
+            _plate_partitioning_set_geometry(feature, geometries_with_property_name[:1], geometry_property_name, range_property_name)
             for geometry_index in range(1, len(geometries_with_property_name)):
                 feature = feature_without_geometry.clone()
-                feature.set_geometry(geometries_with_property_name[geometry_index], geometry_property_name)
+                _plate_partitioning_set_geometry(
+                        feature, geometries_with_property_name[geometry_index:geometry_index + 1], geometry_property_name, range_property_name)
                 features.append(feature)
-    
+
     # Return sequence of features.
     return features
 
@@ -289,42 +315,43 @@ def plate_partitioner_partition_features(
             partitioned_geometries = { }
             # Group partitioned outside geometries by geometry property name.
             unpartitioned_geometries = { }
-            
-            feature_without_geometry = feature.clone()
-            for property in feature_without_geometry:
-                property_value = property.get_value()
-                if not property_value:
-                    continue
-                
-                geometry = property_value.get_geometry()
-                if not geometry:
-                    continue
-                
-                # Remove geometry property.
-                feature_without_geometry.remove(property)
-                
-                # Partition the current geometry into inside/outside geometries.
-                partitioned_inside_geometries = []
-                partitioned_outside_geometries = []
-                plate_partitioner.partition_geometry(geometry, partitioned_inside_geometries, partitioned_outside_geometries)
-                
-                geometry_property_name = property.get_name()
-                
-                if partitioned_inside_geometries:
-                    for partitioning_plate, inside_geometries in partitioned_inside_geometries:
-                        # Group by partition.
-                        geometries_inside_partition = partitioned_geometries.setdefault(partitioning_plate, {})
-                        # Group again by property name - there could be multiple geometry properties (per feature) with the same name.
-                        geometries_in_partition_with_property_name = geometries_inside_partition.setdefault(geometry_property_name, [])
-                        geometries_in_partition_with_property_name.extend(inside_geometries)
-                
+            # The name of each geometry property's scalar coverage range property (if it has a coverage).
+            range_property_names = { }
+
+            # Partition each geometry property of the feature, with its scalar coverage (if it has one): each piece
+            # of a geometry with a coverage is a (geometry, scalars) coverage, its scalars carried from the original's
+            # (by the same code as GPlates' Assign Plate IDs).
+            for geometry_property_name, range_property_name, partitioned_inside_geometries, partitioned_outside_geometries in \
+                    plate_partitioner._partition_feature_geometries(feature):
+                if range_property_name:
+                    range_property_names[geometry_property_name] = range_property_name
+
+                for partitioning_plate, inside_geometries in partitioned_inside_geometries:
+                    # Group by partition.
+                    geometries_inside_partition = partitioned_geometries.setdefault(partitioning_plate, {})
+                    # Group again by property name - there could be multiple geometry properties (per feature) with the same name.
+                    geometries_in_partition_with_property_name = geometries_inside_partition.setdefault(geometry_property_name, [])
+                    geometries_in_partition_with_property_name.extend(inside_geometries)
+
                 if partitioned_outside_geometries:
                     # Group by property name - there could be multiple geometry properties (per feature) with the same name.
                     unpartitioned_geometries_with_property_name = unpartitioned_geometries.setdefault(geometry_property_name, [])
                     unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
-            
+
+            # Remove the geometry properties, and their coverages' range properties.
+            feature_without_geometry = feature.clone()
+            properties_to_remove = []
+            for property in feature_without_geometry:
+                property_value = property.get_value()
+                if ((property_value and property_value.get_geometry()) or
+                    property.get_name() in range_property_names.values()):
+                    properties_to_remove.append(property)
+            for property in properties_to_remove:
+                feature_without_geometry.remove(property)
+
             for partitioning_plate, geometries_inside_partition in partitioned_geometries.items():
-                features_inside_partition = _plate_partitioning_set_geometries(feature_without_geometry, geometries_inside_partition)
+                features_inside_partition = _plate_partitioning_set_geometries(
+                        feature_without_geometry, geometries_inside_partition, range_property_names)
                 
                 # Copy the requested properties over from the partitioning feature.
                 for feature in features_inside_partition:
@@ -337,7 +364,8 @@ def plate_partitioner_partition_features(
                     partitioned_feature_groups.setdefault(partitioning_plate, []).extend(features_inside_partition)
             
             if unpartitioned_geometries:
-                features_outside_partition = _plate_partitioning_set_geometries(feature_without_geometry, unpartitioned_geometries)
+                features_outside_partition = _plate_partitioning_set_geometries(
+                        feature_without_geometry, unpartitioned_geometries, range_property_names)
                 unpartitioned_features.extend(features_outside_partition)
             
         else: # partition_method == PartitionMethod.most_overlapping_plate

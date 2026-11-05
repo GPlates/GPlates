@@ -1355,7 +1355,20 @@ pre-existing (the old comparison did the same), consumed only by a running maxim
   app-logic function (`PartitionFeatureUtils::partition_coverage_range(provenance, range)`, exposed in
   its header). This is the one new pyGPlates API surface in PR B. **Superseded 2026-11-04 (section
   14, question 5):** no public coverage form in PR B; `partition_features` calls a private helper,
-  and PR C decides any geometry-level form.
+  and PR C decides any geometry-level form. As built (step 13b): the private helper is
+  `PlatePartitioner._partition_feature_geometries(feature)` (`PyPlatePartitioner.cc`), which calls the
+  same `PartitionFeatureUtils::partition_feature` as Assign Plate IDs and returns, per geometry
+  property, its name, its range property's name and its pieces (a geometry, or a `(geometry,
+  {ScalarType: values})` coverage); `partition_features` removes the range properties with the
+  geometries and sets the pieces back. That code moved to `app-logic/PartitionFeatureGeometries.{h,cc}`
+  (same namespace), since `PartitionFeatureUtils.h` includes `AssignPlateIds.h` and reconstructions,
+  which pulled about 320 GPlates-only files (data mining among them) into the pyGPlates closure. **A
+  piece of an exterior-ring-only coverage (an older file's) keeps that form** (the developer): it has
+  scalars for its exterior ring only, which `Feature.set_geometry` refuses (since 1.1 it needs one per
+  point of every ring), so such a property's pieces are set alone and each range is added as a
+  `GmlDataBlock` property, as Assign Plate IDs writes them, after checking the count is the exterior
+  ring's. A hole the cut opens into an exterior ring gets values (7.3 step 2) and a hole left whole
+  gets none: inherent in that form.
 - **`partition_features`** (`src/qt-resources/python/api/PlatePartitioning.py:86-407`): in the
   `split_into_plates` branch (`:285-340`) each geometry property is read with its coverage when it has
   one (`coverage_return=CoverageReturn.geometry_and_scalars`, as the survey used it; the exact call is

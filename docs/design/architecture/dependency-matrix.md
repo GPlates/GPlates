@@ -39,13 +39,13 @@ flowchart TD
   end
   subgraph L3 ["Shared core"]
     file_io["file-io<br/>module: 173 of 235 files"]:::module
-    app_logic["app-logic<br/>module: 151 of 285 files"]:::module
+    app_logic["app-logic<br/>module: 153 of 287 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
     api["api<br/>module: 77 of 110 files"]:::module
   end
   subgraph L5 ["GPlates engine"]
-    app_logic_gp["app-logic<br/>GPlates-only: 134 of 285 files"]:::gplates
+    app_logic_gp["app-logic<br/>GPlates-only: 134 of 287 files"]:::gplates
     file_io_gp["file-io<br/>GPlates-only: 62 of 235 files"]:::gplates
     scribe_gp["scribe<br/>GPlates-only: 8 of 64 files"]:::gplates
     data_mining["data-mining<br/>42 files"]:::gplates
@@ -155,7 +155,7 @@ flowchart TD
   end
   subgraph L3 ["Shared core"]
     file_io["file-io<br/>module: 173 of 235 files"]:::module
-    app_logic["app-logic<br/>module: 151 of 285 files"]:::module
+    app_logic["app-logic<br/>module: 153 of 287 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
     api["api<br/>module: 77 of 110 files"]:::module
@@ -232,8 +232,8 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 126 |  |  | 8 | 36 | 156 | 15 | 87 | 78 | 2 | 3 | 114 | 5 | 29 |  | 44 |  |
-| app-logic |  |  | 944 |  |  | 7 | 21 | 163 |  | 282 | 296 | 12 |  | 310 |  | 25 |  | 123 |  |
+| api |  | 275 | 127 |  |  | 8 | 36 | 156 | 15 | 87 | 79 | 2 | 3 | 115 | 5 | 29 |  | 44 |  |
+| app-logic |  |  | 951 |  |  | 7 | 21 | 165 |  | 287 | 300 | 12 |  | 317 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
@@ -265,7 +265,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | --- | ---: |
 | (src root) | 1 / 7 |
 | api | 77 / 110 |
-| app-logic | 151 / 285 |
+| app-logic | 153 / 287 |
 | canvas-tools | 0 / 51 |
 | cli | 0 / 20 |
 | data-mining | 0 / 42 |
@@ -369,7 +369,7 @@ What the module takes from each partially-included directory:
 - `api/PythonVariableFunctionArguments.cc`
 - `api/PythonVariableFunctionArguments.h`
 
-## app-logic (151 of 285)
+## app-logic (153 of 287)
 
 - `app-logic/AppLogicUtils.cc`
 - `app-logic/AppLogicUtils.h`
@@ -403,6 +403,8 @@ What the module takes from each partially-included directory:
 - `app-logic/MultiPointVectorField.h`
 - `app-logic/NetRotationUtils.cc`
 - `app-logic/NetRotationUtils.h`
+- `app-logic/PartitionFeatureGeometries.cc`
+- `app-logic/PartitionFeatureGeometries.h`
 - `app-logic/PlateBoundaryStats.cc`
 - `app-logic/PlateBoundaryStats.h`
 - `app-logic/PlateVelocityUtils.cc`

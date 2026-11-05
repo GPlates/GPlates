@@ -34,6 +34,7 @@
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
+#include "app-logic/PartitionFeatureGeometries.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructMethodRegistry.h"
@@ -44,6 +45,10 @@
 #include "global/python.h"
 
 #include "maths/MathsUtils.h"
+
+#include "model/FeatureHandle.h"
+
+#include "property-values/GmlDataBlockCoordinateList.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -397,6 +402,91 @@ namespace GPlatesApi
 			const GPlatesAppLogic::GeometryCookieCutter &plate_partitioner)
 	{
 		return plate_partitioner.get_reconstruction_time();
+	}
+
+	/**
+	 * Partitions every geometry property of @a feature, each with its scalar coverage if it has one
+	 * (phase4b-design.md section 7.3, by the same code as GPlates' Assign Plate IDs), for the pure
+	 * Python API code of 'partition_features'.
+	 *
+	 * Returns a list with, for each geometry property name, a 4-tuple: the property name, the name
+	 * of its coverage's range property (or None), the pieces inside the partitioning plates as a list
+	 * of (partitioning ReconstructionGeometry, list of pieces), and the pieces outside them all as a
+	 * list; a piece is a geometry, or a (geometry, {ScalarType: list of float}) 2-tuple for a geometry
+	 * with a coverage. A piece of an exterior-ring-only coverage (an older file's) has scalars for its
+	 * exterior ring only, as Assign Plate IDs writes it.
+	 */
+	bp::list
+	plate_partitioner_partition_feature_geometries(
+			const PlatePartitionerWrapper &plate_partitioner,
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature)
+	{
+		const boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature> partitioned =
+				GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
+						feature->reference(),
+						*plate_partitioner.get_geometry_cookie_cutter(),
+						false/*respect_feature_time_period*/);
+
+		// A piece: its geometry, with its coverage's scalars if it has a coverage.
+		const auto to_python = [](
+				const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::PartitionedGeometry &piece)
+		{
+			const bp::object geometry(piece.geometry_domain);
+			if (!piece.geometry_range)
+			{
+				return geometry;
+			}
+			bp::dict scalars;
+			for (const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type &element :
+					*piece.geometry_range)
+			{
+				bp::list values;
+				for (double value : element->get_coordinates())
+				{
+					values.append(value);
+				}
+				scalars[bp::object(element->get_value_object_type())] = values;
+			}
+			return bp::object(bp::make_tuple(geometry, scalars));
+		};
+
+		bp::list properties;
+		if (!partitioned)
+		{
+			return properties;
+		}
+		for (const auto &entry : partitioned->partitioned_geometry_properties)
+		{
+			const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty &property =
+					entry.second;
+
+			bp::list inside;
+			for (const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::Partition &partition :
+					property.partitioned_inside_geometries)
+			{
+				bp::list pieces;
+				for (const auto &piece : partition.partitioned_geometries)
+				{
+					pieces.append(to_python(piece));
+				}
+				inside.append(bp::make_tuple(partition.reconstruction_geometry, pieces));
+			}
+			bp::list outside;
+			for (const auto &piece : property.partitioned_outside_geometries)
+			{
+				outside.append(to_python(piece));
+			}
+
+			properties.append(
+					bp::make_tuple(
+							property.domain_property_name,
+							property.range_property_name
+									? bp::object(property.range_property_name.get())
+									: bp::object(),
+							inside,
+							outside));
+		}
+		return properties;
 	}
 
 	/**
@@ -766,6 +856,10 @@ export_plate_partitioner()
 		// This method is accessed by pure python API code.
 		.def("_get_rotation_model",
 				&GPlatesApi::plate_partitioner_get_rotation_model)
+		// This is a private method (has leading '_'), and we don't provide a docstring.
+		// This method is accessed by pure python API code ('partition_features').
+		.def("_partition_feature_geometries",
+				&GPlatesApi::plate_partitioner_partition_feature_geometries)
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

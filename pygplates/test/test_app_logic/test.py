@@ -2172,7 +2172,70 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(len(partitioned) == 1)
         self.assertTrue(partitioned[0].get_reconstruction_plate_id() == 2)
 
-    def test_partition_point(self):
+    def test_partition_features_coverage(self):
+        # partition_features carries a geometry's scalar coverage to its pieces (pyGPlates 1.1): each piece's
+        # scalars at the original's vertices are the original's, and a piece has one scalar per point.
+        def static_plate(plate_id, points):
+            return pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere(points),
+                    reconstruction_plate_id=plate_id)
+        plates = [
+                static_plate(1, [(-20, 0), (-20, 10), (20, 10), (20, 0)]),
+                static_plate(2, [(-20, 10), (-20, 30), (20, 30), (20, 10)])]
+        plate_partitioner = pygplates.PlatePartitioner(plates, pygplates.RotationModel([]))
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+
+        # A polygon with a hole across the plates' shared edge; scalars 0, 1, 2, ... in point order.
+        polygon = pygplates.PolygonOnSphere(
+                [(-5, 5), (-5, 25), (5, 25), (5, 5)], [[(-2, 8), (-2, 12), (2, 12), (2, 8)]])
+        values = list(range(len(polygon.get_points())))
+        feature = pygplates.Feature()
+        feature.set_geometry((polygon, {scalar_type: values}))
+        original_values = dict((point.to_xyz(), value) for point, value in zip(polygon.get_points(), values))
+
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(len(partitioned) == 2)
+        num_original_vertices = 0
+        for partitioned_feature in partitioned:
+            piece, scalars = partitioned_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+            self.assertTrue(len(scalars[scalar_type]) == len(piece.get_points()))
+            for point, value in zip(piece.get_points(), scalars[scalar_type]):
+                if point.to_xyz() in original_values:
+                    self.assertEqual(value, original_values[point.to_xyz()])
+                    num_original_vertices += 1
+                self.assertTrue(min(values) <= value <= max(values))
+        self.assertTrue(num_original_vertices == len(values))
+        # The original's range property went with its geometry: one per feature.
+        for partitioned_feature in partitioned:
+            ranges = [property for property in partitioned_feature
+                    if isinstance(property.get_value(), pygplates.GmlDataBlock)]
+            self.assertTrue(len(ranges) == 1)
+
+        # An older file's coverage, with scalars for the exterior ring only: a piece keeping the hole whole keeps
+        # that form (scalars for its exterior ring only), as GPlates' Assign Plate IDs writes it.
+        polygon = pygplates.PolygonOnSphere(
+                [(-5, 5), (-5, 25), (5, 25), (5, 5)], [[(-2, 14), (-2, 16), (2, 16), (2, 14)]])
+        feature = pygplates.Feature()
+        feature.set_geometry(polygon)
+        feature.add(
+                pygplates.PropertyName.create_gpml('unclassifiedGeometryCoverage'),
+                pygplates.GmlDataBlock({scalar_type: [1.0, 2.0, 3.0, 4.0]}),
+                pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(len(partitioned) == 2)
+        pieces_with_hole = 0
+        for partitioned_feature in partitioned:
+            pieces = [property.get_value().get_geometry() for property in partitioned_feature
+                    if property.get_value().get_geometry()]
+            ranges = [property.get_value() for property in partitioned_feature
+                    if isinstance(property.get_value(), pygplates.GmlDataBlock)]
+            self.assertTrue(len(pieces) == 1 and len(ranges) == 1)
+            num_scalars = len(ranges[0].get_scalar_values(scalar_type))
+            self.assertTrue(num_scalars == len(pieces[0].get_exterior_ring_points()))
+            pieces_with_hole += 1 if pieces[0].get_number_of_interior_rings() else 0
+        self.assertTrue(pieces_with_hole == 1)
+
         rotation_model = pygplates.RotationModel(self.rotation_features)
         resolved_topologies = []
         pygplates.resolve_topologies(
