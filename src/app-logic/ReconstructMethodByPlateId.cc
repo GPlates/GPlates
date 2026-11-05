@@ -33,6 +33,7 @@
 #include "ReconstructMethodFiniteRotation.h"
 #include "ReconstructParams.h"
 #include "ReconstructUtils.h"
+#include "ScalarCoverageFeatureProperties.h"
 #include "TopologyReconstructedFeatureGeometry.h"
 
 #include "global/AssertionFailureException.h"
@@ -751,15 +752,33 @@ GPlatesAppLogic::ReconstructMethodByPlateId::get_topology_reconstruction_info(
 		const bool deformation_use_natural_neighbour_interpolation =
 				context.reconstruct_params.get_topology_deformation_use_natural_neighbour_interpolation();
 
+		// A scalar coverage's time span interpolates its scalars by the points of the geometry time span
+		// of its domain property, so a coverage of a polygon's exterior ring alone (in an older file)
+		// needs a time span of that ring alone (with the whole polygon, the interior rings' points would
+		// index scalars past the end: a precondition of 'ScalarCoverageTimeSpan').
+		std::vector<ScalarCoverageFeatureProperties::Coverage> scalar_coverages;
+		ScalarCoverageFeatureProperties::get_coverages(scalar_coverages, get_feature_ref());
+
 		// Iterate over the feature's present day geometries and generate a topology reconstructed geometry
 		// time span for each geometry.
 		std::vector<Geometry> present_day_geometries;
 		get_present_day_feature_geometries(present_day_geometries);
 		BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
 		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = present_day_geometry.geometry;
+			for (const ScalarCoverageFeatureProperties::Coverage &scalar_coverage : scalar_coverages)
+			{
+				if (scalar_coverage.exterior_ring_only &&
+					scalar_coverage.domain_property == present_day_geometry.property_iterator)
+				{
+					geometry = ScalarCoverageFeatureProperties::get_exterior_ring_domain(*geometry);
+					break;
+				}
+			}
+
 			const TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type topology_reconstructed_geometry_time_span =
 					context.topology_reconstruct.get()->create_geometry_time_span(
-							present_day_geometry.geometry,
+							geometry,
 							reconstruction_info.reconstruction_plate_id,
 							reconstruction_info.geometry_import_time,
 							deactivate_points,

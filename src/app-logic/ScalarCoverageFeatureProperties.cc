@@ -33,6 +33,8 @@
 
 #include "GeometryUtils.h"
 
+#include "maths/PolygonOnSphere.h"
+
 #include "model/FeatureVisitor.h"
 
 #include "property-values/GmlDataBlock.h"
@@ -50,6 +52,23 @@ namespace GPlatesAppLogic
 {
 	namespace
 	{
+		/**
+		 * Whether a range sized to a polygon's exterior ring, with no range sized to all its points,
+		 * is read as a coverage of the exterior ring alone (see 'Coverage::exterior_ring_only').
+		 *
+		 * GPlates matched polygon coverages by their exterior rings before GPlates 2.6 and
+		 * pyGPlates 1.1, so older files can have such coverages. Switching this off in a later release
+		 * means removing 'Coverage::exterior_ring_only' and everything that checks it.
+		 *
+		 * Limitation: the exterior ring is tried only for a polygon that found no range by all its points.
+		 * So if another domain with the same property name has as many points as the polygon has in all
+		 * its rings, the first pass finds the two domains ambiguous, and neither gets a coverage (where
+		 * older versions, counting only exterior points, read both). Doing better means choosing the
+		 * ranges of all the domains together, which is not worth it for a fallback.
+		 */
+		const bool READ_EXTERIOR_RING_ONLY_COVERAGES = true;
+
+
 		typedef std::map<GPlatesModel::PropertyName, GPlatesModel::PropertyName>
 				coverage_domain_to_range_name_map_type;
 
@@ -148,13 +167,18 @@ namespace GPlatesAppLogic
 			{
 				Coverage(
 						const Domain &domain_,
-						const Range &range_) :
+						const Range &range_,
+						bool exterior_ring_only_) :
 					domain(domain_),
-					range(range_)
+					range(range_),
+					exterior_ring_only(exterior_ring_only_)
 				{  }
 
 				Domain domain;
 				Range range;
+
+				//! See 'ScalarCoverageFeatureProperties::Coverage::exterior_ring_only'.
+				bool exterior_ring_only;
 			};
 
 
@@ -198,112 +222,39 @@ namespace GPlatesAppLogic
 				// Copy the ranges so we can erase from them as we find coverages.
 				std::vector<Range> ranges(d_ranges);
 
-				// Iterate over the domains found.
-				typename std::vector<Domain>::const_iterator domains_iter = d_domains.begin();
-				typename std::vector<Domain>::const_iterator domains_end = d_domains.end();
-				for ( ; domains_iter != domains_end; ++domains_iter)
+				// First match each domain by all its points (a polygon's interior rings included).
+				std::vector<const Domain *> domains;
+				for (const Domain &domain : d_domains)
 				{
-					const Domain &domain = *domains_iter;
+					domains.push_back(&domain);
+				}
+				std::vector<const Domain *> unmatched_domains;
+				match_domains(feature_handle, domains, ranges, false/*exterior_ring_only*/, unmatched_domains);
 
-					const GPlatesModel::PropertyName &domain_property_name =
-							(*domain.property)->get_property_name();
+				if (!READ_EXTERIOR_RING_ONLY_COVERAGES)
+				{
+					return;
+				}
 
-					// Look for a range name associated with the current domain name.
-					boost::optional<GPlatesModel::PropertyName> range_property_name_opt =
-							ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
-									domain_property_name);
-					if (!range_property_name_opt)
+				// Then match the polygons with interior rings left over by their exterior rings alone, as
+				// older files have them. Doing this second means it cannot take a range that an
+				// all-points match needed.
+				std::vector<const Domain *> polygons_with_interior_rings;
+				for (const Domain *domain : unmatched_domains)
+				{
+					if (GeometryUtils::get_num_geometry_exterior_points(*domain->geometry) !=
+						GeometryUtils::get_num_geometry_points(*domain->geometry))
 					{
-						// Geometry property name is not associated with any coverage range.
-						continue;
-					}
-					const GPlatesModel::PropertyName &range_property_name = range_property_name_opt.get();
-
-					const unsigned int num_domain_geometry_points =
-							GeometryUtils::get_num_geometry_exterior_points(*domain.geometry);
-
-					// Search the ranges found for the matching range property name.
-					boost::optional<Range> matching_range;
-					bool more_than_one_matching_range = false;
-					typename std::vector<Range>::iterator ranges_iter = ranges.begin();
-					while (ranges_iter != ranges.end())
-					{
-						const Range &range = *ranges_iter;
-
-						if ((*range.property)->get_property_name() == range_property_name)
-						{
-							// See if the number of scalars matches the number of points in the domain geometry.
-							if (!range.scalar_data.empty() &&
-								range.scalar_data.front()->get_coordinates().size() == num_domain_geometry_points)
-							{
-								if (matching_range)
-								{
-									// Already (previously) found a matching range.
-									more_than_one_matching_range = true;
-								}
-								else
-								{
-									matching_range = range;
-								}
-
-								// Remove range so we can't use it again for another domain.
-								ranges_iter = ranges.erase(ranges_iter);
-								continue;
-							}
-						}
-
-						++ranges_iter;
-					}
-
-					// If found more than one matching range with same number of scalars then it's ambiguous as to
-					// which one we should use - so we skip the current domain (without creating a coverage for it).
-					if (matching_range)
-					{
-						if (!more_than_one_matching_range)
-						{
-							// Search the domains we haven't visited yet to make sure there is only one
-							// domain that matches the range.
-							typename std::vector<Domain>::const_iterator remaining_domains_iter = domains_iter;
-							for (++remaining_domains_iter; remaining_domains_iter != domains_end; ++remaining_domains_iter)
-							{
-								const Domain &remaining_domain = *remaining_domains_iter;
-
-								if ((*remaining_domain.property)->get_property_name() == domain_property_name)
-								{
-									// See if the number of geometry points matches.
-									if (num_domain_geometry_points == GeometryUtils::get_num_geometry_exterior_points(*remaining_domain.geometry))
-									{
-										break;
-									}
-								}
-							}
-
-							if (remaining_domains_iter == domains_end)
-							{
-								d_coverages.push_back(
-										Coverage(domain, matching_range.get()));
-							}
-							else // Found another domain with same property name and number of points...
-							{
-								qWarning() 
-									<< "Ambiguous"
-									<< convert_qualified_xml_name_to_qstring(domain_property_name)
-									<< "coverage domain for feature-id"
-									<< feature_handle.feature_id().get().qstring()
-									<< "- more than one matching coverage domain with same number of points - ignoring all matches.";
-							}
-						}
-						else
-						{
-							qWarning() 
-								<< "Ambiguous"
-								<< convert_qualified_xml_name_to_qstring(range_property_name)
-								<< "coverage range for feature-id"
-								<< feature_handle.feature_id().get().qstring()
-								<< "- more than one matching coverage range with same number of scalars - ignoring all matches.";
-						}
+						polygons_with_interior_rings.push_back(domain);
 					}
 				}
+				std::vector<const Domain *> still_unmatched_domains;
+				match_domains(
+						feature_handle,
+						polygons_with_interior_rings,
+						ranges,
+						true/*exterior_ring_only*/,
+						still_unmatched_domains);
 			}
 
 
@@ -408,6 +359,146 @@ namespace GPlatesAppLogic
 
 		private:
 
+			static
+			unsigned int
+			get_num_domain_points(
+					const GPlatesMaths::GeometryOnSphere &domain_geometry,
+					bool exterior_ring_only)
+			{
+				return exterior_ring_only
+						? GeometryUtils::get_num_geometry_exterior_points(domain_geometry)
+						: GeometryUtils::get_num_geometry_points(domain_geometry);
+			}
+
+
+			/**
+			 * Match each of @a domains, in order, to the range of its coverage, which is the range with
+			 * the associated property name and one scalar per domain point (counting only a polygon's
+			 * exterior ring if @a exterior_ring_only).
+			 *
+			 * Matched ranges are erased from @a ranges. Domains with a range property name but no range
+			 * of the right size are appended to @a unmatched_domains. An ambiguous match (more than one
+			 * matching range, or more than one matching domain) is not unmatched: it is warned about and
+			 * creates no coverage.
+			 */
+			void
+			match_domains(
+					typename feature_visitor_type::feature_handle_type &feature_handle,
+					const std::vector<const Domain *> &domains,
+					std::vector<Range> &ranges,
+					bool exterior_ring_only,
+					std::vector<const Domain *> &unmatched_domains)
+			{
+				const unsigned int num_domains = domains.size();
+				for (unsigned int domain_index = 0; domain_index < num_domains; ++domain_index)
+				{
+					const Domain &domain = *domains[domain_index];
+
+					const GPlatesModel::PropertyName &domain_property_name =
+							(*domain.property)->get_property_name();
+
+					// Look for a range name associated with the current domain name.
+					boost::optional<GPlatesModel::PropertyName> range_property_name_opt =
+							ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+									domain_property_name);
+					if (!range_property_name_opt)
+					{
+						// Geometry property name is not associated with any coverage range.
+						continue;
+					}
+					const GPlatesModel::PropertyName &range_property_name = range_property_name_opt.get();
+
+					const unsigned int num_domain_geometry_points =
+							get_num_domain_points(*domain.geometry, exterior_ring_only);
+
+					// Search the ranges found for the matching range property name.
+					boost::optional<Range> matching_range;
+					bool more_than_one_matching_range = false;
+					typename std::vector<Range>::iterator ranges_iter = ranges.begin();
+					while (ranges_iter != ranges.end())
+					{
+						const Range &range = *ranges_iter;
+
+						if ((*range.property)->get_property_name() == range_property_name)
+						{
+							// See if the number of scalars matches the number of points in the domain geometry.
+							if (!range.scalar_data.empty() &&
+								range.scalar_data.front()->get_coordinates().size() == num_domain_geometry_points)
+							{
+								if (matching_range)
+								{
+									// Already (previously) found a matching range.
+									more_than_one_matching_range = true;
+								}
+								else
+								{
+									matching_range = range;
+								}
+
+								// Remove range so we can't use it again for another domain.
+								ranges_iter = ranges.erase(ranges_iter);
+								continue;
+							}
+						}
+
+						++ranges_iter;
+					}
+
+					if (!matching_range)
+					{
+						unmatched_domains.push_back(&domain);
+						continue;
+					}
+
+					// If found more than one matching range with same number of scalars then it's ambiguous as to
+					// which one we should use - so we skip the current domain (without creating a coverage for it).
+					if (more_than_one_matching_range)
+					{
+						qWarning()
+							<< "Ambiguous"
+							<< convert_qualified_xml_name_to_qstring(range_property_name)
+							<< "coverage range for feature-id"
+							<< feature_handle.feature_id().get().qstring()
+							<< "- more than one matching coverage range with same number of scalars - ignoring all matches.";
+						continue;
+					}
+
+					// Search the domains we haven't visited yet to make sure there is only one
+					// domain that matches the range.
+					unsigned int remaining_domain_index = domain_index + 1;
+					for ( ; remaining_domain_index < num_domains; ++remaining_domain_index)
+					{
+						const Domain &remaining_domain = *domains[remaining_domain_index];
+
+						if ((*remaining_domain.property)->get_property_name() == domain_property_name)
+						{
+							// See if the number of geometry points matches.
+							if (num_domain_geometry_points ==
+								get_num_domain_points(*remaining_domain.geometry, exterior_ring_only))
+							{
+								break;
+							}
+						}
+					}
+
+					if (remaining_domain_index != num_domains)
+					{
+						// Found another domain with same property name and number of points...
+						qWarning()
+							<< "Ambiguous"
+							<< convert_qualified_xml_name_to_qstring(domain_property_name)
+							<< "coverage domain for feature-id"
+							<< feature_handle.feature_id().get().qstring()
+							<< "- more than one matching coverage domain with same number of points - ignoring all matches.";
+						continue;
+					}
+
+					d_coverages.push_back(
+							Coverage(domain, matching_range.get(), exterior_ring_only));
+				}
+			}
+
+
 			/**
 			 * The reconstruction time at which properties are extracted.
 			 */
@@ -507,9 +598,35 @@ GPlatesAppLogic::ScalarCoverageFeatureProperties::get_coverages(
 				Coverage(
 						feature_coverage.domain.property,
 						feature_coverage.range.property,
-						feature_coverage.domain.geometry,
-						feature_coverage.range.scalar_data));
+						feature_coverage.exterior_ring_only
+								? get_exterior_ring_domain(*feature_coverage.domain.geometry)
+								: feature_coverage.domain.geometry,
+						feature_coverage.range.scalar_data,
+						feature_coverage.exterior_ring_only));
 	}
 
 	return true;
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ScalarCoverageFeatureProperties::get_exterior_ring_domain(
+		const GPlatesMaths::GeometryOnSphere &domain_geometry)
+{
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+			GeometryUtils::get_polygon_on_sphere(domain_geometry);
+	if (!polygon)
+	{
+		// Only a polygon has rings other than its exterior.
+		return domain_geometry.get_non_null_pointer();
+	}
+
+	if (polygon.get()->number_of_interior_rings() == 0)
+	{
+		return polygon.get();
+	}
+
+	return GPlatesMaths::PolygonOnSphere::create(
+			polygon.get()->exterior_ring_vertex_begin(),
+			polygon.get()->exterior_ring_vertex_end());
 }

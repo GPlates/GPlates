@@ -499,10 +499,24 @@ namespace GPlatesAppLogic
 		/**
 		 * The range property iterator and scalar coverage time span.
 		 */
-		typedef std::pair<
-				GPlatesModel::FeatureHandle::iterator, /* range property iterator */
-				ScalarCoverageTimeSpan::non_null_ptr_type>
-						scalar_coverage_time_span_mapped_type;
+		struct ScalarCoverageTimeSpanMapped
+		{
+			ScalarCoverageTimeSpanMapped(
+					GPlatesModel::FeatureHandle::iterator range_property_,
+					ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span_,
+					bool exterior_ring_only_) :
+				range_property(range_property_),
+				scalar_coverage_time_span(scalar_coverage_time_span_),
+				exterior_ring_only(exterior_ring_only_)
+			{  }
+
+			GPlatesModel::FeatureHandle::iterator range_property;
+			ScalarCoverageTimeSpan::non_null_ptr_type scalar_coverage_time_span;
+
+			//! See 'ScalarCoverageFeatureProperties::Coverage::exterior_ring_only'.
+			bool exterior_ring_only;
+		};
+		typedef ScalarCoverageTimeSpanMapped scalar_coverage_time_span_mapped_type;
 
 		//! Typedef for mapping geometry properties to their scalar coverage lookup tables.
 		typedef std::map<

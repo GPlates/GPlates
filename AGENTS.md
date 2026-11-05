@@ -204,8 +204,12 @@ new code is expected to match it. Measured over `src/`:
 - **Hard tabs** for indentation, never spaces (~97% of files).
 - **Allman braces throughout** — the opening brace goes on its own line for namespaces, classes and
   functions *and* for `if` / `for` / `while` bodies (~92%). Do not use K&R style.
-- **Wrap at 100 columns.** (Much of the existing tree wraps nearer 80; 100 is the current target,
-  and ~97% of existing lines already fit it. Don't rewrap old code to suit it.)
+- **Wrap at 100 columns**, counting a tab as 4. In existing code, match the surroundings instead:
+  a line you add or change may be as long as the longest code line within 30 lines of it (either
+  side), up to a hard limit of 130, so that it does not look out of place among them. pyGPlates
+  docstring literals (`src/api/`) neither count as neighbours nor are bound by either limit.
+  Don't rewrap old code to suit either limit. (Much of the existing tree wraps nearer 80; about 4%
+  of its lines exceed 100, and 0.4% exceed 130.)
 - **Pointer and reference tokens bind to the name**: `Type *name` and `Type &name`, never
   `Type* name` or `Type& name`. This one wins over the file-matching rule below: a few older
   files bind them to the type, and new code in them still binds to the name.

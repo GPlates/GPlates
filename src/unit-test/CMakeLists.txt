@@ -29,6 +29,7 @@ set(srcs
     ScribeExportUnitTest.h
     SmartNodeLinkedListTest.cc
     StringSetTest.cc
+    TopologyReconstructTest.cc
     TranscribeTest.cc
     TranscribeTest.h
 )

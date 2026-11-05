@@ -233,7 +233,7 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
 | api |  | 275 | 126 |  |  | 8 | 36 | 156 | 15 | 86 | 78 | 2 | 3 | 114 | 5 | 29 |  | 44 |  |
-| app-logic |  |  | 942 |  |  | 7 | 21 | 161 |  | 280 | 294 | 12 |  | 309 |  | 25 |  | 122 |  |
+| app-logic |  |  | 944 |  |  | 7 | 21 | 161 |  | 281 | 294 | 12 |  | 309 |  | 25 |  | 122 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
@@ -247,9 +247,9 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | property-values |  |  |  |  |  |  | 11 | 64 | 5 | 26 | 292 |  |  | 176 |  | 103 |  | 35 |  |
 | qt-widgets |  | 17 | 277 | 7 |  | 8 | 79 | 133 | 223 | 116 | 268 | 35 | 116 | 212 | 834 |  |  | 55 | 26 |
 | scribe |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
-| unit-test |  |  | 14 |  |  | 2 | 19 | 2 | 5 | 81 | 26 |  |  | 19 |  | 16 | 5 | 7 |  |
+| unit-test |  |  | 19 |  |  | 2 | 19 | 2 | 5 | 85 | 27 |  |  | 20 |  | 16 | 5 | 7 |  |
 | utils |  | 1 |  |  |  |  | 1 | 34 |  | 13 | 1 |  |  | 54 |  | 3 |  | 50 |  |
-| view-operations |  |  | 44 | 6 |  |  | 5 | 27 | 56 | 92 | 27 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
+| view-operations |  |  | 45 | 6 |  |  | 5 | 27 | 56 | 92 | 27 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
 
 # The pyGPlates module subset
 
@@ -279,7 +279,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | property-values | 127 / 128 |
 | qt-widgets | 0 / 441 |
 | scribe | 56 / 64 |
-| unit-test | 0 / 25 |
+| unit-test | 0 / 26 |
 | utils | 45 / 75 |
 | view-operations | 0 / 82 |
 

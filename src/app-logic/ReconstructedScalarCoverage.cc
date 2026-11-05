@@ -27,6 +27,7 @@
 
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryVisitor.h"
+#include "ScalarCoverageFeatureProperties.h"
 #include "TopologyReconstructedFeatureGeometry.h"
 
 #include "global/GPlatesAssert.h"
@@ -38,6 +39,7 @@ GPlatesAppLogic::ReconstructedScalarCoverage::ReconstructedScalarCoverage(
 		GPlatesModel::FeatureHandle::iterator range_property_iterator,
 		const GPlatesPropertyValues::ValueObjectType &scalar_type,
 		const ScalarCoverageTimeSpan::non_null_ptr_type &scalar_coverage_time_span,
+		bool exterior_ring_only,
 		boost::optional<ReconstructHandle::type> reconstruct_handle_) :
 	ReconstructionGeometry(
 			reconstructed_domain_geometry->get_reconstruction_time(),
@@ -46,8 +48,23 @@ GPlatesAppLogic::ReconstructedScalarCoverage::ReconstructedScalarCoverage(
 	d_domain_reconstructed_feature_geometry(reconstructed_domain_geometry),
 	d_range_property_iterator(range_property_iterator),
 	d_scalar_type(scalar_type),
-	d_scalar_coverage_time_span(scalar_coverage_time_span)
+	d_scalar_coverage_time_span(scalar_coverage_time_span),
+	d_exterior_ring_only(exterior_ring_only)
 {
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructedScalarCoverage::get_reconstructed_geometry() const
+{
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry =
+			d_domain_reconstructed_feature_geometry->reconstructed_geometry();
+
+	// A topology-reconstructed geometry is a multipoint, and was already reconstructed from the
+	// exterior ring alone, so this only changes a rigidly reconstructed polygon.
+	return d_exterior_ring_only
+			? ScalarCoverageFeatureProperties::get_exterior_ring_domain(*geometry)
+			: geometry;
 }
 
 
@@ -67,9 +84,9 @@ GPlatesAppLogic::ReconstructedScalarCoverage::get_reconstructed_points(
 	}
 	// ...else is a regular RFG...
 
-	// Use exterior points for now to match 'ScalarCoverageFeatureProperties::get_coverages()'.
+	// All points of all rings (or only the exterior ring's, for an exterior-ring-only coverage).
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = get_reconstructed_geometry();
-	GeometryUtils::get_geometry_exterior_points(*geometry, points);
+	GeometryUtils::get_geometry_points(*geometry, points);
 }
 
 
