@@ -683,21 +683,23 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   tests: polygons with holes, touches returned whole, `PartitionError` on the committed inconsistent
   input (read from `src/unit-test/data/polygon-overlay/inconsistent.txt`), the area overlap with an
   L-shaped feature.
-- **Step 13b, next: coverages through `partition_features`** (design 8.4, the developer's answer to
-  question 5: a private helper, no public coverage form). Planned: a private
-  `PlatePartitioner._partition_feature_geometries(feature)` in `PyPlatePartitioner.cc` calling
-  `PartitionFeatureUtils::partition_feature` (which already carries coverages by property, step 12;
-  check the source closure and linkage tests, since it pulls `PartitionFeatureUtils` into pyGPlates),
-  returning per geometry property its name, its coverage's range property name, and the pieces inside
-  each plate and outside, each piece a geometry or `(geometry, {ScalarType: values})`;
-  `PlatePartitioning.py`'s `split_into_plates` branch then removes the range properties too and sets the
-  pieces with `set_geometry`. **Open point**: an exterior-ring-only coverage (an old file's) gives a
-  piece with holes scalars for its exterior ring only, which `Feature.set_geometry` refuses (it needs a
-  value per point of every ring); either write such a piece's coverage for all its rings (its hole
-  points interpolated by 7.3's steps 2 and 3, an upgrade to the 1.1 form) or leave it without one; to
-  decide with the developer if it is not obvious. Then tests (`partition_features` keeping a coverage,
-  `get_geometry(..., coverage_return=CoverageReturn.geometry_and_scalars)` on the result), the
-  pyGPlates changelog's coverage entry, and the stub if any docstring changes.
+- 2026-11-06: **Phase 5 step 13b done** (`295cc3270`): coverages through pyGPlates'
+  `partition_features` (design 8.4 as built). A private `PlatePartitioner._partition_feature_geometries`
+  calls the same `PartitionFeatureUtils::partition_feature` as Assign Plate IDs, and the Python side
+  removes the range properties with the geometries and sets the pieces back. **Found**: including
+  `PartitionFeatureUtils.h` pulled about 320 GPlates-only files (data mining among them) into the
+  pyGPlates closure, through `AssignPlateIds.h` and reconstructions; the feature-geometry partitioning
+  (`PartitionedFeature`, `partition_feature` and its coverage code) moved to
+  `app-logic/PartitionFeatureGeometries.{h,cc}`, same namespace, and the closure grew by those two files
+  only. **Decided (developer)**: a piece of an exterior-ring-only coverage keeps that form, as Assign
+  Plate IDs writes it (the geometry set alone and the range added as a `GmlDataBlock`, after checking its
+  count is the exterior ring's, since `set_geometry` needs every ring's); the developer noted, and the
+  session confirmed, that a hole cut open then gains values while a hole left whole gets none, inherent
+  in that form. Tests: a polygon with a hole across two plates (original values exact, one per point,
+  one range per feature) and the exterior-ring-only form kept. Not run as mutations (each needs a
+  pyGPlates rebuild); by reading, losing the coverage or the two-step write fails the new test. **For
+  the PR**: the architecture page of the plate-partitioning area, and the foundation page, describe
+  partitioning as it was (Phase 6's distillation).
 
 - **Resume here** (updated 2026-11-04):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
@@ -707,9 +709,9 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     Review 3 (steps 7 and 8) and its fixes done, 2026-11-05; steps 9 (polylines, CitcomS) and 10
     (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
     its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
-    done, and review 6 with its fixes (the overlay's early stop dropped); step 13a done. Next: step
-    13b (coverages through `partition_features`, the private helper; Status, 2026-11-06), a Fable
-    review of step 13, then step 14 (the sliver filter and the real-data measurements); open: two
+    done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) done.
+    Next: a Fable review of step 13 (ask about the usage limit), then step 14 (the sliver filter and
+    the real-data measurements); open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
