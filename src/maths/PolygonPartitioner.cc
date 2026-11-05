@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <vector>
 #include <boost/make_shared.hpp>
 #include <boost/optional.hpp>
@@ -40,6 +41,15 @@ namespace
 
 	typedef PolygonPartitioner::provenance_seq_type provenance_seq_type;
 	typedef boost::shared_ptr<const provenance_seq_type> provenance_ptr_type;
+	typedef PolygonPartitioner::partitioned_geometry_seq_type partitioned_geometry_seq_type;
+
+
+	provenance_ptr_type
+	make_table(
+			const provenance_seq_type &provenance)
+	{
+		return boost::make_shared<const provenance_seq_type>(provenance);
+	}
 
 
 	PolygonPartitioner::Result
@@ -62,8 +72,9 @@ namespace
 	/**
 	 * Whether a subject whose outline lies within @a subject_bounds is certainly outside
 	 * @a partitioning_polygon without an overlay (phase4b-design.md section 4.1): the two bounding
-	 * circles are disjoint, and each polygon's interior lies within its own circle
-	 * (@a subject_polygon is none for a polyline).
+	 * circles are disjoint, and the partitioning polygon's interior lies within its own circle, and
+	 * so does the subject's when it is a polygon (@a subject_polygon; none for a polyline, whose
+	 * outline is all there is).
 	 */
 	bool
 	is_outside_by_bounds(
@@ -77,9 +88,11 @@ namespace
 		{
 			return false;
 		}
-		return partitioning_polygon.is_outside_bounding_small_circle_outside_polygon(partitioning_bounds) &&
+		return partitioning_polygon.is_outside_bounding_small_circle_outside_polygon(
+						partitioning_bounds) &&
 				(!subject_polygon ||
-					subject_polygon->is_outside_bounding_small_circle_outside_polygon(subject_bounds));
+					subject_polygon->is_outside_bounding_small_circle_outside_polygon(
+							subject_bounds));
 	}
 
 
@@ -88,6 +101,10 @@ namespace
 	 * result follows section 5.3: GEOMETRY_INSIDE if the difference is empty, GEOMETRY_OUTSIDE if
 	 * the intersection is (after clean-up), and only for GEOMETRY_INTERSECTING are @a inside and
 	 * @a outside filled (else the subject is returned whole by the caller).
+	 *
+	 * With @a result_only (no list wanted: section 10.2) the classification stops as soon as the
+	 * vertex tests show the result is GEOMETRY_INTERSECTING, which is then certain; otherwise the
+	 * outputs are extracted and looked at, as with lists, so that both forms give the same result.
 	 */
 	PolygonPartitioner::Result
 	overlay_polygon(
@@ -95,16 +112,21 @@ namespace
 			const GPlatesMaths::PolygonOnSphere &partitioning_polygon,
 			const Overlay::Options &options,
 			std::vector<Overlay::OutputPolygon> &inside,
-			std::vector<Overlay::OutputPolygon> &outside)
+			std::vector<Overlay::OutputPolygon> &outside,
+			bool result_only = false)
 	{
-		if (is_outside_by_bounds(subject.get_bounding_small_circle(), &subject, partitioning_polygon))
+		if (is_outside_by_bounds(
+				subject.get_bounding_small_circle(),
+				&subject,
+				partitioning_polygon))
 		{
 			return PolygonPartitioner::GEOMETRY_OUTSIDE;
 		}
 
 		Overlay::Overlay overlay(subject, partitioning_polygon, options);
-		const PolygonPartitioner::Result result = to_partition_result(overlay.classify());
-		if (result != PolygonPartitioner::GEOMETRY_INTERSECTING)
+		const PolygonPartitioner::Result result =
+				to_partition_result(overlay.classify(result_only));
+		if (result != PolygonPartitioner::GEOMETRY_INTERSECTING || overlay.stopped_early())
 		{
 			return result;
 		}
@@ -126,9 +148,31 @@ namespace
 	}
 
 
+	//! Whether @a points hold two different stored positions (a polyline needs two).
+	bool
+	has_two_positions(
+			const std::vector<GPlatesMaths::PointOnSphere> &points)
+	{
+		for (const GPlatesMaths::PointOnSphere &point : points)
+		{
+			// Coordinates, not PointOnSphere's operator== (which has a tolerance).
+			if (point.position_vector().x() != points.front().position_vector().x() ||
+				point.position_vector().y() != points.front().position_vector().y() ||
+				point.position_vector().z() != points.front().position_vector().z())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+
 	/**
 	 * Overlay a polyline subject with the partitioning polygon (phase4b-design.md section 6.1):
-	 * as @a overlay_polygon, with the runs of each class in @a runs for GEOMETRY_INTERSECTING.
+	 * as @a overlay_polygon, with the runs of each class in @a runs for GEOMETRY_INTERSECTING. A
+	 * run at one position (if one can arise) is dropped as a collapsed region is; a side left with
+	 * no run makes the polyline whole, as for a polygon (section 5.3). A polyline's classification
+	 * is cheap and never throws, so there is no result-only form.
 	 */
 	PolygonPartitioner::Result
 	overlay_polyline(
@@ -137,16 +181,39 @@ namespace
 			const Overlay::Options &options,
 			std::vector<Overlay::OutputPolyline> &runs)
 	{
-		if (is_outside_by_bounds(subject.get_bounding_small_circle(), nullptr, partitioning_polygon))
+		if (is_outside_by_bounds(
+				subject.get_bounding_small_circle(),
+				nullptr,
+				partitioning_polygon))
 		{
 			return PolygonPartitioner::GEOMETRY_OUTSIDE;
 		}
 
 		Overlay::Overlay overlay(subject, partitioning_polygon, options);
 		const PolygonPartitioner::Result result = to_partition_result(overlay.classify());
-		if (result == PolygonPartitioner::GEOMETRY_INTERSECTING)
+		if (result != PolygonPartitioner::GEOMETRY_INTERSECTING)
 		{
-			overlay.extract_polylines(runs);
+			return result;
+		}
+
+		overlay.extract_polylines(runs);
+		const auto is_collapsed = [](const Overlay::OutputPolyline &run)
+		{
+			return !has_two_positions(run.points);
+		};
+		runs.erase(std::remove_if(runs.begin(), runs.end(), is_collapsed), runs.end());
+		bool any_inside = false;
+		bool any_outside = false;
+		for (const Overlay::OutputPolyline &run : runs)
+		{
+			(run.inside ? any_inside : any_outside) = true;
+		}
+		if (!any_inside || !any_outside)
+		{
+			runs.clear();
+			return any_inside
+					? PolygonPartitioner::GEOMETRY_INSIDE
+					: PolygonPartitioner::GEOMETRY_OUTSIDE;
 		}
 		return result;
 	}
@@ -199,8 +266,8 @@ namespace
 				const PolygonPartitioner &polygon_partitioner,
 				const provenance_ptr_type &input_provenance,
 				const PolygonPartitioner::CascadeProvenance *cascade_provenance,
-				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_inside,
-				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_outside) :
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_inside,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_outside) :
 			d_polygon_partitioner(polygon_partitioner),
 			d_input_provenance(input_provenance),
 			d_cascade_provenance(cascade_provenance),
@@ -244,7 +311,8 @@ namespace
 				const PolygonPartitioner::Result point_result =
 						d_polygon_partitioner.partition_point(point);
 				// A point on the boundary is inside.
-				const unsigned int side = (point_result == PolygonPartitioner::GEOMETRY_OUTSIDE) ? 0 : 1;
+				const unsigned int side =
+						(point_result == PolygonPartitioner::GEOMETRY_OUTSIDE) ? 0 : 1;
 				any_intersecting = any_intersecting ||
 						point_result == PolygonPartitioner::GEOMETRY_INTERSECTING;
 				points[side].push_back(point);
@@ -279,7 +347,7 @@ namespace
 										points[side].begin(),
 										points[side].end()),
 									d_cascade_provenance
-											? boost::make_shared<const provenance_seq_type>(provenances[side])
+											? make_table(provenances[side])
 											: provenance_ptr_type()));
 				}
 			}
@@ -369,8 +437,9 @@ namespace
 
 			for (const Overlay::OutputPolyline &run : runs)
 			{
-				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> &list =
-						run.inside ? d_partitioned_geometries_inside : d_partitioned_geometries_outside;
+				boost::optional<partitioned_geometry_seq_type &> &list = run.inside
+						? d_partitioned_geometries_inside
+						: d_partitioned_geometries_outside;
 				if (list)
 				{
 					list->push_back(
@@ -379,7 +448,7 @@ namespace
 										run.points.begin(),
 										run.points.end()),
 									d_cascade_provenance
-											? boost::make_shared<const provenance_seq_type>(run.provenances)
+											? make_table(run.provenances)
 											: provenance_ptr_type()));
 				}
 			}
@@ -389,8 +458,8 @@ namespace
 		const PolygonPartitioner &d_polygon_partitioner;
 		provenance_ptr_type d_input_provenance;
 		const PolygonPartitioner::CascadeProvenance *d_cascade_provenance;
-		boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
-		boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
+		boost::optional<partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
+		boost::optional<partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
 
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
 		PolygonPartitioner::Result d_result;
@@ -400,6 +469,7 @@ namespace
 		get_overlay_options() const
 		{
 			Overlay::Options options;
+			options.clip_speed = d_polygon_partitioner.get_partition_point_speed_and_memory();
 			if (d_cascade_provenance)
 			{
 				options.want_provenance = true;
@@ -566,17 +636,20 @@ GPlatesMaths::PolygonPartitioner::partition_polyline(
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
 {
+	PolygonOverlay::Options options;
+	options.clip_speed = d_partition_point_speed_and_memory;
 	std::vector<PolygonOverlay::OutputPolyline> runs;
 	const Result result = overlay_polyline(
 			*polyline_to_be_partitioned,
 			*d_partitioning_polygon,
-			PolygonOverlay::Options(),
+			options,
 			runs);
 
 	if (result != GEOMETRY_INTERSECTING)
 	{
-		boost::optional<partitioned_polyline_seq_type &> &list =
-				(result == GEOMETRY_INSIDE) ? partitioned_polylines_inside : partitioned_polylines_outside;
+		boost::optional<partitioned_polyline_seq_type &> &list = (result == GEOMETRY_INSIDE)
+				? partitioned_polylines_inside
+				: partitioned_polylines_outside;
 		if (list)
 		{
 			list->push_back(polyline_to_be_partitioned);
@@ -603,43 +676,24 @@ GPlatesMaths::PolygonPartitioner::partition_polygon(
 		boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_inside,
 		boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_outside) const
 {
-	if (!partitioned_polygons_inside &&
-		!partitioned_polygons_outside)
-	{
-		// The result-only path (phase4b-design.md section 10.2): stop at the first certain answer,
-		// and answer GEOMETRY_INTERSECTING where the overlay is inconsistent (section 9.2: the
-		// conservative answer for its one caller, GLReconstructedStaticPolygonMeshes).
-		if (is_outside_by_bounds(
-				polygon_to_be_partitioned->get_bounding_small_circle(),
-				polygon_to_be_partitioned.get(),
-				*d_partitioning_polygon))
-		{
-			return GEOMETRY_OUTSIDE;
-		}
-		try
-		{
-			PolygonOverlay::Overlay overlay(*polygon_to_be_partitioned, *d_partitioning_polygon);
-			return to_partition_result(overlay.classify(true/*stop_when_result_known*/));
-		}
-		catch (const PolygonOverlay::InconsistentOverlayException &)
-		{
-			return GEOMETRY_INTERSECTING;
-		}
-	}
-
+	PolygonOverlay::Options options;
+	options.clip_speed = d_partition_point_speed_and_memory;
 	std::vector<PolygonOverlay::OutputPolygon> inside;
 	std::vector<PolygonOverlay::OutputPolygon> outside;
 	const Result result = overlay_polygon(
 			*polygon_to_be_partitioned,
 			*d_partitioning_polygon,
-			PolygonOverlay::Options(),
+			options,
 			inside,
-			outside);
+			outside,
+			// The result-only path (phase4b-design.md section 10.2): the same result, sooner.
+			!partitioned_polygons_inside && !partitioned_polygons_outside);
 
 	if (result != GEOMETRY_INTERSECTING)
 	{
-		boost::optional<partitioned_polygon_seq_type &> &list =
-				(result == GEOMETRY_INSIDE) ? partitioned_polygons_inside : partitioned_polygons_outside;
+		boost::optional<partitioned_polygon_seq_type &> &list = (result == GEOMETRY_INSIDE)
+				? partitioned_polygons_inside
+				: partitioned_polygons_outside;
 		if (list)
 		{
 			list->push_back(polygon_to_be_partitioned);

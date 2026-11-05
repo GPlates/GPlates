@@ -776,10 +776,12 @@ piece, classified by one vertex test, threshold off, with the full margin `h`. B
 so this is where the `O(N_P)` low-speed tests against the subject would otherwise go.)
 
 As built (step 11): the whole-pair test only, in the partitioner before any overlay is made
-(`is_outside_by_bounds` in `PolygonPartitioner.cc`), and only where each polygon's interior lies within
-its own circle (`PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon`: a polygon wrapping
-round the globe so far that its interior reaches past its outline's circle fails it). The per-ring skip
-is not built: a polygon's rings have no circles of their own.
+(`is_outside_by_bounds` in `PolygonPartitioner.cc`), and only where the partitioning polygon's interior
+lies within its own circle, and the subject's too when it is a polygon (a polyline's outline is all
+there is): `PolygonOnSphere::is_outside_bounding_small_circle_outside_polygon`, which a polygon wrapping
+round the globe so far that its interior reaches past its outline's circle fails
+(`InteriorBeyondBoundingCircle` tests the helix band of `PointInPolygonTest` both ways). The per-ring
+skip is not built: a polygon's rings have no circles of their own.
 
 This fixes doc 5.1's three no-intersection bugs, each a regression test in Phase 5 (section 11):
 
@@ -954,7 +956,10 @@ from either side, or runs along it, or is identical to it, comes back whole with
 `INTERSECTING` with pieces only when both outputs have a ring. This is what the record-free case
 already does (section 4.1), so the contract is uniform. The partition layer (8.1) returns the original
 geometry object itself in the whole case, as today (`PolygonPartitioner.cc:154-167`, `:430-448`), with
-an identity provenance table.
+an identity provenance table. As built: a table only when one is asked for, and then the input's own
+table when it has one (a piece of an earlier cut, 7.2), else the identity. **The same result with or
+without lists** (review 5 1.1, decided by the developer): the result-only path of 10.2 finds this
+result sooner where it can, never a different one, and an inconsistent overlay raises either way.
 
 ## 6. Polylines and open arcs
 
@@ -1329,7 +1334,10 @@ propagates from the cookie cutter (9.2); the products' handling of it is steps 1
   2)"). New tests: section 11.5. **Done in step 11** (the suite must stay green there): as predicted,
   with the pieces' areas checked against the input's in the first; the second's input crosses itself
   (its closing edge crosses its `-30` meridian edge near `16` degrees north), so its pieces are its two
-  lobes' parts and their areas sum to its lobes' (`0.185`), not its signed area (`0.038`).
+  lobes' parts and their areas sum to its lobes' (`0.185`), not its signed area (`0.038`). Tests
+  only: the docstrings' warnings (`PyGeometriesOnSphere.cc` and `PyPlatePartitioner.cc`, "partitioned
+  polylines (not polygons)") and the `versionchanged` are step 13's, with `PartitionError` (review 5
+  1.2).
 - **Stub**: `python pygplates/stub/generate_stub.py --output ... --check ...` after the docstring and
   the coverage overload (its `:rtype:` changes).
 
@@ -1342,6 +1350,10 @@ the same `partition_polygon` without lists, which now gives `INTERSECTING` when 
 surrounds the mesh polygon (a `Q` ring inside `P`, 4.1), so the extra test at `:971-976` is redundant.
 Recommend keeping it in PR B (harmless, and there is no rendering test coverage) and removing it in
 the Phase 6 visual check if the developer prefers. No user-visible change.
+
+As built (review 5): the call catches `InconsistentOverlayException` itself and takes the node as
+intersecting (9.2's policy for this caller, now at the caller: the partitioner raises with or without
+lists).
 
 ### 8.6 User-visible changes (changelog entries, both products)
 
@@ -1393,10 +1405,13 @@ as follows.
   failure (5.2), and on a pairing failure. Review 3 found one consistent input that reached the
   latter (identical inputs touching themselves: the all-common vertex of 3.10), since fixed; none is
   known now.
-- **`PolygonPartitioner`**: lets it propagate; with no lists requested (the result-only path) it
-  returns `GEOMETRY_INTERSECTING` instead, the conservative answer for the one caller of that path
-  (8.5 marks the node as possibly intersecting, which costs rendering work and nothing else). The
-  exception is documented on `partition_geometry`, `partition_polyline` and `partition_polygon`.
+- **`PolygonPartitioner`**: lets it propagate, with or without lists. (As first designed, the
+  result-only path answered `GEOMETRY_INTERSECTING` instead, for its one intended caller, 8.5; review
+  5 found pyGPlates' `PolygonOnSphere.partition` without lists a second caller, so that one polygon
+  gave an error with lists and an answer without. The developer decided on one contract: the
+  partitioner raises either way, and 8.5 catches it, marking the node as possibly intersecting, which
+  costs rendering work and nothing else.) The exception is documented on `partition_geometry`,
+  `partition_polyline` and `partition_polygon`.
 - **`GeometryCookieCutter`**: lets it propagate (every plate must get an answer, and a wrong one is
   worse than none).
 - **pyGPlates**: registered in `src/api/PyExceptions.cc` with `export_exception` (`:217-229`, as
@@ -1474,14 +1489,28 @@ remove, so it can say `INTERSECTING` where the full path, with the filter on, wo
 geometry whole; the one caller (8.5) wants the conservative answer. With the filter off, 5.3 and this
 path agree except for zero-area collapsed regions, for which this path says `INTERSECTING` and the
 full path says whole; acceptable for the same reason, and documented on `partition_polygon`.
+**Superseded (review 5, developer):** the path must give 5.3's result exactly, so step 3 extracts and
+looks, as the full path does; only steps 1 and 2 are shortcuts.
 
-As built (step 11): `Overlay::classify(stop_when_result_known)`. Step 1's disjoint circles are the
-partitioner's pre-check (4.1 as built); its no-record case needs no code of its own (every ring is then
-one closed piece, vertex-tested, and step 3's answer follows at once). Step 2 also stops at a clip piece
-inside the subject (kept by both outputs). An overlay stopped early refuses to extract (an assertion).
-The partitioner catches `InconsistentOverlayException` on this path only (9.2) and answers
-`GEOMETRY_INTERSECTING`. A polyline subject has no early stop (its classification is cheap and never
-throws).
+As built (step 11, amended after review 5): `Overlay::classify(stop_when_result_known)` and
+`Overlay::stopped_early()`. Step 1's disjoint circles are the partitioner's pre-check (4.1 as built).
+Its no-record case needs no code of its own: with no records every ring is one closed piece with an
+interior vertex, so all are classified by the vertex tests and step 2 or step 3 answers at once. Step
+2 also stops at a clip piece inside the subject (kept by both outputs), and **counts only a piece whose
+own positions in its output ring (its end vertices' output positions and its original vertices
+between them) are three distinct ones**: clean-up drops a ring with fewer, and a vertex-tested piece
+can leave an overlay vertex and come back to it (a tip just over the thickness long, `shared#247 seed
+1`), making a ring of two positions; without the guard the path said `INTERSECTING` there while the
+outputs left the intersection empty (review 5 1.1; the review and the session had both taken the
+vertex test's margin to make the stop exact, and a probe of that case showed otherwise). With the
+guard such a ring can't collapse: it holds three distinct positions, and the split (3.11) cuts only at
+overlay vertices, so the piece stays whole in one ring. Step 3 then extracts both outputs and applies
+5.3's emptiness rule, as the full path does. An overlay stopped early refuses to extract (an
+assertion). The prototype comparison checks on every polygon case, committed and generated, that the
+partitioner's results with and without lists agree, and that a whole result is the subject itself. A
+polyline subject has no early stop (its classification is cheap and never throws); a run at one
+position, if one can arise (none seen in the polyline sets), is dropped as a collapsed ring is, a side
+left with none making the polyline whole.
 
 ### 10.3 What Phase 5 measures
 

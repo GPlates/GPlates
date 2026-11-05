@@ -681,7 +681,8 @@ namespace GPlatesMaths
 		class Options
 		{
 		public:
-			//! The speed of point-in-polygon tests against the clip (the partitioner's choice).
+			//! The speed of point-in-polygon tests against the clip (PolygonPartitioner passes its
+			//! partition_point_speed_and_memory).
 			PolygonOnSphere::PointInPolygonSpeedAndMemory clip_speed = PolygonOnSphere::ADAPTIVE;
 
 			//! The most rounds of repair (phase4b-design.md section 3.9).
@@ -719,11 +720,11 @@ namespace GPlatesMaths
 			 * wrap-around is counted as a mismatch (Diagnostics::provenance_subject_mismatches or
 			 * provenance_clip_mismatches): never a wrong location. Both must outlive the overlay.
 			 *
-			 * Only the subject's locations reach a caller (a coverage's values, section 7.3): every
-			 * output point at an overlay vertex lies on this overlay's clip, so its clip location is
-			 * this clip's. An earlier clip's locations are composed only to tell an edge along an
-			 * earlier cut (both ends on that clip, perhaps also both on the subject's outline) from
-			 * a mismatch.
+			 * Only the subject's locations reach a caller (a coverage's values, section 7.3):
+			 * every output point at an overlay vertex lies on this overlay's clip, so its clip
+			 * location is this clip's. An earlier clip's locations are composed only to tell an
+			 * edge along an earlier cut (both ends on that clip, perhaps also both on the
+			 * subject's outline) from a mismatch.
 			 */
 			const GeometryOnSphere *original_subject = nullptr;
 			const std::vector<const PolygonOnSphere *> *cascade_clips = nullptr;
@@ -836,9 +837,10 @@ namespace GPlatesMaths
 			 * With @a stop_when_result_known (the result-only path, phase4b-design.md section
 			 * 10.2), a polygon subject's classification stops at RESULT_INTERSECTING as soon as
 			 * the vertex tests show it: a subject piece inside the clip and another outside, or a
-			 * clip piece inside the subject. Nothing can then be extracted. The result counts
-			 * regions that clean-up would collapse, so it can be RESULT_INTERSECTING where the
-			 * outputs leave one of them empty (the conservative answer).
+			 * clip piece inside the subject (@a stopped_early). Nothing can then be extracted.
+			 * Otherwise the result counts regions that clean-up would collapse, so it can be
+			 * RESULT_INTERSECTING where the outputs leave one of them empty (a caller wanting
+			 * phase4b-design.md section 5.3's result extracts and looks).
 			 *
 			 * @throws InconsistentOverlayException if a vertex is still inconsistent after repair,
 			 * or a piece is left unclassified (unless Options::throw_if_inconsistent is false).
@@ -846,6 +848,18 @@ namespace GPlatesMaths
 			Result
 			classify(
 					bool stop_when_result_known = false);
+
+			/**
+			 * Whether the last @a classify stopped early (@a stop_when_result_known): its
+			 * result, RESULT_INTERSECTING, is then certain (each piece that decided it has an
+			 * original vertex more than the thickness from the other outline, so its region
+			 * cannot collapse), and nothing can be extracted.
+			 */
+			bool
+			stopped_early() const
+			{
+				return d_classified_partly;
+			}
 
 			/**
 			 * Check every vertex, repair what fails (section 3.9) and return the result; the second
@@ -1048,6 +1062,16 @@ namespace GPlatesMaths
 			bool
 			classify_pieces(
 					bool stop_when_result_known);
+
+			/**
+			 * Whether a piece's own positions in an output ring (its end vertices' output positions
+			 * and its original vertices' between them; a closed piece's every vertex) are three
+			 * distinct ones, so that any ring it is walked into survives clean-up's collapsed-ring
+			 * test (section 3.11).
+			 */
+			bool
+			has_three_output_positions(
+					const Piece &piece) const;
 
 			//! A polyline subject's classification (phase4b-design.md section 6.1).
 			void

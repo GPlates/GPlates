@@ -42,6 +42,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/PolygonOverlay.h"
 #include "maths/PolygonPartitioner.h"
 #include "maths/SmallCircleBounds.h"
 
@@ -961,8 +962,20 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 
 	// If the polygon is outside the current quad tree node then we are finished and can return.
 	// TODO: Implement a more optimal path that tests intersection without partitioning.
-	if (GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE ==
-		polygon_partitioner.partition_polygon(quad_tree_node_bounding_polygon))
+	//
+	// The node only needs to know whether the polygon might reach it, so a cut the overlay finds
+	// inconsistent (phase4b-design.md section 9.2) is taken as intersecting: it costs rendering
+	// work on a node the polygon may not reach, and nothing else.
+	GPlatesMaths::PolygonPartitioner::Result partition_result =
+			GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING;
+	try
+	{
+		partition_result = polygon_partitioner.partition_polygon(quad_tree_node_bounding_polygon);
+	}
+	catch (const GPlatesMaths::PolygonOverlay::InconsistentOverlayException &)
+	{
+	}
+	if (GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE == partition_result)
 	{
 		// If the cube quad tree node's polygon boundary is outside our test polygon then it's
 		// still possible for the cube quad tree node to completely surround the test polygon in which

@@ -2242,7 +2242,10 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces(
 
 	// The result-only path (phase4b-design.md section 10.2): a subject piece inside the clip and
 	// another outside, or a clip piece inside the subject, put a region in both the intersection
-	// and the difference, so the result is RESULT_INTERSECTING whatever the other classes are.
+	// and the difference, so the result is RESULT_INTERSECTING whatever the other classes are. But
+	// only a piece whose own positions in its output ring are three distinct ones: clean-up drops a
+	// ring with fewer, and a piece leaving an overlay vertex and coming back to it (a tip just over
+	// the thickness long) makes a ring of two (review 5's 'shared#247 seed 1').
 	if (stop_when_result_known)
 	{
 		bool subject_inside = false;
@@ -2250,7 +2253,8 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces(
 		bool clip_inside = false;
 		for (const Piece &piece : d_pieces)
 		{
-			if (piece.internal || piece.common || !piece.is_classified())
+			if (piece.internal || piece.common || !piece.is_classified() ||
+				!has_three_output_positions(piece))
 			{
 				continue;
 			}
@@ -2383,6 +2387,57 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces(
 		}
 	}
 	return true;
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::Overlay::has_three_output_positions(
+		const Piece &piece) const
+{
+	std::vector<const PointOnSphere *> positions;
+	const RingView &ring_view = d_rings[piece.ring];
+	if (piece.closed)
+	{
+		for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+		{
+			positions.push_back(&d_stops[s].position);
+		}
+	}
+	else
+	{
+		if (piece.start_vertex)
+		{
+			positions.push_back(&d_vertices[*piece.start_vertex].position);
+		}
+		for (unsigned int s = piece.start_stop; ; )
+		{
+			s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+			if (s == piece.end_stop)
+			{
+				break;
+			}
+			if (d_stops[s].kind == Stop::ORIGINAL_VERTEX)
+			{
+				positions.push_back(&d_stops[s].position);
+			}
+		}
+		if (piece.end_vertex)
+		{
+			positions.push_back(&d_vertices[*piece.end_vertex].position);
+		}
+	}
+
+	unsigned int num_distinct = 0;
+	for (unsigned int j = 0; j < positions.size() && num_distinct < 3; ++j)
+	{
+		bool repeated = false;
+		for (unsigned int k = 0; k < j && !repeated; ++k)
+		{
+			repeated = is_same_position(*positions[k], *positions[j]);
+		}
+		num_distinct += repeated ? 0 : 1;
+	}
+	return num_distinct >= 3;
 }
 
 

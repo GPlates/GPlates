@@ -219,7 +219,8 @@ namespace GPlatesAppLogic
 		partition_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				boost::optional<partition_seq_type &> partitioned_inside_geometries = boost::none,
-				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries = boost::none,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries =
+						boost::none,
 				bool want_provenance = false) const;
 
 
@@ -229,8 +230,8 @@ namespace GPlatesAppLogic
 		 * Returns true if any geometry in @a geometries is inside any partitioning polygons (even partially)
 		 * in which case elements were appended to @a partitioned_inside_geometries.
 		 *
-		 * Provenance is offered by @a partition_geometry alone: the pieces of several geometries are
-		 * mixed in the lists, and a table does not say which geometry it refers to.
+		 * Provenance is offered by @a partition_geometry alone: the pieces of several geometries
+		 * are mixed in the lists, and a table does not say which geometry it refers to.
 		 *
 		 * @throws GPlatesMaths::PolygonOverlay::InconsistentOverlayException as
 		 * @a partition_geometry does.

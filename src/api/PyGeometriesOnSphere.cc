@@ -3698,7 +3698,8 @@ namespace GPlatesApi
 		if (partitioned_geometries_inside)
 		{
 			BOOST_FOREACH(
-					const GPlatesMaths::PolygonPartitioner::PartitionedGeometry &partitioned_geometry,
+					const GPlatesMaths::PolygonPartitioner::PartitionedGeometry &
+							partitioned_geometry,
 					partitioned_geometries_inside.get())
 			{
 				partitioned_geometries_inside_list->append(partitioned_geometry.geometry);
@@ -3708,7 +3709,8 @@ namespace GPlatesApi
 		if (partitioned_geometries_outside)
 		{
 			BOOST_FOREACH(
-					const GPlatesMaths::PolygonPartitioner::PartitionedGeometry &partitioned_geometry,
+					const GPlatesMaths::PolygonPartitioner::PartitionedGeometry &
+							partitioned_geometry,
 					partitioned_geometries_outside.get())
 			{
 				partitioned_geometries_outside_list->append(partitioned_geometry.geometry);

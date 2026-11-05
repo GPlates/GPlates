@@ -68,7 +68,8 @@ namespace GPlatesMaths
 		 * Create with the polygon that will do the partitioning.
 		 *
 		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
-		 * point-in-polygon tests in @a partition_point.
+		 * point-in-polygon tests against the partitioning polygon: those of @a partition_point,
+		 * and the overlay's tests of a cut geometry's pieces.
 		 */
 		static
 		non_null_ptr_type
@@ -174,6 +175,14 @@ namespace GPlatesMaths
 		}
 
 
+		//! The speed of point-in-polygon tests against the partitioning polygon (see @a create).
+		PolygonOnSphere::PointInPolygonSpeedAndMemory
+		get_partition_point_speed_and_memory() const
+		{
+			return d_partition_point_speed_and_memory;
+		}
+
+
 		/**
 		 * Partition @a geometry_to_be_partitioned into geometries inside and outside
 		 * the partitioning polygon.
@@ -182,13 +191,11 @@ namespace GPlatesMaths
 		 * as polylines, a multi-point as one multi-point inside and one outside; a geometry that
 		 * is wholly inside or outside (section 5.3) comes back itself.
 		 *
-		 * With neither list this is the result-only path (phase4b-design.md section 10.2): it
-		 * stops as soon as the result is known, and it can say GEOMETRY_INTERSECTING where the
-		 * lists would leave one side empty (a region the cut collapses to nothing), and where the
-		 * overlay finds its classes inconsistent (the conservative answer).
+		 * The result is the same with or without lists (phase4b-design.md section 5.3); with
+		 * neither, it is found sooner where it can be (section 10.2).
 		 *
-		 * @throws PolygonOverlay::InconsistentOverlayException, when a list is given, if the
-		 * overlay's classes are inconsistent (phase4b-design.md section 9.2).
+		 * @throws PolygonOverlay::InconsistentOverlayException if the overlay's classes are
+		 * inconsistent (phase4b-design.md section 9.2), with or without lists.
 		 */
 		Result
 		partition_geometry(
@@ -229,15 +236,17 @@ namespace GPlatesMaths
 		 * Partition @a polygon_to_be_partitioned into polygons (with holes) inside and outside the
 		 * partitioning polygon (the polygon itself if it is wholly inside or outside).
 		 *
-		 * With neither list this is the result-only path (see @a partition_geometry).
+		 * The result is the same with or without lists (see @a partition_geometry).
 		 *
 		 * @throws PolygonOverlay::InconsistentOverlayException as @a partition_geometry does.
 		 */
 		Result
 		partition_polygon(
 				const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
-				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_inside = boost::none,
-				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_outside = boost::none) const;
+				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_inside =
+						boost::none,
+				boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_outside =
+						boost::none) const;
 
 
 		/**

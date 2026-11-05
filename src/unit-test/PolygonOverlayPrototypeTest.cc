@@ -43,6 +43,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolygonOverlay.h"
+#include "maths/PolygonPartitioner.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/Rotation.h"
 #include "maths/SmallCircleBounds.h"
@@ -1172,6 +1173,39 @@ namespace
 					}
 				}
 
+				// The partitioner (phase4b-design.md sections 5.3 and 10.2): the same result
+				// with or without lists (review 5 1.1), and a subject wholly on one side
+				// returned itself.
+				{
+					typedef GPlatesMaths::PolygonPartitioner Partitioner;
+					const Partitioner::non_null_ptr_type partitioner = Partitioner::create(Q);
+					try
+					{
+						Partitioner::partitioned_polygon_seq_type inside, outside;
+						const Partitioner::Result result =
+								partitioner->partition_polygon(P, inside, outside);
+						const Partitioner::Result result_only = partitioner->partition_polygon(P);
+						const bool is_inside = (result == Partitioner::GEOMETRY_INSIDE);
+						const Partitioner::partitioned_polygon_seq_type &whole =
+								is_inside ? inside : outside;
+						const Partitioner::partitioned_polygon_seq_type &other =
+								is_inside ? outside : inside;
+						const bool whole_right = (result == Partitioner::GEOMETRY_INTERSECTING)
+								? (!inside.empty() && !outside.empty())
+								: (other.empty() && whole.size() == 1 &&
+									whole.front().get() == P.get());
+						if (result_only != result || !whole_right)
+						{
+							oracle_report << "the partitioner says " << result << " with lists and "
+									<< result_only << " without; ";
+						}
+					}
+					catch (const Overlay::InconsistentOverlayException &)
+					{
+						oracle_report << "the partitioner threw; ";
+					}
+				}
+
 				const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
 				if (diagnostics.provenance_subject_mismatches != 0 ||
 					diagnostics.provenance_clip_mismatches != 0)
@@ -1451,6 +1485,52 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 	}
 }
 
+
+
+// The result contract's emptiness rule (phase4b-design.md section 5.3): in this dense shared-edge
+// case the classes keep pieces in the intersection, but every ring they make collapses in clean-up
+// (a region thinner than the thickness), so the subject is wholly outside and comes back itself,
+// with or without lists (review 5 1.1: the result-only path once said "intersecting" here).
+TEST(PolygonOverlayPrototypeTest, PartitionerCollapsedRegion)
+{
+	const std::vector<PrototypeCase> cases =
+			read_cases(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt");
+	const auto found = std::find_if(
+			cases.begin(),
+			cases.end(),
+			[](const PrototypeCase &c) { return c.name == "shared#247 seed 1"; });
+	ASSERT_TRUE(found != cases.end());
+	const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
+	{
+		return PolygonOnSphere::create(
+				rings.front(),
+				std::vector<std::vector<PointOnSphere>>(rings.begin() + 1, rings.end()));
+	};
+	const auto P = polygon(found->rings[0]);
+	const auto Q = polygon(found->rings[1]);
+
+	// The classes alone say intersecting; the intersection's rings all collapse.
+	Overlay::Overlay overlay(*P, *Q);
+	EXPECT_EQ(overlay.classify(true/*stop_when_result_known*/), Overlay::RESULT_INTERSECTING);
+	EXPECT_FALSE(overlay.stopped_early());
+	std::vector<Overlay::OutputPolygon> intersection;
+	overlay.extract(Overlay::INTERSECTION, intersection);
+	EXPECT_TRUE(intersection.empty());
+	EXPECT_GT(overlay.get_diagnostics().collapsed_rings_dropped, 0u);
+
+	const GPlatesMaths::PolygonPartitioner::non_null_ptr_type partitioner =
+			GPlatesMaths::PolygonPartitioner::create(Q);
+	EXPECT_EQ(
+			partitioner->partition_polygon(P),
+			GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE);
+	GPlatesMaths::PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+	EXPECT_EQ(
+			partitioner->partition_polygon(P, inside, outside),
+			GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE);
+	EXPECT_TRUE(inside.empty());
+	ASSERT_EQ(outside.size(), 1u);
+	EXPECT_EQ(outside.front().get(), P.get());
+}
 
 
 // The bundle rule's measurements on the bundle cases (Phase 5 review 2, section 1.1): the most

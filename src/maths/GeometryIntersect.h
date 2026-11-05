@@ -355,9 +355,9 @@ namespace GPlatesMaths
 		// vertex of the original geometry, then these should be correctly associated with vertices
 		// in the partitioned sections (by using segment/vertex indices).
 		//
-		// The following functions are also used by higher-level intersection code such as the polygon
-		// overlay (PolygonOverlay, which records each output point's location on the original
-		// geometries as its provenance) to do the crucial work of finding intersections.
+		// The following functions are also used by higher-level intersection code such as the
+		// polygon overlay (PolygonOverlay, which records each output point's location on the
+		// original geometries as its provenance) to do the crucial work of finding intersections.
 		//
 
 

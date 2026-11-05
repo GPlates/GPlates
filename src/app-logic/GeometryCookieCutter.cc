@@ -374,11 +374,12 @@ GPlatesAppLogic::GeometryCookieCutter::partition(
 		{
 			for (const PartitionedGeometry &geometry : geometries)
 			{
+				using GPlatesMaths::PolygonPartitioner;
 				partitioned_outside_geometries->push_back(
 						original_geometry
 								? PartitionedGeometry(
 										geometry.geometry,
-										GPlatesMaths::PolygonPartitioner::create_identity_provenance(
+										PolygonPartitioner::create_identity_provenance(
 												*geometry.geometry))
 								: geometry);
 			}
