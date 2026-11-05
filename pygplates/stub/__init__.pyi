@@ -10262,7 +10262,8 @@ class PlatePartitioner:
         :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
 
         The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
-        specified by *partition_method*. Properties are copied from the partitioning plate features to the
+        specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
+        its pieces (each piece with a coverage in a feature of its own), as GPlates' Assign Plate IDs does. Properties are copied from the partitioning plate features to the
         features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
 
         .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.

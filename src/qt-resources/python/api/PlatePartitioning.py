@@ -36,31 +36,45 @@ def _plate_partitioning_set_geometry(feature, geometries, geometry_property_name
     if any(isinstance(geometry, tuple) and is_exterior_ring_only(geometry) for geometry in geometries):
         feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name)
         for geometry, scalars in geometries:
-            feature.add(range_property_name, GmlDataBlock(scalars))
+            feature.add(range_property_name, GmlDataBlock(scalars), VerifyInformationModel.no)
     else:
         feature.set_geometry(geometries, geometry_property_name)
 
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
 def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grouped_by_property_name, range_property_names):
-    features = [feature_without_geometry.clone()]
+    features = []
+    def new_feature():
+        features.append(feature_without_geometry.clone())
+        return features[-1]
 
+    # The feature holding the geometries without coverages.
+    feature_for_geometries = None
     for geometry_property_name, geometries_with_property_name in geometries_grouped_by_property_name.items():
         range_property_name = range_property_names.get(geometry_property_name)
+
+        # Each geometry with a coverage goes into a feature of its own, as GPlates' Assign Plate IDs does: several
+        # coverages under one property name in one feature are matched to their geometries by number of points, so two
+        # with the same number would be ambiguous (refused by 'set_geometry()', and unreadable).
+        coverages = [geometry for geometry in geometries_with_property_name if isinstance(geometry, tuple)]
+        for coverage in coverages:
+            _plate_partitioning_set_geometry(new_feature(), [coverage], geometry_property_name, range_property_name)
+
+        geometries = [geometry for geometry in geometries_with_property_name if not isinstance(geometry, tuple)]
+        if not geometries:
+            continue
+        if feature_for_geometries is None:
+            feature_for_geometries = new_feature()
 
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
         # If so then try again by cloning one feature per extra geometry.
         try:
-            feature = features[-1] # most recent feature
-            _plate_partitioning_set_geometry(feature, geometries_with_property_name, geometry_property_name, range_property_name)
+            feature_for_geometries.set_geometry(geometries, geometry_property_name)
         except InformationModelError:
-            _plate_partitioning_set_geometry(feature, geometries_with_property_name[:1], geometry_property_name, range_property_name)
-            for geometry_index in range(1, len(geometries_with_property_name)):
-                feature = feature_without_geometry.clone()
-                _plate_partitioning_set_geometry(
-                        feature, geometries_with_property_name[geometry_index:geometry_index + 1], geometry_property_name, range_property_name)
-                features.append(feature)
+            feature_for_geometries.set_geometry(geometries[0], geometry_property_name)
+            for geometry_index in range(1, len(geometries)):
+                new_feature().set_geometry(geometries[geometry_index], geometry_property_name)
 
     # Return sequence of features.
     return features
@@ -144,7 +158,8 @@ def plate_partitioner_partition_features(
     :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
     
     The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
-    specified by *partition_method*. Properties are copied from the partitioning plate features to the
+    specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
+    its pieces (each piece with a coverage in a feature of its own), as GPlates' Assign Plate IDs does. Properties are copied from the partitioning plate features to the
     features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
     
     .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.

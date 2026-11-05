@@ -24,13 +24,10 @@
  */
 
 #include <algorithm>
-#include <cmath>
 #include <map>
-#include <numeric>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 #include <QString>
 
@@ -39,20 +36,12 @@
 #include "GeometrySetter.h"
 #include "GeometryUtils.h"
 #include "PartitionFeatureTask.h"
-#include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
 #include "ReconstructMethodRegistry.h"
-#include "ScalarCoverageFeatureProperties.h"
-
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
-#include "maths/GeometryDistance.h"
-#include "maths/MathsUtils.h"
-#include "maths/Vector3D.h"
 
 #include "model/Gpgim.h"
 #include "model/ModelUtils.h"
@@ -61,14 +50,8 @@
 #include "model/PropertyValueFinder.h"
 #include "model/TopLevelPropertyInline.h"
 
-#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GmlDataBlock.h"
-#include "property-values/GmlLineString.h"
-#include "property-values/GmlMultiPoint.h"
-#include "property-values/GmlOrientableCurve.h"
-#include "property-values/GmlPoint.h"
-#include "property-values/GmlPolygon.h"
 
 
 namespace GPlatesAppLogic

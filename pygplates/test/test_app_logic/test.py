@@ -2236,6 +2236,65 @@ class PlatePartitionerTestCase(unittest.TestCase):
             pieces_with_hole += 1 if pieces[0].get_number_of_interior_rings() else 0
         self.assertTrue(pieces_with_hole == 1)
 
+    def _static_plates(self, *plates):
+        return [pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere(points),
+                    reconstruction_plate_id=plate_id)
+                for plate_id, points in plates]
+
+    def test_partition_features_coverage_pieces(self):
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+        # A strip plate across a box cuts it into three pieces, two of them outside with four points each: each piece
+        # with a coverage goes into its own feature, so two with the same number of points are not ambiguous (review 7 1.1).
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 8), (-20, 12), (20, 12), (20, 8)])), pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_geometry((pygplates.PolygonOnSphere([(-5, 0), (-5, 20), (5, 20), (5, 0)]), {scalar_type: [1, 2, 3, 4]}))
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature], partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(partitioned) == 1 and len(unpartitioned) == 2)
+        for piece_feature in partitioned + unpartitioned:
+            piece, scalars = piece_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+            self.assertTrue(len(scalars[scalar_type]) == len(piece.get_points()))
+
+        # A coverage's range goes only with its geometry: a feature holding only another geometry property's pieces
+        # has no range property (review 7's mutation M1).
+        feature = pygplates.Feature()
+        feature.set_geometry((pygplates.PolygonOnSphere([(-5, 0), (-5, 20), (5, 20), (5, 0)]), {scalar_type: [1, 2, 3, 4]}))
+        feature.set_geometry(
+                pygplates.PolylineOnSphere([(30, 0), (30, 20)]),
+                pygplates.PropertyName.gpml_center_line_of,
+                verify_information_model=pygplates.VerifyInformationModel.no)
+        for piece_feature in plate_partitioner.partition_features([feature]):
+            has_range = any(isinstance(property.get_value(), pygplates.GmlDataBlock) for property in piece_feature)
+            has_polygon = piece_feature.get_geometry(pygplates.PropertyName.gpml_unclassified_geometry) is not None
+            self.assertTrue(has_range == has_polygon)
+
+    def test_partition_features_other_cases(self):
+        # A feature whose valid time excludes the partitioning time is still partitioned, as it always was in
+        # pyGPlates (review 7's mutation M2: Assign Plate IDs' time check is not used here).
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_geometry(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)]))
+        feature.set_valid_time(100, 50)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+
+        # Most overlapping: a feature's polygons decide before its polylines (review 7's mutation M4), here a small
+        # polygon in plate 2 against a long polyline in plate 1.
+        feature = pygplates.Feature()
+        feature.set_geometry([pygplates.PolygonOnSphere([(-1, -2), (-1, -1), (1, -1), (1, -2)]),
+                              pygplates.PolylineOnSphere([(0, 5), (0, 35)])],
+                             verify_information_model=pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features(
+                [feature], partition_method=pygplates.PartitionMethod.most_overlapping_plate)
+        self.assertTrue(len(partitioned) == 1 and partitioned[0].get_reconstruction_plate_id() == 2)
+
+    def test_partition_point(self):
         rotation_model = pygplates.RotationModel(self.rotation_features)
         resolved_topologies = []
         pygplates.resolve_topologies(
