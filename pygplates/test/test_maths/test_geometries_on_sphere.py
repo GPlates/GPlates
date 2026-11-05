@@ -1787,6 +1787,79 @@ class PolygonOnSphereCase(unittest.TestCase):
                 else:
                     self.assertEqual(answers, [expected] * 3, msg=msg)
 
+    def _box(self, lat_0, lat_1, lon_0, lon_1):
+        return [(lat_0, lon_0), (lat_0, lon_1), (lat_1, lon_1), (lat_1, lon_0)]
+
+    def test_partition_polygons_with_holes(self):
+        # A partitioning polygon wholly inside the polygon partitioned: inside is its own region, outside the
+        # polygon with a hole there (this was partitioned wholly outside before pyGPlates 1.1).
+        partitioner = pygplates.PolygonOnSphere(self._box(-3, 3, 5, 10))
+        polygon = pygplates.PolygonOnSphere(self._box(-10, 10, 0, 20))
+        inside, outside = [], []
+        self.assertTrue(partitioner.partition(polygon, inside, outside) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(partitioner.partition(polygon) == pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(len(inside) == 1 and len(outside) == 1)
+        self.assertTrue(inside[0].get_number_of_interior_rings() == 0)
+        self.assertTrue(outside[0].get_number_of_interior_rings() == 1)
+        self.assertAlmostEqual(inside[0].get_area() + outside[0].get_area(), polygon.get_area())
+
+        # A polygon with a hole cut by a partitioning polygon with a hole: the partitioner's hole cuts it too.
+        partitioner = pygplates.PolygonOnSphere(self._box(-15, 15, 0, 30), [self._box(-5, 5, 10, 20)])
+        polygon = pygplates.PolygonOnSphere(self._box(-2, 2, 5, 25), [self._box(-1, 1, 6, 8)])
+        inside, outside = [], []
+        self.assertTrue(partitioner.partition(polygon, inside, outside) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(all(isinstance(piece, pygplates.PolygonOnSphere) for piece in inside + outside))
+        self.assertTrue(any(piece.is_point_in_polygon(pygplates.PointOnSphere(0, 15)) for piece in outside))
+        self.assertFalse(any(piece.is_point_in_polygon(pygplates.PointOnSphere(0, 7)) for piece in inside + outside))
+        self.assertAlmostEqual(sum(piece.get_area() for piece in inside + outside), polygon.get_area())
+
+    def test_partition_touching(self):
+        # A geometry that only touches the partitioning polygon, or runs along its outline, is not split: it is
+        # returned itself, inside or outside.
+        partitioner = pygplates.PolygonOnSphere(self._box(-10, 10, 0, 10))
+        for points, expected in (
+                ([(0, 10), (-5, 15), (5, 15)], pygplates.PolygonOnSphere.PartitionResult.outside),
+                ([(0, 10), (5, 5), (-5, 5)], pygplates.PolygonOnSphere.PartitionResult.inside),
+                (self._box(-10, 10, 10, 20), pygplates.PolygonOnSphere.PartitionResult.outside),
+                (self._box(-10, 10, 0, 10), pygplates.PolygonOnSphere.PartitionResult.inside)):
+            polygon = pygplates.PolygonOnSphere(points)
+            inside, outside = [], []
+            self.assertTrue(partitioner.partition(polygon, inside, outside) == expected)
+            self.assertTrue(partitioner.partition(polygon) == expected)
+            whole = inside if expected == pygplates.PolygonOnSphere.PartitionResult.inside else outside
+            self.assertTrue(whole == [polygon])
+            self.assertTrue(len(inside) + len(outside) == 1)
+        # A polyline along the outline is inside.
+        polyline = pygplates.PolylineOnSphere([(-5, 10), (5, 10)])
+        inside = []
+        self.assertTrue(partitioner.partition(polyline, inside) == pygplates.PolygonOnSphere.PartitionResult.inside)
+        self.assertTrue(inside == [polyline])
+
+    def test_partition_error(self):
+        # An input whose cut is inconsistent (a dense shared-edge case the C++ tests share) raises PartitionError,
+        # with or without lists, and the error is a MathematicalError.
+        filename = os.path.join(os.path.dirname(__file__), '..', '..', '..',
+                'src', 'unit-test', 'data', 'polygon-overlay', 'inconsistent.txt')
+        rings = {'P': [], 'Q': []}
+        with open(filename) as f:
+            words = f.read().split()
+        index = 0
+        while index < len(words):
+            if words[index] == 'ring':
+                which, count = words[index + 1], int(words[index + 2])
+                values = [float(word) for word in words[index + 3:index + 3 + 3 * count]]
+                rings[which].append([pygplates.PointOnSphere(values[k:k + 3]) for k in range(0, len(values), 3)])
+                index += 3 + 3 * count
+            else:
+                index += 1
+        subject = pygplates.PolygonOnSphere(rings['P'][0], rings['P'][1:])
+        partitioner = pygplates.PolygonOnSphere(rings['Q'][0], rings['Q'][1:])
+        self.assertRaises(pygplates.PartitionError, partitioner.partition, subject)
+        self.assertRaises(pygplates.PartitionError, partitioner.partition, subject, [], [])
+        self.assertTrue(issubclass(pygplates.PartitionError, pygplates.MathematicalError))
+
     def test_partition(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         

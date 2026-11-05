@@ -115,6 +115,7 @@ def plate_partitioner_partition_features(
         (**note:** new features are always returned, never the originals passed in via *features*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+    :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
     
     The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
@@ -348,27 +349,30 @@ def plate_partitioner_partition_features(
             if partitioned_inside_geometries:
                 # Determine which partitioning plate (if feature is partitioned into any) overlaps the current feature the most.
                 #
-                # Note: It's possible for an inside polyline/polygon to have zero arc length (if all its points are coincident).
+                # Note: It's possible for an inside polygon/polyline to have zero area/arc length (if all its points are coincident).
                 #       So we need to start with a 'max_geometry_size_measure' that will pass 'geometry_size_measure > max_geometry_size_measure'
-                #       when 'geometry_size_measure' is '(0.0, 0)' otherwise 'most_overlapping_partitioning_plate' will remain None.
-                #       So we use '(0.0, -1)'.
-                max_geometry_size_measure = (0.0, -1)
+                #       when 'geometry_size_measure' is '(0.0, 0.0, 0)' otherwise 'most_overlapping_partitioning_plate' will remain None.
+                #       So we use '(0.0, 0.0, -1)'.
+                max_geometry_size_measure = (0.0, 0.0, -1)
                 most_overlapping_partitioning_plate = None
                 for partitioning_plate, inside_geometries in partitioned_inside_geometries:
-                    # Accumulate the size of the geometries inside the current partitioning plate.
+                    # Accumulate the size of the geometries inside the current partitioning plate: a polygon's area
+                    # (not its arc length, which its cuts would inflate), a polyline's arc length, and the number
+                    # of points of a point or multi-point (as GPlates' Assign Plate IDs does).
+                    geometries_area = 0.0
                     geometries_arc_length = 0.0
                     geometries_num_points = 0
                     for geometry in inside_geometries:
-                        # If geometry is a polyline or polygon then accumulate its arc length.
-                        # Otherwise it's a point or multipoint so accumulate number of points.
-                        try:
+                        if isinstance(geometry, PolygonOnSphere):
+                            geometries_area += geometry.get_area()
+                        elif isinstance(geometry, PolylineOnSphere):
                             geometries_arc_length += geometry.get_arc_length()
-                        except AttributeError:
+                        else:
                             geometries_num_points += len(geometry.get_points())
-                    
-                    # When comparing measures we favour arc length (for polyline/polygon),
-                    # followed by number points (for point/multipoint).
-                    geometry_size_measure = (geometries_arc_length, geometries_num_points)
+
+                    # When comparing measures we favour area (for polygons), then arc length (for polylines),
+                    # then the number of points (for points and multi-points).
+                    geometry_size_measure = (geometries_area, geometries_arc_length, geometries_num_points)
                     if geometry_size_measure > max_geometry_size_measure:
                         max_geometry_size_measure = geometry_size_measure
                         most_overlapping_partitioning_plate = partitioning_plate
@@ -474,6 +478,7 @@ def partition_into_plates(
         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+    :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
     
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the

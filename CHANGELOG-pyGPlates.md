@@ -35,6 +35,12 @@ Changes since 1.0.0:
 * A scalar coverage on a polygon with interior rings has a scalar value for every point of every ring, in the order of `PolygonOnSphere.get_points()`. `Feature.set_geometry()` already required that, but `Feature.get_geometry()` (with `CoverageReturn.geometry_and_scalars`) then didn't find the coverage, since it expected values for the exterior ring only.
   * Files from earlier versions with values for the exterior ring only can still be read: `Feature.get_geometry()` returns that coverage's geometry as a polygon of the exterior ring alone.
 * Fixed `Feature.set_geometry()` with a coverage that has the wrong number of scalar values, a property name that doesn't support coverages, or two coverages with the same number of points: it raises without changing the feature (previously the new geometry was set first, leaving it with the old scalar values).
+* `PolygonOnSphere.partition()`, `PlatePartitioner.partition_geometry()`, `PlatePartitioner.partition_features()` and `partition_into_plates()`:
+  * A polygon that intersects a partitioning polygon or plate is now partitioned into polygons (with interior rings where needed), not polylines.
+  * The interior rings of both polygons take part (previously only exterior rings were intersected). For example, a partitioning polygon wholly inside a polygon is now its own piece inside, leaving a hole in the piece outside (previously the whole polygon was outside).
+  * A geometry that only touches a partitioning polygon, or runs along its outline, is no longer split there: it is returned whole, inside or outside (a polyline along the outline is inside).
+  * Raise the new `PartitionError` if a cut is inconsistent (rare: where the two outlines run within about 1e-6 radians of each other along many closely spaced vertices).
+* `PartitionMethod.most_overlapping_plate` compares the area of polygons inside each plate (previously the length of their outlines, which the cuts inflate), then the length of polylines, then the number of points.
 * Documentation sample code:
   * Every sample is now a Python 3 script that the test suite runs, so it can be copied and run as shown (many samples previously used Python 2 `print` statements).
   * Samples use `ReconstructSnapshot` and `PlatePartitioner` instead of `reconstruct()` and `partition_into_plates()` (except where a one-off partition is clearer).

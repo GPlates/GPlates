@@ -9386,6 +9386,14 @@ class OpenFileForWritingError(GPlatesError):
     """A file could not be opened for writing (for example, its directory does not exist or is not writable).
     """
 
+class PartitionError(MathematicalError):
+    """A geometry could not be partitioned consistently by a partitioning polygon.
+
+      Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This can happen where the two outlines run within about 1e-6 radians of each other along many closely spaced vertices. Nothing is partitioned when it is raised.
+
+      .. versionadded:: 1.1
+    """
+
 class PartitionMethod(int):
     """How a feature is partitioned when it overlaps one or more partitioning plates.
 
@@ -9395,7 +9403,7 @@ class PartitionMethod(int):
       Value                                  Description
       ====================================== ==============
       PartitionMethod.split_into_plates      Split each feature into the partitioning plates, and into unpartitioned parts that are outside all partitioning plates (if the plates do not have global coverage). For example, a feature that overlaps two plates is cloned twice, each clone getting the part of the original geometry inside its plate, and any part outside all plates becomes a third clone containing the unpartitioned geometry. The partitioned clones have properties copied from their partitioning plate features (as determined by *properties_to_copy*); the unpartitioned clone has none copied.
-      PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the length of polyline or polygon geometry inside each plate (or the number of points for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.
+      PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the area of polygon geometry inside each plate, then by the length of polyline geometry, then by the number of points (for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. (Before pyGPlates 1.1 a polygon was measured by its outline's length.) The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.
       ====================================== ==============
     """
     split_into_plates: ClassVar[PartitionMethod]
@@ -10251,6 +10259,7 @@ class PlatePartitioner:
 
         :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features*)
         :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+        :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
 
         The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
         specified by *partition_method*. Properties are copied from the partitioning plate features to the
@@ -10385,6 +10394,7 @@ class PlatePartitioner:
         :param partitioned_outside_geometries: optional list of geometries partitioned *outside* all partitioning plates (note that the list is *not* cleared first)
         :type partitioned_outside_geometries: list of GeometryOnSphere, or None
         :rtype: bool
+        :raises PartitionError: if cutting *geometry* by a partitioning plate finds no consistent result
 
         If *geometry* is inside any partitioning plates (even partially) then ``True`` is returned and the inside parts of *geometry* are appended to *partitioned_inside_geometries* (if specified) and the outside parts appended to *partitioned_outside_geometries* (if specified). Otherwise ``False`` is returned and *geometry* is appended to *partitioned_outside_geometries* (if specified).
 
@@ -10392,7 +10402,10 @@ class PlatePartitioner:
 
         .. note:: Each element in *partitioned_inside_geometries* is a 2-tuple consisting of a partitioning :class:`ReconstructionGeometry` and a list of the :class:`geometry<GeometryOnSphere>` pieces partitioned into it (note that these pieces can come from multiple input geometries if *geometry* is a sequence). In contrast, *partitioned_outside_geometries* is simply a list of :class:`geometries<GeometryOnSphere>` outside all partitioning plates.
 
-        .. warning:: Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry is partial. See :meth:`PolygonOnSphere.partition` for more details.
+        A polygon geometry that intersects a partitioning plate is cut into polygons (with interior rings where needed), and the pieces outside one plate are cut by the next. A geometry that only touches a plate is not cut there. See :meth:`PolygonOnSphere.partition` for more details.
+
+        .. versionchanged:: 1.1
+           A polygon geometry is partitioned into polygons (previously polylines), and a geometry that only touches a plate is no longer split there.
 
         To find the length of a polyline partitioned inside all reconstructed static polygons:
         ::
@@ -11185,6 +11198,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon (note that the list is *not* cleared first)
         :type partitioned_geometries_outside: list of GeometryOnSphere, or None
         :rtype: PolygonOnSphere.PartitionResult
+        :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result (whether or not the lists are specified)
 
         The returned result is:
 
@@ -11200,11 +11214,12 @@ class PolygonOnSphere(GeometryOnSphere):
 
         If a partitioned :class:`multi-point<MultiPointOnSphere>` contains points both inside and outside this polygon then *PolygonOnSphere.PartitionResult.intersecting* is returned. In this case the points *inside* are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_inside* (if specified) and the points *outside* are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_outside* (if specified).
 
-        .. warning:: | Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry is partial.
-                     | If a polygon geometry is entirely inside or entirely outside this polygon then it will get added as a **polygon** as expected (to *partitioned_geometries_inside* or *partitioned_geometries_outside* respectively if specified).
-                     | But if a polygon geometry intersects this polygon, then partitioned **polylines** (not polygons) are added (to the optional inside/outside lists).
-                     | This is also how it is in the Assign Plate IDs dialog in `GPlates <http://www.gplates.org>`_.
-                     | *In a future release this will be fixed to always return polygons.*
+        A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, with interior rings where the pieces need them. The interior rings of both polygons take part in the cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region *inside* and, *outside*, the polygon geometry with a hole where this polygon is.
+
+        A geometry that only touches this polygon (from inside or outside), runs along its outline, or is identical to it, is not cut: it is entirely *inside* or *outside*, and *geometry* itself is added to the corresponding list. A :class:`polyline<PolylineOnSphere>` running along this polygon's outline is *inside*.
+
+        .. versionchanged:: 1.1
+           A polygon geometry that intersects this polygon is partitioned into polygons (previously polylines), and the interior rings of both polygons take part. A geometry that only touches this polygon, or runs along its outline, is no longer split there. :class:`PartitionError` is raised if the cut is inconsistent.
 
         Test if a polyline is entirely inside a polygon:
 
@@ -18465,6 +18480,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
 
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+    :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
 
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the

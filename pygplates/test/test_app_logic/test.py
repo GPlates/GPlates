@@ -2143,6 +2143,35 @@ class PlatePartitionerTestCase(unittest.TestCase):
         for outside_geom in partitioned_outside_geometries:
             self.assertTrue(isinstance(outside_geom, pygplates.PolygonOnSphere))
 
+    def test_most_overlapping_plate_by_area(self):
+        # An L-shaped polygon: a thin arm in plate 1 whose outline is longer than that of the fat block in
+        # plate 2. By area (pyGPlates 1.1) the feature goes to plate 2; by arc length it went to plate 1.
+        def static_plate(plate_id, points):
+            return pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere(points),
+                    reconstruction_plate_id=plate_id)
+        plates = [
+                static_plate(1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                static_plate(2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])]
+        l_shape = pygplates.PolygonOnSphere(
+                [(-10, -10), (-10, 0), (-0.5, 0), (-0.5, 30), (0.5, 30), (0.5, 0), (10, 0), (10, -10)])
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature, l_shape)
+
+        plate_partitioner = pygplates.PlatePartitioner(plates, pygplates.RotationModel([]))
+        inside = []
+        plate_partitioner.partition_geometry(l_shape, inside)
+        pieces = dict((partition.get_feature().get_reconstruction_plate_id(), geometries[0])
+                for partition, geometries in inside)
+        self.assertTrue(pieces[1].get_arc_length() > pieces[2].get_arc_length())
+        self.assertTrue(pieces[1].get_area() < pieces[2].get_area())
+
+        partitioned = plate_partitioner.partition_features(
+                [feature], partition_method=pygplates.PartitionMethod.most_overlapping_plate)
+        self.assertTrue(len(partitioned) == 1)
+        self.assertTrue(partitioned[0].get_reconstruction_plate_id() == 2)
+
     def test_partition_point(self):
         rotation_model = pygplates.RotationModel(self.rotation_features)
         resolved_topologies = []

@@ -425,7 +425,7 @@ export_plate_partitioner()
 			"  Value                                  Description\n"
 			"  ====================================== ==============\n"
 			"  PartitionMethod.split_into_plates      Split each feature into the partitioning plates, and into unpartitioned parts that are outside all partitioning plates (if the plates do not have global coverage). For example, a feature that overlaps two plates is cloned twice, each clone getting the part of the original geometry inside its plate, and any part outside all plates becomes a third clone containing the unpartitioned geometry. The partitioned clones have properties copied from their partitioning plate features (as determined by *properties_to_copy*); the unpartitioned clone has none copied.\n"
-			"  PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the length of polyline or polygon geometry inside each plate (or the number of points for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.\n"
+			"  PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the area of polygon geometry inside each plate, then by the length of polyline geometry, then by the number of points (for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. (Before pyGPlates 1.1 a polygon was measured by its outline's length.) The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.\n"
 			"  ====================================== ==============\n")
 			.value("split_into_plates", GPlatesApi::PartitionMethod::SPLIT_INTO_PLATES)
 			.value("most_overlapping_plate", GPlatesApi::PartitionMethod::MOST_OVERLAPPING_PLATE);
@@ -686,6 +686,8 @@ export_plate_partitioner()
 				"all partitioning plates (note that the list is *not* cleared first)\n"
 				"  :type partitioned_outside_geometries: list of GeometryOnSphere, or None\n"
 				"  :rtype: bool\n"
+				"  :raises PartitionError: if cutting *geometry* by a partitioning plate finds no consistent "
+				"result\n"
 				"\n"
 				"  If *geometry* is inside any partitioning plates (even partially) "
 				"then ``True`` is returned and the inside parts of *geometry* are appended to "
@@ -705,8 +707,13 @@ export_plate_partitioner()
 				"*partitioned_outside_geometries* is simply a list of :class:`geometries<GeometryOnSphere>` "
 				"outside all partitioning plates.\n"
 				"\n"
-				"  .. warning:: Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry "
-				"is partial. See :meth:`PolygonOnSphere.partition` for more details.\n"
+				"  A polygon geometry that intersects a partitioning plate is cut into polygons (with "
+				"interior rings where needed), and the pieces outside one plate are cut by the next. A geometry that "
+				"only touches a plate is not cut there. See :meth:`PolygonOnSphere.partition` for more details.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     A polygon geometry is partitioned into polygons (previously polylines), and a geometry that "
+				"only touches a plate is no longer split there.\n"
 				"\n"
 				"  To find the length of a polyline partitioned inside all reconstructed static polygons:\n"
 				"  ::\n"
