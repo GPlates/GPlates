@@ -708,10 +708,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
     its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
     done, and review 6 with its fixes (the overlay's early stop dropped); step 13a done. Next: step
-    13b (coverages through `partition_features`; Status, 2026-11-06), then the rest of step 13 (pyGPlates:
-    `PartitionError`, the docstrings' polyline warnings, `partition_features` carrying coverages
-    through the private helper, `most_overlapping_plate` by area, the stub, and both changelogs);
-    open: two
+    13b (coverages through `partition_features`, the private helper; Status, 2026-11-06), a Fable
+    review of step 13, then step 14 (the sliver filter and the real-data measurements); open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
