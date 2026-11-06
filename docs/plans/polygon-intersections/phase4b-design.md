@@ -933,6 +933,16 @@ As built (step 14):
 - **A rule this section left open**: when the filter empties both outputs (a subject thinner than the
   width, cut across), the subject is whole on the side that lost the larger area. With no filter the
   tie keeps the old rule, outside.
+- **Decided (developer, 2026-11-07, from the step 14 measurements, 11.4 and PLAN.md's Status entry of
+  that date): on at `10 h`** (about 90 m) in the cascade. That is `GeometryCookieCutter`'s default
+  (`get_default_sliver_min_width`), so it covers Assign Plate IDs and pyGPlates' `PlatePartitioner`
+  and `partition_into_plates`. pyGPlates exposes it as `sliver_width_threshold_radians`: `None` (the
+  default) gives the default width, and zero turns the filter off. `PolygonPartitioner` keeps none
+  (off) as its default, so `PolygonOnSphere.partition` and the raster meshes stay exact.
+  - Why `10 h`: below `h` the overlay can't tell the two outlines apart. Up to `10 h`, the measured
+    slivers are artefacts of an outline digitised along a plate boundary, below the resolution of
+    global data, and they would take the neighbouring plate's ID. At `100 h` the filter starts on
+    pieces that may be real small geography.
 
 ## 5. Boolean operations
 

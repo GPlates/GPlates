@@ -757,7 +757,7 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     output's edges, the 8 under `h / 10` and 29 under `h` are exactly the inputs' own, and no edge on
     either side is under `1e-9` radians. Nothing found calls for a filter of them.
   - **Next, for the developer**: the default and the width (design 4.5), then wiring it through (step
-    14b).
+    14b; decided and done, the next entry but one).
 
 - 2026-11-07: **Two items for PR B from the `src/api` audit triage** (finding G8-1, decided with the
   developer in the audit session on `main`; recorded in the planning repository's
@@ -790,6 +790,18 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
        in the shared partitioning code both products use, or in both paths. Otherwise pyGPlates and
        GPlates diverge again. Tests in both products; changelog lines for both.
 
+- 2026-11-07: **Phase 5 step 14b done: the sliver filter on at `10 h` in the cascade** (`d771f769c`; design 4.5,
+  "Decided"). **Decided (developer)**: 10 h, about 90 m, as `GeometryCookieCutter`'s default
+  (`get_default_sliver_min_width`), which reaches Assign Plate IDs and pyGPlates' `PlatePartitioner`;
+  `PolygonPartitioner` and `PolygonOnSphere.partition` stay off; pyGPlates exposes it. The argument is
+  `sliver_width_threshold_radians` (named after `distance_threshold_radians`), on both `PlatePartitioner`
+  constructors and on `partition_into_plates`. `None` gives the default, as `anchor_plate_id=None` does,
+  zero turns the filter off, and a negative value raises `ValueError`. Tests: the cookie cutter's
+  default and none (the test helper now constructs with the defaults, so it tests the constructor's own
+  default, which Assign Plate IDs relies on), and pyGPlates' argument through both constructors and
+  `partition_into_plates`. Four mutations, each caught. Changelog entries in both products; stub
+  regenerated, docs built from scratch. GPlates 197 of 197, pyGPlates 7 of 7.
+
 - **Resume here** (updated 2026-11-07):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -799,9 +811,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
     its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
     done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) and
-    review 7 with its fixes done; step 14a (the sliver filter, off, and the real-data measurements)
-    done, 2026-11-07. Next: the developer decides the filter's default and width (Status,
-    2026-11-07), then step 14b wires it through. Also for PR B: the two `partition_features` items
+    review 7 with its fixes done; step 14 (the sliver filter, on at `10 h` in the cascade, and the
+    real-data measurements) done, 2026-11-07. Next: the two `partition_features` items
     from the `src/api` audit (Status, 2026-11-07, "Two items for PR B"). Open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
