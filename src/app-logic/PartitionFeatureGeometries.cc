@@ -45,6 +45,8 @@
 #include "maths/Vector3D.h"
 
 #include "model/FeatureVisitor.h"
+#include "model/ModelUtils.h"
+#include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -52,6 +54,8 @@
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlTimeWindow.h"
 
 
 namespace GPlatesAppLogic
@@ -144,6 +148,36 @@ namespace GPlatesAppLogic
 					gpml_constant_value.value()->accept_visitor(*this);
 				}
 
+
+				/**
+				 * A time-dependent geometry is partitioned only if it has a single time window, and
+				 * that window contains the reconstruction time: then it is partitioned as a constant
+				 * geometry, and its pieces (or, whole, the geometry) are written back as constant
+				 * properties. With one window there are no others to leave undefined, and its begin
+				 * and end say no more than the feature's valid time (early GPlates builds wrapped a
+				 * single geometry this way). Any other time-dependent geometry is not partitioned (a
+				 * window's pieces would leave the other windows undefined), so its property stays,
+				 * unchanged. A GpmlIrregularSampling (the base visitor's no-op) is never partitioned.
+				 */
+				virtual
+				void
+				visit_gpml_piecewise_aggregation(
+						gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
+				{
+					GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+							gpml_piecewise_aggregation.time_windows();
+					if (time_windows.size() != 1 ||
+						!time_windows.front()->valid_time()->contains(
+								d_cookie_cut_geometry.get_reconstruction_time()))
+					{
+						return;
+					}
+
+					d_single_time_window_value = time_windows.front()->time_dependent_value();
+					time_windows.front()->time_dependent_value()->accept_visitor(*this);
+					d_single_time_window_value = boost::none;
+				}
+
 			private:
 				//! Does the cookie-cutting.
 				const GeometryCookieCutter &d_cookie_cut_geometry;
@@ -156,6 +190,9 @@ namespace GPlatesAppLogic
 
 				//! The results of the cookie-cutting.
 				boost::shared_ptr<PartitionedFeature> d_partition_results;
+
+				//! The value of the single time window being visited, if any (see above).
+				boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> d_single_time_window_value;
 
 
 				//! One value per element of a coverage's tuple (its scalar types).
@@ -389,6 +426,24 @@ namespace GPlatesAppLogic
 					partition_geometry(geometry_domain, geometry_range, partitioned_geometry_property);
 				}
 
+				static
+				GPlatesModel::TopLevelProperty::non_null_ptr_type
+				create_constant_property(
+						const GPlatesModel::PropertyName &property_name,
+						const GPlatesModel::PropertyValue::non_null_ptr_type &property_value)
+				{
+					const boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> property =
+							GPlatesModel::ModelUtils::create_top_level_property(
+									property_name,
+									property_value,
+									boost::none/*feature_type*/,
+									false/*check_property_value_type*/);
+					return property
+							? property.get()
+							: GPlatesModel::TopLevelProperty::non_null_ptr_type(
+									GPlatesModel::TopLevelPropertyInline::create(property_name, property_value));
+				}
+
 				PartitionedFeature::GeometryProperty &
 				get_geometry_property(
 						const geometry_domain_type &geometry_domain,
@@ -409,8 +464,15 @@ namespace GPlatesAppLogic
 					// of intrusive pointer copies.
 					// This might be used by the caller to move a geometry property between features.
 					// For example, if this geometry property requires a different plate id.
+					//
+					// For a single time window's geometry, a constant property of the same name instead,
+					// with the time-dependent wrapper (or none) the information model gives that name.
 					const GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_domain_property_clone =
-							(*geometry_domain_property_iterator)->clone();
+							d_single_time_window_value
+									? create_constant_property(
+											geometry_domain_property_name,
+											d_single_time_window_value.get()->clone())
+									: (*geometry_domain_property_iterator)->clone();
 
 					boost::optional<GPlatesModel::PropertyName> geometry_range_property_name;
 					boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> geometry_range_property_clone;

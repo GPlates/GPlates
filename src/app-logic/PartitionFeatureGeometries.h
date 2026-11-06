@@ -178,6 +178,11 @@ namespace GPlatesAppLogic
 		 * (and optional associated range) properties are returned. This enables the caller to
 		 * subsequently remove those properties from the feature if it is to be re-used as
 		 * one of the partitioned features.
+		 *
+		 * A time-dependent geometry property is partitioned only if it has a single time window
+		 * containing the reconstruction time (then as a constant one, its property clone being
+		 * a constant property); any other is not partitioned, and is not in
+		 * @a partitioned_properties, so that the caller leaves it unchanged.
 		 */
 		boost::shared_ptr<const PartitionedFeature>
 		partition_feature(

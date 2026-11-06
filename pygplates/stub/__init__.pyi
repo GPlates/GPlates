@@ -10276,6 +10276,11 @@ class PlatePartitioner:
         its pieces (each piece with a coverage in a feature of its own), as GPlates' Assign Plate IDs does. Properties are copied from the partitioning plate features to the
         features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
 
+        A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+        that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+        geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned. A feature
+        with nothing to partition (such as no geometry) is returned unpartitioned.
+
         .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.
 
         So while the partitioning polygons are reconstructed/resolved to the reconstruction time before testing for overlap/intersection,
@@ -18507,6 +18512,11 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
     features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+
+    A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+    that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned. A feature
+    with nothing to partition (such as no geometry) is returned unpartitioned.
 
     .. note:: New features are always returned. The original features (passed into the *features_to_partition* argument) are never modified or returned.
 

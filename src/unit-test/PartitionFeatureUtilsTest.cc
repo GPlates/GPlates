@@ -51,12 +51,16 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureType.h"
+#include "model/ModelUtils.h"
 #include "model/PropertyName.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GmlDataBlock.h"
 #include "property-values/GmlDataBlockCoordinateList.h"
+#include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlTimeWindow.h"
 #include "property-values/ValueObjectType.h"
 
 #include "model/PropertyValueFinder.h"
@@ -926,4 +930,150 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsSkipsInconsistentFeature)
 	ASSERT_TRUE(plate_id);
 	EXPECT_EQ(plate_id.get()->get_value(), 5u);
 	EXPECT_FALSE(GPlatesAppLogic::AssignPlateIds::get_feature_description(feature).isEmpty());
+}
+
+
+namespace
+{
+	/**
+	 * A feature in @a collection with plate ID 5 and @a polygon as its geometry, in a piecewise
+	 * aggregation with a time window per (begin, end) of @a windows.
+	 */
+	GPlatesModel::FeatureHandle::weak_ref
+	add_time_dependent_feature(
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+			const std::vector<std::pair<double, double>> &windows)
+	{
+		const GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(
+				collection,
+				GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature"));
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+						GPlatesPropertyValues::GpmlPlateId::create(5)));
+		std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
+		for (const std::pair<double, double> &window : windows)
+		{
+			const GPlatesModel::PropertyValue::non_null_ptr_type value =
+					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(polygon);
+			time_windows.push_back(
+					GPlatesPropertyValues::GpmlTimeWindow::create(
+							value,
+							GPlatesModel::ModelUtils::create_gml_time_period(
+									GPlatesPropertyValues::GeoTimeInstant(window.first),
+									GPlatesPropertyValues::GeoTimeInstant(window.second)),
+							value->get_structural_type()));
+		}
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"),
+						GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
+								time_windows,
+								time_windows.front()->time_dependent_value()->get_structural_type())));
+		return feature;
+	}
+
+	//! Per feature in @a collection: its plate ID, and whether its geometry is time-dependent.
+	std::vector<std::pair<GPlatesModel::integer_plate_id_type, bool>>
+	get_plate_ids_and_time_dependence(
+			const GPlatesModel::FeatureCollectionHandle &collection)
+	{
+		std::vector<std::pair<GPlatesModel::integer_plate_id_type, bool>> results;
+		for (const auto &feature : collection)
+		{
+			const auto plate_id = GPlatesModel::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature->reference(),
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
+			bool time_dependent = false;
+			for (const auto &property : *feature)
+			{
+				const GPlatesModel::TopLevelPropertyInline *inline_property =
+						dynamic_cast<const GPlatesModel::TopLevelPropertyInline *>(property.get());
+				if (property->get_property_name() ==
+						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry") &&
+					inline_property)
+				{
+					for (const auto &value : *inline_property)
+					{
+						time_dependent = time_dependent || dynamic_cast<
+								const GPlatesPropertyValues::GpmlPiecewiseAggregation *>(&*value);
+					}
+				}
+			}
+			results.push_back(
+					std::make_pair(plate_id ? plate_id.get()->get_value() : 0, time_dependent));
+		}
+		std::sort(results.begin(), results.end());
+		return results;
+	}
+}
+
+
+// A time-dependent geometry in Assign Plate IDs (the src/api audit's G8-1, decided 2026-11-07): one
+// with a single time window containing the reconstruction time is partitioned as a constant geometry,
+// and written back as constant properties (cut pieces and, by the most overlapping plate, the whole
+// geometry); one whose window doesn't contain the time, or with two windows, is left unchanged.
+TEST(PartitionFeatureUtilsTest, AssignPlateIdsTimeDependentGeometry)
+{
+	// Plates 100 and 101 share the equator; the polygon crosses it, mostly in plate 100.
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type plates =
+			GPlatesModel::FeatureCollectionHandle::create();
+	GPlatesModel::integer_plate_id_type plate_id = 100;
+	for (const auto &boundary : { polygon(box(0, 40, -20, 20)), polygon(box(-40, 0, -20, 20)) })
+	{
+		const GPlatesModel::FeatureHandle::weak_ref plate = GPlatesModel::FeatureHandle::create(
+				plates->reference(),
+				GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature"));
+		plate->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+						GPlatesPropertyValues::GpmlPlateId::create(plate_id++)));
+		plate->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"),
+						GPlatesAppLogic::GeometryUtils::create_geometry_property_value(boundary)));
+	}
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type rotations =
+			GPlatesModel::FeatureCollectionHandle::create();
+	const auto P = polygon(box(-5, 15, -5, 5));
+
+	const auto assign = [&](
+			GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType method,
+			const std::vector<std::pair<double, double>> &windows)
+	{
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type features =
+				GPlatesModel::FeatureCollectionHandle::create();
+		add_time_dependent_feature(features->reference(), P, windows);
+		GPlatesAppLogic::AssignPlateIds::create(
+				method,
+				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, plates->reference()),
+				GPlatesAppLogic::create_cached_reconstruction_tree_creator(
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+								1,
+								rotations->reference())),
+				0.0)->assign_reconstruction_plate_ids(features->reference());
+		return get_plate_ids_and_time_dependence(*features);
+	};
+	typedef std::vector<std::pair<GPlatesModel::integer_plate_id_type, bool>> results_type;
+
+	// One window containing present day: cut into constant pieces, or whole, constant, in plate 100.
+	EXPECT_EQ(
+			assign(GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE, { { 10, 0 } }),
+			(results_type{ { 100, false }, { 101, false } }));
+	EXPECT_EQ(
+			assign(
+					GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE,
+					{ { 10, 0 } }),
+			(results_type{ { 100, false } }));
+
+	// One window not containing present day, or two windows (the first containing it): unchanged.
+	for (const auto method : {
+			GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE,
+			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE })
+	{
+		SCOPED_TRACE(method);
+		EXPECT_EQ(assign(method, { { 50, 10 } }), (results_type{ { 5, true } }));
+		EXPECT_EQ(assign(method, { { 10, 0 }, { 50, 10 } }), (results_type{ { 5, true } }));
+	}
 }

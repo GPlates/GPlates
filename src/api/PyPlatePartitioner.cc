@@ -447,23 +447,44 @@ namespace GPlatesApi
 	 * (phase4b-design.md section 7.3, by the same code as GPlates' Assign Plate IDs), for the pure
 	 * Python API code of 'partition_features'.
 	 *
-	 * Returns a list with, for each geometry property name, a 4-tuple: the property name, the name
-	 * of its coverage's range property (or None), the pieces inside the partitioning plates as a list
-	 * of (partitioning ReconstructionGeometry, list of pieces), and the pieces outside them all as a
-	 * list; a piece is a geometry, or a (geometry, {ScalarType: list of float}) 2-tuple for a geometry
-	 * with a coverage. A piece of an exterior-ring-only coverage (an older file's) has scalars for its
-	 * exterior ring only, as Assign Plate IDs writes it.
+	 * Returns a 2-tuple. Its first element is a list with, for each geometry property name, a
+	 * 4-tuple: the property name, the name of its coverage's range property (or None), the pieces
+	 * inside the partitioning plates as a list of (partitioning ReconstructionGeometry, list of
+	 * pieces), and the pieces outside them all as a list; a piece is a geometry, or a (geometry,
+	 * {ScalarType: list of float}) 2-tuple for a geometry with a coverage. A piece of an
+	 * exterior-ring-only coverage (an older file's) has scalars for its exterior ring only, as Assign
+	 * Plate IDs writes it. Its second element is the list of the positions of the properties
+	 * partitioned, in the feature's order (a time-dependent geometry is partitioned only with a
+	 * single time window containing the reconstruction time; any other is not among them).
 	 */
-	bp::list
+	bp::tuple
 	plate_partitioner_partition_feature_geometries(
 			const PlatePartitionerWrapper &plate_partitioner,
 			GPlatesModel::FeatureHandle::non_null_ptr_type feature)
 	{
+		std::vector<GPlatesModel::FeatureHandle::iterator> partitioned_properties;
 		const boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature> partitioned =
 				GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 						feature->reference(),
 						*plate_partitioner.get_geometry_cookie_cutter(),
-						false/*respect_feature_time_period*/);
+						false/*respect_feature_time_period*/,
+						partitioned_properties);
+
+		// The positions, in the feature's order of properties, of the properties partitioned (the
+		// geometries and their coverages' ranges), for the caller to remove: as GPlates' Assign Plate
+		// IDs removes them, so that the two agree on which are partitioned and which kept.
+		bp::list partitioned_property_indices;
+		unsigned int property_index = 0;
+		for (GPlatesModel::FeatureHandle::iterator property_iter = feature->begin();
+			property_iter != feature->end();
+			++property_iter, ++property_index)
+		{
+			if (std::find(partitioned_properties.begin(), partitioned_properties.end(), property_iter) !=
+					partitioned_properties.end())
+			{
+				partitioned_property_indices.append(property_index);
+			}
+		}
 
 		// A piece: its geometry, with its coverage's scalars if it has a coverage.
 		const auto to_python = [](
@@ -491,7 +512,7 @@ namespace GPlatesApi
 		bp::list properties;
 		if (!partitioned)
 		{
-			return properties;
+			return bp::make_tuple(properties, partitioned_property_indices);
 		}
 		for (const auto &entry : partitioned->partitioned_geometry_properties)
 		{
@@ -524,7 +545,7 @@ namespace GPlatesApi
 							inside,
 							outside));
 		}
-		return properties;
+		return bp::make_tuple(properties, partitioned_property_indices);
 	}
 
 	/**

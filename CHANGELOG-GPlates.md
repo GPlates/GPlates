@@ -48,6 +48,7 @@ Changes since 2.5:
   * A polygon or polyline that only touches a plate's boundary, or runs along it, is no longer split there.
   * Scalar coverages are carried to the pieces of a cut polygon, on every ring. Values along a cut are interpolated between the cut's ends, a value on a ring's closing segment is interpolated correctly (previously it read past the end of the values), and a piece made only of a plate's boundary takes the values at the nearest point of the feature's outline.
   * A cut no longer leaves slivers: pieces of a polygon narrower than about 90 m, where its outline was digitised along a plate boundary, are dropped rather than assigned the neighbouring plate.
+  * A geometry stored in a single time window that contains the reconstruction time (as some early files store an ordinary geometry) is now assigned like an ordinary geometry, and written back as one. Other time-dependent geometries are left unchanged, as before.
   * "Most overlapping plate" compares the area of polygons inside each plate (previously the length of their outlines, which the cuts inflate), then the length of polylines, then the number of points.
   * A feature that cannot be cut consistently by a plate (rare: where its outline runs within about 1e-6 radians of the plate's along many closely spaced vertices) is left as it was, and such features are listed at the end.
 * Reconstructing a polygon with holes using topologies now deforms the points of its holes too (previously they were left out).

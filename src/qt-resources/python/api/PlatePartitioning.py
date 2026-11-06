@@ -161,6 +161,11 @@ def plate_partitioner_partition_features(
     specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
     its pieces (each piece with a coverage in a feature of its own), as GPlates' Assign Plate IDs does. Properties are copied from the partitioning plate features to the
     features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+
+    A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+    that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned. A feature
+    with nothing to partition (such as no geometry) is returned unpartitioned.
     
     .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.
     
@@ -335,9 +340,11 @@ def plate_partitioner_partition_features(
 
             # Partition each geometry property of the feature, with its scalar coverage (if it has one): each piece
             # of a geometry with a coverage is a (geometry, scalars) coverage, its scalars carried from the original's
-            # (by the same code as GPlates' Assign Plate IDs).
+            # (by the same code as GPlates' Assign Plate IDs). Also returned: the positions of the properties partitioned.
+            partitioned_feature_geometries, partitioned_property_indices = \
+                    plate_partitioner._partition_feature_geometries(feature)
             for geometry_property_name, range_property_name, partitioned_inside_geometries, partitioned_outside_geometries in \
-                    plate_partitioner._partition_feature_geometries(feature):
+                    partitioned_feature_geometries:
                 if range_property_name:
                     range_property_names[geometry_property_name] = range_property_name
 
@@ -353,31 +360,26 @@ def plate_partitioner_partition_features(
                     unpartitioned_geometries_with_property_name = unpartitioned_geometries.setdefault(geometry_property_name, [])
                     unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
 
-            # Remove the geometry properties, and their coverages' range properties.
-            #
-            # A time-dependent geometry property is not partitioned (the shared partitioning code takes constant
-            # geometries only, and partitioning one time window would say nothing about the others): it stays,
-            # unchanged, on every feature returned, as in GPlates' Assign Plate IDs. (Before pyGPlates 1.1 the window
-            # at present day was partitioned, and the property's other windows were lost.)
-            feature_without_geometry = feature.clone()
-            properties_to_remove = []
-            has_time_dependent_geometry = False
-            for property in feature_without_geometry:
-                if isinstance(property.get_time_dependent_value(), (GpmlPiecewiseAggregation, GpmlIrregularSampling)):
-                    has_time_dependent_geometry = has_time_dependent_geometry or bool(
-                            property.get_value() and property.get_value().get_geometry())
-                    continue
-                property_value = property.get_value()
-                if ((property_value and property_value.get_geometry()) or
-                    property.get_name() in range_property_names.values()):
-                    properties_to_remove.append(property)
-            for property in properties_to_remove:
-                feature_without_geometry.remove(property)
-
-            # A feature with nothing partitioned but a time-dependent geometry is returned unpartitioned, whole.
-            if not partitioned_geometries and not unpartitioned_geometries and has_time_dependent_geometry:
+            # A feature with nothing partitioned (no geometry, or only geometries that are not partitioned) is
+            # returned unpartitioned, whole.
+            if not partitioned_geometries and not unpartitioned_geometries:
                 unpartitioned_features.append(feature.clone())
                 continue
+
+            # Remove the properties partitioned (the geometries, and their coverages' range properties), exactly those
+            # GPlates' Assign Plate IDs removes, by the same code.
+            #
+            # A time-dependent geometry property is partitioned only if it has a single time window that contains the
+            # reconstruction time (then as a constant geometry, its pieces set as constant properties). Any other is
+            # not partitioned (partitioning one window would leave the others undefined): it stays, unchanged, on every
+            # feature returned. (Before pyGPlates 1.1 the window at present day was partitioned, and the property's
+            # other windows were lost.)
+            feature_without_geometry = feature.clone()
+            partitioned_property_indices = set(partitioned_property_indices)
+            properties_to_remove = [property for index, property in enumerate(feature_without_geometry)
+                                    if index in partitioned_property_indices]
+            for property in properties_to_remove:
+                feature_without_geometry.remove(property)
 
             for partitioning_plate, geometries_inside_partition in partitioned_geometries.items():
                 features_inside_partition = _plate_partitioning_set_geometries(
@@ -546,6 +548,11 @@ def partition_into_plates(
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
     features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+
+    A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+    that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned. A feature
+    with nothing to partition (such as no geometry) is returned unpartitioned.
     
     .. note:: New features are always returned. The original features (passed into the *features_to_partition* argument) are never modified or returned.
     
