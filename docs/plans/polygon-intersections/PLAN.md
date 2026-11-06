@@ -800,7 +800,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   default and none (the test helper now constructs with the defaults, so it tests the constructor's own
   default, which Assign Plate IDs relies on), and pyGPlates' argument through both constructors and
   `partition_into_plates`. Four mutations, each caught. Changelog entries in both products; stub
-  regenerated, docs built from scratch. GPlates 197 of 197, pyGPlates 7 of 7.
+  regenerated, docs built from scratch. GPlates 197 of 197, pyGPlates 7 of 7. **Then (developer)**:
+  `PolygonOnSphere.partition` takes the same argument, defaulting to zero (off), since filtering the
+  pieces afterwards is not the same: it can't drop a sliver hole, return the geometry whole when a
+  side empties, or measure short edges exactly (`get_area` is `SphericalArea`'s).
 
 - **Resume here** (updated 2026-11-07):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.

@@ -11199,7 +11199,7 @@ class PolygonOnSphere(GeometryOnSphere):
            The inside of each ring is its smaller side. Previously it was the side away from the antipode of :meth:`get_boundary_centroid`, so a ring that wraps round the globe could be inside out.
         """
 
-    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ...) -> PolygonOnSpherePartitionResult:
+    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ..., sliver_width_threshold_radians: float = 0) -> PolygonOnSpherePartitionResult:
         """Partition a geometry into optional inside/outside lists of partitioned geometry pieces.
 
         :param geometry: the geometry to be partitioned
@@ -11208,8 +11208,11 @@ class PolygonOnSphere(GeometryOnSphere):
         :type partitioned_geometries_inside: list of GeometryOnSphere, or None
         :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon (note that the list is *not* cleared first)
         :type partitioned_geometries_outside: list of GeometryOnSphere, or None
+        :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see below); defaults to zero, which keeps every piece
+        :type sliver_width_threshold_radians: float
         :rtype: PolygonOnSphere.PartitionResult
         :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result (whether or not the lists are specified)
+        :raises ValueError: if *sliver_width_threshold_radians* is negative
 
         The returned result is:
 
@@ -11227,10 +11230,15 @@ class PolygonOnSphere(GeometryOnSphere):
 
         A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, with interior rings where the pieces need them. The interior rings of both polygons take part in the cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region *inside* and, *outside*, the polygon geometry with a hole where this polygon is.
 
+        By default the pieces of a cut polygon cover it exactly, however thin some are. A non-zero *sliver_width_threshold_radians* drops the slivers narrower than it, as a :meth:`PlatePartitioner<PlatePartitioner.__init__>` does by default: a piece's width is twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely on the other (and *geometry* itself is added to that list). ``1.4142e-5`` radians (about 90 metres on the Earth) matches the default of :class:`PlatePartitioner`:
+        ::
+
+          result = polygon.partition(geometry, inside, outside, sliver_width_threshold_radians=1.4142e-5)
+
         A geometry that only touches this polygon (from inside or outside), runs along its outline, or is identical to it, is not cut: it is entirely *inside* or *outside*, and *geometry* itself is added to the corresponding list. A :class:`polyline<PolylineOnSphere>` running along this polygon's outline is *inside*.
 
         .. versionchanged:: 1.1
-           A polygon geometry that intersects this polygon is partitioned into polygons (previously polylines), and the interior rings of both polygons take part. A geometry that only touches this polygon, or runs along its outline, is no longer split there. :class:`PartitionError` is raised if the cut is inconsistent.
+           A polygon geometry that intersects this polygon is partitioned into polygons (previously polylines), and the interior rings of both polygons take part. A geometry that only touches this polygon, or runs along its outline, is no longer split there. :class:`PartitionError` is raised if the cut is inconsistent. Added the *sliver_width_threshold_radians* argument.
 
         Test if a polyline is entirely inside a polygon:
 

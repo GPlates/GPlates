@@ -1860,6 +1860,29 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertRaises(pygplates.PartitionError, partitioner.partition, subject, [], [])
         self.assertTrue(issubclass(pygplates.PartitionError, pygplates.MathematicalError))
 
+    def test_partition_sliver_width_threshold(self):
+        # A polygon reaching 5e-6 radians (about 32 metres) into this polygon: by default the sliver it leaves
+        # inside is kept; at PlatePartitioner's default width it is dropped, and the polygon is entirely outside.
+        sliver = math.degrees(5e-6)
+        partitioning_polygon = pygplates.PolygonOnSphere([(-10, 0), (-10, 10), (10, 10), (10, 0)])
+        polygon = pygplates.PolygonOnSphere([(-5, 10 - sliver), (-5, 15), (5, 15), (5, 10 - sliver)])
+
+        inside, outside = [], []
+        self.assertTrue(partitioning_polygon.partition(polygon, inside, outside) ==
+                        pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(len(inside) == 1 and len(outside) == 1)
+
+        inside, outside = [], []
+        self.assertTrue(partitioning_polygon.partition(polygon, inside, outside, sliver_width_threshold_radians=1.4142e-5) ==
+                        pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(not inside and len(outside) == 1)
+        self.assertTrue(outside[0] == polygon)
+
+        # Below the sliver's width it is kept; a negative width is refused.
+        self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=1e-6) ==
+                        pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertRaises(ValueError, partitioning_polygon.partition, polygon, sliver_width_threshold_radians=-1e-6)
+
     def test_partition(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         

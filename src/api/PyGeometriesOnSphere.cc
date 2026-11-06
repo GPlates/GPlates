@@ -3643,8 +3643,15 @@ namespace GPlatesApi
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
 			bp::object partitioned_geometries_inside_object,
-			bp::object partitioned_geometries_outside_object)
+			bp::object partitioned_geometries_outside_object,
+			double sliver_width_threshold_radians)
 	{
+		if (sliver_width_threshold_radians < 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative.");
+			bp::throw_error_already_set();
+		}
+
 		// Partitioned inside/outside lists may or may not get used.
 		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type> partitioned_geometries_inside_storage;
 		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type> partitioned_geometries_outside_storage;
@@ -3683,8 +3690,14 @@ namespace GPlatesApi
 		// Partition the geometry.
 		//
 
+		// The sliver filter, off at zero (the default).
 		GPlatesMaths::PolygonPartitioner::non_null_ptr_type polygon_partitioner =
-				GPlatesMaths::PolygonPartitioner::create(polygon_on_sphere);
+				GPlatesMaths::PolygonPartitioner::create(
+						polygon_on_sphere,
+						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+						(sliver_width_threshold_radians > 0)
+								? boost::optional<double>(sliver_width_threshold_radians)
+								: boost::none);
 		const GPlatesMaths::PolygonPartitioner::Result partition_result =
 				polygon_partitioner->partition_geometry(
 						geometry,
@@ -4447,8 +4460,10 @@ export_polygon_on_sphere()
 				&GPlatesApi::polygon_on_sphere_partition,
 				(bp::arg("geometry"),
 						bp::arg("partitioned_geometries_inside") = bp::object()/*Py_None*/,
-						bp::arg("partitioned_geometries_outside") = bp::object()/*Py_None*/),
-				"partition(geometry, [partitioned_geometries_inside], [partitioned_geometries_outside])\n"
+						bp::arg("partitioned_geometries_outside") = bp::object()/*Py_None*/,
+						bp::arg("sliver_width_threshold_radians") = 0.0),
+				"partition(geometry, [partitioned_geometries_inside], [partitioned_geometries_outside], "
+				"[sliver_width_threshold_radians=0])\n"
 				"  Partition a geometry into optional inside/outside lists of partitioned geometry pieces.\n"
 				"\n"
 				"  :param geometry: the geometry to be partitioned\n"
@@ -4459,9 +4474,13 @@ export_polygon_on_sphere()
 				"  :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon "
 				"(note that the list is *not* cleared first)\n"
 				"  :type partitioned_geometries_outside: list of GeometryOnSphere, or None\n"
+				"  :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are "
+				"dropped (see below); defaults to zero, which keeps every piece\n"
+				"  :type sliver_width_threshold_radians: float\n"
 				"  :rtype: PolygonOnSphere.PartitionResult\n"
 				"  :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result "
 				"(whether or not the lists are specified)\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative\n"
 				"\n"
 				"  The returned result is:\n"
 				"\n"
@@ -4492,6 +4511,17 @@ export_polygon_on_sphere()
 				"cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region "
 				"*inside* and, *outside*, the polygon geometry with a hole where this polygon is.\n"
 				"\n"
+				"  By default the pieces of a cut polygon cover it exactly, however thin some are. A non-zero "
+				"*sliver_width_threshold_radians* drops the slivers narrower than it, as a "
+				":meth:`PlatePartitioner<PlatePartitioner.__init__>` does by default: a piece's width is "
+				"twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped "
+				"and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely "
+				"on the other (and *geometry* itself is added to that list). ``1.4142e-5`` radians (about 90 "
+				"metres on the Earth) matches the default of :class:`PlatePartitioner`:\n"
+				"  ::\n"
+				"\n"
+				"    result = polygon.partition(geometry, inside, outside, sliver_width_threshold_radians=1.4142e-5)\n"
+				"\n"
 				"  A geometry that only touches this polygon (from inside or outside), runs along its outline, or is "
 				"identical to it, is not cut: it is entirely *inside* or *outside*, and *geometry* itself is added to "
 				"the corresponding list. A :class:`polyline<PolylineOnSphere>` running along this polygon's outline is "
@@ -4501,7 +4531,7 @@ export_polygon_on_sphere()
 				"     A polygon geometry that intersects this polygon is partitioned into polygons (previously "
 				"polylines), and the interior rings of both polygons take part. A geometry that only touches this "
 				"polygon, or runs along its outline, is no longer split there. :class:`PartitionError` is raised "
-				"if the cut is inconsistent.\n"
+				"if the cut is inconsistent. Added the *sliver_width_threshold_radians* argument.\n"
 				"\n"
 				"  Test if a polyline is entirely inside a polygon:\n"
 				"\n"
