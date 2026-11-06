@@ -2328,6 +2328,41 @@ class PlatePartitionerTestCase(unittest.TestCase):
         for partitioned_feature in partitioned:
             self.assertTrue(windows(partitioned_feature) == [2])
 
+    def test_partition_sliver_width_threshold(self):
+        # A polygon reaching 5e-6 radians (about 32 metres) into plate 1 from plate 2: the sliver it leaves in
+        # plate 1 is dropped by default (narrower than about 90 metres), so the polygon is whole in plate 2; a
+        # threshold of zero, or one below the sliver's width, keeps it.
+        plates = self._static_plates((1, [(-10, 0), (-10, 10), (10, 10), (10, 0)]),
+                                     (2, [(-10, 10), (-10, 20), (10, 20), (10, 10)]))
+        sliver = math.degrees(5e-6)
+        polygon = pygplates.PolygonOnSphere([(-5, 10 - sliver), (-5, 15), (5, 15), (5, 10 - sliver)])
+
+        def plate_ids(**kwargs):
+            inside = []
+            pygplates.PlatePartitioner(plates, pygplates.RotationModel([]), **kwargs).partition_geometry(polygon, inside)
+            return sorted(plate.get_feature().get_reconstruction_plate_id()
+                          for plate, pieces in inside for piece in pieces)
+
+        self.assertTrue(plate_ids() == [2])
+        self.assertTrue(plate_ids(sliver_width_threshold_radians=None) == [2])
+        self.assertTrue(plate_ids(sliver_width_threshold_radians=0) == [1, 2])
+        self.assertTrue(plate_ids(sliver_width_threshold_radians=1e-6) == [1, 2])
+        self.assertRaises(ValueError, plate_ids, sliver_width_threshold_radians=-1e-6)
+
+        # From reconstructed plates too, and through partition_into_plates.
+        reconstructed = []
+        pygplates.reconstruct(plates, pygplates.RotationModel([]), reconstructed, 0)
+        inside = []
+        pygplates.PlatePartitioner(reconstructed, pygplates.RotationModel([]),
+                                   sliver_width_threshold_radians=0).partition_geometry(polygon, inside)
+        self.assertTrue(sum(len(pieces) for _, pieces in inside) == 2)
+        feature = pygplates.Feature()
+        feature.set_geometry(polygon)
+        for threshold, expected in ((None, [2]), (0, [1, 2])):
+            partitioned = pygplates.partition_into_plates(
+                    plates, pygplates.RotationModel([]), [feature], sliver_width_threshold_radians=threshold)
+            self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == expected)
+
     def test_partition_point(self):
         rotation_model = pygplates.RotationModel(self.rotation_features)
         resolved_topologies = []

@@ -666,11 +666,10 @@ namespace
 			return { rings_of(*plate_a), rings_of(*plate_far), rings_of(*plate_b) };
 		}
 
-		//! The cookie cutter of the three plates, or of none; with the sliver filter if a width.
+		//! The cookie cutter of the three plates, or of none, constructed with its defaults.
 		std::unique_ptr<CookieCutter>
 		create_cookie_cutter(
-				bool with_plates = true,
-				boost::optional<double> sliver_min_width = boost::none) const
+				bool with_plates = true) const
 		{
 			return std::unique_ptr<CookieCutter>(new CookieCutter(
 					0.0,
@@ -678,14 +677,34 @@ namespace
 					std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
 							1,
 							(with_plates ? d_plates : d_rotations)->reference()),
-					GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-							std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
-									1,
-									d_rotations->reference())),
+					get_reconstruction_tree_creator()));
+		}
+
+		//! The cookie cutter of the three plates with the sliver filter at @a sliver_min_width.
+		std::unique_ptr<CookieCutter>
+		create_cookie_cutter_with_sliver_min_width(
+				boost::optional<double> sliver_min_width) const
+		{
+			return std::unique_ptr<CookieCutter>(new CookieCutter(
+					0.0,
+					d_registry,
+					std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+							1,
+							d_plates->reference()),
+					get_reconstruction_tree_creator(),
 					true/*group_networks_then_boundaries_then_static_polygons*/,
 					CookieCutter::SORT_BY_PLATE_ID,
 					PolygonOnSphere::ADAPTIVE,
 					sliver_min_width));
+		}
+
+		GPlatesAppLogic::ReconstructionTreeCreator
+		get_reconstruction_tree_creator() const
+		{
+			return GPlatesAppLogic::create_cached_reconstruction_tree_creator(
+					std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+							1,
+							d_rotations->reference()));
 		}
 
 		const PolygonOnSphere::non_null_ptr_to_const_type plate_a;
@@ -1118,24 +1137,27 @@ TEST(PolygonPartitionerTest, SliverFilterEmptiesBoth)
 }
 
 
-// The cascade passes the cookie cutter's width to every plate: a subject reaching 5 h into plate A
-// from plate B is cut in two without the filter, and is whole in plate B at 10 h.
+// The cascade passes the cookie cutter's width to every plate, and the filter is on by default
+// at 10 h (phase4b-design.md section 4.5): a subject reaching 5 h into plate A from plate B is
+// whole in plate B by default, and cut in two with the filter off.
 TEST(PolygonPartitionerTest, SliverFilterCookieCutter)
 {
+	EXPECT_DOUBLE_EQ(CookieCutter::get_default_sliver_min_width(), 10 * H);
+
 	const ThreePlates plates;
 	const auto P = polygon(box(-5, 5, 10 - degrees_of_h(5), 15));
-	const std::vector<boost::optional<double>> widths{ boost::none, 10 * H };
-	for (const boost::optional<double> &width : widths)
+	for (const bool filter : { true, false })
 	{
-		SCOPED_TRACE(width);
-		const std::unique_ptr<CookieCutter> cookie_cutter =
-				plates.create_cookie_cutter(true, width);
+		SCOPED_TRACE(filter);
+		const std::unique_ptr<CookieCutter> cookie_cutter = filter
+				? plates.create_cookie_cutter()
+				: plates.create_cookie_cutter_with_sliver_min_width(boost::none);
 		CookieCutter::partition_seq_type inside;
 		CookieCutter::partitioned_geometry_seq_type outside;
 		EXPECT_TRUE(cookie_cutter->partition_geometry(P, inside, outside, true/*want_provenance*/));
 		EXPECT_TRUE(outside.empty());
 		const auto pieces = get_pieces(inside, outside, plates);
-		if (width)
+		if (filter)
 		{
 			ASSERT_EQ(pieces.size(), 1u);
 			EXPECT_EQ(pieces[0].second, boost::optional<unsigned int>(2u));

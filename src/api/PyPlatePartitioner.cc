@@ -58,14 +58,45 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	namespace
+	{
+		/**
+		 * The cookie cutter's sliver filter width from *sliver_width_threshold_radians*: None means
+		 * the default width, and zero turns the filter off.
+		 */
+		boost::optional<double>
+		get_sliver_min_width(
+				boost::optional<double> sliver_width_threshold_radians)
+		{
+			if (!sliver_width_threshold_radians)
+			{
+				return GPlatesAppLogic::GeometryCookieCutter::get_default_sliver_min_width();
+			}
+			if (*sliver_width_threshold_radians < 0)
+			{
+				PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative.");
+				bp::throw_error_already_set();
+			}
+			if (*sliver_width_threshold_radians == 0)
+			{
+				return boost::none;
+			}
+			return sliver_width_threshold_radians;
+		}
+	}
+
+
 	PlatePartitionerWrapper
 	plate_partitioner_create_from_features(
 			FeatureCollectionSequenceFunctionArgument partitioning_features_argument,
 			RotationModelFunctionArgument rotation_model_argument,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
-			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
+			boost::optional<double> sliver_width_threshold_radians)
 	{
+		const boost::optional<double> sliver_min_width = get_sliver_min_width(sliver_width_threshold_radians);
+
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
 		{
@@ -142,7 +173,9 @@ namespace GPlatesApi
 								partitioning_feature_collection_refs,
 								rotation_model->get_reconstruction_tree_creator(),
 								group_networks_then_boundaries_then_static_polygons,
-								sort_plates)),
+								sort_plates,
+								GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+								sliver_min_width)),
 				rotation_model,
 				partitioning_features_argument);
 	}
@@ -153,8 +186,11 @@ namespace GPlatesApi
 			bp::object partitioning_plates, // Any python sequence (eg, list, tuple).
 			RotationModelFunctionArgument rotation_model_argument,
 			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
-			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
+			boost::optional<double> sliver_width_threshold_radians)
 	{
+		const boost::optional<double> sliver_min_width = get_sliver_min_width(sliver_width_threshold_radians);
+
 		const char *partitioning_plates_type_error_string = "Expected a sequence of ReconstructionGeometry";
 
 		// Copy partitioning plate objects into a vector.
@@ -247,7 +283,9 @@ namespace GPlatesApi
 								reconstruction_time,
 								partitioning_plates_vector,
 								group_networks_then_boundaries_then_static_polygons,
-								sort_plates)),
+								sort_plates,
+								GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+								sliver_min_width)),
 				rotation_model,
 				boost::none,
 				partitioning_plate_objects_vector);
@@ -619,7 +657,8 @@ export_plate_partitioner()
 								bp::arg("sort_partitioning_plates") =
 										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
 								bp::arg("anchor_plate_id") =
-										boost::optional<GPlatesModel::integer_plate_id_type>())),
+										boost::optional<GPlatesModel::integer_plate_id_type>(),
+								bp::arg("sliver_width_threshold_radians") = boost::optional<double>())),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"__init__(...)\n"
 				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
@@ -639,6 +678,16 @@ export_plate_partitioner()
 				"    plate_partitioner = pygplates.PlatePartitioner(..., "
 				"sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)\n"
 				"\n"
+				"  A cut can leave slivers: pieces of a polygon only metres wide, where its outline was "
+				"digitised along a plate boundary. A piece narrower than *sliver_width_threshold_radians* "
+				"(twice its area over its perimeter, on a sphere of unit radius) is dropped, so that it "
+				"is not assigned the neighbouring plate. The default, ten times the distance within which "
+				"two outlines count as touching, is ``1.4142e-5`` radians (about 90 metres on the Earth); "
+				"zero turns this off, so that the pieces cover the polygon exactly:\n"
+				"  ::\n"
+				"\n"
+				"    plate_partitioner = pygplates.PlatePartitioner(..., sliver_width_threshold_radians=0)\n"
+				"\n"
 				"  .. note:: Only those reconstructed/resolved geometries that contain a *polygon* boundary are actually used for partitioning. "
 				"For :func:`resolved topologies<resolve_topologies>` this includes :class:`ResolvedTopologicalBoundary` and "
 				":class:`ResolvedTopologicalNetwork`. For :func:`reconstructed geometries<reconstruct>`, a :class:`ReconstructedFeatureGeometry` "
@@ -650,7 +699,7 @@ export_plate_partitioner()
 				// Specific overload signature...
 				"__init__(partitioning_plates, rotation_model, "
 				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
-				"[anchor_plate_id])\n"
+				"[anchor_plate_id], [sliver_width_threshold_radians])\n"
 				"  Create a partitioner from a sequence of reconstructed/resolved plates.\n"
 				"\n"
 				"  :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.\n"
@@ -667,8 +716,13 @@ export_plate_partitioner()
 				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
 				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
 				"  :type anchor_plate_id: int\n"
+				"  :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this "
+				"are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps "
+				"every piece\n"
+				"  :type sliver_width_threshold_radians: float\n"
 				"  :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same "
 				":meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative\n"
 				"\n"
 				"  The *partitioning_plates* sequence can be generated by "
 				":func:`reconstructing regular geological features<reconstruct>` and/or "
@@ -697,7 +751,7 @@ export_plate_partitioner()
 				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
 				"\n"
 				"  .. versionchanged:: 1.1\n"
-				"     Added the *anchor_plate_id* argument.\n")
+				"     Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.\n")
 		//
 		// NOTE: We define this *after* the '__init__' associated with 'plate_partitioner_create_from_reconstruction_geometries()'
 		// because boost-python matches most recently defined functions first and this function has a tighter
@@ -713,11 +767,12 @@ export_plate_partitioner()
 								bp::arg("sort_partitioning_plates") =
 										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
 								bp::arg("anchor_plate_id") =
-										boost::optional<GPlatesModel::integer_plate_id_type>())),
+										boost::optional<GPlatesModel::integer_plate_id_type>(),
+								bp::arg("sliver_width_threshold_radians") = boost::optional<double>())),
 				// Specific overload signature...
 				"__init__(partitioning_features, rotation_model, [reconstruction_time=0], "
 				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
-				"[anchor_plate_id])\n"
+				"[anchor_plate_id], [sliver_width_threshold_radians])\n"
 				"  Create a partitioner by reconstructing/resolving plates from a sequence of plate features.\n"
 				"\n"
 				"  :param partitioning_features: A sequence of plate features to partition with.\n"
@@ -738,9 +793,14 @@ export_plate_partitioner()
 				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
 				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
 				"  :type anchor_plate_id: int\n"
+				"  :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this "
+				"are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps "
+				"every piece\n"
+				"  :type sliver_width_threshold_radians: float\n"
 				"  :raises ValueError: if *reconstruction_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`, or "
+				"*sliver_width_threshold_radians* is negative\n"
 				"\n"
 				"  The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>` "
 				"and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and "
@@ -756,7 +816,7 @@ export_plate_partitioner()
 				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
 				"\n"
 				"  .. versionchanged:: 1.1\n"
-				"     Added the *anchor_plate_id* argument.\n")
+				"     Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.\n")
 		.def("partition_geometry",
 				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),

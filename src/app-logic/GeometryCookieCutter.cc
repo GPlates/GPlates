@@ -45,6 +45,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "maths/GeometryIntersect.h"
 
 #include "model/FeatureVisitor.h"
 
@@ -320,6 +321,13 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 
 		add_partitioning_reconstruction_geometries(reconstruction_geometries, sort_plates);
 	}
+}
+
+
+double
+GPlatesAppLogic::GeometryCookieCutter::get_default_sliver_min_width()
+{
+	return 10 * GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
 }
 
 

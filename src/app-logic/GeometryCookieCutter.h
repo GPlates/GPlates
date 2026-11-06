@@ -141,8 +141,9 @@ namespace GPlatesAppLogic
 		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
 		 * point-in-polygon tests for partitioned *point* geometries.
 		 *
-		 * @a sliver_min_width, if set, turns on the sliver filter of every partitioning polygon's
-		 * cuts (GPlatesMaths::PolygonPartitioner::create): off by default.
+		 * @a sliver_min_width is the width of the sliver filter of every partitioning polygon's cuts
+		 * (GPlatesMaths::PolygonPartitioner::create): @a get_default_sliver_min_width by default,
+		 * and none turns the filter off.
 		 */
 		GeometryCookieCutter(
 				const double &reconstruction_time,
@@ -152,7 +153,7 @@ namespace GPlatesAppLogic
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
 				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
 						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
-				boost::optional<double> sliver_min_width = boost::none);
+				boost::optional<double> sliver_min_width = get_default_sliver_min_width());
 
 
 		/**
@@ -171,7 +172,7 @@ namespace GPlatesAppLogic
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
 				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
 						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
-				boost::optional<double> sliver_min_width = boost::none);
+				boost::optional<double> sliver_min_width = get_default_sliver_min_width());
 
 
 		/**
@@ -190,7 +191,7 @@ namespace GPlatesAppLogic
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
 				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
 						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
-				boost::optional<double> sliver_min_width = boost::none);
+				boost::optional<double> sliver_min_width = get_default_sliver_min_width());
 
 
 		/**
@@ -198,6 +199,18 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		has_partitioning_polygons() const;
+
+
+		/**
+		 * The sliver filter's default width (phase4b-design.md section 4.5): ten times the overlay's
+		 * thickness, in radians (about 90 metres on the Earth). A cut leaves pieces this thin
+		 * where a feature's outline was digitised along a plate boundary; they are below the
+		 * resolution of global plate and coastline data, and would otherwise take the neighbouring
+		 * plate's ID. Pieces under the thickness itself are below what the overlay can resolve.
+		 */
+		static
+		double
+		get_default_sliver_min_width();
 
 
 		/**
