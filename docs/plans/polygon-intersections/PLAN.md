@@ -759,6 +759,37 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - **Next, for the developer**: the default and the width (design 4.5), then wiring it through (step
     14b).
 
+- 2026-11-07: **Two items for PR B from the `src/api` audit triage** (finding G8-1, decided with the
+  developer in the audit session on `main`; recorded in the planning repository's
+  `plans/src-api-audit.md`, *Triage*, group 8). Both are in `partition_features`' `split_into_plates`
+  block, which PR B rewrites, so they go here and not in the audit's fix PR.
+  1. **A feature with nothing to partition is still dropped.** After review 7's 1.2 (`7c89317bb`),
+     the block returns a feature whole only when
+     `not partitioned_geometries and not unpartitioned_geometries and has_time_dependent_geometry`.
+     A feature with **no geometry at all** fails the last test, falls through, and ends up in
+     neither returned list. `most_overlapping_plate` and the VGP path return it as an unpartitioned
+     clone, as documented. **Fix:** drop `and has_time_dependent_geometry`, so any feature with
+     nothing partitioned comes back unpartitioned and whole. Test: a feature with no geometry is in
+     the unpartitioned list.
+  2. **Partition a time-dependent geometry with exactly one window that contains the reconstruction
+     time** (developer's idea, 2026-11-07): this refines 1.2 without reopening it.
+     - **The rule.** A geometry property whose value is a `GpmlPiecewiseAggregation` with exactly one
+       time window is partitioned like a constant geometry, and its pieces are written as constant
+       properties, if that window contains the partitioner's reconstruction time (with
+       `GeoTimeInstant`'s epsilon at the window's ends).
+     - **Everything else time-dependent keeps 1.2,** unchanged on every returned feature: more than
+       one window, one window not containing the time, or a `GpmlIrregularSampling` of geometries. If
+       such a geometry is the feature's only one, item 1 returns the feature whole.
+     - **Why it's safe.** With one window there are no other windows to leave undefined, and its
+       begin and end are redundant: `gml:validTime` defines when the feature appears and
+       disappears. `partition_features` already treats a feature's geometry as being at the
+       reconstruction time (its docstring: "effectively contain geometry at the reconstruction time").
+     - **Why it's useful.** It supports a single geometry wrapped in a piecewise aggregation by
+       mistake, which very early GPlates builds wrote into early topology files.
+     - **GPlates must do the same.** 1.2 was justified by matching Assign Plate IDs, so the rule goes
+       in the shared partitioning code both products use, or in both paths. Otherwise pyGPlates and
+       GPlates diverge again. Tests in both products; changelog lines for both.
+
 - **Resume here** (updated 2026-11-07):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -770,7 +801,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) and
     review 7 with its fixes done; step 14a (the sliver filter, off, and the real-data measurements)
     done, 2026-11-07. Next: the developer decides the filter's default and width (Status,
-    2026-11-07), then step 14b wires it through; open: two
+    2026-11-07), then step 14b wires it through. Also for PR B: the two `partition_features` items
+    from the `src/api` audit (Status, 2026-11-07, "Two items for PR B"). Open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
