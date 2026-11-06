@@ -916,6 +916,24 @@ measuring thin rings when partitioning real data by a real topology model.
   or move anything, and the overlay's own decisions never see it (run 3 section 7: a region thinner
   than `h` between two boundaries is the true answer, not an artefact).
 
+As built (step 14):
+
+- `Options::sliver_min_width` (`boost::optional<double>`, radians), set by `PolygonPartitioner::create`'s
+  third argument and by the last argument of each `GeometryCookieCutter` constructor, which passes it to
+  every partitioning polygon's partitioner. Off by default, and not in pyGPlates.
+- **The measure is `PolygonOverlay::get_mean_width`, not `SphericalArea`.** `SphericalArea`'s fan
+  drops the triangle of every edge that `GreatCircleArc` takes for zero length (under about `1e-6`
+  radians), and a cut makes such edges next to a vertex. At a width of `h` each one is an error of up
+  to about a quarter of a sliver's area, and a disc drawn with edges under `h` has no area at all. The
+  function sums Van Oosterom and Strackee's triangles from the vertices' mean direction, modulo
+  `4 pi`, and takes the smaller side, so the ring's direction doesn't matter; the perimeter is by
+  `atan2`. The real-data harness (11.4) measures with the same function.
+- Counted: `sliver_exteriors_dropped`, `sliver_holes_dropped` (alone) and `sliver_area_dropped` (the
+  dropped exteriors' areas).
+- **A rule this section left open**: when the filter empties both outputs (a subject thinner than the
+  width, cut across), the subject is whole on the side that lost the larger area. With no filter the
+  tie keeps the old rule, outside.
+
 ## 5. Boolean operations
 
 ### 5.1 The keep-rule
@@ -1681,6 +1699,18 @@ over the same run, and how many fall under candidate widths of `h`, `10h`, `100h
 before-and-after of Assign Plate IDs on a coastline file by Muller et al. 2022 at a few times, read
 as: every output ring passes the oracle, no `InconsistentOverlayException`, repairs zero, bundle cap
 never hit. Topology resolving is not touched by PR B.
+
+As built (step 14), in two harnesses:
+
+- **The timing** in pyGPlates (a script in the session, not committed). The coastlines are
+  reconstructed by their own plate IDs, then `partition_features` runs over them by the topologies
+  resolved at that time, against a pyGPlates built from `main` before PR B.
+- **The checks and the sliver measurement** in C++: `PolygonOverlayRealDataTest.Coastlines`, skipped
+  unless `GPLATES_POLYGON_OVERLAY_REAL_DATA` names a plate model's directory (as the plate model manager
+  lays it out). It runs the cascade as Assign Plate IDs does: `GeometryCookieCutter`'s order (through
+  `get_partitioning_polygons`), the partitioner's bounding-circle shortcut and result rule. It calls the
+  overlay itself, so every cut's diagnostics and the oracle can be read. Its piece counts equal
+  pyGPlates' at every time measured.
 
 ### 11.5 pyGPlates tests
 

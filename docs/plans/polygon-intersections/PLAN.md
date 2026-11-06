@@ -716,7 +716,50 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   others. Supporting time-dependent geometry, and what partitioning should do with it, is an inbox
   item (planning repository `db47f6c`). GPlates 191 of 191, pyGPlates 7 of 7.
 
-- **Resume here** (updated 2026-11-04):
+- 2026-11-07: **Phase 5 step 14a done: the sliver filter, off, and the real-data measurements** (`c156cd7c3`; design
+  4.5, 10.3 and 11.4, each "as built"). The filter is `Options::sliver_min_width`, set through
+  `PolygonPartitioner::create` and the `GeometryCookieCutter` constructors; it is off by default, and not
+  in pyGPlates. **Found**: `SphericalArea` can't measure a sliver, since its fan drops every edge under
+  about `1e-6` radians, and cuts make such edges. The measure is the new `PolygonOverlay::get_mean_width`
+  (exact triangles, modulo `4 pi`, the smaller side). **Decided (session; the design had left it open)**:
+  a filter that empties both outputs leaves the subject whole on the side that lost more area. Tests:
+  the filter's four cases and the measure; nine mutations of the filter and three of the measure, each
+  caught.
+  - **Real data**: Muller et al. 2022, the coastlines (2136 features, 2937 polygons, 100,000 points),
+    reconstructed by their own plate IDs and partitioned by the topologies at 0, 100 and 200 Ma.
+  - **Timing**, pyGPlates `partition_features`, best of three, against `main` before PR B:
+    | Time | Before PR B | After PR B |
+    | --- | --- | --- |
+    | 0 Ma | 0.20 s | 0.28 s |
+    | 100 Ma | 0.15 s | 0.19 s |
+    | 200 Ma | 0.13 s | 0.16 s |
+
+    That is about +30%, and resolving the topologies is about 0.06 s either way. Pieces at 0 Ma: 431
+    polygons, against 703 polylines before.
+  - **Checks** (`PolygonOverlayRealDataTest`): 15,255 overlays past the bounding circles, 313 of them
+    intersecting. No `InconsistentOverlayException`, no oracle failure, no check failure even before
+    repair, no bundle vertex (at most six ends at a vertex), 11 midpoint tests, and 2 collapsed rings
+    dropped. The piece counts equal pyGPlates' at each time.
+  - **Slivers**: 783 output rings of the 282 polygons cut. Their mean widths, in `h` (about 9 m):
+    | Mean width | Rings |
+    | --- | --- |
+    | under 1 `h` | 5 |
+    | 1 to 10 `h` | 11 |
+    | 10 to 100 `h` | 57 |
+    | 100 to 1000 `h` | 235 |
+    | 1000 `h` or more | 475 |
+
+    Under `h`, 10 `h` and 100 `h`, that is 5, 16 and 73 rings: 0.47 km², 4.5 km² and 373 km² (`7e-6`
+    of the cut polygons' area). The thinnest are triangles, where a continental outline was digitised
+    along a plate boundary: South New Zealand and the Campbell Plateau at 0 Ma, eight of the sixteen
+    under `10 h`; the San Jorge plate; Western Cameroon at 100 Ma, 71 km long and 5 m wide.
+  - **Near-zero output edges** (the open item from step 7): on real data the overlay adds none. Of the
+    output's edges, the 8 under `h / 10` and 29 under `h` are exactly the inputs' own, and no edge on
+    either side is under `1e-9` radians. Nothing found calls for a filter of them.
+  - **Next, for the developer**: the default and the width (design 4.5), then wiring it through (step
+    14b).
+
+- **Resume here** (updated 2026-11-07):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
@@ -725,8 +768,9 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     (provenance) done, and review 4 with its fixes; step 11 (the partition layer) and review 5 with
     its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
     done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) and
-    review 7 with its fixes done. Next: step 14 (the sliver filter and the real-data measurements);
-    open: two
+    review 7 with its fixes done; step 14a (the sliver filter, off, and the real-data measurements)
+    done, 2026-11-07. Next: the developer decides the filter's default and width (Status,
+    2026-11-07), then step 14b wires it through; open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
