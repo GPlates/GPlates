@@ -1405,6 +1405,18 @@ pre-existing (the old comparison did the same), consumed only by a running maxim
   name)` (`:326`, `_plate_partitioning_set_geometries`), so coverages are carried over as Assign Plate
   IDs does (survey 4.3). `partition_into_plates` (`:416-`) goes through `partition_features` and
   needs nothing of its own.
+  - As built (review 7 1.2, then the `src/api` audit's G8-1, the developer, 2026-11-07): **which
+    properties are partitioned is decided once, in the shared visitor** (`PartitionFeatureGeometries.cc`).
+    The private helper returns the positions of the properties it partitioned, and `partition_features`
+    removes exactly those, as Assign Plate IDs removes the iterators `partition_feature` returns. So
+    the two products can't disagree on which geometry is partitioned and which kept.
+  - **A time-dependent geometry** is partitioned only if it is a `GpmlPiecewiseAggregation` with a single
+    time window that contains the reconstruction time. It is then partitioned as a constant geometry.
+    Its property clone is a constant property of the same name, so a cut piece and, by "most
+    overlapping plate", the whole geometry are both written back constant. Any other time-dependent
+    geometry is not partitioned and stays unchanged; a `GpmlIrregularSampling` is never partitioned.
+  - **A feature with nothing partitioned** (no geometry, or only geometry that isn't partitioned) is
+    returned unpartitioned, whole. GPlates already left such a feature as it was.
 - **`most_overlapping_plate`** (`:342-392`): the measure at `:357-374` becomes
   `(area, arc_length, num_points)`: `geometry.get_area()` for a `PolygonOnSphere`, `get_arc_length()`
   for a polyline, `len(get_points())` for the rest. Same rule as 8.3.

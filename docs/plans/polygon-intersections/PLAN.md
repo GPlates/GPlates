@@ -805,6 +805,20 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   pieces afterwards is not the same: it can't drop a sliver hole, return the geometry whole when a
   side empties, or measure short edges exactly (`get_area` is `SphericalArea`'s).
 
+- 2026-11-07: **The two `partition_features` items from the `src/api` audit done** (G8-1; the entry
+  "Two items for PR B" above; design 8.4 "as built"). **Item 1**: a feature with nothing partitioned is
+  returned unpartitioned, whole (`split_into_plates` dropped one with no geometry, on `main` too: a
+  changelog bug fix). **Item 2**: a one-window `GpmlPiecewiseAggregation` containing the reconstruction
+  time is partitioned as a constant geometry, in the visitor both products share, its clone a constant
+  property, so both of GPlates' methods and pyGPlates write constant geometry back. pyGPlates now
+  removes exactly the properties the shared code partitioned, by position, instead of deciding with its
+  own rule. **Found**: `Feature.set_geometry` replaces every property of the name it sets, which hid a
+  missing removal from every existing test. The new test is a feature whose two geometries have
+  different names and go to different plates. Tests in both products; seven mutations, each caught;
+  changelog entries in both. GPlates 198 of 198, pyGPlates 7 of 7. **Left for the audit's session**:
+  mark G8-1 done in the planning repository's `plans/src-api-audit.md` (not edited here, since that
+  session has its triage of group 8 in progress).
+
 - **Resume here** (updated 2026-11-07):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -815,8 +829,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     its fixes done; step 12 (the merge of `main`, coverages, area, Assign Plate IDs' failures)
     done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) and
     review 7 with its fixes done; step 14 (the sliver filter, on at `10 h` in the cascade, and the
-    real-data measurements) done, 2026-11-07. Next: the two `partition_features` items
-    from the `src/api` audit (Status, 2026-11-07, "Two items for PR B"). Open: two
+    real-data measurements) done, 2026-11-07, and the two `partition_features` items from the
+    `src/api` audit (Status, 2026-11-07). Next: step 15. Open: two
     bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
     for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
     under `r5c` (the self-touch cuts fixed it). The prototype comparison is
