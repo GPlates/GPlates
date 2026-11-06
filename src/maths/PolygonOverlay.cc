@@ -250,6 +250,59 @@ namespace GPlatesMaths
 }
 
 
+double
+GPlatesMaths::PolygonOverlay::get_mean_width(
+		const std::vector<PointOnSphere> &ring,
+		double *area)
+{
+	// A fan of signed triangles from an apex, each by Van Oosterom and Strackee's formula: the sum
+	// is the enclosed area modulo 4 pi for any apex no ring point is antipodal to. The vertices'
+	// mean direction keeps every triangle small (its first point if they cancel, as for a ring
+	// round a great circle). The perimeter by atan2, which keeps a short edge's precision.
+	if (ring.empty())
+	{
+		if (area)
+		{
+			*area = 0.0;
+		}
+		return 0.0;
+	}
+	Vector3D sum(0, 0, 0);
+	for (const PointOnSphere &point : ring)
+	{
+		sum = sum + Vector3D(point.position_vector());
+	}
+	const Vector3D apex = (sum.magSqrd() > 1e-12)
+			? Vector3D(sum.get_normalisation())
+			: Vector3D(ring.front().position_vector());
+
+	double fan_area = 0.0;
+	double perimeter = 0.0;
+	for (unsigned int i = 0; i < ring.size(); ++i)
+	{
+		const Vector3D a(ring[i].position_vector());
+		const Vector3D b(ring[(i + 1) % ring.size()].position_vector());
+		const Vector3D a_cross_b = cross(a, b);
+		perimeter += std::atan2(std::sqrt(a_cross_b.magSqrd().dval()), dot(a, b).dval());
+		fan_area += 2 * std::atan2(
+				dot(apex, a_cross_b).dval(),
+				1 + dot(apex, a).dval() + dot(a, b).dval() + dot(b, apex).dval());
+	}
+	double smaller_side = std::fmod(fan_area, 4 * PI);
+	if (smaller_side < 0)
+	{
+		smaller_side += 4 * PI;
+	}
+	smaller_side = (std::min)(smaller_side, 4 * PI - smaller_side);
+
+	if (area)
+	{
+		*area = smaller_side;
+	}
+	return (perimeter > 0) ? 2 * smaller_side / perimeter : 0.0;
+}
+
+
 GPlatesMaths::PolygonOverlay::Overlay::Overlay(
 		const PolygonOnSphere &subject,
 		const PolygonOnSphere &clip,
@@ -3931,13 +3984,31 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 		return ring;
 	};
 
+	//
+	// The optional sliver filter (section 4.5), by each ring's mean width (get_mean_width).
+	//
+	std::vector<double> ring_areas(num_rings, 0.0);
+	const auto is_sliver = [&](unsigned int r)
+	{
+		return d_options.sliver_min_width &&
+				get_mean_width(rings[r].points, &ring_areas[r]) < *d_options.sliver_min_width;
+	};
+
 	// Even depth is an exterior; odd depth a hole of its parent, which has even depth (an island
-	// inside a hole is an exterior of its own).
+	// inside a hole is an exterior of its own, filtered on its own).
 	std::vector<boost::optional<unsigned int>> polygon_of_ring(num_rings);
+	std::vector<bool> dropped(num_rings, false);
 	for (unsigned int r = 0; r < num_rings; ++r)
 	{
 		if (containers[r].size() % 2 == 0)
 		{
+			if (is_sliver(r))
+			{
+				dropped[r] = true;
+				++d_diagnostics.sliver_exteriors_dropped;
+				d_diagnostics.sliver_area_dropped += ring_areas[r];
+				continue;
+			}
 			polygon_of_ring[r] = polygons.size();
 			polygons.push_back(OutputPolygon{ oriented(r, true), std::vector<OutputRing>() });
 		}
@@ -3946,6 +4017,15 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	{
 		if (containers[r].size() % 2 == 0)
 		{
+			continue;
+		}
+		if (parent[r] && dropped[*parent[r]])
+		{
+			continue;  // dropped with its exterior
+		}
+		if (parent[r] && polygon_of_ring[*parent[r]] && is_sliver(r))
+		{
+			++d_diagnostics.sliver_holes_dropped;
 			continue;
 		}
 		if (!parent[r] || !polygon_of_ring[*parent[r]])

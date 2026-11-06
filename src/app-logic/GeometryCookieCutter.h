@@ -140,6 +140,9 @@ namespace GPlatesAppLogic
 		 *
 		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
 		 * point-in-polygon tests for partitioned *point* geometries.
+		 *
+		 * @a sliver_min_width, if set, turns on the sliver filter of every partitioning polygon's
+		 * cuts (GPlatesMaths::PolygonPartitioner::create): off by default.
 		 */
 		GeometryCookieCutter(
 				const double &reconstruction_time,
@@ -147,7 +150,9 @@ namespace GPlatesAppLogic
 				boost::optional<const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
 				boost::optional<const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
-				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
+						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				boost::optional<double> sliver_min_width = boost::none);
 
 
 		/**
@@ -164,7 +169,9 @@ namespace GPlatesAppLogic
 				const std::vector<ReconstructionGeometry::non_null_ptr_type> &reconstruction_geometries,
 				bool group_networks_then_boundaries_then_static_polygons = true,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
-				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
+						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				boost::optional<double> sliver_min_width = boost::none);
 
 
 		/**
@@ -181,7 +188,9 @@ namespace GPlatesAppLogic
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				bool group_networks_then_boundaries_then_static_polygons = true,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
-				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
+						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				boost::optional<double> sliver_min_width = boost::none);
 
 
 		/**
@@ -189,6 +198,14 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		has_partitioning_polygons() const;
+
+
+		/**
+		 * The partitioning polygons in the order @a partition_geometry cuts by (the order its
+		 * provenance's clip indices refer to), for diagnostics and tests.
+		 */
+		std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_partitioning_polygons() const;
 
 
 		/**
@@ -278,7 +295,8 @@ namespace GPlatesAppLogic
 			PartitioningGeometry(
 					const ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry,
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-					GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
+					GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+					boost::optional<double> sliver_min_width);
 
 
 			ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry;
@@ -351,6 +369,8 @@ namespace GPlatesAppLogic
 		double d_reconstruction_time;
 
 		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
+
+		boost::optional<double> d_sliver_min_width;
 
 
 		/**

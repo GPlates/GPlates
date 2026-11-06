@@ -153,6 +153,20 @@ namespace GPlatesMaths
 
 
 		/**
+		 * A ring's mean width, the measure of the sliver filter (phase4b-design.md section 4.5,
+		 * Options::sliver_min_width): twice its area over its perimeter, in radians, taking the
+		 * area of its smaller side. For a ring that does not cross itself. Exact for any short
+		 * edge (unlike SphericalArea's area, which drops an edge GreatCircleArc takes for zero
+		 * length, under about 1e-6 radians, and a cut makes such edges). @a area, if given, is set
+		 * to that area (the unit sphere's).
+		 */
+		double
+		get_mean_width(
+				const std::vector<PointOnSphere> &ring,
+				double *area = nullptr);
+
+
+		/**
 		 * An original vertex of one input: its ring and its index within that ring.
 		 *
 		 * Ring 0 is the exterior ring (or the polyline), and ring 'i + 1' is interior ring 'i'.
@@ -531,6 +545,11 @@ namespace GPlatesMaths
 			unsigned int hemisphere_check_failures = 0;  // the output read as its complement
 			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
 
+			// The sliver filter (Options::sliver_min_width), accumulated over every extract.
+			unsigned int sliver_exteriors_dropped = 0;   // each with its holes
+			unsigned int sliver_holes_dropped = 0;       // alone (their polygon fills them)
+			double sliver_area_dropped = 0.0;            // the dropped exteriors' total area
+
 			// Provenance, accumulated over every extract: a piece's segment whose ends lie on no
 			// one segment of the original subject (a subject location lost) or, both being cut
 			// points, of an earlier clip (nothing lost: the point's clip location is this clip's).
@@ -731,6 +750,19 @@ namespace GPlatesMaths
 
 			//! The clip's index in a cascade, recorded in every clip location it makes.
 			unsigned int clip_index = 0;
+
+			/**
+			 * The sliver filter (phase4b-design.md section 4.5), off when none (the default): a
+			 * ring of @a extract's output whose mean width (twice its area over its perimeter, in
+			 * radians, taking the area of its smaller side) is below this is dropped, an exterior
+			 * with its holes and a hole alone (its polygon fills it), and counted in the
+			 * diagnostics.
+			 *
+			 * A distance rule on the output and nothing else: the overlay's own decisions never see
+			 * it. With it on, the intersection and the difference no longer partition the subject
+			 * exactly: a sliver dropped from one output is not added to the other.
+			 */
+			boost::optional<double> sliver_min_width;
 		};
 
 
@@ -879,8 +911,8 @@ namespace GPlatesMaths
 			 * The output of one operation as polygons with holes (phase4b-design.md sections 3.10
 			 * to 4.3): the rings of @a extract_rings grouped by containment with parity depth (an
 			 * even depth is an exterior, an odd depth a hole of the ring containing it, and an
-			 * island in a hole an exterior of its own), each oriented with the output on its left.
-			 * Appended to @a polygons.
+			 * island in a hole an exterior of its own), each oriented with the output on its left,
+			 * and slivers dropped if Options::sliver_min_width is set. Appended to @a polygons.
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if the rings would be
 			 * read as the output's complement (section 5.2): the union or the symmetric difference

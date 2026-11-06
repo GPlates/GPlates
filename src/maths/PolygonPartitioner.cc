@@ -128,10 +128,25 @@ namespace
 			return result;
 		}
 
+		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+		const double area_dropped_before = diagnostics.sliver_area_dropped;
 		overlay.extract(Overlay::INTERSECTION, inside);
+		const double area_dropped_after_inside = diagnostics.sliver_area_dropped;
 		overlay.extract(Overlay::DIFFERENCE, outside);
+		const double inside_area_dropped = area_dropped_after_inside - area_dropped_before;
+		const double outside_area_dropped =
+				diagnostics.sliver_area_dropped - area_dropped_after_inside;
 
-		// Pieces kept but collapsed by clean-up leave one side empty: the subject is then whole.
+		// Pieces kept but collapsed by clean-up, or dropped by the sliver filter, leave one side
+		// empty: the subject is then whole. If both are emptied (only the filter can, as when it
+		// drops both halves of a subject thinner than its width), it is whole on the side that
+		// lost the larger area; on a tie (no filter), outside.
+		if (inside.empty() && outside.empty())
+		{
+			return (inside_area_dropped > outside_area_dropped)
+					? PolygonPartitioner::GEOMETRY_INSIDE
+					: PolygonPartitioner::GEOMETRY_OUTSIDE;
+		}
 		if (inside.empty())
 		{
 			outside.clear();
@@ -467,6 +482,7 @@ namespace
 		{
 			Overlay::Options options;
 			options.clip_speed = d_polygon_partitioner.get_partition_point_speed_and_memory();
+			options.sliver_min_width = d_polygon_partitioner.get_sliver_min_width();
 			if (d_cascade_provenance)
 			{
 				options.want_provenance = true;
@@ -585,9 +601,11 @@ namespace
 
 GPlatesMaths::PolygonPartitioner::PolygonPartitioner(
 		const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-		PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_partitioning_polygon(partitioning_polygon),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 }
 
@@ -675,6 +693,7 @@ GPlatesMaths::PolygonPartitioner::partition_polygon(
 {
 	PolygonOverlay::Options options;
 	options.clip_speed = d_partition_point_speed_and_memory;
+	options.sliver_min_width = d_sliver_min_width;
 	std::vector<PolygonOverlay::OutputPolygon> inside;
 	std::vector<PolygonOverlay::OutputPolygon> outside;
 	const Result result = overlay_polygon(

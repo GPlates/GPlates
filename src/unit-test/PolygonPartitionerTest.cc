@@ -45,6 +45,8 @@
 #include "maths/PolygonPartitioner.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/SmallCircleBounds.h"
+#include "maths/UnitVector3D.h"
+#include "maths/Vector3D.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
@@ -664,10 +666,11 @@ namespace
 			return { rings_of(*plate_a), rings_of(*plate_far), rings_of(*plate_b) };
 		}
 
-		//! The cookie cutter of the three plates, or of none.
+		//! The cookie cutter of the three plates, or of none; with the sliver filter if a width.
 		std::unique_ptr<CookieCutter>
 		create_cookie_cutter(
-				bool with_plates = true) const
+				bool with_plates = true,
+				boost::optional<double> sliver_min_width = boost::none) const
 		{
 			return std::unique_ptr<CookieCutter>(new CookieCutter(
 					0.0,
@@ -678,7 +681,11 @@ namespace
 					GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 							std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
 									1,
-									d_rotations->reference()))));
+									d_rotations->reference())),
+					true/*group_networks_then_boundaries_then_static_polygons*/,
+					CookieCutter::SORT_BY_PLATE_ID,
+					PolygonOnSphere::ADAPTIVE,
+					sliver_min_width));
 		}
 
 		const PolygonOnSphere::non_null_ptr_to_const_type plate_a;
@@ -961,4 +968,221 @@ TEST(PolygonPartitionerTest, CookieCutterOtherGeometryTypes)
 			EXPECT_FALSE(table[i].subject->ratio);
 		}
 	}
+}
+
+
+namespace
+{
+	//! @a num_h thicknesses, in degrees (a distance along a meridian, or along the equator).
+	double
+	degrees_of_h(
+			double num_h)
+	{
+		return GPlatesMaths::convert_rad_to_deg(num_h * H);
+	}
+
+	//! A partitioner by @a partitioning_polygon with the sliver filter at @a sliver_min_width.
+	PolygonPartitioner::non_null_ptr_type
+	filtering(
+			const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+			boost::optional<double> sliver_min_width)
+	{
+		return PolygonPartitioner::create(
+				partitioning_polygon, PolygonOnSphere::ADAPTIVE, sliver_min_width);
+	}
+
+	//! Extract an overlay's two outputs with the sliver filter at @a sliver_min_width.
+	Overlay::Diagnostics
+	extract_filtered(
+			const PolygonOnSphere &subject,
+			const PolygonOnSphere &clip,
+			boost::optional<double> sliver_min_width,
+			std::vector<Overlay::OutputPolygon> &intersection,
+			std::vector<Overlay::OutputPolygon> &difference)
+	{
+		Overlay::Options options;
+		options.sliver_min_width = sliver_min_width;
+		Overlay::Overlay overlay(subject, clip, options);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_INTERSECTING);
+		overlay.extract(Overlay::INTERSECTION, intersection);
+		overlay.extract(Overlay::DIFFERENCE, difference);
+		return overlay.get_diagnostics();
+	}
+}
+
+
+// The sliver filter (phase4b-design.md section 4.5), off by default. A clip whose western part
+// covers the subject but a strip 5 h wide along its eastern edge (both meridians): the strip is
+// the difference, and holds a hole of the subject a third as wide. A filter of 10 h drops the strip
+// with its hole, so the subject is whole inside; one of h / 2, or none, keeps both (the hole, a
+// square, has a mean width of half its side, about 0.8 h).
+TEST(PolygonPartitionerTest, SliverFilterExteriorWithItsHole)
+{
+	const double w = degrees_of_h(5);
+	const auto P = polygon(
+			box(-10, 10, 0, 20),
+			{ box(-w / 6, w / 6, 20 - 2 * w / 3, 20 - w / 3) });
+	const auto Q = polygon(box(-20, 20, -10, 20 - w));
+
+	const std::vector<boost::optional<double>> widths{ boost::none, H / 2 };
+	for (const boost::optional<double> &width : widths)
+	{
+		SCOPED_TRACE(width);
+		PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+		EXPECT_EQ(
+				partition(*filtering(Q, width), P, inside, outside),
+				PolygonPartitioner::GEOMETRY_INTERSECTING);
+		ASSERT_EQ(outside.size(), 1u);
+		EXPECT_EQ(outside.front()->number_of_interior_rings(), 1u);
+	}
+
+	std::vector<Overlay::OutputPolygon> intersection, difference;
+	const Overlay::Diagnostics diagnostics =
+			extract_filtered(*P, *Q, 10 * H, intersection, difference);
+	EXPECT_EQ(intersection.size(), 1u);
+	EXPECT_TRUE(difference.empty());
+	EXPECT_EQ(diagnostics.sliver_exteriors_dropped, 1u);
+	EXPECT_EQ(diagnostics.sliver_holes_dropped, 0u);  // dropped with its exterior, not counted
+	EXPECT_GT(diagnostics.sliver_area_dropped, 0.0);
+
+	PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+	EXPECT_EQ(
+			partition(*filtering(Q, 10 * H), P, inside, outside),
+			PolygonPartitioner::GEOMETRY_INSIDE);
+	ASSERT_EQ(inside.size(), 1u);
+	EXPECT_EQ(inside.front().get(), P.get());
+	EXPECT_TRUE(outside.empty());
+}
+
+
+// A hole below the width is dropped alone, its polygon filling it: a clip over the subject with a
+// slot 5 h wide inside it. The intersection is the subject less the slot (a sliver hole), the
+// difference the slot itself (a sliver exterior); at 10 h the hole goes and the polygon stays.
+TEST(PolygonPartitionerTest, SliverFilterHoleAlone)
+{
+	const double w = degrees_of_h(5);
+	const auto P = polygon(box(-10, 10, 0, 20));
+	const auto Q = polygon(box(-20, 20, -10, 30), { box(-5, 5, 10, 10 + w) });
+
+	std::vector<Overlay::OutputPolygon> intersection, difference;
+	Overlay::Diagnostics diagnostics =
+			extract_filtered(*P, *Q, boost::none, intersection, difference);
+	ASSERT_EQ(intersection.size(), 1u);
+	EXPECT_EQ(intersection.front().interiors.size(), 1u);
+	EXPECT_EQ(difference.size(), 1u);
+	EXPECT_EQ(diagnostics.sliver_exteriors_dropped + diagnostics.sliver_holes_dropped, 0u);
+
+	intersection.clear();
+	difference.clear();
+	diagnostics = extract_filtered(*P, *Q, 10 * H, intersection, difference);
+	ASSERT_EQ(intersection.size(), 1u);
+	EXPECT_TRUE(intersection.front().interiors.empty());
+	EXPECT_TRUE(difference.empty());
+	EXPECT_EQ(diagnostics.sliver_holes_dropped, 1u);
+	EXPECT_EQ(diagnostics.sliver_exteriors_dropped, 1u);
+}
+
+
+// A subject thinner than the width, cut across: the filter drops both halves, and the subject is
+// whole on the side that lost the larger area (phase4b-design.md section 4.5 as built).
+TEST(PolygonPartitionerTest, SliverFilterEmptiesBoth)
+{
+	const double w = degrees_of_h(5);
+	const auto P = polygon(box(-5, 5, 0, w));
+	const auto lower_six_degrees = polygon(box(-20, 1, -10, 10));
+	const auto lower_four_degrees = polygon(box(-20, -1, -10, 10));
+
+	for (const auto &Q : { lower_six_degrees, lower_four_degrees })
+	{
+		SCOPED_TRACE(Q == lower_six_degrees ? "six" : "four");
+		std::vector<Overlay::OutputPolygon> intersection, difference;
+		const Overlay::Diagnostics diagnostics =
+				extract_filtered(*P, *Q, 10 * H, intersection, difference);
+		EXPECT_TRUE(intersection.empty());
+		EXPECT_TRUE(difference.empty());
+		EXPECT_EQ(diagnostics.sliver_exteriors_dropped, 2u);
+
+		PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+		const PolygonPartitioner::Result expected = (Q == lower_six_degrees)
+				? PolygonPartitioner::GEOMETRY_INSIDE
+				: PolygonPartitioner::GEOMETRY_OUTSIDE;
+		EXPECT_EQ(
+				partition(*filtering(Q, 10 * H), P, inside, outside),
+				expected);
+		const PolygonPartitioner::partitioned_polygon_seq_type &whole =
+				(expected == PolygonPartitioner::GEOMETRY_INSIDE) ? inside : outside;
+		ASSERT_EQ(whole.size(), 1u);
+		EXPECT_EQ(whole.front().get(), P.get());
+		EXPECT_EQ(inside.size() + outside.size(), 1u);
+	}
+}
+
+
+// The cascade passes the cookie cutter's width to every plate: a subject reaching 5 h into plate A
+// from plate B is cut in two without the filter, and is whole in plate B at 10 h.
+TEST(PolygonPartitionerTest, SliverFilterCookieCutter)
+{
+	const ThreePlates plates;
+	const auto P = polygon(box(-5, 5, 10 - degrees_of_h(5), 15));
+	const std::vector<boost::optional<double>> widths{ boost::none, 10 * H };
+	for (const boost::optional<double> &width : widths)
+	{
+		SCOPED_TRACE(width);
+		const std::unique_ptr<CookieCutter> cookie_cutter =
+				plates.create_cookie_cutter(true, width);
+		CookieCutter::partition_seq_type inside;
+		CookieCutter::partitioned_geometry_seq_type outside;
+		EXPECT_TRUE(cookie_cutter->partition_geometry(P, inside, outside, true/*want_provenance*/));
+		EXPECT_TRUE(outside.empty());
+		const auto pieces = get_pieces(inside, outside, plates);
+		if (width)
+		{
+			ASSERT_EQ(pieces.size(), 1u);
+			EXPECT_EQ(pieces[0].second, boost::optional<unsigned int>(2u));
+			EXPECT_EQ(pieces[0].first->geometry.get(), P.get());
+		}
+		else
+		{
+			ASSERT_EQ(pieces.size(), 2u);
+			EXPECT_EQ(pieces[0].second, boost::optional<unsigned int>(0u));
+			EXPECT_EQ(pieces[1].second, boost::optional<unsigned int>(2u));
+		}
+	}
+}
+
+
+// The filter's measure (PolygonOverlay::get_mean_width): exact for short edges. A disc of radius
+// 10 h drawn with 400 edges of 0.16 h each, all zero length to GreatCircleArc (so zero area to
+// SphericalArea, and a sliver at any width if measured by it), has a mean width of its radius. A
+// ring is measured by its smaller side, whichever way it runs.
+TEST(PolygonPartitionerTest, SliverFilterMeanWidth)
+{
+	const double radius = 10 * H;
+	const GPlatesMaths::UnitVector3D centre = at(20, 30).position_vector();
+	const GPlatesMaths::UnitVector3D east = GPlatesMaths::generate_perpendicular(centre);
+	const GPlatesMaths::UnitVector3D north = GPlatesMaths::cross(centre, east).get_normalisation();
+	ring_type disc;
+	for (unsigned int i = 0; i < 400; ++i)
+	{
+		const double angle = 2 * GPlatesMaths::PI * i / 400;
+		disc.push_back(PointOnSphere((
+				GPlatesMaths::Vector3D(centre) +
+						std::tan(radius) * std::cos(angle) * GPlatesMaths::Vector3D(east) +
+						std::tan(radius) * std::sin(angle) * GPlatesMaths::Vector3D(north))
+				.get_normalisation()));
+	}
+	double area = 0.0;
+	EXPECT_NEAR(Overlay::get_mean_width(disc, &area), radius, 1e-3 * radius);
+	EXPECT_NEAR(area, GPlatesMaths::PI * radius * radius, 1e-3 * area);
+
+	// A box over most of a hemisphere and its complement, run both ways: the same smaller side.
+	ring_type large = box(-80, 80, 0, 170);
+	const double width = Overlay::get_mean_width(large);
+	std::reverse(large.begin(), large.end());
+	EXPECT_NEAR(Overlay::get_mean_width(large), width, 1e-12);
+	const PolygonOnSphere::non_null_ptr_to_const_type large_polygon = polygon(large);
+	EXPECT_NEAR(
+			2 * large_polygon->get_area().dval() / large_polygon->get_arc_length().dval(),
+			width,
+			1e-9);
 }

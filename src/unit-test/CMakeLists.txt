@@ -24,6 +24,7 @@ set(srcs
     PointInPolygonTest.cc
     PolygonOverlayOracle.h
     PolygonOverlayPrototypeTest.cc
+    PolygonOverlayRealDataTest.cc
     PolygonOverlayTest.cc
     PolygonPartitionerTest.cc
     RealTest.cc

@@ -70,14 +70,22 @@ namespace GPlatesMaths
 		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
 		 * point-in-polygon tests against the partitioning polygon: those of @a partition_point,
 		 * and the overlay's tests of a cut geometry's pieces.
+		 *
+		 * @a sliver_min_width, if set, turns on the overlay's sliver filter for a cut polygon's
+		 * pieces (PolygonOverlay::Options::sliver_min_width, phase4b-design.md section 4.5): a ring
+		 * whose mean width is below it, in radians, is dropped. The result is then decided after the
+		 * filter: a side it empties leaves the polygon whole on the other side (on the side that lost
+		 * the larger area if it empties both).
 		 */
 		static
 		non_null_ptr_type
 		create(
 				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = PolygonOnSphere::ADAPTIVE)
+				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = PolygonOnSphere::ADAPTIVE,
+				 boost::optional<double> sliver_min_width = boost::none)
 		{
-			return non_null_ptr_type(new PolygonPartitioner(partitioning_polygon, partition_point_speed_and_memory));
+			return non_null_ptr_type(
+					new PolygonPartitioner(partitioning_polygon, partition_point_speed_and_memory, sliver_min_width));
 		}
 
 
@@ -180,6 +188,14 @@ namespace GPlatesMaths
 		get_partition_point_speed_and_memory() const
 		{
 			return d_partition_point_speed_and_memory;
+		}
+
+
+		//! The sliver filter's width, if it is on (see @a create).
+		const boost::optional<double> &
+		get_sliver_min_width() const
+		{
+			return d_sliver_min_width;
 		}
 
 
@@ -299,6 +315,7 @@ namespace GPlatesMaths
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
 		PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
+		boost::optional<double> d_sliver_min_width;
 
 
 		/**
@@ -306,7 +323,8 @@ namespace GPlatesMaths
 		 */
 		PolygonPartitioner(
 				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
+				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+				 boost::optional<double> sliver_min_width);
 	};
 }
 

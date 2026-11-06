@@ -105,9 +105,11 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		boost::optional<const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
 		boost::optional<const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
 		boost::optional<SortPlates> sort_plates,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_time(reconstruction_time),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 	// Resolved networks are added first and hence are used first (along with their interior polygons, if any)
 	// during partitioning.
@@ -133,9 +135,11 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		const std::vector<ReconstructionGeometry::non_null_ptr_type> &reconstruction_geometries,
 		bool group_networks_then_boundaries_then_static_polygons,
 		boost::optional<SortPlates> sort_plates,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_time(reconstruction_time),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 	if (group_networks_then_boundaries_then_static_polygons)
 	{
@@ -174,9 +178,11 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		bool group_networks_then_boundaries_then_static_polygons,
 		boost::optional<SortPlates> sort_plates,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_time(reconstruction_time),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 	// Contains the reconstructed static polygons used for cookie-cutting.
 	// Can also contain the topological section geometries referenced by topologies.
@@ -321,6 +327,19 @@ bool
 GPlatesAppLogic::GeometryCookieCutter::has_partitioning_polygons() const
 {
 	return !d_partitioning_geometries.empty();
+}
+
+
+std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryCookieCutter::get_partitioning_polygons() const
+{
+	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> partitioning_polygons;
+	for (const PartitioningGeometry &partitioning_geometry : d_partitioning_geometries)
+	{
+		partitioning_polygons.push_back(
+				partitioning_geometry.d_polygon_partitioner->get_partitioning_polygon());
+	}
+	return partitioning_polygons;
 }
 
 
@@ -614,7 +633,8 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 
 		// Add interior block as a partitioning geometry.
 		d_partitioning_geometries.push_back(
-				PartitioningGeometry(rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory));
+				PartitioningGeometry(
+						rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory, d_sliver_min_width));
 	}
 
 	// Add boundary (excluding rigid block holes) as a partitioning geometry.
@@ -622,7 +642,8 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 			PartitioningGeometry(
 					rtn,
 					rtn->get_triangulation_network().get_boundary_polygon(true/*include_rigid_blocks_as_interior_holes*/),
-					d_partition_point_speed_and_memory));
+					d_partition_point_speed_and_memory,
+					d_sliver_min_width));
 }
 
 
@@ -656,7 +677,11 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_bou
 {
 	// Add it as a partitioning geometry.
 	d_partitioning_geometries.push_back(
-			PartitioningGeometry(rtb, rtb->resolved_topology_boundary(), d_partition_point_speed_and_memory));
+			PartitioningGeometry(
+					rtb,
+					rtb->resolved_topology_boundary(),
+					d_partition_point_speed_and_memory,
+					d_sliver_min_width));
 }
 
 
@@ -698,7 +723,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_po
 
 	// Add it as a partitioning geometry.
 	d_partitioning_geometries.push_back(
-			PartitioningGeometry(rfg, polygon.get(), d_partition_point_speed_and_memory));
+			PartitioningGeometry(rfg, polygon.get(), d_partition_point_speed_and_memory, d_sliver_min_width));
 }
 
 
@@ -737,10 +762,12 @@ GPlatesAppLogic::GeometryCookieCutter::sort_plates_in_partitioning_group(
 GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometry(
 		const ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry,
 		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_geometry(reconstruction_geometry),
 	d_polygon_partitioner(
-			GPlatesMaths::PolygonPartitioner::create(partitioning_polygon, partition_point_speed_and_memory))
+			GPlatesMaths::PolygonPartitioner::create(
+					partitioning_polygon, partition_point_speed_and_memory, sliver_min_width))
 {
 }
 
