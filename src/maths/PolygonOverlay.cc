@@ -248,12 +248,6 @@ namespace GPlatesMaths
 			 */
 			const double HEMISPHERE_CHECK_MARGIN = 10.0;
 
-
-			/**
-			 * A point's distance from a segment's great circle under which it counts as on it, in
-			 * radians: rounding, a millionth of the thickness (a ray's cone, measure_ray).
-			 */
-			const double OFF_SEGMENT_ROUNDING = 1e-12;
 		}
 	}
 }
@@ -1281,19 +1275,29 @@ GPlatesMaths::PolygonOverlay::Overlay::measure_ray(
 		// vertex, up to the thickness off this ring's segment, so the arc between start and far end
 		// can leave tens of degrees from the segment's tangent, which a cone of the distance alone
 		// did not bound (in four dense shared-edge cases of the hunt the true order was then not
-		// admissible). An offset under rounding (a vertex of this ring, a crossing) counts as none,
-		// as the prototype's exact zero.
+		// admissible). Only those stops are measured: a vertex of this ring, and a crossing, lie on
+		// the segment by construction, as the prototype's exact zero. (Not by a threshold: a
+		// crossing's stored position, the normalised cross product of two nearly parallel planes,
+		// lies off them by up to about 2.4e-11 radians in a dense shared edge, and a threshold of
+		// 1e-12 gave those rays cones of up to 1.5e-5 radians the prototype gives 0.)
 		const UnitVector3D &axis = segment.rotation_axis();
-		const auto offset_from_segment = [&axis](const UnitVector3D &point)
+		const auto offset_from_segment = [this, &axis](const Stop &stop)
 		{
-			const double sine = std::fabs(dot(axis, point).dval());
-			return (sine > OFF_SEGMENT_ROUNDING) ? std::asin((std::min)(1.0, sine)) : 0.0;
+			if (stop.at_vertex ||
+				(stop.num_records != 0 &&
+					d_graph.unordered_intersections[d_stop_records[stop.first_record]].type ==
+							GeometryIntersect::Intersection::SEGMENTS_CROSS))
+			{
+				return 0.0;
+			}
+			const double sine = std::fabs(dot(axis, stop.position.position_vector()).dval());
+			return std::asin((std::min)(1.0, sine));
 		};
 		const UnitVector3D &far = to.position.position_vector();
 		const double from_output_position = is_same_position(from.position, vertex.position)
 				? 0.0
 				: angle_between(centre, start);
-		ray.delta = from_output_position + offset_from_segment(start) + offset_from_segment(far);
+		ray.delta = from_output_position + offset_from_segment(from) + offset_from_segment(to);
 		ray.first_arc_length = angle_between(start, far);
 		ray.reach = angle_between(centre, far);
 		if (ray.delta == 0.0)

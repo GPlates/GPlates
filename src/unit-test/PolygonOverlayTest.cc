@@ -31,6 +31,7 @@
 #include <gtest/gtest.h>
 
 #include "maths/GeometryIntersect.h"
+#include "maths/GreatCircleArc.h"
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -801,6 +802,113 @@ TEST(PolygonOverlayTest, RaysAcuteWedge)
 			EXPECT_EQ(a.clip_end->piece, b.clip_end->piece);
 		}
 	}
+}
+
+
+// A crossing lies on both its segments by construction (phase4b-design.md section 3.8): a clip
+// edge zigzagging across the subject's at an angle of about 1e-5 radians, at ten places on the
+// sphere, whose crossings' stored positions (the normalised cross product of two nearly parallel
+// planes) lie off the segments' great circles by more than 1e-12 radians. Every ray at a crossing
+// starts there and runs to a vertex or another crossing, so it has no cone. (A threshold of
+// 1e-12 radians once counted those offsets, and gave such rays cones the prototype gives 0.)
+TEST(PolygonOverlayTest, RaysCrossingsOnTheirSegments)
+{
+	const double e = 4e-6;
+	double largest_offset = 0.0;
+	for (unsigned int k = 0; k < 10; ++k)
+	{
+		SCOPED_TRACE(k);
+		const Frame frame(lat_lon_radians(0.37 + 0.1 * k, 0.81 + 0.3 * k));
+		const ring_type zigzag{
+				frame.at(0.9, -e), frame.at(0.3, e), frame.at(-0.3, -e), frame.at(-0.9, e) };
+		const auto P = polygon(ring_type{
+				frame.at(-1.0, 0.0), frame.at(1.0, 0.0), frame.at(1.0, 0.1), frame.at(-1.0, 0.1) });
+		ring_type clip{ frame.at(-0.9, -0.1), frame.at(0.9, -0.1) };
+		clip.insert(clip.end(), zigzag.begin(), zigzag.end());
+		const auto Q = polygon(clip);
+		const Overlay::Overlay overlay(*P, *Q);
+		check_structure(overlay);
+		EXPECT_EQ(record_kinds(overlay), "LL LL LL LL");
+
+		// The segments' great circles: the subject's southern edge and the clip's zigzag.
+		std::vector<UnitVector3D> axes{ GPlatesMaths::GreatCircleArc::create(
+				frame.at(-1.0, 0.0), frame.at(1.0, 0.0)).rotation_axis() };
+		for (unsigned int i = 0; i + 1 < zigzag.size(); ++i)
+		{
+			axes.push_back(
+					GPlatesMaths::GreatCircleArc::create(zigzag[i], zigzag[i + 1]).rotation_axis());
+		}
+
+		for (const Overlay::Vertex &vertex : overlay.get_vertices())
+		{
+			for (const UnitVector3D &axis : axes)
+			{
+				const double offset =
+						std::fabs(dot(axis, vertex.position.position_vector()).dval());
+				if (offset < 1e-9)  // on that segment's great circle
+				{
+					largest_offset = (std::max)(largest_offset, offset);
+				}
+			}
+			for (const Overlay::Ray &ray : vertex.rays)
+			{
+				EXPECT_EQ(ray.delta, 0.0);
+				EXPECT_EQ(ray.cone, 0.0);
+			}
+		}
+	}
+	// The case's premise: some crossing lies off a great circle by more than that threshold.
+	EXPECT_GT(largest_offset, 1e-12);
+}
+
+
+// A ray's cone counts how far its first arc's far end lies off the segment's great circle
+// (phase4b-design.md section 3.8, prototype configuration 'r5o'): a subject edge crossed by the
+// clip at x = -0.01 and x = -0.0075, and touched from outside at x = 0 by a clip vertex half the
+// thickness below it. At the second crossing the subject's ray east ends at the touch, so its
+// offset is the clip vertex's from the subject's edge; every other ray there ends at a crossing or
+// a vertex of its own ring, and has none.
+TEST(PolygonOverlayTest, RaysFarEndOffset)
+{
+	const auto P = polygon(square(-0.02, 0.0, 0.02, 0.02));
+	const PointOnSphere touch = F.at(0.0, -0.5 * H);
+	const auto Q = polygon(ring_type{
+			F.at(-0.01, 0.01), F.at(-0.01, -0.02), F.at(0.01, -0.02), touch, F.at(-0.005, -0.01) });
+	const Overlay::Overlay overlay(*P, *Q);
+	check_structure(overlay);
+	EXPECT_EQ(record_kinds(overlay), "LL LL LS");
+
+	const double offset = std::asin(std::fabs(dot(
+			GPlatesMaths::GreatCircleArc::create(F.at(-0.02, 0.0), F.at(0.02, 0.0)).rotation_axis(),
+			touch.position_vector()).dval()));
+	EXPECT_NEAR(offset, 0.5 * H, 1e-3 * H);
+
+	const PointOnSphere second_crossing = F.at(-0.0075, 0.0);
+	unsigned int found = 0;
+	for (const Overlay::Vertex &vertex : overlay.get_vertices())
+	{
+		if (!(vertex.position == second_crossing))
+		{
+			continue;
+		}
+		++found;
+		ASSERT_EQ(vertex.rays.size(), 4u);
+		unsigned int offset_rays = 0;
+		for (const Overlay::Ray &ray : vertex.rays)
+		{
+			if (ray.delta == 0.0)
+			{
+				EXPECT_EQ(ray.cone, 0.0);
+				continue;
+			}
+			++offset_rays;
+			EXPECT_TRUE(ray.subject_end && !ray.clip_end);
+			EXPECT_DOUBLE_EQ(ray.delta, offset);
+			EXPECT_NEAR(ray.cone, std::atan2(ray.delta, ray.first_arc_length - ray.delta), 1e-12);
+		}
+		EXPECT_EQ(offset_rays, 1u);
+	}
+	EXPECT_EQ(found, 1u);
 }
 
 
