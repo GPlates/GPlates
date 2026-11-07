@@ -181,31 +181,33 @@ namespace GPlatesMaths
 			 * Whether a ring (its points) lies inside another ring (a polygon of that ring alone),
 			 * for the grouping of phase4b-design.md section 4.2.
 			 *
-			 * The rings do not cross, so one point of the ring decides, tested exactly (threshold
-			 * off): the first vertex farther from the other ring's outline than the
-			 * point-on-polygon threshold, so that the test has a margin; else (a ring thinner than
-			 * the threshold along the other, the 'six' hunt's necks) the farthest of its vertices
-			 * and its edges' midpoints (every vertex can be a shared overlay vertex: a triangle of
-			 * three touches, in the 'chain' hunt), unless all of those are on the other ring. None
-			 * then: the rings coincide.
+			 * The rings do not cross but within an overlay vertex: a vertex's output position can
+			 * be up to its record cluster's width off its records, so two output rings can cross
+			 * there by about that width (two holes facing each other across a gap under 2h, the
+			 * 'six' hunt's 'two-holes', cross by the gap). So one point of the ring decides, tested
+			 * exactly (threshold off), with a margin beyond that: the first vertex farther from the
+			 * other ring's outline than @a margin (a margin of the point-on-polygon threshold alone
+			 * let a vertex 1.6h across a gap decide that a hole lay outside its exterior); else (a
+			 * ring thinner than the margin along the other, the 'six' hunt's necks) the farthest of
+			 * its vertices and its edges' midpoints (every vertex can be a shared overlay vertex: a
+			 * triangle of three touches, in the 'chain' hunt), unless all of those are on the other
+			 * ring. None then: the rings coincide.
 			 */
 			boost::optional<bool>
 			is_ring_inside_ring(
 					const std::vector<PointOnSphere> &ring_points,
-					const PolygonOnSphere &other_ring)
+					const PolygonOnSphere &other_ring,
+					const AngularExtent &margin)
 			{
-				static const AngularExtent threshold = AngularExtent::create_from_cosine(
-						PointInPolygon::get_point_on_polygon_threshold_cosine());
-
 				boost::optional<PointOnSphere> farthest;
 				double farthest_distance = 0;
 				const auto consider = [&](const PointOnSphere &point)
 				{
 					const boost::optional<AngularDistance> distance =
-							minimum_distance(point, other_ring, false, threshold);
+							minimum_distance(point, other_ring, false, margin);
 					const double angle = distance
 							? distance->calculate_angle().dval()
-							: (std::numeric_limits<double>::max)();  // farther than the threshold
+							: (std::numeric_limits<double>::max)();  // farther than the margin
 					if (angle > farthest_distance)
 					{
 						farthest = point;
@@ -3951,8 +3953,26 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	//
 	// Grouping (section 4.2): by containment with parity depth, as the output is read. A ring's
 	// depth is the number of rings containing it, and its parent the containing ring of greatest
-	// depth. (The rings do not cross, and the number of rings is small: every pair is tested.)
+	// depth. (The rings do not cross but within an overlay vertex, and the number of rings is
+	// small: every pair is tested.) The containment test's margin, as the oracle's: ten
+	// thicknesses, or twice the widest record cluster if wider (is_ring_inside_ring).
 	//
+	double cluster_width = 0.0;
+	for (const Vertex &vertex : d_vertices)
+	{
+		const std::vector<unsigned int> vertex_records = get_vertex_records(vertex);
+		for (unsigned int a : vertex_records)
+		{
+			for (unsigned int b : vertex_records)
+			{
+				cluster_width = (std::max)(cluster_width, angle_between(
+						d_graph.unordered_intersections[a].position.position_vector(),
+						d_graph.unordered_intersections[b].position.position_vector()));
+			}
+		}
+	}
+	const AngularExtent grouping_margin = AngularExtent::create_from_angle(
+			(std::max)(HEMISPHERE_CHECK_MARGIN * h, 2 * cluster_width));
 	std::vector<std::vector<unsigned int>> containers(num_rings);
 	for (unsigned int r = 0; r < num_rings; ++r)
 	{
@@ -3963,7 +3983,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 				continue;
 			}
 			const boost::optional<bool> inside =
-					is_ring_inside_ring(rings[r].points, *ring_polygons[other]);
+					is_ring_inside_ring(rings[r].points, *ring_polygons[other], grouping_margin);
 			if (!inside)
 			{
 				++d_diagnostics.coincident_rings;  // a degenerate output clean-up did not catch
