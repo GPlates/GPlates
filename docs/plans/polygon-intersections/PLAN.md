@@ -803,7 +803,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   regenerated, docs built from scratch. GPlates 197 of 197, pyGPlates 7 of 7. **Then (developer)**:
   `PolygonOnSphere.partition` takes the same argument, defaulting to zero (off), since filtering the
   pieces afterwards is not the same: it can't drop a sliver hole, return the geometry whole when a
-  side empties, or measure short edges exactly (`get_area` is `SphericalArea`'s).
+  side empties, or measure short edges exactly (`get_area` is `SphericalArea`'s). (Its default became
+  `h` in step 15: Status, 2026-11-08.)
 
 - 2026-11-07: **The two `partition_features` items from the `src/api` audit done** (G8-1; the entry
   "Two items for PR B" above; design 8.4 "as built"). **Item 1**: a feature with nothing partitioned is
@@ -819,7 +820,47 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   mark G8-1 done in the planning repository's `plans/src-api-audit.md` (not edited here, since that
   session has its triage of group 8 in progress).
 
-- **Resume here** (updated 2026-11-07):
+- 2026-11-08: **Phase 5 step 15: the hunt at scale** (design 11.2), in four commits: `626544744`
+  (the comparison's harness), `8bea9c67a` (the bundle cone), `09c1f7cb6` (the grouping margin),
+  `3f7bac4b0` (`PolygonOnSphere.partition`'s default); design 3.8, 4.2, 4.5 and 9.1 amended.
+  - **The hunt**: 119,198 new prototype cases, about fourteen times the earlier sets, over the eight
+    generators at new seeds, plus jittered `shared` copies and polyline cases (planning repository
+    tools, driven from the session's scratchpad). First reported as all passing: my driver's bug, since
+    gtest prints `[  PASSED  ] 0 tests.` on a failure. 93 differed, and three more cases failed in the
+    prototype too.
+  - **Found and fixed**:
+    - The grouping margin. Output rings cross within a vertex by up to its cluster's width, and a
+      containment test with a margin of `h` put a hole outside its exterior: 5 cases, the
+      intersection's area wrong by about a quarter.
+    - **The bundle cone (decided, developer)**. A subagent diagnosed the residue in exact arithmetic:
+      the cone assumed a ray's first arc on its segment, which a touch record at the other polygon's
+      vertex is not, so in four cases the true order was not admissible. The prototype's `r5o`
+      (planning `82825cd`) and the C++ add those offsets. Clean: `#2587` seed 13, `#1434` seed 12,
+      `#4938` seed 3, `#2557` seed 8, all committed. The snapshots are re-exported under `r5o`
+      (a scratchpad script rebuilds them from their case names).
+  - **The test, not the code**: the provenance tolerance (37 cases; a point at a vertex can be a
+    cluster's width from its record), and rings of no area whose orientation the oracle judged (35;
+    an input overlapping itself along a stretch bounds them).
+  - **Decided (developer)**: `#2288` seed 2 is left as the residue (band classes along a dense
+    shared edge, no bundle vertex; it throws, and is now the failure tests' input).
+    `PolygonOnSphere.partition` defaults to `h` (design 4.5): the three widths are `h` (the overlay's
+    resolution), `10 h` (global data's), and zero (exact).
+  - **After the fixes**: 13 of 119,198 cases differ, none in a partition's geometry.
+    - 4 are the symmetric difference's crossing pairing (rings overlapping where a vertex's ends are
+      paired across): PR C.
+    - 4 are coincident rings, at least two of them the zero-area rings' cases (likely all four).
+    - 4 are a cascade's second step losing a subject location (no point's provenance wrong):
+      uninvestigated.
+    - 1 is a structural difference: two crossings 1e-16 radians apart are two vertices in the C++, one
+      in the prototype. The output is right (0 wrong of 19,982 samples).
+  - **Linux**: three prototype tests failed, from my archive: `core.autocrlf=true` makes `git
+    archive` write CRLF, and the case names kept a `\r`. Fixed in the reader and in the recipe
+    (`gplates-local.md`, planning `39ce8f4`). The working tree passed all 198, and pyGPlates 7 of 7, on
+    Ubuntu 22.04.
+  - GPlates 198 of 198, pyGPlates 7 of 7; mutations reverting either fix are caught by the committed
+    cases.
+
+- **Resume here** (updated 2026-11-08):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
@@ -830,10 +871,11 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     done, and review 6 with its fixes (the overlay's early stop dropped); step 13 (13a and 13b) and
     review 7 with its fixes done; step 14 (the sliver filter, on at `10 h` in the cascade, and the
     real-data measurements) done, 2026-11-07, and the two `partition_features` items from the
-    `src/api` audit (Status, 2026-11-07). Next: step 15. Open: two
-    bundle-vertex failures, `shared#1434` seed 12 and `#2587` seed 13 (Status, review 2 entry), left
-    for step 15's hunt at scale (the developer, 2026-11-05); the third, `shared#6` seed 11, is clean
-    under `r5c` (the self-touch cuts fixed it). The prototype comparison is
+    `src/api` audit (Status, 2026-11-07); step 15's hunt at scale and its fixes done, 2026-11-08
+    (Status). Next: a clean Linux run of the branch tip, then the distillation (Phase 6). Open: the
+    residue `shared#2288` seed 2 (design 9.1); the 4 second-step and 4 coincident-ring differences
+    of the hunt (Status, 2026-11-08); for PR C, the symmetric difference's crossing pairing. The
+    prototype configuration is now `r5o`. The prototype comparison is
     `PolygonOverlayPrototypeTest`; re-export with `overlay_export.py` when a step changes what the
     prototype is compared on.
   - *History (2026-10-27), kept for the record; steps 1 to 7 below are done (see the dated entries

@@ -650,6 +650,29 @@ reach this in about 1 vertex in 3500 cases, and run 3's residue vertices are all
 
 The rejected `nearest` deduction (deduce from the tie-break's order alone) is in section 13.
 
+**Amended (step 15, the developer; prototype configuration `r5o`).** The cone of step 1 assumed a ray's
+first arc starts on its segment's great circle, so that the arc leaves along the segment's tangent. It
+does not when the stop, or the arc's far end, is a touch record at the other polygon's vertex (an `LS`
+on the subject's ring, an `SL` on the clip's) or a self-touch cut: those lie at the other polygon's
+vertex, up to the thickness off this ring's segment. With first arcs only 1h to 2h long the arcs left 30
+to 75 degrees from their tangents, against cones of 0 to 44 degrees. In four dense shared-edge cases of
+the hunt (`shared#2587` seed 13, `#1434` seed 12, `#4938` seed 3, `#2557` seed 8) the true rotational
+order was not admissible, the solve deduced classes from the wrong orders, and 20 rounds of repair
+could not recover. A survey of 175 rays at bundle vertices found the cone held for every ray whose ends
+lie on the segment (67) and failed for 59 of the 73 starting off it.
+
+So the offset in the cone's bound is the start's distance from the vertex's output position plus the
+start's and the far end's distances from the segment's great circle: `delta' = delta + off(start) +
+off(far)`, then `theta = 0` only if `delta' = 0`, `pi` if `L <= delta'`, else `atan2(delta', L - delta')`
+(run 3's planar bound with the offsets included). In the C++ (`measure_ray`) an offset under `1e-12`
+radians counts as none, as the prototype's exact zero for a stop on the segment's own great circle (a
+vertex of the ring, a crossing). Measured: the four cases are clean, and over 28,155 `shared` cases no
+other repair or check count changes; classes changed in 17 clean cases, every one on a piece within
+0.92h of the other outline over its whole length. The costs: more rays float, so admissible sets grow
+(4 to 312 at one vertex), midpoint tests rise about 1%, and the cap (step 2) is reached at 2 vertices
+(7 floating rays, `shared#2240` seed 12 and `#3673` seed 11), where the measured order is kept and both
+cases stay clean.
+
 ### 3.9 Anchorless chains, checks and repair
 
 **Anchorless chains** (walk-through section 5, option 3; `_chain_of`, `_anchorless_pick`,
@@ -799,8 +822,13 @@ of the output (points inside an odd number of output rings) is what the oracle v
 (PLAN.md Phase 4a: "the output read by parity over its rings"):
 
 1. For each pair of output rings, decide whether ring `r` lies inside ring `r'`: take the first vertex
-   of `r` farther than `s` from `r'`'s outline (so the exact test has a margin) and test it against a
-   polygon of `r'` alone, threshold off. If there is none, test the farthest of `r`'s vertices and its
+   of `r` farther than a margin from `r'`'s outline (so the exact test has a margin) and test it against a
+   polygon of `r'` alone, threshold off. **As amended (step 15)**: the margin is `max(10h, twice the
+   widest record cluster)`, as the oracle's sampling margin. Output rings do cross within an overlay
+   vertex, by up to its cluster's width (its output position is up to that far off its records): two
+   holes facing each other across a gap under `2h` (the `six` hunt's `two-holes`) gave output rings
+   crossing by the gap, and with a margin of `s` a vertex 1.6h across the gap decided that a hole lay
+   outside its exterior (5 cases in 119,198, the intersection's area wrong by about a quarter). If there is none, test the farthest of `r`'s vertices and its
    edges' midpoints instead (step 8 found both: a neck ring thinner than `s` along another ring, in
    the `six` hunt; a triangle of three shared touch vertices, in the `chain` hunt). Only if every one
    of those is on `r'` do the rings coincide, and neither contains the other (counted). Every pair is
@@ -938,8 +966,14 @@ As built (step 14):
   (`get_default_sliver_min_width`), so it covers Assign Plate IDs and pyGPlates' `PlatePartitioner`
   and `partition_into_plates`. pyGPlates exposes it as `sliver_width_threshold_radians`: `None` (the
   default) gives the default width, and zero turns the filter off. `PolygonPartitioner` keeps none
-  (off) as its default, so `PolygonOnSphere.partition` and the raster meshes stay exact;
-  `PolygonOnSphere.partition` takes `sliver_width_threshold_radians` too, defaulting to zero.
+  (off) as its default, so the raster meshes stay exact. `PolygonOnSphere.partition` takes
+  `sliver_width_threshold_radians` too: first defaulting to zero, then (step 15, the developer) to `h`,
+  the overlay's own resolution. Two outlines within `h` count as touching, so a ring narrower than `h`
+  on average has collapsed by the overlay's own rule; the hunt found such rings of no area at all,
+  bounded by an input that overlaps itself along a stretch. A cut always separates boundaries more
+  than `h` apart, so what `h` drops is thin triangles (their mean width is about half their widest)
+  and degenerate rings. Zero still keeps every piece. So the three widths are `h` (the overlay's
+  resolution), `10 h` (global data's) and zero (exact).
   - Why `10 h`: below `h` the overlay can't tell the two outlines apart. Up to `10 h`, the measured
     slivers are artefacts of an outline digitised along a plate boundary, below the resolution of
     global data, and they would take the neighbouring plate's ID. At `100 h` the filter starts on
@@ -1485,6 +1519,18 @@ R11), a band piece's midpoint test propagated where the margin order should have
 vertex the bundle rule could not resolve. None was seen in any normal run (run 3 section 7). Run 4
 found, and the one-passage rule removes, a fourth: the sector walk at a six-end vertex where one
 polygon passes once, on an order that is exact but uninformative there (19 of 2393 `chain` cases).
+
+As measured (step 15): five cases failed in the prototype and the C++ alike, all dense shared edges
+(`shared`): two from review 2's hunt, and three of the 67,639 `shared` cases among step 15's 119,198
+generated cases (none from any other generator). Four were bundle vertices whose cone was too tight,
+which `r5o` fixes (3.8, amended). The fifth,
+`shared#2288` seed 2, is the band family: along a dense shared edge whose long stretches (5320h to 7220h)
+are not paired as common and lie within 0.15h to 0.35h of each other throughout, midpoint tests on band
+pieces 1h to 1.7h long fix a chain's class wrongly, and repair cannot find the flip of several pieces it
+would take within 20 rounds. Consistent labellings exist, so the vertex orders are not at fault. It is
+left as the residue (the developer, 2026-11-08): the C++ throws `InconsistentOverlayException` (9.2),
+which Assign Plate IDs reports, and it is the failure tests' input (`polygon-overlay/inconsistent.txt`).
+Candidates, untried: run 4's along rule, or a repair candidate flipping a chain of band pieces.
 
 ### 9.2 What happens then: never a silent wrong answer
 
