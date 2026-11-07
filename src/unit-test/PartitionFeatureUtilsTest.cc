@@ -25,7 +25,9 @@
 
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 #include <gtest/gtest.h>
@@ -938,13 +940,15 @@ namespace
 {
 	/**
 	 * A feature in @a collection with plate ID 5 and @a polygon as its geometry, in a piecewise
-	 * aggregation with a time window per (begin, end) of @a windows.
+	 * aggregation with a time window per (begin, end) of @a windows; and, if @a with_coverage, a
+	 * scalar coverage of it in the same windows.
 	 */
 	GPlatesModel::FeatureHandle::weak_ref
 	add_time_dependent_feature(
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-			const std::vector<std::pair<double, double>> &windows)
+			const std::vector<std::pair<double, double>> &windows,
+			bool with_coverage = false)
 	{
 		const GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(
 				collection,
@@ -953,29 +957,61 @@ namespace
 				GPlatesModel::TopLevelPropertyInline::create(
 						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 						GPlatesPropertyValues::GpmlPlateId::create(5)));
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
-		for (const std::pair<double, double> &window : windows)
+		const auto add_in_windows = [&](
+				const char *property_name,
+				const std::function<
+					GPlatesModel::PropertyValue::non_null_ptr_type ()> &create_value)
 		{
-			const GPlatesModel::PropertyValue::non_null_ptr_type value =
-					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(polygon);
-			time_windows.push_back(
-					GPlatesPropertyValues::GpmlTimeWindow::create(
-							value,
-							GPlatesModel::ModelUtils::create_gml_time_period(
-									GPlatesPropertyValues::GeoTimeInstant(window.first),
-									GPlatesPropertyValues::GeoTimeInstant(window.second)),
-							value->get_structural_type()));
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
+			for (const std::pair<double, double> &window : windows)
+			{
+				const GPlatesModel::PropertyValue::non_null_ptr_type value = create_value();
+				time_windows.push_back(
+						GPlatesPropertyValues::GpmlTimeWindow::create(
+								value,
+								GPlatesModel::ModelUtils::create_gml_time_period(
+										GPlatesPropertyValues::GeoTimeInstant(window.first),
+										GPlatesPropertyValues::GeoTimeInstant(window.second)),
+								value->get_structural_type()));
+			}
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml(property_name),
+							GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
+									time_windows,
+									time_windows.front()->time_dependent_value()
+							->get_structural_type())));
+		};
+		add_in_windows(
+				"unclassifiedGeometry",
+				[&polygon]()
+				{
+					return GPlatesAppLogic::GeometryUtils::create_geometry_property_value(polygon);
+				});
+		if (with_coverage)
+		{
+			add_in_windows(
+					"unclassifiedGeometryCoverage",
+					[&polygon]()
+					{
+						std::vector<double> values(polygon->number_of_vertices());
+						std::iota(values.begin(), values.end(), 1.0);
+						return GPlatesModel::PropertyValue::non_null_ptr_type(
+								GPlatesPropertyValues::GmlDataBlock::create(
+										std::vector<GmlDataBlockCoordinateList::non_null_ptr_type>{
+											GmlDataBlockCoordinateList::create(
+													ValueObjectType::create_gpml("TestScalar0"),
+													GmlDataBlockCoordinateList::xml_attributes_type(),
+													values) }));
+					});
 		}
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"),
-						GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
-								time_windows,
-								time_windows.front()->time_dependent_value()->get_structural_type())));
 		return feature;
 	}
 
-	//! Per feature in @a collection: its plate ID, and whether its geometry is time-dependent.
+	/**
+	 * Per feature in @a collection: its plate ID, and whether its geometry (or its coverage, if it
+	 * has one) is time-dependent.
+	 */
 	std::vector<std::pair<GPlatesModel::integer_plate_id_type, bool>>
 	get_plate_ids_and_time_dependence(
 			const GPlatesModel::FeatureCollectionHandle &collection)
@@ -991,8 +1027,10 @@ namespace
 			{
 				const GPlatesModel::TopLevelPropertyInline *inline_property =
 						dynamic_cast<const GPlatesModel::TopLevelPropertyInline *>(property.get());
-				if (property->get_property_name() ==
-						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry") &&
+				if ((property->get_property_name() ==
+							GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry") ||
+						property->get_property_name() ==
+							GPlatesModel::PropertyName::create_gpml("unclassifiedGeometryCoverage")) &&
 					inline_property)
 				{
 					for (const auto &value : *inline_property)
@@ -1039,13 +1077,15 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsTimeDependentGeometry)
 			GPlatesModel::FeatureCollectionHandle::create();
 	const auto P = polygon(box(-5, 15, -5, 5));
 
+	unsigned int num_coverages = 0;
 	const auto assign = [&](
 			GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType method,
-			const std::vector<std::pair<double, double>> &windows)
+			const std::vector<std::pair<double, double>> &windows,
+			bool with_coverage = false)
 	{
 		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type features =
 				GPlatesModel::FeatureCollectionHandle::create();
-		add_time_dependent_feature(features->reference(), P, windows);
+		add_time_dependent_feature(features->reference(), P, windows, with_coverage);
 		GPlatesAppLogic::AssignPlateIds::create(
 				method,
 				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, plates->reference()),
@@ -1054,6 +1094,15 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsTimeDependentGeometry)
 								1,
 								rotations->reference())),
 				0.0)->assign_reconstruction_plate_ids(features->reference());
+		num_coverages = 0;
+		for (const auto &feature : *features)
+		{
+			for (const auto &property : *feature)
+			{
+				num_coverages += property->get_property_name() ==
+						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometryCoverage");
+			}
+		}
 		return get_plate_ids_and_time_dependence(*features);
 	};
 	typedef std::vector<std::pair<GPlatesModel::integer_plate_id_type, bool>> results_type;
@@ -1077,4 +1126,18 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsTimeDependentGeometry)
 		EXPECT_EQ(assign(method, { { 50, 10 } }), (results_type{ { 5, true } }));
 		EXPECT_EQ(assign(method, { { 10, 0 }, { 50, 10 } }), (results_type{ { 5, true } }));
 	}
+
+	// With a coverage in a single window too: its range is written back constant with the
+	// geometry, by either method (the most overlapping plate's once kept the range's window).
+	EXPECT_EQ(
+			assign(GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE, { { 10, 0 } }, true),
+			(results_type{ { 100, false }, { 101, false } }));
+	EXPECT_EQ(num_coverages, 2u);
+	EXPECT_EQ(
+			assign(
+					GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE,
+					{ { 10, 0 } },
+					true),
+			(results_type{ { 100, false } }));
+	EXPECT_EQ(num_coverages, 1u);
 }

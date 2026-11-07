@@ -493,8 +493,24 @@ namespace GPlatesAppLogic
 							}
 
 							geometry_range_property_name = (*coverage.range_property)->get_property_name();
-							// Create a shallow clone of the range property.
-							geometry_range_property_clone = (*coverage.range_property)->clone();
+							// Create a shallow clone of the range property. For a single time window's
+							// geometry whose range is in a single time window too (the one containing
+							// the reconstruction time, where the coverage was found), a constant
+							// property of its window's value instead, as the domain's.
+							const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+									range_value = GPlatesModel::ModelUtils::get_property_value(
+											**coverage.range_property);
+							const GPlatesPropertyValues::GpmlPiecewiseAggregation *range_windows = range_value
+									? dynamic_cast<const GPlatesPropertyValues::GpmlPiecewiseAggregation *>(
+											range_value->get())
+									: nullptr;
+							geometry_range_property_clone =
+									(d_single_time_window_value && range_windows &&
+										range_windows->time_windows().size() == 1)
+											? create_constant_property(
+													*geometry_range_property_name,
+													range_windows->time_windows().front()->time_dependent_value()->clone())
+											: (*coverage.range_property)->clone();
 
 							// If caller requests partitioned properties.
 							if (d_partitioned_properties)

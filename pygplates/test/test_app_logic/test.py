@@ -2359,6 +2359,23 @@ class PlatePartitionerTestCase(unittest.TestCase):
             self.assertFalse(isinstance(properties[0].get_time_dependent_value(), pygplates.GpmlPiecewiseAggregation))
             self.assertTrue(isinstance(partitioned_feature.get_geometry(name), pygplates.PolygonOnSphere))
 
+        # With a coverage in a single window too: each piece has its coverage, constant like its geometry.
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+        feature = pygplates.Feature()
+        for property_name, value in (
+                (pygplates.PropertyName.gpml_unclassified_geometry, pygplates.GmlPolygon(polygon)),
+                (pygplates.PropertyName.create_gpml('unclassifiedGeometryCoverage'),
+                 pygplates.GmlDataBlock({scalar_type: [1, 2, 3, 4]}))):
+            feature.add(property_name, pygplates.GpmlPiecewiseAggregation([pygplates.GpmlTimeWindow(value, 10, 0)]),
+                        pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            piece, scalars = partitioned_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+            self.assertTrue(len(scalars[scalar_type]) == len(piece.get_points()))
+            self.assertFalse(any(isinstance(property.get_time_dependent_value(), pygplates.GpmlPiecewiseAggregation)
+                                 for property in partitioned_feature))
+
         # The window doesn't contain the reconstruction time: returned whole, unpartitioned, its window kept.
         partitioned, unpartitioned = plate_partitioner.partition_features(
                 [feature_with_window(50, 10)],
