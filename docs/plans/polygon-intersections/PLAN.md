@@ -881,7 +881,7 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     area cut subtracts holes.
   - Each fix reverted in turn fails its new test (a scratchpad mutation script); the hunt's 119,198
     cases give the same 13 differences as before. GPlates 203 of 203, pyGPlates 7 of 7; docs built
-    from scratch with no warnings.
+    from scratch with no warnings. Linux (Ubuntu 22.04, the tip `1a2f2ddac`): the same.
 
 - **Resume here** (updated 2026-11-08):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
