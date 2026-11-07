@@ -1152,7 +1152,7 @@ TEST(PolygonPartitionerTest, SliverFilterHoleWithIsland)
 
 
 // A subject thinner than the width, cut across: the filter drops both halves, and the subject is
-// whole on the side that lost the larger area (section 5.5).
+// whole on the side that lost the larger area (section 5.1).
 TEST(PolygonPartitionerTest, SliverFilterEmptiesBoth)
 {
 	const double w = degrees_of_h(5);

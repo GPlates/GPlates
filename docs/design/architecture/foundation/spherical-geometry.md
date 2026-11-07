@@ -1039,8 +1039,10 @@ which is `s` (section 4.4): about `1.414e-6` radians, 9 metres on the Earth.
   polygon of its own, `add_partitioning_resolved_topological_network`), or a reconstructed static
   polygon. The polygons are kept in the order added, networks, then boundaries, then static
   polygons, and each group can be stable-sorted by plate ID or by area, highest first (Assign Plate
-  IDs sorts by plate ID). It passes every partitioner the same point-in-polygon speed and the same
-  sliver width (section 5.5), `get_default_sliver_min_width()` by default.
+  IDs sorts by plate ID); or, when a caller asks not to group them (pyGPlates'
+  `SortPartitioningPlates.by_plate_id` and `by_plate_area`), the whole list is sorted as one. It
+  passes every partitioner the same point-in-polygon speed and the same sliver width (section 5.5),
+  `get_default_sliver_min_width()` by default.
 - **`PolygonPartitioner`** (`src/maths/PolygonPartitioner.{h,cc}`) partitions one geometry by one
   polygon: points and multi-points by point-in-polygon (`partition_point`, threshold on, a point on
   the outline inside); polylines and polygons through the overlay below, each call making one
@@ -1073,21 +1075,22 @@ lie along the boundary it shares with plate `N`: the common-chain case of sectio
 cascade's normal case. A network's rigid blocks are holes of the network's partitioning polygon, so
 the network never claims a block's area, in whichever order the sort leaves them.
 
-**The result contract** (`PolygonPartitioner::Result`). `GEOMETRY_INSIDE` means the difference
-(`P` less `Q`) is empty, `GEOMETRY_OUTSIDE` that the intersection is, and `GEOMETRY_INTERSECTING`
-that both have a ring, each judged after the overlay's clean-up and the sliver filter
+**The result contract** (`PolygonPartitioner::Result`). `GEOMETRY_INSIDE` means the difference (`P`
+less `Q`) is empty, `GEOMETRY_OUTSIDE` that the intersection is, and `GEOMETRY_INTERSECTING` that
+both have a ring, each judged after the overlay's clean-up and the sliver filter
 (`overlay_polygon`). So a geometry that only touches the partitioning polygon, from either side, or
 runs along its outline, or is identical to it, comes back whole, as the input object itself, with
 `INSIDE` or `OUTSIDE`; pieces are made only when both sides have one. A multi-point wholly on one
-side is returned itself too. A polyline is `INSIDE` when no run is outside and `OUTSIDE` when none
-is inside (`overlay_polyline`; a run at a single stored position is dropped first, as a collapsed
-ring is). The result is the same with or without output lists: the result-only path (no lists, as
-the raster meshes call it) makes the same overlay and the same extraction and only skips building
-the `PolygonOnSphere`s, and raises the same exception. An earlier design stopped early after the
-vertex tests when a subject piece was on each side, and answered `INTERSECTING` where the overlay
-would have raised, so one polygon gave an error with lists and an answer without; the developer
-chose one contract. When the sliver filter empties both outputs (a subject thinner than the width,
-cut across), the subject is whole on the side that lost the larger area, and outside on a tie.
+side is returned itself too. A polyline is `INSIDE` when no run is outside and some run is inside,
+else `OUTSIDE` (`overlay_polyline`; a run at a single stored position is dropped first, as a
+collapsed ring is). The result is the same with or without output lists: the result-only path (no
+lists, as the raster meshes call it) makes the same overlay and the same extraction and only skips
+building the `PolygonOnSphere`s, and raises the same exception. An earlier design stopped early
+after the vertex tests when a subject piece was on each side, and answered `INTERSECTING` where the
+overlay would have raised, so one polygon gave an error with lists and an answer without; the
+developer chose one contract. When the sliver filter empties both outputs (a subject thinner than
+the width, cut across), the subject is whole on the side that lost the larger area, and outside on a
+tie.
 
 Deciding the result from the records alone (any record means intersecting, the old rule) was
 rejected: a touch from one side would split a geometry at a boundary it only touches, and the
@@ -1173,24 +1176,27 @@ rotation axis) and in order along it, each further than the last by more than `1
 cut at those vertices: a stop of the vertex that no record of the ring names. The stops, pieces,
 loops, spikes and pairs are then built again, once; the cut pieces pair with the chain's. The
 rounding margin is so that a vertex at the segment's end is not taken for one inside it, one way in
-doubles and the other in the prototype's exact arithmetic. The cuts fire in about a quarter to a
-half of the dense shared-edge cases of the hunt and almost nowhere else.
+doubles and the other in the prototype's exact arithmetic. The cuts fire in 14% to 43% of the
+cases of the dense shared-edge generators (`chain`, `rays`, `shared`) and almost nowhere else.
 
 **Rays and their order** (`build_rays`, `measure_ray`, `sort_rays_anticlockwise`). What leaves a
 vertex along a piece, or along a common pair, is a *ray*. Its direction is the exact tangent of the
 piece's first arc of non-zero length (`cross(rotation_axis, start)`, negated for an arriving end;
 the segment's cached plane, never a difference of two nearby positions), taken from the arc's own
 start, which is where it really starts. A piece whose arcs all lie on zero-length segments has no
-direction; it bounds no sector any order needs at two or four ends, and floats at six or more. A
-common ray takes the subject's direction, or the clip's if the subject's first arc is zero length.
+direction; it bounds no sector any order needs at two or four ends, and at six or more the bundle
+rule below lets it float. A common ray takes the subject's direction, or the clip's if the subject's
+first arc is zero length, and the wider of its two pieces' cones (with that piece's `delta`, length
+and `reach`, below).
 The rays are sorted anticlockwise about the vertex's output position, seen from outside the sphere,
 by two sign tests on normalised directions (the half-plane relative to the first ray, ties by the
 dot product, then the orientation within a half-plane). In principle that is a rounded decision;
 measured in the prototype, the order in doubles agreed with the exact order at every vertex where
 it was used, down to rays `1.8e-15` radians apart, and a swap of two rays that close changes neither
-the memberships between them nor the pairing. The order is consulted only at six or more ends where
-both inputs pass more than once (below): at four ends it is not used, and where one input passes
-once neither.
+the memberships between them nor the pairing. For classification the order is consulted only at
+six or more ends where both inputs pass more than once (below): at four ends it is not used, and
+where one input passes once neither; the one-passage rule's linking order keeps the measured
+relative order of the rays inside (below).
 
 Each ray also carries the quantities of the bundle rule: `delta`, the angle from the vertex's output
 position to the arc's start plus how far the arc's start and far end lie off the segment's great
@@ -1347,23 +1353,23 @@ alone, which left two cases failing, since committing early to what a noisy orde
 made those vertices inconsistent. The rule is reached in about one vertex in 3,500 random cases.
 
 **Checks and repair** (`check_and_repair`, `repair`). Two properties hold by construction and are
-counted, not asserted: every input has an even number of ends at every vertex, and every walk of
-the linking closes. What the data can get wrong is the classes, and the check is `solve_vertex` at
-every vertex: a vertex with no consistent placement fails. That covers both redundancies: at an
-ordinary vertex `P`'s two classes against `Q`'s (a bounce at an LL vertex is a failure), and at a
-chain end the chain's class arriving from its other end. Repair runs up to
-`Options::max_repair_rounds` (20): at the first failing vertex the classified pieces there (a
-common pair as its subject piece) are ranked least reliable first by method (midpoint test,
-deduced, sector or anchorless, repaired, then vertex test) and then shortest first, and the first
-whose flip makes the vertex consistent is
-flipped (a common piece's flip flips its partner); at a chain's end one more candidate flips every
-piece of the chain at once, ranked with the sector classes and tried before any single piece of
-that rank, since flipping a chain piece by piece fails the chain's interior vertices on the next
-round and runs into the cap. Every repair is counted (`repairs`, `whole_chain_repairs`, and
-`trusted_flipped` when a vertex-tested class went). No normal input needs repair: the prototype's
-runs needed none under the chosen configuration, and the prototype comparison fails a case on any
-repair of generated data. A vertex still failing after repair, or a piece left unclassified, is
-the failure of section 5.6.
+not checked on their own: every input has an even number of ends at every vertex (nothing counts
+it), and every walk of the linking closes (a walk that did not would be a pairing failure, counted
+and thrown, section 5.6). What the data can get wrong is the classes, and the check is
+`solve_vertex` at every vertex: a vertex with no consistent placement fails. That covers both
+redundancies: at an ordinary vertex `P`'s two classes against `Q`'s (a bounce at an LL vertex is a
+failure), and at a chain end the chain's class arriving from its other end. Repair runs up to
+`Options::max_repair_rounds` (20): at the first failing vertex the classified pieces there (a common
+pair as its subject piece) are ranked least reliable first by method (midpoint test, deduced, sector
+or anchorless, repaired, then vertex test) and then shortest first, and the first whose flip makes
+the vertex consistent is flipped (a common piece's flip flips its partner); at a chain's end one
+more candidate flips every piece of the chain at once, ranked with the sector classes and tried
+before any single piece of that rank, since flipping a chain piece by piece fails the chain's
+interior vertices on the next round and runs into the cap. Every repair is counted (`repairs`,
+`whole_chain_repairs`, and `trusted_flipped` when a vertex-tested class went). No normal input needs
+repair: the prototype's runs needed none under the chosen configuration, and the prototype
+comparison fails a case on any repair of generated data. A vertex still failing after repair, or a
+piece left unclassified, is the failure of section 5.6.
 
 **Linking** (`is_kept`, `extract_rings`). With `f(in P, in Q)` the operation's function
 (`is_in_output`), a subject piece of class `c` is kept iff `f(1, c) != f(0, c)`, a clip piece iff
@@ -1429,7 +1435,9 @@ outside its exterior, in 5 of 119,198 generated cases, the intersection's area w
 quarter.
 Every pair is tested (the number of rings is small). A ring's depth is the number of rings
 containing it and its parent the containing ring of greatest depth; even depth is an exterior, odd
-depth a hole of its parent, and an island inside a hole is an exterior of its own. Each exterior is
+depth a hole of its parent, and an island inside a hole is an exterior of its own. A hole whose
+parent is not a kept exterior (a containment that is not a nesting, which rings that do not cross
+cannot give) is kept as an exterior and counted (`grouping_failures`). Each exterior is
 oriented anticlockwise seen from outside the sphere and each hole clockwise, so that the output is
 on every ring's left (the developer's decision; GeoJSON asks for this and Shapefile for the
 reverse, and the walk's own direction is arbitrary), by
@@ -1455,22 +1463,23 @@ island of a filled hole, kept, would overlap its polygon).
 
 **Polylines** (`classify_polyline_pieces`, `extract_polylines`). A polyline subject shares the
 structures above (the loop and spike rules skip a piece with a dangling end; the self-touch cuts
-apply); the clip's pieces bound nothing and are not classified, and there is no sector walk,
-linking or repair. A common piece (along the clip's outline) is **inside** (`METHOD_ALONG`; the
-developer's decision, so that in the cascade a polyline along a boundary shared by two plates goes
-to the first; `Options::polyline_along_is_inside` lets a caller wanting the two outputs to partition
-the polyline exactly make it outside). A piece with a test point is tested there, threshold off:
-its interior original vertices, or a dangling end (an end point in no record is more than `h` from
-`Q`). Deduction crosses only a vertex that is one LL record with exactly two polyline pieces,
-neither common, whose classes then differ; never a touch (the polyline can bounce) and never from
-an along piece (so its class cannot leak). Stalled pieces are tested at their midpoints by margin.
-The one check: two *tested* pieces at an LL vertex with equal classes, a missed intersection,
-counted (`ll_disagreements`) and both kept. The output joins consecutive pieces of one class into
-runs; an internal piece takes the class of the piece before it (after it, at the start) so the runs
-cover the polyline. A run's points are its stops' own positions, not the vertices' output
-positions a polygon's rings use: an identity vertex along a dense run of touches can have its output
-position far off the polyline (the oracle found 78 of 300 sampled points uncovered in one case),
-and a polyline's adjacent runs need only share the stop between them.
+apply); the clip's pieces bound nothing and are not classified, and there is no sector walk, linking
+or repair. A common piece (along the clip's outline) is **inside** (`METHOD_ALONG`; the developer's
+decision, so that in the cascade a polyline along a boundary shared by two plates goes to the first;
+`Options::polyline_along_is_inside` lets a caller wanting the two outputs to partition the polyline
+exactly make it outside). A piece with a test point is tested there, threshold off: its interior
+original vertices, or a dangling end (an end point in no record is more than `h` from `Q`).
+Deduction crosses only a vertex that is one LL record with exactly two polyline pieces, neither
+common, whose classes then differ; never a touch (the polyline can bounce) and never from an along
+piece (so its class cannot leak). Stalled pieces are tested at their midpoints by margin. The one
+check: two *classified* pieces at an LL vertex with equal classes (a missed intersection, or a class
+deduced across a neighbouring crossing), counted (`ll_disagreements`) and both kept. The output
+joins consecutive pieces of one class into runs; an internal piece takes the class of the piece
+before it (after it, at the start) so the runs cover the polyline. A run's points are its stops' own
+positions, not the vertices' output positions a polygon's rings use: an identity vertex along a
+dense run of touches can have its output position far off the polyline (the oracle found 78 of 300
+sampled points uncovered in one case), and a polyline's adjacent runs need only share the stop
+between them.
 
 ### 5.3 Tolerances in the overlay
 
@@ -1481,7 +1490,9 @@ section 5.2's three kinds:
   vertex's output position, and clean-up's repeated positions (coordinates compared exactly, never
   `PointOnSphere::operator==`, whose tolerance is about the thickness); the record kinds the LL
   rule reads, which `GeometryIntersect` decided with its thick planes; the rotational order among
-  rays (sign tests in doubles, measured to agree with exact arithmetic wherever used); the vertex
+  rays, treated as exact (sign tests in doubles on directions that are themselves rounded, measured
+  to agree with exact arithmetic wherever the order is used, and consulted only where a swap of two
+  near rays is harmless, section 5.2); the vertex
   tests and the anchorless parities (point-in-polygon's sign tests, threshold off, with a margin of
   at least `h` at a vertex); the containment tests of the grouping (with the margin above) and the
   hemisphere check's point tests (with `10 h`).
@@ -1560,7 +1571,9 @@ polygon's position in the cookie cutter's order (`get_partitioning_polygons`).
 
 **Scalar coverages** (`src/app-logic/PartitionFeatureGeometries.cc`, `partition_range`). Assign
 Plate IDs and pyGPlates' `partition_features` partition a feature's geometry properties with their
-coverages through the same `PartitionFeatureUtils::partition_feature` (kept in its own file so that
+coverages through the same `PartitionFeatureUtils::partition_feature` (pyGPlates does not apply
+Assign Plate IDs' check that the feature exists at the reconstruction time; it never did; kept in
+its own file so that
 pyGPlates does not pull `AssignPlateIds.h` and the reconstructions, about 320 GPlates-only files,
 into its closure). The cookie cutter is asked for provenance only for a property with a coverage,
 and each piece's values are made in three steps: (1) a point at a vertex of the original takes its
@@ -1586,8 +1599,9 @@ valued point all took that value; a ring starts so whenever a piece is cut a sec
 second overlay's first stop is on the first plate's cut edge), that is for every feature spanning
 three plates.
 
-**Most overlapping plate** (`GeometrySizeMetric`, and `most_overlapping_plate` in
-`PlatePartitioning.py`) compares a plate's pieces by area for polygons, then arc length for
+**Most overlapping plate** (`GeometrySizeMetric` in C++, and the
+`PartitionMethod.most_overlapping_plate` branch of `partition_features` in `PlatePartitioning.py`)
+compares a plate's pieces by area for polygons, then arc length for
 polylines, then the number of points, lexicographically with `real_t`'s comparisons, so that a
 feature with polygons is decided by them: arc length, the old measure, is inflated by a polygon's
 cuts.
@@ -1655,7 +1669,8 @@ output edges of its own (every edge under `h` was an input's own), so no filter 
 The overlay never returns a best guess as if it were the answer. Classes that describe no
 consistent arrangement after repair, or a piece left unclassified, throw
 `PolygonOverlay::InconsistentOverlayException` from `classify()` (a `MathematicalException`
-carrying the `Diagnostics` and the first failing vertex's position and record kinds); `extract`
+carrying the `Diagnostics` and the first failing vertex's position, with the vertex's latitude,
+longitude and record kinds in its message); `extract`
 throws it on a hemisphere failure and on a pairing failure. `Options::throw_if_inconsistent`
 (false for hunts and tests) counts instead, and the rings are then returned as read, which a caller
 must not take for the output. The causes a check failure can have: a missed or spurious
@@ -1758,9 +1773,10 @@ polygons.
 **A public coverage form of `PlatePartitioner.partition_geometry`**, `(geometry, scalars)` in and
 out: deferred with any geometry-level coverage entry point (section 7); `partition_features` calls a
 private helper (`PlatePartitioner._partition_feature_geometries`) that returns each property's
-pieces with their coverages and the positions of the properties partitioned. Each coverage piece
-goes in a feature of its own, as Assign Plate IDs writes them, because two pieces with the same
-number of points under one property name would be an ambiguous coverage on read-back.
+pieces with their coverages and the positions of the properties partitioned. No two pieces with a
+coverage share a feature under one property name (pyGPlates gives each its own feature; Assign
+Plate IDs reuses a feature only while that name is absent from it), because two coverages with the
+same number of points under one name would be ambiguous on read-back.
 
 ### 5.8 Clipping by `DateLineWrapper`
 
@@ -2156,7 +2172,10 @@ alone show a pairing; polylines from the prototype's polyline generators and ope
 anchorless chains; and the bundle vertices, whose counts of floating rays, admissible orders and
 consistent placements are pinned. Classes compare exactly except a band piece's (and a common
 pair's where a band piece's class reaches it through the sector walk); output rings compare by the
-oracle, and as rings where the prototype's did not depend on the tie order. Any repair of generated
+oracle for every operation, and as rings for the intersection, the difference and the union where
+the prototype's did not depend on the tie order (the reverse difference's and the symmetric
+difference's rings are checked by the oracle only, which is what leaves the symmetric difference's
+pairing unguarded, section 7). Any repair of generated
 data fails the case, and the one-passage rule's and the result contract's cases are pinned
 (`OnePassageRule`, `PartitionerCollapsedRegion`). The prototype, its generators and its exporter
 live in the planning repository (its configuration name is `r5o`); a larger export is run through
@@ -2180,7 +2199,8 @@ emptied, the cookie cutter's default, the mean width, and a ring on one great ci
 whose hole the cut opens, a ring with no valued point, a run across a ring's start, two scalar
 types, the nearest outline on a hole and its clamp, the other geometry types), the size metric by
 area, Assign Plate IDs skipping the committed inconsistent input, and time-dependent geometry. The
-pyGPlates tests (`test_partition*` in `test_geometries_on_sphere.py` and `test_app_logic/test.py`)
+pyGPlates tests (`test_partition*` in `test_geometries_on_sphere.py` and `test_app_logic/test.py`,
+and `test_most_overlapping_plate_by_area`)
 cover polygons with holes, touches returned whole, `PartitionError` on the same input, the sliver
 argument, coverages through `partition_features` and their pieces, time-dependent geometry,
 removing exactly the partitioned properties, a feature with no geometry, and the most overlapping

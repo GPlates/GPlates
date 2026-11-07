@@ -135,7 +135,8 @@ namespace GPlatesMaths
 
 			/**
 			 * The most floating rays at one vertex whose placements are enumerated (more keep the
-			 * measured order; never reached in Phase 4a's 3013 random cases, most was 4).
+			 * measured order; reached by one generated case, 'shared#2240 seed 12', which the
+			 * prototype comparison's BundleRule test pins).
 			 */
 			const unsigned int BUNDLE_CAP = 6;
 
@@ -1883,7 +1884,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 	//
 	// The order used for pairing, among the consistent ones: the one with the fewest inversions
 	// (Kendall distance) against the measured order, ties by enumeration order (the bundle
-	// rule's step 3, section 5.2). Unbundled, the measured order is the only one.
+	// rule, section 5.2). Unbundled, the measured order is the only one.
 	//
 	std::vector<unsigned int> consistent_orders;
 	for (const OrderSolution &order_solution : solutions)
@@ -2694,7 +2695,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 	}
 
 	//
-	// Anchored and floating rays (the bundle rule's step 1, section 5.2). In order of certainty
+	// Anchored and floating rays (the bundle rule, section 5.2). In order of certainty
 	// (smallest cone, then largest reach; ties in measured order), a ray is anchored if, against
 	// every ray already anchored, the angle between their directions is at least the sum of their
 	// cones, so that no admissible position of one can pass the other. A ray with no direction
@@ -2768,11 +2769,12 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 	}
 
 	//
-	// Admissible orders (step 2). The reference ray is the most certain anchored one; every ray's
-	// angle about the vertex is measured from it, and its interval is that angle plus or minus its
-	// cone plus the reference's. An order places the floating rays into the gaps between the
-	// anchored rays (which keep their measured order), in any permutation within a gap, such that
-	// the angles can be chosen non-decreasing round the turn, each inside its interval. The
+	// Admissible orders (the bundle rule, section 5.2). The reference ray is the most certain
+	// anchored one; every ray's angle about the vertex is measured from it, and its interval is
+	// that angle plus or minus its cone plus the reference's. An order places the floating rays
+	// into the gaps between the anchored rays (which keep their measured order), in any
+	// permutation within a gap, such that the angles can be chosen non-decreasing round the turn,
+	// each inside its interval. The
 	// enumeration order is deterministic: gaps in anchored order, floating rays in certainty order,
 	// permutations lexicographic (the prototype's itertools order).
 	//
