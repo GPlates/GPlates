@@ -60,11 +60,12 @@
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
 // Python implementation in exact rational arithmetic, kept outside this repository) on its
 // catalogue of configurations with several records at or near one point. The prototype ran the
-// chosen configuration ('r5c': identity vertices with the loop rule and the spike rule where the
+// chosen configuration ('r5o': identity vertices with the loop rule and the spike rule where the
 // other input passes the tip at most once, self-touch cuts, the LL rule, the one-passage rule,
-// midpoint tests in order of margin, the bundle rule where both inputs pass more than once,
-// option 3 for anchorless chains), and the file holds every tie order it ran, including the orders
-// the C++ sort can produce: GeometryIntersect orders records along a segment by a cosine in
+// midpoint tests in order of margin, the bundle rule where both inputs pass more than once with
+// cones that count a ray's offsets off its segment, option 3 for anchorless chains), and the file
+// holds every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect
+// orders records along a segment by a cosine in
 // doubles, so records whose cosines agree within a few ulps come out in either order. Format, per
 // case: 'case <name>'; 'ring P|Q <n>' then n lines 'x y z'; 'records <n>' then n lines '<kind>
 // <index1> <index2>'; per tie order 'order <repairs> <check failures>', lines 'piece <P|Q> <ring>

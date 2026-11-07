@@ -621,7 +621,12 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 
 	//
 	// The stops, in ring order: per vertex, its records (one stop per distinct overlay vertex) or
-	// the original vertex itself; then the records inside the segment leaving it.
+	// the original vertex itself; then the records inside the segment leaving it. Two records of
+	// different vertices tied along a segment (GeometryIntersect compares their angles as cosines
+	// in doubles, resolving about 1.5e-8 radians near a segment's start, and sorts ties in
+	// discovery order) come in either order: the piece between them is then a zero-length single
+	// arc whose class is deduced (two crossings of a twist lying on the other input), and either
+	// order is a valid output, differing only in ring structure.
 	//
 	// The self-touch cuts that follow the stop of vertex 'vertex' on segment 'k', if any.
 	std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> self_touch_cuts_added;
@@ -1477,6 +1482,13 @@ GPlatesMaths::PolygonOverlay::Overlay::is_inside_other(
 	// Threshold off: a test point of a piece is either an original vertex in no record (so more
 	// than the thickness from the other input's outline, about 1e10 times point-in-polygon's
 	// rounding) or a midpoint tested in order of margin.
+	//
+	// Point-in-polygon is not exact near an edge GreatCircleArc calls zero length (under about
+	// 1e-6 radians): its crossing count stands such an edge's crossing in by the edge's end point
+	// (PointInPolygon.cc), so within about the edge's length of it the answer can be wrong (a point
+	// 0.019 thicknesses inside a polygon was called outside at every speed), and minimum_distance
+	// is off there too. A vertex in no record is beyond that zone; only a band piece's midpoint
+	// test can be affected, and its class is arbitrary by nature.
 	return side == SUBJECT
 			? d_clip.is_point_in_polygon(
 					point,

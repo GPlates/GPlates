@@ -981,6 +981,12 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 		// still possible for the cube quad tree node to completely surround the test polygon in which
 		// case it's actually intersecting the test polygon's interior region.
 		// We test this by seeing if a vertex on the test polygon is inside the node's bounding polygon.
+		//
+		// This test is redundant with the polygon overlay: a test polygon wholly inside the node's
+		// polygon is a clip ring inside the subject, which the partitioner reports as intersecting,
+		// and the bounding-circle shortcut answers outside only when the polygons' interiors lie
+		// within their disjoint circles. Kept, harmless, until a visual check of the rendering
+		// (there is no rendering test coverage) retires it.
 		if (!quad_tree_node_bounding_polygon->is_point_in_polygon(
 			polygon_partitioner.get_partitioning_polygon()->first_exterior_ring_vertex(),
 			GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,

@@ -107,6 +107,9 @@ namespace GPlatesAppLogic
 		 * partitioning, then topological boundaries and then regular static polygons.
 		 * The static interior polygons of any topological networks are higher priority than the
 		 * networks themselves (it's required since the network boundaries contain the interior polygons).
+		 * The cut (the polygon overlay) intersects interior rings too, and a network's partitioning
+		 * polygon has its rigid blocks as holes, so the network never claims a block's area, even
+		 * where sorting moves the block after its network.
 		 *
 		 * The partitioning polygons, in each group (ie, static, topological boundary, topological network),
 		 * are optionally sorted either sorted by plate ID (from highest plate id to lowest) or
