@@ -245,6 +245,13 @@ namespace GPlatesMaths
 			 * margin.
 			 */
 			const double HEMISPHERE_CHECK_MARGIN = 10.0;
+
+
+			/**
+			 * A point's distance from a segment's great circle under which it counts as on it, in
+			 * radians: rounding, a millionth of the thickness (a ray's cone, measure_ray).
+			 */
+			const double OFF_SEGMENT_ROUNDING = 1e-12;
 		}
 	}
 }
@@ -1252,14 +1259,31 @@ GPlatesMaths::PolygonOverlay::Overlay::measure_ray(
 		ray.direction = end.at_end ? -tangent : tangent;
 
 		// The cone (phase4b-design.md section 3.8): 0 when the arc starts at the vertex's output
-		// position (the same stored point), pi when the arc is no longer than its offset from
-		// there, else the planar bound atan2(delta, L - delta). At these scales the spherical
-		// correction to the bound is far below rounding.
-		ray.delta = is_same_position(from.position, vertex.position)
+		// position (the same stored point) on its segment's great circle, pi when the arc is no
+		// longer than its offset 'delta', else the planar bound atan2(delta, L - delta). At these
+		// scales the spherical correction to the bound is far below rounding.
+		//
+		// The offset is the start's distance from the output position plus how far the arc's start
+		// and far end lie off the segment's great circle (prototype configuration 'r5o', step 15):
+		// a stop at a touch record of the other polygon's vertex (and a self-touch cut) is at that
+		// vertex, up to the thickness off this ring's segment, so the arc between start and far end
+		// can leave tens of degrees from the segment's tangent, which a cone of the distance alone
+		// did not bound (in four dense shared-edge cases of the hunt the true order was then not
+		// admissible). An offset under rounding (a vertex of this ring, a crossing) counts as none,
+		// as the prototype's exact zero.
+		const UnitVector3D &axis = segment.rotation_axis();
+		const auto offset_from_segment = [&axis](const UnitVector3D &point)
+		{
+			const double sine = std::fabs(dot(axis, point).dval());
+			return (sine > OFF_SEGMENT_ROUNDING) ? std::asin((std::min)(1.0, sine)) : 0.0;
+		};
+		const UnitVector3D &far = to.position.position_vector();
+		const double from_output_position = is_same_position(from.position, vertex.position)
 				? 0.0
 				: angle_between(centre, start);
-		ray.first_arc_length = angle_between(start, to.position.position_vector());
-		ray.reach = angle_between(centre, to.position.position_vector());
+		ray.delta = from_output_position + offset_from_segment(start) + offset_from_segment(far);
+		ray.first_arc_length = angle_between(start, far);
+		ray.reach = angle_between(centre, far);
 		if (ray.delta == 0.0)
 		{
 			ray.cone = 0.0;

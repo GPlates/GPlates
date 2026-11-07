@@ -849,9 +849,10 @@ namespace
 
 
 // Assign Plate IDs on a feature whose cut is inconsistent (design 9.2, the developer's answer to
-// question 3): the overlay throws for this input (a dense shared-edge case, 'shared#1434 seed 12',
-// one of the two the hunt left failing for step 15), with or without lists; Assign Plate IDs leaves
-// the feature as it was and reports it.
+// question 3): the overlay throws for this input (a dense shared-edge case, 'shared#2288 seed 2',
+// the one case of step 15's hunt the bundle rule's wider cones did not resolve: band classes along
+// a shared edge that no 20 rounds of repair make consistent), with or without lists; Assign Plate
+// IDs leaves the feature as it was and reports it.
 TEST(PartitionFeatureUtilsTest, AssignPlateIdsSkipsInconsistentFeature)
 {
 	const std::vector<std::vector<ring_type>> rings =

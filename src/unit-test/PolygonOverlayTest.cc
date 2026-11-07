@@ -748,8 +748,12 @@ TEST(PolygonOverlayTest, LoopRuleTwoClipVerticesAtOneSubjectVertex)
 
 
 // The loop rule leaves the wedge's tip piece (x, apex, x) alone: it has an original vertex. The six
-// rays all start at x, the vertex's output position, so every cone is zero; anticlockwise they are
-// east, the two tip rays, west, and the two rays of the rest of the clip (catalogue 4.1).
+// rays all start at x, the vertex's output position; anticlockwise they are east, the two tip rays,
+// west, and the two rays of the rest of the clip (catalogue 4.1). x is the subject's vertex, so the
+// subject's rays have no cone; but it lies r sin 15 degrees (about 0.52h) off each clip edge's line,
+// so a clip ray's arc can leave x away from its edge's tangent, and its cone is that offset over
+// the arc's length (phase4b-design.md section 3.8 as amended in step 15: the cone was once zero
+// here, which is the assumption that let the true order fall outside the admissible ones).
 TEST(PolygonOverlayTest, RaysAcuteWedge)
 {
 	const double half_angle = 15.0 * 3.14159265358979323846 / 180.0;
@@ -770,11 +774,19 @@ TEST(PolygonOverlayTest, RaysAcuteWedge)
 	ASSERT_EQ(overlay.get_vertices().size(), 1u);
 	const Overlay::Vertex &vertex = overlay.get_vertices()[0];
 	EXPECT_TRUE(same_cycle(ray_kinds(vertex), "P Q Q P Q Q")) << ray_kinds(vertex);
+	const double clip_offset = r * std::sin(half_angle);
 	for (const Overlay::Ray &ray : vertex.rays)
 	{
 		ASSERT_TRUE(ray.direction);
-		EXPECT_EQ(ray.delta, 0.0);
-		EXPECT_EQ(ray.cone, 0.0);
+		if (ray.subject_end)
+		{
+			EXPECT_EQ(ray.delta, 0.0);
+			EXPECT_EQ(ray.cone, 0.0);
+			continue;
+		}
+		EXPECT_NEAR(ray.delta, clip_offset, 1e-3 * H);
+		EXPECT_NEAR(ray.cone, std::atan2(ray.delta, ray.first_arc_length - ray.delta), 1e-12);
+		EXPECT_GT(ray.cone, 0.0);
 	}
 
 	// The two clip rays between the subject's rays on the north side are the tip piece's.

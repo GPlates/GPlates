@@ -1630,8 +1630,11 @@ TEST(PolygonOverlayPrototypeTest, PartitionerCollapsedRegion)
 
 // The bundle rule's measurements on the bundle cases (Phase 5 review 2, section 1.1): the most
 // floating rays, admissible orders and consistent placements at one vertex, the vertices with more
-// than one consistent placement and those whose order used is not the measured one. The values are
-// the prototype's ('r5c'), so that the enumeration's size is pinned, not only the classes.
+// than one consistent placement, those whose order used is not the measured one, and those over
+// the cap (more than six floating rays: the measured order kept). The values are the prototype's
+// ('r5o', whose cones count a ray's offsets off its segment, step 15: more rays float than under
+// 'r5c', and shared#2240 seed 12 reaches the cap), so that the enumeration's size is pinned, not
+// only the classes.
 // (shared#2893 seed 11 is no longer here: its bundle vertex was a self-touch on a shared edge,
 // which the self-touch cuts turn into common pairs.)
 TEST(PolygonOverlayPrototypeTest, BundleRule)
@@ -1645,22 +1648,23 @@ TEST(PolygonOverlayPrototypeTest, BundleRule)
 		unsigned int placements_max;
 		unsigned int ambiguous;
 		unsigned int moved;
+		unsigned int capped;
 	};
 	const Expected expected[] = {
-			{ "shared#107 seed 11", 3, 20, 4, 1, 2 },
-			{ "shared#2100 seed 11", 4, 360, 16, 1, 0 },
-			{ "shared#1925 seed 12", 6, 720, 32, 2, 2 },
-			{ "shared#2240 seed 12", 6, 5040, 144, 2, 2 },
-			{ "shared#366 seed 13", 4, 60, 3, 1, 1 },
-			{ "shared#2729 seed 13", 1, 3, 1, 0, 0 },
-			{ "shared#2859 seed 13", 4, 360, 16, 1, 1 },
-			{ "shared#3176 seed 13", 4, 48, 2, 1, 1 },
-			{ "shared#3890 seed 13", 6, 3360, 60, 2, 2 },
-			{ "shared#1265 seed 14", 2, 6, 2, 1, 1 },
-			{ "shared#1373 seed 14", 4, 68, 8, 1, 1 },
-			{ "shared#1707 seed 14", 4, 70, 8, 1, 1 },
-			{ "shared#3346 seed 14", 3, 40, 4, 1, 1 },
-			{ "shared#3653 seed 14", 1, 2, 1, 0, 0 } };
+			{ "shared#107 seed 11", 5, 420, 20, 2, 2, 0 },
+			{ "shared#2100 seed 11", 6, 720, 32, 1, 0, 0 },
+			{ "shared#1925 seed 12", 6, 1344, 32, 2, 2, 0 },
+			{ "shared#2240 seed 12", 7, 5040, 80, 1, 1, 1 },
+			{ "shared#366 seed 13", 5, 720, 32, 2, 2, 0 },
+			{ "shared#2729 seed 13", 4, 70, 20, 1, 0, 0 },
+			{ "shared#2859 seed 13", 6, 720, 32, 1, 1, 0 },
+			{ "shared#3176 seed 13", 5, 720, 48, 1, 1, 0 },
+			{ "shared#3890 seed 13", 6, 5040, 80, 2, 2, 0 },
+			{ "shared#1265 seed 14", 4, 240, 44, 1, 1, 0 },
+			{ "shared#1373 seed 14", 5, 720, 32, 2, 2, 0 },
+			{ "shared#1707 seed 14", 4, 120, 12, 1, 1, 0 },
+			{ "shared#3346 seed 14", 4, 120, 16, 1, 1, 0 },
+			{ "shared#3653 seed 14", 5, 720, 32, 1, 0, 0 } };
 
 	const std::vector<PrototypeCase> cases =
 			read_cases(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-bundle.txt");
@@ -1671,7 +1675,7 @@ TEST(PolygonOverlayPrototypeTest, BundleRule)
 				cases.begin(),
 				cases.end(),
 				[&e](const PrototypeCase &c) { return c.name == e.name; });
-		ASSERT_TRUE(found != cases.end());
+		ASSERT_TRUE(found != cases.end()) << describe_cases(cases);
 
 		const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
 		{
@@ -1692,6 +1696,6 @@ TEST(PolygonOverlayPrototypeTest, BundleRule)
 		EXPECT_EQ(diagnostics.bundle_placements_max, e.placements_max);
 		EXPECT_EQ(diagnostics.bundle_ambiguous, e.ambiguous);
 		EXPECT_EQ(diagnostics.bundle_moved, e.moved);
-		EXPECT_EQ(diagnostics.bundle_capped, 0u);
+		EXPECT_EQ(diagnostics.bundle_capped, e.capped);
 	}
 }
