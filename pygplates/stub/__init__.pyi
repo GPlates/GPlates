@@ -11204,7 +11204,7 @@ class PolygonOnSphere(GeometryOnSphere):
            The inside of each ring is its smaller side. Previously it was the side away from the antipode of :meth:`get_boundary_centroid`, so a ring that wraps round the globe could be inside out.
         """
 
-    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ..., sliver_width_threshold_radians: float = 0) -> PolygonOnSpherePartitionResult:
+    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ..., sliver_width_threshold_radians: float = ...) -> PolygonOnSpherePartitionResult:
         """Partition a geometry into optional inside/outside lists of partitioned geometry pieces.
 
         :param geometry: the geometry to be partitioned
@@ -11213,7 +11213,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :type partitioned_geometries_inside: list of GeometryOnSphere, or None
         :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon (note that the list is *not* cleared first)
         :type partitioned_geometries_outside: list of GeometryOnSphere, or None
-        :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see below); defaults to zero, which keeps every piece
+        :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see below); defaults to about 9 metres on the Earth, and zero keeps every piece
         :type sliver_width_threshold_radians: float
         :rtype: PolygonOnSphere.PartitionResult
         :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result (whether or not the lists are specified)
@@ -11235,10 +11235,10 @@ class PolygonOnSphere(GeometryOnSphere):
 
         A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, with interior rings where the pieces need them. The interior rings of both polygons take part in the cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region *inside* and, *outside*, the polygon geometry with a hole where this polygon is.
 
-        By default the pieces of a cut polygon cover it exactly, however thin some are. A non-zero *sliver_width_threshold_radians* drops the slivers narrower than it, as a :meth:`PlatePartitioner<PlatePartitioner.__init__>` does by default: a piece's width is twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely on the other (and *geometry* itself is added to that list). ``1.4142e-5`` radians (about 90 metres on the Earth) matches the default of :class:`PlatePartitioner`:
+        A cut polygon's pieces narrower than *sliver_width_threshold_radians* are dropped, as a :meth:`PlatePartitioner<PlatePartitioner.__init__>` drops them: a piece's width is twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely on the other (and *geometry* itself is added to that list). The default is ``1.4142e-6`` radians (about 9 metres on the Earth), the distance within which two outlines count as touching, so that only pieces thinner than the cut can resolve are dropped; :class:`PlatePartitioner`'s default is ten times that. Zero keeps every piece, so that the pieces cover the polygon exactly however thin some are:
         ::
 
-          result = polygon.partition(geometry, inside, outside, sliver_width_threshold_radians=1.4142e-5)
+          result = polygon.partition(geometry, inside, outside, sliver_width_threshold_radians=0)
 
         A geometry that only touches this polygon (from inside or outside), runs along its outline, or is identical to it, is not cut: it is entirely *inside* or *outside*, and *geometry* itself is added to the corresponding list. A :class:`polyline<PolylineOnSphere>` running along this polygon's outline is *inside*.
 

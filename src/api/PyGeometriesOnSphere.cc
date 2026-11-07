@@ -54,6 +54,7 @@
 #include "maths/AngularDistance.h"
 #include "maths/AngularExtent.h"
 #include "maths/GeometryDistance.h"
+#include "maths/GeometryIntersect.h"
 #include "maths/GeometryInterpolation.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/LatLonPoint.h"
@@ -3644,8 +3645,15 @@ namespace GPlatesApi
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
 			bp::object partitioned_geometries_inside_object,
 			bp::object partitioned_geometries_outside_object,
-			double sliver_width_threshold_radians)
+			boost::optional<double> sliver_width_threshold_radians_argument)
 	{
+		// None: the default width, the overlay's thickness h (about 9 metres on the Earth), under
+		// which two outlines count as touching, so that a ring narrower than it on average has
+		// collapsed by the overlay's own rule (Phase 5 step 15: a ring of an input that overlaps
+		// itself along a stretch has no area at all). Zero keeps every piece.
+		const double sliver_width_threshold_radians = sliver_width_threshold_radians_argument
+				? *sliver_width_threshold_radians_argument
+				: GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
 		if (sliver_width_threshold_radians < 0)
 		{
 			PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative.");
@@ -3690,7 +3698,7 @@ namespace GPlatesApi
 		// Partition the geometry.
 		//
 
-		// The sliver filter, off at zero (the default).
+		// The sliver filter, off at zero.
 		GPlatesMaths::PolygonPartitioner::non_null_ptr_type polygon_partitioner =
 				GPlatesMaths::PolygonPartitioner::create(
 						polygon_on_sphere,
@@ -4461,9 +4469,9 @@ export_polygon_on_sphere()
 				(bp::arg("geometry"),
 						bp::arg("partitioned_geometries_inside") = bp::object()/*Py_None*/,
 						bp::arg("partitioned_geometries_outside") = bp::object()/*Py_None*/,
-						bp::arg("sliver_width_threshold_radians") = 0.0),
+						bp::arg("sliver_width_threshold_radians") = boost::optional<double>()),
 				"partition(geometry, [partitioned_geometries_inside], [partitioned_geometries_outside], "
-				"[sliver_width_threshold_radians=0])\n"
+				"[sliver_width_threshold_radians])\n"
 				"  Partition a geometry into optional inside/outside lists of partitioned geometry pieces.\n"
 				"\n"
 				"  :param geometry: the geometry to be partitioned\n"
@@ -4475,7 +4483,7 @@ export_polygon_on_sphere()
 				"(note that the list is *not* cleared first)\n"
 				"  :type partitioned_geometries_outside: list of GeometryOnSphere, or None\n"
 				"  :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are "
-				"dropped (see below); defaults to zero, which keeps every piece\n"
+				"dropped (see below); defaults to about 9 metres on the Earth, and zero keeps every piece\n"
 				"  :type sliver_width_threshold_radians: float\n"
 				"  :rtype: PolygonOnSphere.PartitionResult\n"
 				"  :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result "
@@ -4511,16 +4519,18 @@ export_polygon_on_sphere()
 				"cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region "
 				"*inside* and, *outside*, the polygon geometry with a hole where this polygon is.\n"
 				"\n"
-				"  By default the pieces of a cut polygon cover it exactly, however thin some are. A non-zero "
-				"*sliver_width_threshold_radians* drops the slivers narrower than it, as a "
-				":meth:`PlatePartitioner<PlatePartitioner.__init__>` does by default: a piece's width is "
-				"twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped "
-				"and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely "
-				"on the other (and *geometry* itself is added to that list). ``1.4142e-5`` radians (about 90 "
-				"metres on the Earth) matches the default of :class:`PlatePartitioner`:\n"
+				"  A cut polygon's pieces narrower than *sliver_width_threshold_radians* are dropped, as a "
+				":meth:`PlatePartitioner<PlatePartitioner.__init__>` drops them: a piece's width is twice its "
+				"area over its perimeter (on a sphere of unit radius), a sliver hole is dropped and its piece "
+				"fills it, and if this leaves nothing on one side then *geometry* is entirely on the other (and "
+				"*geometry* itself is added to that list). The default is ``1.4142e-6`` radians (about 9 metres "
+				"on the Earth), the distance within which two outlines count as touching, so that only pieces "
+				"thinner than the cut can resolve are dropped; :class:`PlatePartitioner`'s default is ten times "
+				"that. Zero keeps every piece, so that the pieces cover the polygon exactly however thin some "
+				"are:\n"
 				"  ::\n"
 				"\n"
-				"    result = polygon.partition(geometry, inside, outside, sliver_width_threshold_radians=1.4142e-5)\n"
+				"    result = polygon.partition(geometry, inside, outside, sliver_width_threshold_radians=0)\n"
 				"\n"
 				"  A geometry that only touches this polygon (from inside or outside), runs along its outline, or is "
 				"identical to it, is not cut: it is entirely *inside* or *outside*, and *geometry* itself is added to "

@@ -1861,8 +1861,9 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(issubclass(pygplates.PartitionError, pygplates.MathematicalError))
 
     def test_partition_sliver_width_threshold(self):
-        # A polygon reaching 5e-6 radians (about 32 metres) into this polygon: by default the sliver it leaves
-        # inside is kept; at PlatePartitioner's default width it is dropped, and the polygon is entirely outside.
+        # A polygon reaching 5e-6 radians (about 32 metres) into this polygon: by default (about 9 metres) the
+        # sliver it leaves inside is kept; at PlatePartitioner's default width it is dropped, and the polygon is
+        # entirely outside.
         sliver = math.degrees(5e-6)
         partitioning_polygon = pygplates.PolygonOnSphere([(-10, 0), (-10, 10), (10, 10), (10, 0)])
         polygon = pygplates.PolygonOnSphere([(-5, 10 - sliver), (-5, 15), (5, 15), (5, 10 - sliver)])
@@ -1882,6 +1883,19 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=1e-6) ==
                         pygplates.PolygonOnSphere.PartitionResult.intersecting)
         self.assertRaises(ValueError, partitioning_polygon.partition, polygon, sliver_width_threshold_radians=-1e-6)
+
+        # A polygon whose slanted western edge crosses this polygon's eastern edge at a shallow angle, leaving
+        # inside it a triangle 2.1e-6 radians (about 13 metres, 1.5 times the thickness, so that it is cut) wide
+        # at its widest, about half that on average: dropped by default (about 9 metres; also by None, the
+        # default given explicitly), kept at zero. (A strip thinner than the thickness is not cut at all: its
+        # outline counts as touching.)
+        thin = math.degrees(2.1e-6)
+        polygon = pygplates.PolygonOnSphere([(-5, 10 - thin), (-5, 15), (5, 15), (5, 10 + thin)])
+        self.assertTrue(partitioning_polygon.partition(polygon) == pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=None) ==
+                        pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=0) ==
+                        pygplates.PolygonOnSphere.PartitionResult.intersecting)
 
     def test_partition(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
