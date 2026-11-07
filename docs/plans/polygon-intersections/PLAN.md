@@ -872,7 +872,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     review 7 with its fixes done; step 14 (the sliver filter, on at `10 h` in the cascade, and the
     real-data measurements) done, 2026-11-07, and the two `partition_features` items from the
     `src/api` audit (Status, 2026-11-07); step 15's hunt at scale and its fixes done, 2026-11-08
-    (Status). Next: a clean Linux run of the branch tip, then the distillation (Phase 6). Open: the
+    (Status), and a clean Linux run of the tip (`ce3324a79`: pyGPlates 7 of 7, GPlates 198 of 198, Ubuntu
+    22.04). Next: the distillation (Phase 6). Open: the
     residue `shared#2288` seed 2 (design 9.1); the 4 second-step and 4 coincident-ring differences
     of the hunt (Status, 2026-11-08); for PR C, the symmetric difference's crossing pairing. The
     prototype configuration is now `r5o`. The prototype comparison is
