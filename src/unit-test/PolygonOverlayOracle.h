@@ -44,7 +44,7 @@
 
 
 /**
- * The output oracle of the polygon overlay tests (phase4b-design.md section 11.3): for points well
+ * The output oracle of the polygon overlay tests (spherical-geometry.md section 6): for points well
  * away from both inputs' boundaries, a point is in an operation's output, read by parity over its
  * rings, exactly when f(in subject, in clip). No exact reference is needed, since point-in-polygon
  * was audited separately; the samples keep more than M = max(10h, twice the widest record cluster)
@@ -87,7 +87,7 @@ namespace PolygonOverlayOracle
 	 * the subject's outline: its midpoint within the thickness h of the subject's outline and
 	 * farther than 2h from the clip's, so that it is along the subject and not a cut (an edge
 	 * within 2h of both is not judged). Only for an overlay with no subject table, where every
-	 * point on the subject has its location (review 4 1.1: a split ring's vertex lost it).
+	 * point on the subject has its location (a split ring's vertex once lost it).
 	 */
 	inline
 	unsigned int
@@ -361,7 +361,7 @@ namespace PolygonOverlayOracle
 	 * A ring whose mean width is at rounding level (under a hundredth of the thickness) has no
 	 * orientation, and is not counted: an input that overlaps itself along a stretch (the 'shared'
 	 * hunt's dense vertices) bounds rings of three or four points on one great circle, which enclose
-	 * no area (Phase 5 step 15, 35 of 119,198 cases), and which a partitioner's sliver filter drops.
+	 * no area (35 of 119,198 cases), and which a partitioner's sliver filter drops.
 	 */
 	inline
 	unsigned int
@@ -408,7 +408,7 @@ namespace PolygonOverlayOracle
 
 
 	/**
-	 * The oracle for a polyline subject (phase4b-design.md section 11.3): points sampled along it
+	 * The oracle for a polyline subject (section 6): points sampled along it
 	 * (spherically), farther than M from the clip's outline, must each lie on an output polyline,
 	 * and every output they lie on must have the point's class against the clip (threshold off);
 	 * on exactly one, unless the subject passes the point more than once (an opened ring of the
@@ -549,7 +549,7 @@ namespace PolygonOverlayOracle
 
 
 	/**
-	 * Output points whose provenance (phase4b-design.md section 7) does not resolve to them: a
+	 * Output points whose provenance (section 5.4) does not resolve to them: a
 	 * subject or clip vertex must be the point exactly when @a exact_vertices (a vertex is output
 	 * at its own position), and within @a tolerance otherwise; a segment location within
 	 * @a tolerance (an output vertex is at its identity group's position, which can be off the
@@ -616,7 +616,7 @@ namespace PolygonOverlayOracle
 	 * vertex or touching do not count). The catalogue's twists cross themselves, and the hunt's
 	 * generators move vertices onto the other polygon and place holes near their ring's vertex
 	 * centroid, which can reach outside it. Grouping and orientation assume rings that do not
-	 * cross (phase4b-design.md sections 4.2 to 4.4), and so does a polygon's area.
+	 * cross (section 5.2), and so does a polygon's area.
 	 */
 	inline
 	bool
@@ -755,7 +755,7 @@ namespace PolygonOverlayOracle
 
 
 	/**
-	 * The oracle's area item (phase4b-design.md section 11.3): the intersection and the
+	 * The oracle's area item (section 6): the intersection and the
 	 * difference partition the subject (every subject piece is kept by exactly one of them), so
 	 * their areas sum to the subject's. Returns the relative error, to compare with
 	 * @a area_sum_tolerance. For inputs whose rings do not cross.

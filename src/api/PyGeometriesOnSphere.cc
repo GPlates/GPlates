@@ -3649,8 +3649,8 @@ namespace GPlatesApi
 	{
 		// None: the default width, the overlay's thickness h (about 9 metres on the Earth), under
 		// which two outlines count as touching, so that a ring narrower than it on average has
-		// collapsed by the overlay's own rule (Phase 5 step 15: a ring of an input that overlaps
-		// itself along a stretch has no area at all). Zero keeps every piece.
+		// collapsed by the overlay's own rule (spherical-geometry.md section 5.5: a ring of an
+		// input that overlaps itself along a stretch has no area at all). Zero keeps every piece.
 		const double sliver_width_threshold_radians = sliver_width_threshold_radians_argument
 				? *sliver_width_threshold_radians_argument
 				: GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();

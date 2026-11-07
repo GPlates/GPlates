@@ -205,9 +205,9 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * The sliver filter's default width (phase4b-design.md section 4.5): ten times the overlay's
-		 * thickness, in radians (about 90 metres on the Earth). A cut leaves pieces this thin
-		 * where a feature's outline was digitised along a plate boundary; they are below the
+		 * The sliver filter's default width (spherical-geometry.md section 5.5): ten times the
+		 * overlay's thickness, in radians (about 90 metres on the Earth). A cut leaves pieces this
+		 * thin where a feature's outline was digitised along a plate boundary; they are below the
 		 * resolution of global plate and coastline data, and would otherwise take the neighbouring
 		 * plate's ID. Pieces under the thickness itself are below what the overlay can resolve.
 		 */
@@ -240,12 +240,12 @@ namespace GPlatesAppLogic
 		 * in which case elements were appended to @a partitioned_inside_geometries.
 		 *
 		 * With @a want_provenance, every partitioned geometry carries a table of where each of its
-		 * points lies on @a geometry (phase4b-design.md section 7.2): the pieces outside one
+		 * points lies on @a geometry (section 5.4): the pieces outside one
 		 * partitioning polygon are cut by the next with their tables, and a clip location's index
 		 * is its partitioning polygon's position in the order described above.
 		 *
 		 * @throws GPlatesMaths::PolygonOverlay::InconsistentOverlayException if a cut's classes
-		 * are inconsistent (phase4b-design.md section 9.2: every plate must get an answer, and a
+		 * are inconsistent (section 5.6: every plate must get an answer, and a
 		 * wrong one is worse than none).
 		 */
 		bool

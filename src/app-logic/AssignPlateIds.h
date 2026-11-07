@@ -308,8 +308,9 @@ namespace GPlatesAppLogic
 		/**
 		 * The features left as they were, in the order met, because cutting one of their geometries
 		 * by a partitioning polygon found the cut's classes inconsistent
-		 * (GPlatesMaths::PolygonOverlay::InconsistentOverlayException; phase4b-design.md section
-		 * 9.2). Every other feature is still partitioned; the caller reports these once, at the end.
+		 * (GPlatesMaths::PolygonOverlay::InconsistentOverlayException; spherical-geometry.md
+		 * section 5.6). Every other feature is still partitioned; the caller reports these once, at
+		 * the end.
 		 */
 		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &
 		get_features_not_partitioned() const

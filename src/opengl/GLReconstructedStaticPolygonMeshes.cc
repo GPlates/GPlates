@@ -964,7 +964,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 	// TODO: Implement a more optimal path that tests intersection without partitioning.
 	//
 	// The node only needs to know whether the polygon might reach it, so a cut the overlay finds
-	// inconsistent (phase4b-design.md section 9.2) is taken as intersecting: it costs rendering
+	// inconsistent (spherical-geometry.md section 5.6) is taken as intersecting: it costs rendering
 	// work on a node the polygon may not reach, and nothing else.
 	GPlatesMaths::PolygonPartitioner::Result partition_result =
 			GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING;

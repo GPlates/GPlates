@@ -444,8 +444,8 @@ namespace GPlatesApi
 
 	/**
 	 * Partitions every geometry property of @a feature, each with its scalar coverage if it has one
-	 * (phase4b-design.md section 7.3, by the same code as GPlates' Assign Plate IDs), for the pure
-	 * Python API code of 'partition_features'.
+	 * (spherical-geometry.md section 5.4, by the same code as GPlates' Assign Plate IDs), for the
+	 * pure Python API code of 'partition_features'.
 	 *
 	 * Returns a 2-tuple. Its first element is a list with, for each geometry property name, a
 	 * 4-tuple: the property name, the name of its coverage's range property (or None), the pieces

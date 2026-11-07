@@ -971,7 +971,7 @@ GPlatesMaths::PolygonOverlay::Overlay::apply_loop_and_spike_rules()
 				// Only where the other input passes the tip at most once (two ends of its pieces
 				// not yet internal): with two passages the tip is a self-touch of the other input,
 				// the hairpin can lie between them, and removing it would remove a crossing there
-				// (phase4a-run4.md sections 2.4 and 3.3).
+				// (spherical-geometry.md section 5.2, the spike rule).
 				const Side side = d_rings[a.ring].side;
 				unsigned int other_ends = 0;
 				for (const End &end : d_vertices[*a.end_vertex].ends)
@@ -1080,7 +1080,7 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	// pair as common: but GeometryIntersect never intersects an input with itself, so where one
 	// input touches itself on the stretch (a hole's tip on its own exterior's edge, which the other
 	// input shares), the other input's segment is cut there (a record names the tip) and the
-	// touched segment is not (phase5-review-3.md 1.2). Its one piece then faces a chain of the
+	// touched segment is not (section 5.2). Its one piece then faces a chain of the
 	// other input's pieces, neither pairs, and they are band pieces with arbitrary classes, from
 	// which the sector walk can deduce wrong classes that every check accepts. So: a single-arc
 	// piece with no partner, whose two vertices the other input joins by a chain of single-arc
@@ -1252,13 +1252,13 @@ GPlatesMaths::PolygonOverlay::Overlay::measure_ray(
 		const Vector3D tangent = cross(segment.rotation_axis(), start);
 		ray.direction = end.at_end ? -tangent : tangent;
 
-		// The cone (phase4b-design.md section 3.8): 0 when the arc starts at the vertex's output
+		// The cone (sections 1 and 5.2): 0 when the arc starts at the vertex's output
 		// position (the same stored point) on its segment's great circle, pi when the arc is no
 		// longer than its offset 'delta', else the planar bound atan2(delta, L - delta). At these
 		// scales the spherical correction to the bound is far below rounding.
 		//
 		// The offset is the start's distance from the output position plus how far the arc's start
-		// and far end lie off the segment's great circle (prototype configuration 'r5o', step 15):
+		// and far end lie off the segment's great circle (prototype configuration 'r5o'):
 		// a stop at a touch record of the other polygon's vertex (and a self-touch cut) is at that
 		// vertex, up to the thickness off this ring's segment, so the arc between start and far end
 		// can leave tens of degrees from the segment's tangent, which a cone of the distance alone
@@ -1324,7 +1324,7 @@ GPlatesMaths::PolygonOverlay::Overlay::sort_rays_anticlockwise(
 	// by two sign tests on normalised directions: the half-plane relative to the first ray (ties
 	// broken by the dot product), then the orientation within a half-plane. The insertion places
 	// each ray after every ray it does not precede, as the prototype's '_angular_sort_float' does,
-	// so near-ties fall where it leaves them (phase4b-design.md section 3.6: measured harmless).
+	// so near-ties fall where it leaves them (section 5.2: measured harmless).
 	// Rays with no direction go last, in end order; the order is not used where they occur unless
 	// the vertex has six or more ends, where they float.
 	//
@@ -1507,7 +1507,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_four_end_vertex(
 		std::vector<Deduction> *deductions) const
 {
 	//
-	// The geometry-free rule (phase4b-design.md section 3.7.1, case 1): with four ends, two of
+	// The geometry-free rule (section 5.2, classification step 2): with four ends, two of
 	// each input and none common, nothing needs the rotational order, which at a snapped touch
 	// can disagree with the topology the records encode.
 	//
@@ -1632,7 +1632,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 	}
 
 	//
-	// The sector walk (phase4b-design.md section 3.7.1, case 2). Each classified ray fixes the
+	// The sector walk (section 5.2, classification step 2). Each classified ray fixes the
 	// memberships of the two sectors beside it: a subject ray of class c fixes 'in clip = c', a
 	// clip ray fixes 'in subject', a common ray 'in subject xor in clip' (0 same side, 1 opposite).
 	//
@@ -1674,7 +1674,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 	}
 
 	//
-	// The one-passage rule (phase4a-run4.md section 3.1; phase4b-design.md 3.7.1, case 1b): at six
+	// The one-passage rule (section 5.2, classification step 2): at six
 	// or more ends where one input, X, has exactly two (it passes the vertex once), any classes of
 	// the other input's rays can be realised by some order, so the measured order adds nothing and
 	// is not consulted. X's boundary divides the neighbourhood into an inside half and an outside
@@ -1882,8 +1882,8 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 
 	//
 	// The order used for pairing, among the consistent ones: the one with the fewest inversions
-	// (Kendall distance) against the measured order, ties by enumeration order (phase4b-design.md
-	// section 3.8, step 3). Unbundled, the measured order is the only one.
+	// (Kendall distance) against the measured order, ties by enumeration order (the bundle
+	// rule's step 3, section 5.2). Unbundled, the measured order is the only one.
 	//
 	std::vector<unsigned int> consistent_orders;
 	for (const OrderSolution &order_solution : solutions)
@@ -2091,14 +2091,14 @@ void
 GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
 {
 	//
-	// A polyline subject (phase4b-design.md section 6.1). The clip's pieces bound nothing here and
+	// A polyline subject (section 5.2). The clip's pieces bound nothing here and
 	// are not classified. There is no sector walk: a polyline divides nothing, so the vertex rules
 	// of the polygon overlay do not apply.
 	//
 	const std::pair<unsigned int, unsigned int> range =
 			ring_piece_range(d_side_rings_begin[SUBJECT]);
 
-	// (1) A piece along the clip's outline (a common pair) gets requirements Q2's class.
+	// (1) A piece along the clip's outline (a common pair) gets the along class (section 5.2).
 	for (unsigned int p = range.first; p < range.second; ++p)
 	{
 		Piece &piece = d_pieces[p];
@@ -2158,9 +2158,10 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
 	//
 	// (3) Deduction only across a vertex that is one crossing (one LL record) with exactly two of
 	// the polyline's pieces, neither along the outline: their classes differ. Never across a touch
-	// (the polyline can bounce), never from an along piece (so that Q2's class cannot leak). Two
+	// (the polyline can bounce), never from an along piece (so that its class cannot leak). Two
 	// tested pieces there with one class mean a missed intersection: counted (both have a margin,
-	// and are kept). Then (4) the stalled pieces at their chords' midpoints, by margin, as 3.7(c).
+	// and are kept). Then (4) the stalled pieces at their chords' midpoints, by margin, as for a
+	// polygon.
 	//
 	const GeometryIntersect::intersection_seq_type &records = d_graph.unordered_intersections;
 	std::vector<bool> disagreement_counted(d_vertices.size(), false);
@@ -2262,7 +2263,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
 void
 GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 {
-	// A polyline subject is classified by its own rules (phase4b-design.md section 6.1).
+	// A polyline subject is classified by its own rules (section 5.2).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_subject_polygon != nullptr,
 			GPLATES_ASSERTION_SOURCE);
@@ -2325,7 +2326,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 	// (b) Deduction to a fixed point, then (c) the stalled single arcs, one at a time, by margin:
 	// the one whose midpoint is farthest from the other input's outline is tested first, then
 	// deduction resumes. A class decided within the band of rounding must never be the source of a
-	// deduction for a piece with a margin (overlay-walkthrough.md section 7.5). The distance is
+	// deduction for a piece with a margin (section 5.2, classification step 3). The distance is
 	// rounded (a cosine, resolving about 1.5e-8 radians), but it only orders the tests.
 	//
 	std::vector<boost::optional<double>> margins(d_pieces.size());
@@ -2379,7 +2380,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 	}
 
 	//
-	// (d) Anchorless chains (phase4b-design.md section 3.9, option 3): a common pair still
+	// (d) Anchorless chains (section 5.2, classification step 4): a common pair still
 	// unclassified belongs to a chain that no non-common piece reaches (identical rings, say). One
 	// arc of the chain is classified by exact crossing parities from each input's reference point,
 	// and deduction then carries the class along the chain.
@@ -2518,7 +2519,7 @@ GPlatesMaths::PolygonOverlay::Overlay::check_and_repair()
 		}
 	}
 
-	// Never a silent wrong answer (phase4b-design.md section 9.2).
+	// Never a silent wrong answer (section 5.6).
 	if ((d_diagnostics.check_failures != 0 || d_diagnostics.unresolved_pieces != 0) &&
 		d_options.throw_if_inconsistent)
 	{
@@ -2560,9 +2561,9 @@ GPlatesMaths::PolygonOverlay::Result
 GPlatesMaths::PolygonOverlay::Overlay::get_result_from_classes() const
 {
 	//
-	// The result, from what the intersection and the difference keep (phase4b-design.md section
-	// 5.1): the intersection keeps subject pieces inside the clip, clip pieces inside the subject
-	// and same-side common pairs; the difference keeps subject pieces outside the clip, clip pieces
+	// The result, from what the intersection and the difference keep (section 5.2): the
+	// intersection keeps subject pieces inside the clip, clip pieces inside the subject and
+	// same-side common pairs; the difference keeps subject pieces outside the clip, clip pieces
 	// inside the subject and opposite-sides common pairs.
 	//
 	bool intersection_keeps = false;
@@ -2693,7 +2694,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 	}
 
 	//
-	// Anchored and floating rays (phase4b-design.md section 3.8, step 1). In order of certainty
+	// Anchored and floating rays (the bundle rule's step 1, section 5.2). In order of certainty
 	// (smallest cone, then largest reach; ties in measured order), a ray is anchored if, against
 	// every ray already anchored, the angle between their directions is at least the sum of their
 	// cones, so that no admissible position of one can pass the other. A ray with no direction
@@ -2731,7 +2732,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 	for (unsigned int r : certainty)
 	{
 		// A ray with no direction, or a cone of pi (an arc no longer than its offset), never
-		// anchors (phase4a-run4.md).
+		// anchors (section 5.2).
 		bool separable = has_direction(r) && rays[r].cone < PI;
 		for (unsigned int a : anchored_by_certainty)
 		{
@@ -3137,7 +3138,7 @@ void
 GPlatesMaths::PolygonOverlay::Overlay::repair()
 {
 	//
-	// Repair (phase4b-design.md section 3.9; walk-through 9.3): at the first failing vertex, flip
+	// Repair (section 5.2, checks and repair): at the first failing vertex, flip
 	// the least reliable classified piece there (by method, then shortest first) whose flip makes
 	// the vertex consistent; repeat, up to the round cap. A common piece's flip flips its partner.
 	// Where the vertex is a common chain's end, one more candidate flips the whole chain at once,
@@ -3320,7 +3321,7 @@ GPlatesMaths::PolygonOverlay::Overlay::is_kept(
 		Operation operation) const
 {
 	//
-	// The keep-rule (phase4b-design.md section 3.10): with f the operation's function of
+	// The keep-rule (section 5.2, linking): with f the operation's function of
 	// (in subject, in clip), a subject piece of class c is kept iff f(1, c) != f(0, c), a clip piece
 	// iff f(c, 1) != f(c, 0), a same-side chain iff f(1, 1) != f(0, 0), an opposite-sides chain iff
 	// f(1, 0) != f(0, 1): the output differs across the piece.
@@ -3347,7 +3348,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		Operation operation,
 		std::vector<OutputRing> &rings) const
 {
-	// A polyline subject's output is extract_polylines' (review 3 1.4: a dangling end has no ray).
+	// A polyline subject's output is extract_polylines' (a dangling end has no ray).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_subject_polygon,
 			GPLATES_ASSERTION_SOURCE);
@@ -3381,7 +3382,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	};
 
 	//
-	// Pair the kept ends at every vertex (phase4b-design.md section 3.10's table).
+	// Pair the kept ends at every vertex (section 5.2, linking).
 	//
 	std::vector<std::vector<boost::optional<unsigned int>>> partner(d_vertices.size());
 	unsigned int num_pairing_failures = 0;
@@ -3474,7 +3475,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			}
 			else
 			{
-				// A bounce: each input's two ends pair (the split pairing, walk-through 6.4).
+				// A bounce: each input's two ends pair (the split pairing, section 5.2).
 				pair(subject_rays[0], subject_rays[1]);
 				pair(clip_rays[0], clip_rays[1]);
 			}
@@ -3493,11 +3494,11 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		{
 			//
 			// Only one input has ends here (the other's were a loop or a spike), so the vertex is
-			// no intersection for linking: ring continuity (run 3 section 5). Each kept end pairs
+			// no intersection for linking: ring continuity (section 5.2). Each kept end pairs
 			// with the end of the next non-internal piece of its ring beyond it, at the same stop.
 			// (No valid input shows the rule: where the input's passages do not cross, any
 			// non-crossing pairing gives the same rings after the split, and the polygon checks
-			// skip inputs that cross. Review 3's mutation of it survived every case.)
+			// skip inputs that cross. A mutation of it survived every case.)
 			//
 			bool ok = true;
 			for (unsigned int i : kept)
@@ -3552,12 +3553,12 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		{
 			//
 			// Every ray common (both inputs pass the vertex twice along the same two
-			// boundaries: identical inputs that touch themselves, phase5-review-3.md 1.1): a
+			// boundaries: identical inputs that touch themselves): a
 			// common ray fixes only 'in subject != in clip', so the sectors' memberships are
 			// known up to swapping both, and which sectors are the output is not. Pair
 			// consecutive kept rays in the order used, in either phase: a non-crossing pairing,
 			// which the split then cuts into the one non-crossing decomposition (a ring through
-			// the vertex twice is cut there into the arcs that return to it; walk-through 6.4).
+			// the vertex twice is cut there into the arcs that return to it).
 			//
 			std::vector<unsigned int> sequence;
 			for (unsigned int j = 0; j < solution.order.size(); ++j)
@@ -3732,7 +3733,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	}
 
 	//
-	// Split (phase4b-design.md section 3.11; walk-through 6.4, Q11): a ring passing an overlay
+	// Split (section 5.2, split and clean-up): a ring passing an overlay
 	// vertex twice (by identity) is v, A, v, B; it is cut into v, A and v, B, until no ring repeats
 	// a vertex.
 	//
@@ -3771,13 +3772,13 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	std::reverse(split.begin(), split.end());  // in walk order
 
 	//
-	// Clean-up (section 3.11), last and counted: consecutive repeated positions (exact: they come
+	// Clean-up (section 5.2), last and counted: consecutive repeated positions (exact: they come
 	// from one stored position) and a last position equal to the first are removed; a ring with
 	// fewer than three distinct positions (a region the records had already collapsed) is dropped.
 	//
 	for (std::vector<Entry> &ring : split)
 	{
-		// Provenance after the split (review 4 1.1): at a vertex, from the stops of the pieces
+		// Provenance after the split (section 5.4): at a vertex, from the stops of the pieces
 		// this ring arrives and leaves along; a vertex entry arrives at the previous one's far
 		// stop, cyclically, so that each half of a split ring has its own.
 		if (d_options.want_provenance)
@@ -3883,7 +3884,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	}
 
 	//
-	// The hemisphere check (phase4b-design.md sections 4.3 and 5.2): the output read by parity
+	// The hemisphere check (sections 5.2 and 5.6): the output read by parity
 	// over its rings must be f(in subject, in clip). Given rings along the right edges, the parity
 	// over their smaller sides is everywhere either the output or its complement (each ring whose
 	// output side is its larger side complements the reading), so one point clear of both inputs'
@@ -3960,7 +3961,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	}
 
 	//
-	// Grouping (section 4.2): by containment with parity depth, as the output is read. A ring's
+	// Grouping (section 5.2): by containment with parity depth, as the output is read. A ring's
 	// depth is the number of rings containing it, and its parent the containing ring of greatest
 	// depth. (The rings do not cross but within an overlay vertex, and the number of rings is
 	// small: every pair is tested.) The containment test's margin, as the oracle's: ten
@@ -4016,7 +4017,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	}
 
 	//
-	// Orientation (section 4.3, developer's decision): the output on each ring's left, so an
+	// Orientation (section 5.2, developer's decision): the output on each ring's left, so an
 	// exterior anticlockwise (its interior, the smaller side, on its left) and a hole clockwise.
 	// By PolygonOrientation, which projects a ring onto a tangent plane where it can: the spherical
 	// area is zero for a ring the thickness across, since every edge of it is zero length to
@@ -4038,7 +4039,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	};
 
 	//
-	// The optional sliver filter (section 4.5), by each ring's mean width (get_mean_width).
+	// The optional sliver filter (section 5.5), by each ring's mean width (get_mean_width).
 	//
 	std::vector<double> ring_areas(num_rings, 0.0);
 	const auto is_sliver = [&](unsigned int r)
@@ -4219,7 +4220,7 @@ GPlatesMaths::PolygonOverlay::Overlay::get_vertex_provenance(
 		boost::optional<unsigned int> leaving_stop) const
 {
 	//
-	// phase4b-design.md section 7.1: a vertex is output at one position, so its provenance is that
+	// Section 5.4: a vertex is output at one position, so its provenance is that
 	// position's. A vertex holding a subject vertex is that vertex; otherwise the point is on the
 	// subject only where the walk runs along a subject piece here (else it is a cut), at the ratio
 	// of the position's projection onto that piece's segment. Every vertex lies on the clip.
@@ -4277,7 +4278,7 @@ GPlatesMaths::PolygonOverlay::Overlay::get_vertex_provenance(
 	}
 
 	// The subject's location, after the clip's: a vertex lies on this clip, so an earlier clip's
-	// location from a cascade's table (section 7.2) does not replace this one.
+	// location from a cascade's table (section 5.4) does not replace this one.
 	if (vertex.subject_vertex)
 	{
 		const RingView &ring = d_rings[d_side_rings_begin[SUBJECT] + vertex.subject_vertex->ring];
@@ -4328,7 +4329,7 @@ GPlatesMaths::PolygonOverlay::Overlay::get_polyline_stop_provenance(
 
 	// A record on the polyline: the stop itself (the polyline's output is at its stops), and the
 	// clip's location of the stop's own record, not its vertex's (an identity vertex along a dense
-	// run of touches can name a clip vertex far from the stop: review 4 1.2). A self-touch cut
+	// run of touches can name a clip vertex far from the stop). A self-touch cut
 	// names no record of the polyline: its vertex's.
 	const RingView &ring_view = d_rings[d_side_rings_begin[SUBJECT]];
 	Provenance provenance;
@@ -4536,9 +4537,9 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 	// The induction fails where an identity vertex holds two vertices of one input (dense shared
 	// edges): a piece's edge then spans the group, from a vertex before it to one after it, so
 	// its ends are on no one segment; and where a point at an input's corner lies within the
-	// thickness of both its segments but names only one (review 4 1.3). No subject location,
+	// thickness of both its segments but names only one (section 5.4). No subject location,
 	// counted (never a wrong value; a coverage interpolates such a point along its run, as a cut
-	// point, section 7.3): a subject location lost if both ends had one, else nothing lost.
+	// point, section 5.4): a subject location lost if both ends had one, else nothing lost.
 	provenance.subject = boost::none;
 	++((a.subject && b.subject)
 			? d_diagnostics.provenance_subject_mismatches

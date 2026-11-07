@@ -107,8 +107,8 @@ namespace GPlatesMaths
 
 		/**
 		 * The Boolean operations, each a function f(in subject, in clip) of a point's memberships
-		 * (phase4b-design.md section 5.1). Partitioning's inside is the intersection, its outside
-		 * the difference.
+		 * (spherical-geometry.md section 5.2). Partitioning's inside is the intersection, its
+		 * outside the difference.
 		 */
 		enum Operation
 		{
@@ -154,7 +154,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * A ring's mean width, the measure of the sliver filter (phase4b-design.md section 4.5,
+		 * A ring's mean width, the measure of the sliver filter (section 5.5,
 		 * Options::sliver_min_width): twice its area over its perimeter, in radians, taking the
 		 * area of its smaller side. For a ring that does not cross itself. Exact for any short
 		 * edge (unlike SphericalArea's area, which drops an edge GreatCircleArc takes for zero
@@ -169,7 +169,7 @@ namespace GPlatesMaths
 
 		/**
 		 * Whether a ring (its points) lies inside another ring (a polygon of that ring alone),
-		 * for the grouping of phase4b-design.md section 4.2.
+		 * for the grouping of section 5.2.
 		 *
 		 * The rings do not cross but within an overlay vertex: a vertex's output position can
 		 * be up to its record cluster's width off its records, so two output rings can cross
@@ -341,7 +341,7 @@ namespace GPlatesMaths
 			boost::optional<End> clip_end;
 
 			/**
-			 * The bundle rule's quantities (phase4b-design.md section 3.6): the angle from the
+			 * The bundle rule's quantities (sections 1 and 5.2): the angle from the
 			 * vertex's output position to the start of the ray's first arc, that arc's length, the
 			 * angle from the output position to the arc's far end, and the half-angle of the cone
 			 * within which the arc's direction, seen from the output position, can differ from its
@@ -362,7 +362,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The bundle rule's state at a vertex with six or more ends (phase4b-design.md 3.8).
+		 * The bundle rule's state at a vertex with six or more ends (section 5.2).
 		 *
 		 * A ray whose first arc starts away from the vertex's output position and is short has a
 		 * direction that, seen from that position, is noise. Rays whose cones are pairwise
@@ -469,7 +469,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * The sector walk's answer at one vertex (phase4b-design.md section 3.7.1).
+		 * The sector walk's answer at one vertex (section 5.2).
 		 */
 		class VertexSolution
 		{
@@ -584,7 +584,7 @@ namespace GPlatesMaths
 
 		/**
 		 * Thrown when the overlay's classes describe no consistent arrangement, after repair
-		 * (phase4b-design.md section 9.2): never a silent wrong answer.
+		 * (section 5.6): never a silent wrong answer.
 		 *
 		 * Carries the diagnostics and the first failing vertex, for a report.
 		 */
@@ -642,7 +642,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Where an output point lies on an input (phase4b-design.md section 2.8): a vertex, or a
+		 * Where an output point lies on an input (section 5.4): a vertex, or a
 		 * segment and the angle fraction along it.
 		 */
 		class Location
@@ -661,8 +661,8 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Where an output point came from (phase4b-design.md section 7): its location on the
-		 * subject (relative to the original subject when composed through a cascade, section 7.2),
+		 * Where an output point came from (section 5.4): its location on the
+		 * subject (relative to the original subject when composed through a cascade),
 		 * and on the clip that made it, when it lies on that clip's outline.
 		 */
 		class Provenance
@@ -683,7 +683,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * One output ring (phase4b-design.md section 2.8). In an OutputPolygon it has the output on
+		 * One output ring (section 5.4). In an OutputPolygon it has the output on
 		 * its left: an exterior runs anticlockwise seen from outside the sphere, a hole clockwise.
 		 */
 		class OutputRing
@@ -697,7 +697,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * One output polyline of a polyline subject (phase4b-design.md section 6.1): a run of the
+		 * One output polyline of a polyline subject (section 5.2): a run of the
 		 * subject's consecutive pieces of one class, in the subject's direction.
 		 */
 		class OutputPolyline
@@ -711,7 +711,7 @@ namespace GPlatesMaths
 		};
 
 
-		//! One output polygon: an exterior ring and its holes (phase4b-design.md section 4.2).
+		//! One output polygon: an exterior ring and its holes (section 5.2).
 		class OutputPolygon
 		{
 		public:
@@ -728,7 +728,7 @@ namespace GPlatesMaths
 			//! partition_point_speed_and_memory).
 			PolygonOnSphere::PointInPolygonSpeedAndMemory clip_speed = PolygonOnSphere::ADAPTIVE;
 
-			//! The most rounds of repair (phase4b-design.md section 3.9).
+			//! The most rounds of repair (section 5.2).
 			unsigned int max_repair_rounds = 20;
 
 			/**
@@ -739,18 +739,18 @@ namespace GPlatesMaths
 
 			/**
 			 * The class of a polyline subject's piece along the clip's outline (a common pair):
-			 * inside (requirements Q2, decided), so that partitioning puts it in the inside list
+			 * inside (section 5.2), so that partitioning puts it in the inside list
 			 * only; false for a caller that wants such pieces outside.
 			 */
 			bool polyline_along_is_inside = true;
 
-			//! Whether the outputs carry a Provenance per point (phase4b-design.md section 7).
+			//! Whether the outputs carry a Provenance per point (section 5.4).
 			bool want_provenance = false;
 
 			/**
 			 * The subject's own provenance, one per point (get_geometry_points order), when the
 			 * subject is a piece of an earlier overlay in a cascade: the outputs' provenance is
-			 * then composed with it, relative to the original (section 7.2). Must outlive the
+			 * then composed with it, relative to the original (section 5.4). Must outlive the
 			 * overlay.
 			 */
 			const provenance_seq_type *subject_provenance = nullptr;
@@ -763,7 +763,7 @@ namespace GPlatesMaths
 			 * wrap-around is counted as a mismatch (Diagnostics::provenance_subject_mismatches or
 			 * provenance_clip_mismatches): never a wrong location. Both must outlive the overlay.
 			 *
-			 * Only the subject's locations reach a caller (a coverage's values, section 7.3):
+			 * Only the subject's locations reach a caller (a coverage's values, section 5.4):
 			 * every output point at an overlay vertex lies on this overlay's clip, so its clip
 			 * location is this clip's. An earlier clip's locations are composed only to tell an
 			 * edge along an earlier cut (both ends on that clip, perhaps also both on the
@@ -776,7 +776,7 @@ namespace GPlatesMaths
 			unsigned int clip_index = 0;
 
 			/**
-			 * The sliver filter (phase4b-design.md section 4.5), off when none (the default): a
+			 * The sliver filter (section 5.5), off when none (the default): a
 			 * ring of @a extract's output whose mean width (twice its area over its perimeter, in
 			 * radians, taking the area of its smaller side) is below this is dropped, an exterior
 			 * with its holes and a hole alone (its polygon fills it), and counted in the
@@ -882,9 +882,9 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Classify every piece (phase4b-design.md section 3.7), then check every vertex and
+			 * Classify every piece (section 5.2), then check every vertex and
 			 * repair (@a check_and_repair). For a polyline subject, its pieces by its own rules
-			 * (section 6.1: no sector walk, no checks but one counted, no repair); the result is
+			 * (section 5.2: no sector walk, no checks but one counted, no repair); the result is
 			 * RESULT_INSIDE when no piece is outside, RESULT_OUTSIDE when none is inside.
 			 *
 			 * The result is RESULT_INSIDE when the difference (subject minus clip) keeps no piece,
@@ -892,8 +892,7 @@ namespace GPlatesMaths
 			 *
 			 * The result counts regions that clean-up would collapse, so it can be
 			 * RESULT_INTERSECTING where the outputs leave one of them empty (a caller wanting
-			 * phase4b-design.md section 5.3's result extracts and looks, as PolygonPartitioner
-			 * does).
+			 * section 5.1's result extracts and looks, as PolygonPartitioner does).
 			 *
 			 * @throws InconsistentOverlayException if a vertex is still inconsistent after repair,
 			 * or a piece is left unclassified (unless Options::throw_if_inconsistent is false).
@@ -902,7 +901,7 @@ namespace GPlatesMaths
 			classify();
 
 			/**
-			 * Check every vertex, repair what fails (section 3.9) and return the result; the second
+			 * Check every vertex, repair what fails (section 5.2) and return the result; the second
 			 * half of @a classify, public so that a test can set a class by hand and run it again.
 			 *
 			 * @throws InconsistentOverlayException as @a classify does.
@@ -932,11 +931,11 @@ namespace GPlatesMaths
 
 
 			/**
-			 * The output of one operation as polygons with holes (phase4b-design.md sections 3.10
-			 * to 4.3): the rings of @a extract_rings grouped by containment with parity depth (an
-			 * even depth is an exterior, an odd depth a hole of the ring containing it, and an
-			 * island in a hole an exterior of its own), each oriented with the output on its left,
-			 * and slivers dropped if Options::sliver_min_width is set. Appended to @a polygons.
+			 * The output of one operation as polygons with holes (section 5.2): the rings of
+			 * @a extract_rings grouped by containment with parity depth (an even depth is an
+			 * exterior, an odd depth a hole of the ring containing it, and an island in a hole an
+			 * exterior of its own), each oriented with the output on its left, and slivers dropped
+			 * if Options::sliver_min_width is set. Appended to @a polygons.
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if the rings would be
 			 * read as the output's complement (section 5.2): the union or the symmetric difference
@@ -952,7 +951,7 @@ namespace GPlatesMaths
 					std::vector<OutputPolygon> &polygons) const;
 
 			/**
-			 * The rings of one operation's output (phase4b-design.md sections 3.10 and 3.11): the
+			 * The rings of one operation's output (section 5.2): the
 			 * kept ends paired at every vertex and walked into rings, rings passing a vertex twice
 			 * cut there, repeated positions removed and collapsed rings dropped. Appended to
 			 * @a rings. Not grouped into polygons, and in the direction walked (arbitrary).
@@ -968,7 +967,7 @@ namespace GPlatesMaths
 					std::vector<OutputRing> &rings) const;
 
 			/**
-			 * A polyline subject's output (phase4b-design.md section 6.1): its consecutive pieces
+			 * A polyline subject's output (section 5.2): its consecutive pieces
 			 * of one class joined into polylines, in its direction, a repeated position at a join
 			 * dropped; an internal piece (a loop or spike within a vertex) takes the class of the
 			 * piece before it (or after it, at the start), so that the runs cover the polyline.
@@ -1091,11 +1090,11 @@ namespace GPlatesMaths
 					const Piece &piece,
 					Operation operation) const;
 
-			//! Steps (a) to (e) of classification (phase4b-design.md section 3.7).
+			//! Steps (a) to (e) of classification (section 5.2, its steps 1 to 5).
 			void
 			classify_pieces();
 
-			//! A polyline subject's classification (phase4b-design.md section 6.1).
+			//! A polyline subject's classification (section 5.2).
 			void
 			classify_polyline_pieces();
 
@@ -1126,7 +1125,7 @@ namespace GPlatesMaths
 
 			/**
 			 * A location on this overlay's subject, composed with Options::subject_provenance
-			 * (section 7.2) into @a provenance's subject (and an earlier clip's location, for a
+			 * (section 5.4) into @a provenance's subject (and an earlier clip's location, for a
 			 * point of an earlier cut); unchanged without a table.
 			 */
 			void

@@ -54,7 +54,7 @@
 
 
 //
-// The overlay against the Phase 4a prototype (phase4b-design.md section 11.2): record for record,
+// The overlay against the Phase 4a prototype (spherical-geometry.md section 6): record for record,
 // piece for piece, class for class.
 //
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
@@ -102,10 +102,10 @@ namespace
 	const double H = Intersection::get_on_segment_start_threshold_sine();
 
 	//! The provenance checks' tolerances: a first step's locations against their points, and a
-	//! second cascade step's (measured, review 4: within 1.0h and 1.63h). An output point at an
+	//! second cascade step's (measured: within 1.0h and 1.63h). An output point at an
 	//! overlay vertex is at the vertex's output position, which can be as far from the record its
 	//! location was made from as the vertex's record cluster is wide (in the dense shared edges of
-	//! the 'shared' hunt, more than 2h: step 15's hunt), so get_provenance_tolerance widens them to
+	//! the 'shared' hunt, more than 2h), so get_provenance_tolerance widens them to
 	//! the case's widest cluster, with a tenth of h for the rounding of a location's ratio.
 	const double PROVENANCE_TOLERANCE = 2 * H;
 	const double CASCADE_PROVENANCE_TOLERANCE = 3 * H;
@@ -522,7 +522,7 @@ namespace
 	 * Whether a vertex of @a overlay holds two original vertices of one input (by the records at
 	 * them): a dense shared edge's identity group. A piece's edge can then span the group, and its
 	 * ends lie on no one segment of the original, so composing a provenance through a cascade
-	 * fails there (counted: phase4b-design.md section 7.2).
+	 * fails there (counted: section 5.4).
 	 */
 	bool
 	holds_two_vertices_of_one_input(
@@ -553,7 +553,7 @@ namespace
 
 
 	/**
-	 * A polyline subject's output (phase4b-design.md section 6.1), by the oracle along it and,
+	 * A polyline subject's output (section 5.2), by the oracle along it and,
 	 * where no band piece differs and the prototype's runs are the same in every clean tie order,
 	 * against the prototype's runs: their classes and their named points, in order.
 	 */
@@ -782,7 +782,7 @@ namespace
 
 	/**
 	 * What the C++ does with a case the prototype fails: its repairs and the checks still failing
-	 * after them, for the hunt (design 9.2: a failure left after repair throws in production).
+	 * after them, for the hunt (section 5.6: a failure left after repair throws in production).
 	 */
 	std::string
 	describe_overlay_outcome(
@@ -834,7 +834,7 @@ namespace
 		Overlay::Overlay &overlay = *overlay_ptr;
 		overlay.classify();
 
-		// The design requires no repair on generated data (phase4b-design.md section 12, step 15).
+		// The design requires no repair on generated data (section 6).
 		std::stringstream report;
 		if (overlay.get_diagnostics().check_failures != 0 ||
 			overlay.get_diagnostics().unresolved_pieces != 0 ||
@@ -1083,7 +1083,7 @@ namespace
 			{
 				num_band_differences += band_differences + num_common_differences;
 
-				// The output of every operation, by the oracle (phase4b-design.md section 11.3).
+				// The output of every operation, by the oracle (section 6).
 				const std::vector<PointOnSphere> samples =
 						PolygonOverlayOracle::get_samples(*P, *Q, overlay);
 				// Grouping and orientation only where no input rings cross: otherwise the output
@@ -1109,7 +1109,7 @@ namespace
 								<< samples.size() << " samples wrong; ";
 					}
 
-					// Every point's provenance resolves to it (phase4b-design.md section 7.1),
+					// Every point's provenance resolves to it (section 5.4),
 					// and a point beside an edge along the subject has its subject location.
 					unsigned int provenance_failures = 0;
 					for (const Overlay::OutputRing &ring : rings)
@@ -1172,7 +1172,7 @@ namespace
 								<< tolerance << "); ";
 					}
 				}
-				// A second step of a cascade (phase4b-design.md section 7.2): each piece of the
+				// A second step of a cascade (section 5.4): each piece of the
 				// difference, with its provenance table, overlaid with the clip again (the pieces
 				// run along its outline, the hardest case for composition); every point of both
 				// outputs must resolve against the original subject.
@@ -1251,7 +1251,7 @@ namespace
 							}
 							// Against the same clip, a subject location is lost only where an
 							// identity vertex holds two vertices of one input; against the moved
-							// clip, also at an input's corner (review 4 1.3): there no gate, only
+							// clip, also at an input's corner (section 5.4): there no gate, only
 							// that nothing is wrong.
 							if (failures != 0 ||
 								(clip_2.get() == Q.get() &&
@@ -1268,9 +1268,8 @@ namespace
 					}
 				}
 
-				// The partitioner (phase4b-design.md sections 5.3 and 10.2): the same result
-				// with or without lists (review 5 1.1), and a subject wholly on one side
-				// returned itself.
+				// The partitioner (section 5.1): the same result with or without lists, and a
+				// subject wholly on one side returned itself.
 				{
 					typedef GPlatesMaths::PolygonPartitioner Partitioner;
 					const Partitioner::non_null_ptr_type partitioner = Partitioner::create(Q);
@@ -1332,7 +1331,7 @@ namespace
 
 				// The ring structure (which the oracle cannot see: it reads the output by parity),
 				// against the prototype's, where no band piece differs and the prototype's rings
-				// are the same in every clean tie order (design 11.2 item 4: rings that touch can
+				// are the same in every clean tie order (section 6: rings that touch can
 				// decompose either way, and its walk's start depends on the order).
 				const auto ring_set = [](const std::vector<std::vector<std::string>> &rings)
 				{
@@ -1472,9 +1471,9 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 
 
 // Generated cases from the Phase 4a hunt: run 2's residue, which the bundle rule clears
-// (phase4a-run3.md section 4.1), a sample of every generator, two 'chain' cases with an output
+// (section 6), a sample of every generator, two 'chain' cases with an output
 // ring all of whose vertices lie on another ring (grouping decides by an edge midpoint), the four
-// cases of review 3 that alone show the sector walk's phase and the four-kept bounce pairing
+// cases that alone show the sector walk's phase and the four-kept bounce pairing
 // (six#27, #207, near#48, #277), 20 of the 'holes' generator (holes and islands in both inputs,
 // no ring crossing another: the grouping's parent choice), and chain#146 seed 2, whose chain vertex
 // at a segment's end needs the self-touch cuts' rounding margin.
@@ -1484,18 +1483,17 @@ TEST(PolygonOverlayPrototypeTest, Hunt)
 }
 
 
-// A polyline subject (phase4b-design.md section 6.1), the prototype's polyline generators of
-// Phase 4a run 3 section 6.1: an end on or near the clip's edge or vertex ('ends'), along a clip
-// edge, dense in 40% ('along'), touches ('touch'), through a pinch of the clip ('pinch'), 30 of
-// each, and 10 opened rings of each hunt generator ('opened-<generator>'). Classes, runs and the
-// oracle along the polyline.
+// A polyline subject (section 5.2), the prototype's polyline generators: an end on or near the
+// clip's edge or vertex ('ends'), along a clip edge, dense in 40% ('along'), touches ('touch'),
+// through a pinch of the clip ('pinch'), 30 of each, and 10 opened rings of each hunt generator
+// ('opened-<generator>'). Classes, runs and the oracle along the polyline.
 TEST(PolygonOverlayPrototypeTest, Polyline)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-polyline.txt", 150);
 }
 
 
-// Common chains that no other piece reaches (Phase 4a run 2 section 7's kinds, three seeds):
+// Common chains that no other piece reaches (three seeds):
 // identical and jittered rings, either way round, holes equal to rings, thin faces, two rings.
 TEST(PolygonOverlayPrototypeTest, Anchorless)
 {
@@ -1504,7 +1502,7 @@ TEST(PolygonOverlayPrototypeTest, Anchorless)
 
 
 // Vertices where both inputs pass more than once, the only place the bundle rule applies after
-// run 4 (about 1 vertex in 900 dense shared-edge cases; Phase 5 review 2 section 1.1).
+// run 4 (about 1 vertex in 900 dense shared-edge cases).
 TEST(PolygonOverlayPrototypeTest, Bundle)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-bundle.txt", 15);
@@ -1523,7 +1521,7 @@ TEST(PolygonOverlayPrototypeTest, File)
 }
 
 
-// The one-passage rule (phase4a-run4.md) on run 2's residue and run 4's chain failures: each has a
+// The one-passage rule (section 5.2) on run 2's residue and run 4's chain failures: each has a
 // vertex of six or more ends where one input passes once, which the sector walk on the measured
 // order got wrong (run 2's residue was cleared by the bundle rule, the chain cases by nothing
 // before run 4). Each is now consistent, and the counts are the prototype's, which are the same in
@@ -1583,10 +1581,10 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 
 
 
-// The result contract's emptiness rule (phase4b-design.md section 5.3): in this dense shared-edge
+// The result contract's emptiness rule (section 5.1): in this dense shared-edge
 // case the classes keep pieces in the intersection, but every ring they make collapses in clean-up
 // (a region thinner than the thickness), so the subject is wholly outside and comes back itself,
-// with or without lists (review 5 1.1: the result-only path once said "intersecting" here,
+// with or without lists (the result-only path once said "intersecting" here,
 // from the classes alone; and then from an early stop, which a tiny tip of a piece fooled).
 TEST(PolygonOverlayPrototypeTest, PartitionerCollapsedRegion)
 {
@@ -1629,11 +1627,11 @@ TEST(PolygonOverlayPrototypeTest, PartitionerCollapsedRegion)
 }
 
 
-// The bundle rule's measurements on the bundle cases (Phase 5 review 2, section 1.1): the most
+// The bundle rule's measurements on the bundle cases (section 6): the most
 // floating rays, admissible orders and consistent placements at one vertex, the vertices with more
 // than one consistent placement, those whose order used is not the measured one, and those over
 // the cap (more than six floating rays: the measured order kept). The values are the prototype's
-// ('r5o', whose cones count a ray's offsets off its segment, step 15: more rays float than under
+// ('r5o', whose cones count a ray's offsets off its segment: more rays float than under
 // 'r5c', and shared#2240 seed 12 reaches the cap), so that the enumeration's size is pinned, not
 // only the classes.
 // (shared#2893 seed 11 is no longer here: its bundle vertex was a self-touch on a shared edge,

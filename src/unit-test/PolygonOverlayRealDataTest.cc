@@ -61,7 +61,7 @@
 #include "unit-test/PolygonOverlayOracle.h"
 
 
-// Real data (phase4b-design.md sections 10.3 and 11.4), not committed: set
+// Real data (spherical-geometry.md section 6), not committed: set
 // GPLATES_POLYGON_OVERLAY_REAL_DATA to a plate model's directory, laid out as the plate model
 // manager lays it out (Rotations/, Topologies/ and Coastlines/), and optionally
 // GPLATES_POLYGON_OVERLAY_REAL_DATA_TIMES to the reconstruction times ("0 100 200" by default).
@@ -70,8 +70,8 @@
 // topologies resolved at that time as Assign Plate IDs cuts them (GeometryCookieCutter's order, the
 // partitioner's bounding-circle shortcut and result rule), but by the overlay itself, so that each
 // cut's diagnostics and outputs can be read. Expected: no InconsistentOverlayException, no repair,
-// the bundle cap never hit, and every cut's outputs right by the oracle (section 11.3). Reported:
-// those counts, and, for the sliver filter's decision (section 4.5), a histogram of the mean widths
+// the bundle cap never hit, and every cut's outputs right by the oracle (section 6). Reported:
+// those counts, and, for the sliver filter's decision (section 5.5), a histogram of the mean widths
 // of the output rings of every polygon that was cut, with the counts under h, 10 h and 100 h, the
 // thinnest rings, and the output edges shorter than h.
 namespace
@@ -118,7 +118,7 @@ namespace
 		return collections;
 	}
 
-	//! As PolygonPartitioner's shortcut (phase4b-design.md section 4.1 as built).
+	//! As PolygonPartitioner's shortcut (section 5.1).
 	bool
 	is_outside_by_bounds(
 			const PolygonOnSphere &subject,
@@ -318,7 +318,7 @@ namespace
 		}
 		++counts.intersecting;
 
-		// The oracle (section 11.3): samples away from both outlines, read by the outputs as
+		// The oracle (section 6): samples away from both outlines, read by the outputs as
 		// polygons, or as rings where an input's rings cross; and the area sum where they don't.
 		const std::vector<PointOnSphere> samples =
 				PolygonOverlayOracle::get_samples(*subject, clip, overlay);
@@ -358,7 +358,7 @@ namespace
 					<< std::endl;
 		}
 
-		// The result after clean-up (section 5.3).
+		// The result after clean-up (section 5.1).
 		if (intersection.empty())
 		{
 			outside.push_back(subject);
@@ -422,7 +422,7 @@ TEST(PolygonOverlayRealDataTest, Coastlines)
 	double area_cut = 0.0;  // of the polygons cut
 
 	// Edge lengths of the cut polygons (input) and of their pieces (output): under 1e-9 radians
-	// (rounding: two distinct vertices within a crossing's rounding, PLAN.md 2026-11-04), under
+	// (rounding: two distinct vertices within a crossing's rounding), under
 	// h / 10, and under h.
 	const double edge_thresholds[] = { 1e-9, H / 10, H };
 	unsigned int num_edges[2] = { 0, 0 };
@@ -551,7 +551,7 @@ TEST(PolygonOverlayRealDataTest, Coastlines)
 	}
 	std::cout << "total: " << total.report() << std::endl;
 
-	// The sliver measurement (section 4.5): mean widths in thicknesses, by half decade.
+	// The sliver measurement (section 5.5): mean widths in thicknesses, by half decade.
 	const double earth_radius = 6371.0e3;
 	std::sort(
 			rings.begin(),

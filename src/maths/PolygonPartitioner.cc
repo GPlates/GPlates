@@ -71,10 +71,10 @@ namespace
 
 	/**
 	 * Whether a subject whose outline lies within @a subject_bounds is certainly outside
-	 * @a partitioning_polygon without an overlay (phase4b-design.md section 4.1): the two bounding
-	 * circles are disjoint, and the partitioning polygon's interior lies within its own circle, and
-	 * so does the subject's when it is a polygon (@a subject_polygon; none for a polyline, whose
-	 * outline is all there is).
+	 * @a partitioning_polygon without an overlay (spherical-geometry.md section 5.1): the two
+	 * bounding circles are disjoint, and the partitioning polygon's interior lies within its own
+	 * circle, and so does the subject's when it is a polygon (@a subject_polygon; none for a
+	 * polyline, whose outline is all there is).
 	 */
 	bool
 	is_outside_by_bounds(
@@ -97,13 +97,13 @@ namespace
 
 
 	/**
-	 * Overlay a polygon subject with the partitioning polygon (phase4b-design.md section 8.1). The
-	 * result follows section 5.3: GEOMETRY_INSIDE if the difference is empty, GEOMETRY_OUTSIDE if
-	 * the intersection is (after clean-up), and only for GEOMETRY_INTERSECTING are @a inside and
+	 * Overlay a polygon subject with the partitioning polygon. The result follows the result
+	 * contract (section 5.1): GEOMETRY_INSIDE if the difference is empty, GEOMETRY_OUTSIDE if the
+	 * intersection is (after clean-up), and only for GEOMETRY_INTERSECTING are @a inside and
 	 * @a outside filled (else the subject is returned whole by the caller).
 	 *
-	 * With or without lists the overlay is the same (section 10.2 as amended after review 6): only
-	 * the output geometries are not built when no list wants them.
+	 * With or without lists the overlay is the same: only the output geometries are not built when
+	 * no list wants them.
 	 */
 	PolygonPartitioner::Result
 	overlay_polygon(
@@ -180,10 +180,10 @@ namespace
 
 
 	/**
-	 * Overlay a polyline subject with the partitioning polygon (phase4b-design.md section 6.1):
+	 * Overlay a polyline subject with the partitioning polygon (section 5.2):
 	 * as @a overlay_polygon, with the runs of each class in @a runs for GEOMETRY_INTERSECTING. A
 	 * run at one position (if one can arise) is dropped as a collapsed region is; a side left with
-	 * no run makes the polyline whole, as for a polygon (section 5.3). A polyline's classification
+	 * no run makes the polyline whole, as for a polygon (section 5.1). A polyline's classification
 	 * is cheap and never throws.
 	 */
 	PolygonPartitioner::Result
@@ -341,7 +341,7 @@ namespace
 							? PolygonPartitioner::GEOMETRY_OUTSIDE
 							: PolygonPartitioner::GEOMETRY_INSIDE);
 
-			// A multi-point wholly on one side is itself (as for every geometry, section 5.3).
+			// A multi-point wholly on one side is itself (as for every geometry, section 5.1).
 			if (d_result != PolygonPartitioner::GEOMETRY_INTERSECTING)
 			{
 				add_whole(d_result);

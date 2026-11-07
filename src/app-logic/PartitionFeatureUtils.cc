@@ -83,8 +83,8 @@ namespace GPlatesAppLogic
 
 			/**
 			 * Accumulates a geometry's size: a polygon's area, a polyline's arc length, a point's or
-			 * multi-point's number of points (phase4b-design.md section 8.3). A polygon's arc length
-			 * is not used: its cuts would inflate it.
+			 * multi-point's number of points (spherical-geometry.md section 5.4). A polygon's arc
+			 * length is not used: its cuts would inflate it.
 			 */
 			class GeometrySize :
 					public GPlatesMaths::ConstGeometryOnSphereVisitor
@@ -900,7 +900,7 @@ GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric::operator<(
 		const GeometrySizeMetric &rhs) const
 {
 	// Area (polygons) first, then arc length (polylines), then the number of points: so a feature
-	// with polygons is decided by them (phase4b-design.md section 8.3).
+	// with polygons is decided by them (section 5.4).
 	if (d_area != rhs.d_area)
 	{
 		return d_area < rhs.d_area;

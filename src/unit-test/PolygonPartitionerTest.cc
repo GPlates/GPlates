@@ -59,9 +59,9 @@
 #include "unit-test/PolygonOverlayOracle.h"
 
 
-// The partition layer (phase4b-design.md section 8): PolygonPartitioner on the overlay, its result
-// contract (section 5.3) with or without lists (10.2), and the cascade of GeometryCookieCutter with
-// provenance (7.2, 8.2). Geometries are boxes in degrees, edges along meridians and great circles.
+// The partition layer (spherical-geometry.md section 5.1): PolygonPartitioner on the overlay, its
+// result contract with or without lists, and the cascade of GeometryCookieCutter with provenance
+// (section 5.4). Geometries are boxes in degrees, edges along meridians and great circles.
 namespace
 {
 	using GPlatesMaths::GeometryOnSphere;
@@ -353,8 +353,8 @@ TEST(PolygonPartitionerTest, PartitionerAcrossSubjectHole)
 
 // Doc 5.1's fourth bug: a piece along the partitioner's boundary was classified by the
 // partitioner's orientation. Now a polygon beside the partitioner, sharing an edge, is outside, one
-// inside it sharing an edge is inside, and a polyline along its edge is inside (Q2), for both
-// orientations.
+// inside it sharing an edge is inside, and a polyline along its edge is inside (section 5.2), for
+// both orientations.
 TEST(PolygonPartitionerTest, AlongBoundaryBothOrientations)
 {
 	for (bool reversed : { false, true })
@@ -394,7 +394,7 @@ TEST(PolygonPartitionerTest, AlongBoundaryBothOrientations)
 }
 
 
-// The result contract (phase4b-design.md section 5.3): a geometry that only touches the
+// The result contract (section 5.1): a geometry that only touches the
 // partitioner, from either side, or is identical to it, comes back itself, inside or outside.
 TEST(PolygonPartitionerTest, TouchesComeBackWhole)
 {
@@ -464,7 +464,7 @@ TEST(PolygonPartitionerTest, TouchesComeBackWhole)
 }
 
 
-// The result-only path (phase4b-design.md section 10.2), GLReconstructedStaticPolygonMeshes' call:
+// The result-only path (section 5.1), GLReconstructedStaticPolygonMeshes' call:
 // far apart (the bounding circles alone), crossing, a partitioner inside the input (which that
 // caller used to work round itself) and an input inside the partitioner. The other tests compare it
 // with the lists' result on every input.
@@ -491,7 +491,7 @@ TEST(PolygonPartitionerTest, ResultOnlyPath)
 }
 
 
-// The bounding-circle shortcut (phase4b-design.md section 4.1 as built) for a polygon whose
+// The bounding-circle shortcut (section 5.1) for a polygon whose
 // interior reaches past its outline's bounding circle: a small box in that part of its interior has
 // a bounding circle disjoint from its own, yet the two overlap, whichever partitions the other.
 TEST(PolygonPartitionerTest, InteriorBeyondBoundingCircle)
@@ -762,7 +762,7 @@ namespace
 }
 
 
-// The cascade (phase4b-design.md sections 7.2 and 8.2): two plates sharing an edge, and an input
+// The cascade (sections 5.1 and 5.4): two plates sharing an edge, and an input
 // polygon with a hole across that edge, partly outside both. Each plate's piece is a polygon (the
 // hole cut open by the shared edge), the rest one polygon outside; the pieces cover the input; and
 // with provenance every point's locations resolve to it, on the original input and on the plate
@@ -873,7 +873,7 @@ TEST(PolygonPartitionerTest, CookieCutterCascade)
 }
 
 
-// The other geometry types through the cascade with provenance (design 7.2, 8.2): a multi-point
+// The other geometry types through the cascade with provenance (sections 5.1, 5.4): a multi-point
 // split over the plates (each point's location its index in the input, through the second cut), a
 // polyline cut by both plates (every point on it), a point (a table of one), and a cookie cutter
 // with no plates (the input outside, with the identity table).
@@ -1030,7 +1030,7 @@ namespace
 }
 
 
-// The sliver filter (phase4b-design.md section 4.5), off by default. A clip whose western part
+// The sliver filter (section 5.5), off by default. A clip whose western part
 // covers the subject but a strip 5 h wide along its eastern edge (both meridians): the strip is
 // the difference, and holds a hole of the subject a third as wide. A filter of 10 h drops the strip
 // with its hole, so the subject is whole inside; one of h / 2, or none, keeps both (the hole, a
@@ -1152,7 +1152,7 @@ TEST(PolygonPartitionerTest, SliverFilterHoleWithIsland)
 
 
 // A subject thinner than the width, cut across: the filter drops both halves, and the subject is
-// whole on the side that lost the larger area (phase4b-design.md section 4.5 as built).
+// whole on the side that lost the larger area (section 5.5).
 TEST(PolygonPartitionerTest, SliverFilterEmptiesBoth)
 {
 	const double w = degrees_of_h(5);
@@ -1187,7 +1187,7 @@ TEST(PolygonPartitionerTest, SliverFilterEmptiesBoth)
 
 
 // The cascade passes the cookie cutter's width to every plate, and the filter is on by default
-// at 10 h (phase4b-design.md section 4.5): a subject reaching 5 h into plate A from plate B is
+// at 10 h (section 5.5): a subject reaching 5 h into plate A from plate B is
 // whole in plate B by default, and cut in two with the filter off.
 TEST(PolygonPartitionerTest, SliverFilterCookieCutter)
 {

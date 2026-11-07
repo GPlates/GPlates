@@ -2246,7 +2246,8 @@ class PlatePartitionerTestCase(unittest.TestCase):
     def test_partition_features_coverage_pieces(self):
         scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
         # A strip plate across a box cuts it into three pieces, two of them outside with four points each: each piece
-        # with a coverage goes into its own feature, so two with the same number of points are not ambiguous (review 7 1.1).
+        # with a coverage goes into its own feature, so two with the same number of points are not ambiguous
+        # (spherical-geometry.md section 5.7).
         plate_partitioner = pygplates.PlatePartitioner(
                 self._static_plates((1, [(-20, 8), (-20, 12), (20, 12), (20, 8)])), pygplates.RotationModel([]))
         feature = pygplates.Feature()
@@ -2259,7 +2260,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
             self.assertTrue(len(scalars[scalar_type]) == len(piece.get_points()))
 
         # A coverage's range goes only with its geometry: a feature holding only another geometry property's pieces
-        # has no range property (review 7's mutation M1).
+        # has no range property.
         feature = pygplates.Feature()
         feature.set_geometry((pygplates.PolygonOnSphere([(-5, 0), (-5, 20), (5, 20), (5, 0)]), {scalar_type: [1, 2, 3, 4]}))
         feature.set_geometry(
@@ -2273,7 +2274,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
 
     def test_partition_features_other_cases(self):
         # A feature whose valid time excludes the partitioning time is still partitioned, as it always was in
-        # pyGPlates (review 7's mutation M2: Assign Plate IDs' time check is not used here).
+        # pyGPlates (Assign Plate IDs' time check is not used here).
         plate_partitioner = pygplates.PlatePartitioner(
                 self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
                                     (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
@@ -2284,8 +2285,8 @@ class PlatePartitionerTestCase(unittest.TestCase):
         partitioned = plate_partitioner.partition_features([feature])
         self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
 
-        # Most overlapping: a feature's polygons decide before its polylines (review 7's mutation M4), here a small
-        # polygon in plate 2 against a long polyline in plate 1.
+        # Most overlapping: a feature's polygons decide before its polylines, here a small polygon in plate 2 against a
+        # long polyline in plate 1.
         feature = pygplates.Feature()
         feature.set_geometry([pygplates.PolygonOnSphere([(-1, -2), (-1, -1), (1, -1), (1, -2)]),
                               pygplates.PolylineOnSphere([(0, 5), (0, 35)])],
@@ -2296,7 +2297,8 @@ class PlatePartitionerTestCase(unittest.TestCase):
 
     def test_partition_features_time_dependent_geometry(self):
         # A time-dependent geometry property is not partitioned, and not lost: it stays, unchanged, on the features
-        # returned (review 7 1.2), whether or not the feature also has a constant geometry that is partitioned.
+        # returned (spherical-geometry.md section 5.4), whether or not the feature also has a constant geometry that is
+        # partitioned.
         plate_partitioner = pygplates.PlatePartitioner(
                 self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
                                     (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),

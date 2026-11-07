@@ -201,8 +201,8 @@ namespace GPlatesAppLogic
 
 				/**
 				 * A geometry property's scalar coverage, and what carrying it to the partitioned
-				 * geometries needs (phase4b-design.md section 7.3): its domain's rings, so that a
-				 * point's provenance (a vertex, or a segment and ratio, of the geometry property)
+				 * geometries needs (spherical-geometry.md section 5.4): its domain's rings, so that
+				 * a point's provenance (a vertex, or a segment and ratio, of the geometry property)
 				 * finds its scalars.
 				 */
 				struct Range
@@ -325,9 +325,8 @@ namespace GPlatesAppLogic
 
 					/**
 					 * The scalars at the nearest point of the domain's outline to @a point,
-					 * interpolated along that segment (section 7.3 step 3, the developer's answer
-					 * to question 2): for an output ring none of whose points has a value of its
-					 * own.
+					 * interpolated along that segment (section 5.4, step 3): for an output ring
+					 * none of whose points has a value of its own.
 					 */
 					value_type
 					get_nearest_outline_value(
@@ -374,7 +373,7 @@ namespace GPlatesAppLogic
 						const GPlatesMaths::PointOnSphere &end =
 								domain_points[ring_offsets[ring] + next];
 						// The ratio along the segment of the point's projection onto its great
-						// circle (as the overlay's ratios are, phase4b-design.md section 2.8),
+						// circle (as the overlay's ratios are, section 5.4),
 						// within the segment.
 						const GPlatesMaths::Vector3D a(start.position_vector());
 						const GPlatesMaths::Vector3D b(end.position_vector());
@@ -559,7 +558,7 @@ namespace GPlatesAppLogic
 						PartitionedFeature::GeometryProperty &partitioned_geometry_property)
 				{
 					// Partition the current geometry property and store results; with a coverage, each
-					// piece with where its points came from (phase4b-design.md section 7.2).
+					// piece with where its points came from (section 5.4).
 					GeometryCookieCutter::partition_seq_type partitioned_inside_domains;
 					GeometryCookieCutter::partitioned_geometry_seq_type partitioned_outside_domains;
 					d_cookie_cut_geometry.partition_geometry(
@@ -625,19 +624,18 @@ namespace GPlatesAppLogic
 
 				/**
 				 * The coverage of a partitioned geometry, from its points' provenance
-				 * (phase4b-design.md section 7.3, replacing an epsilon map of the original points and
-				 * a search for the nearest original segment, which a cut across the geometry's
-				 * interior defeats):
+				 * (section 5.4, replacing an epsilon map of the original points and a search for
+				 * the nearest original segment, which a cut across the geometry's interior
+				 * defeats):
 				 *
 				 *  1. a point at a vertex of the original takes its scalars; a point on a segment of
 				 *     the original interpolates its ends' (a ring's last segment ends at its first
 				 *     vertex);
 				 *  2. a run of points with none (a cut, where the partitioning polygon's outline
 				 *     crosses the geometry; or a hole's points under an exterior-ring-only coverage)
-				 *     is interpolated by arc length between the valued points at its ends
-				 *     (requirements Q1);
+				 *     is interpolated by arc length between the valued points at its ends;
 				 *  3. a ring none of whose points has a value takes, at each point, the value at
-				 *     the nearest point of the original's outline (section 14, question 2).
+				 *     the nearest point of the original's outline.
 				 */
 				void
 				partition_range(
@@ -686,7 +684,7 @@ namespace GPlatesAppLogic
 						}
 					}
 
-					// The cookie cutter gives every piece a table when asked (section 7.2).
+					// The cookie cutter gives every piece a table when asked (section 5.4).
 					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 							partitioned.provenance &&
 								partitioned.provenance->size() >= points.size(),
@@ -827,7 +825,7 @@ namespace GPlatesAppLogic
 
 					// A polyline's run at its end, and at its start, takes its one valued
 					// neighbour's. (A closed ring has none left: the walk went once round it, so
-					// its run past its start was interpolated, review 6 1.1.)
+					// its run past its start was interpolated.)
 					if (!closed)
 					{
 						for (unsigned int r : run)

@@ -68,9 +68,9 @@
 #include "model/PropertyValueFinder.h"
 
 
-// Assign Plate IDs' partitioning of a feature (phase4b-design.md section 8.3): a scalar coverage
-// carried to the pieces from each point's provenance (section 7.3), and "most overlapping" by area
-// for polygons. Geometries are boxes in degrees, edges along meridians and great circles.
+// Assign Plate IDs' partitioning of a feature (spherical-geometry.md section 5.4): a scalar
+// coverage carried to the pieces from each point's provenance, and "most overlapping" by area for
+// polygons. Geometries are boxes in degrees, edges along meridians and great circles.
 namespace
 {
 	using GPlatesMaths::PointOnSphere;
@@ -323,12 +323,12 @@ namespace
 
 
 	/**
-	 * Check design 7.3 step 2 on every ring of a piece, independently of how the code finds it:
-	 * the points on the coverage's domain outline (@a domain: the exterior ring alone for an
-	 * exterior-ring-only coverage) have their values from the original; each run of the others,
-	 * cyclically round the ring, must be the arc-length interpolation between its valued ends. A ring
-	 * with no point on the outline is not checked here. Returns whether a ring started with a run
-	 * (the case review 6 1.1 found wrong).
+	 * Check a coverage's step 2 (section 5.4) on every ring of a piece, independently of how the
+	 * code finds it: the points on the coverage's domain outline (@a domain: the exterior ring
+	 * alone for an exterior-ring-only coverage) have their values from the original; each run of
+	 * the others, cyclically round the ring, must be the arc-length interpolation between its
+	 * valued ends. A ring with no point on the outline is not checked here. Returns whether a ring
+	 * started with a run (the case the code once got wrong).
 	 */
 	bool
 	check_runs(
@@ -431,11 +431,11 @@ namespace
 }
 
 
-// A polygon with a hole and a coverage, cut by a plate whose corner lies inside it (design 7.3):
+// A polygon with a hole and a coverage, cut by a plate whose corner lies inside it (section 5.4):
 // original vertices keep their values exactly (the hole's too), a point where the plate crosses an
 // edge interpolates along that edge (including the ring's closing segment, which once read past
 // the end), and the plate's corner, a cut point, is interpolated by arc length between its ring
-// neighbours (requirements Q1).
+// neighbours.
 TEST(PartitionFeatureUtilsTest, CoverageAcrossCut)
 {
 	const CutInput input;
@@ -518,7 +518,7 @@ TEST(PartitionFeatureUtilsTest, CoverageAcrossCut)
 }
 
 
-// An exterior-ring-only coverage (an old file's: scalars for the exterior ring alone, design 7.3):
+// An exterior-ring-only coverage (an old file's: scalars for the exterior ring alone, section 5.4):
 // a piece's coverage covers its exterior ring only, and where the cut opens the hole into a piece's
 // exterior ring, the hole's points (which have no values) are interpolated along the ring.
 TEST(PartitionFeatureUtilsTest, ExteriorRingOnlyCoverage)
@@ -587,8 +587,8 @@ TEST(PartitionFeatureUtilsTest, ExteriorRingOnlyCoverage)
 
 // An output ring with no point of the input's (the plate wholly inside the input: the piece inside
 // it is the plate's own outline): each point takes the value at the nearest point of the input's
-// outline (design 7.3 step 3), here its left edge, the meridian at longitude 0 (where the value is
-// the latitude of the point's projection onto it).
+// outline (section 5.4, step 3), here its left edge, the meridian at longitude 0 (where the value
+// is the latitude of the point's projection onto it).
 TEST(PartitionFeatureUtilsTest, RingWithNoValuedPoint)
 {
 	const CutInput input;
@@ -613,7 +613,7 @@ TEST(PartitionFeatureUtilsTest, RingWithNoValuedPoint)
 }
 
 
-// "Most overlapping" (design 8.3): area for polygons, so a fat piece beats a thin one with longer
+// "Most overlapping" (section 5.4): area for polygons, so a fat piece beats a thin one with longer
 // edges (whose cuts would inflate arc length), and polygons decide a feature that also has a longer
 // polyline.
 TEST(PartitionFeatureUtilsTest, SizeMetricByArea)
@@ -650,11 +650,11 @@ TEST(PartitionFeatureUtilsTest, SizeMetricByArea)
 }
 
 
-// A piece cut a second time (design 7.2 and 7.3): the second plate's ring starts on the first
+// A piece cut a second time (section 5.4): the second plate's ring starts on the first
 // plate's cut edge, whose points have no value of their own, so the run of cut points wraps past
 // the ring's start. Every run of every ring, in both orders of the plates, must be the arc-length
-// interpolation between its valued ends (review 6 1.1: the points before the ring's first valued
-// point once all took that point's value).
+// interpolation between its valued ends (the points before the ring's first valued point once all
+// took that point's value).
 TEST(PartitionFeatureUtilsTest, RunAcrossRingStart)
 {
 	const CutInput input;
@@ -710,7 +710,7 @@ TEST(PartitionFeatureUtilsTest, TwoScalarTypes)
 }
 
 
-// The nearest outline of a ring with no valued point can be a hole's (design 7.3 step 3): a plate
+// The nearest outline of a ring with no valued point can be a hole's (section 5.4, step 3): a plate
 // wholly inside the input, just beside its hole, takes the hole's values (100 to 103), not the
 // exterior's (within 10 of zero).
 TEST(PartitionFeatureUtilsTest, NearestOutlineOnHole)
@@ -731,7 +731,7 @@ TEST(PartitionFeatureUtilsTest, NearestOutlineOnHole)
 }
 
 
-// The nearest outline value is clamped to the segment (design 7.3 step 3): beside an L-shaped
+// The nearest outline value is clamped to the segment (section 5.4, step 3): beside an L-shaped
 // input's reflex vertex, every point of a plate inside it is nearest to that vertex, beyond both
 // segments' ends, so takes the vertex's value exactly (unclamped, the ratio runs past the end).
 TEST(PartitionFeatureUtilsTest, NearestOutlineClamp)
@@ -751,7 +751,7 @@ TEST(PartitionFeatureUtilsTest, NearestOutlineClamp)
 }
 
 
-// The other geometry types with a coverage (design 7.3): a polyline cut at a plate's edge (its
+// The other geometry types with a coverage (section 5.4): a polyline cut at a plate's edge (its
 // crossing interpolated along its segment), a multi-point split by the plate (each point its own
 // value), a point, and a polygon outside every plate, returned whole with its values unchanged.
 TEST(PartitionFeatureUtilsTest, OtherGeometryTypes)
@@ -850,11 +850,11 @@ namespace
 }
 
 
-// Assign Plate IDs on a feature whose cut is inconsistent (design 9.2, the developer's answer to
-// question 3): the overlay throws for this input (a dense shared-edge case, 'shared#2288 seed 2',
-// the one case of step 15's hunt the bundle rule's wider cones did not resolve: band classes along
-// a shared edge that no 20 rounds of repair make consistent), with or without lists; Assign Plate
-// IDs leaves the feature as it was and reports it.
+// Assign Plate IDs on a feature whose cut is inconsistent (section 5.6): the overlay throws for
+// this input (a dense shared-edge case, 'shared#2288 seed 2', the one case of the hunt the bundle
+// rule's wider cones did not resolve: band classes along a shared edge that no 20 rounds of repair
+// make consistent), with or without lists; Assign Plate IDs leaves the feature as it was and
+// reports it.
 TEST(PartitionFeatureUtilsTest, AssignPlateIdsSkipsInconsistentFeature)
 {
 	const std::vector<std::vector<ring_type>> rings =
@@ -864,7 +864,7 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsSkipsInconsistentFeature)
 	const auto P = polygon(rings[0][0], { rings[0][1] });
 	const auto Q = polygon(rings[1][0], { rings[1][1] });
 
-	// The partitioner raises with or without lists (review 5 1.1: the same contract either way).
+	// The partitioner raises with or without lists (section 5.1: the same contract either way).
 	const GPlatesMaths::PolygonPartitioner::non_null_ptr_type partitioner =
 			GPlatesMaths::PolygonPartitioner::create(Q);
 	EXPECT_THROW(

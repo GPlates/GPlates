@@ -414,7 +414,7 @@ GPlatesAppLogic::GeometryCookieCutter::partition(
 		return false;
 	}
 
-	// Provenance (phase4b-design.md section 7.2): each piece's table is composed with the next
+	// Provenance (spherical-geometry.md section 5.4): each piece's table is composed with the next
 	// partitioning polygon's cut, and its clip locations are indexed by partitioning polygon.
 	std::vector<const GPlatesMaths::PolygonOnSphere *> partitioning_polygons;
 	GPlatesMaths::PolygonPartitioner::CascadeProvenance cascade_provenance;

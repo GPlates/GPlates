@@ -52,7 +52,7 @@ namespace GPlatesMaths
 	 * polygons' interior rings taking part; a polyline into runs inside and outside. A geometry
 	 * whose pieces would all be on one side (one that only touches the partitioning polygon,
 	 * from either side, runs along its boundary, or is identical to it) is not cut: the
-	 * geometry itself is returned, inside or outside (phase4b-design.md section 5.3). A
+	 * geometry itself is returned, inside or outside (spherical-geometry.md section 5.1). A
 	 * polyline piece along the boundary is inside.
 	 */
 	class PolygonPartitioner
@@ -72,7 +72,7 @@ namespace GPlatesMaths
 		 * and the overlay's tests of a cut geometry's pieces.
 		 *
 		 * @a sliver_min_width, if set, turns on the overlay's sliver filter for a cut polygon's
-		 * pieces (PolygonOverlay::Options::sliver_min_width, phase4b-design.md section 4.5): a ring
+		 * pieces (PolygonOverlay::Options::sliver_min_width, section 5.5): a ring
 		 * whose mean width is below it, in radians, is dropped. The result is then decided after the
 		 * filter: a side it empties leaves the polygon whole on the other side (on the side that lost
 		 * the larger area if it empties both).
@@ -105,13 +105,13 @@ namespace GPlatesMaths
 		};
 
 
-		//! Where each point of a geometry came from (phase4b-design.md section 7).
+		//! Where each point of a geometry came from (section 5.4).
 		typedef PolygonOverlay::provenance_seq_type provenance_seq_type;
 
 
 		/**
 		 * A partitioned geometry, and where each of its points came from when that was asked for
-		 * (phase4b-design.md section 8.2).
+		 * (section 5.1).
 		 */
 		class PartitionedGeometry
 		{
@@ -129,7 +129,7 @@ namespace GPlatesMaths
 
 			/**
 			 * One per point of @a geometry (GeometryUtils::get_geometry_points order), relative to
-			 * the geometry partitioning started from (through a cascade, section 7.2); null unless
+			 * the geometry partitioning started from (through a cascade, section 5.4); null unless
 			 * asked for. A subject location is a vertex index (ring 0) for a point or multi-point.
 			 */
 			boost::shared_ptr<const provenance_seq_type> provenance;
@@ -149,7 +149,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * What the provenance of a cascade of partitioners needs (phase4b-design.md section 7.2),
+		 * What the provenance of a cascade of partitioners needs (section 5.4),
 		 * beyond the input's own table.
 		 */
 		class CascadeProvenance
@@ -205,14 +205,14 @@ namespace GPlatesMaths
 		 *
 		 * A polygon cut by the partitioning polygon comes back as polygons (with holes), a polyline
 		 * as polylines, a multi-point as one multi-point inside and one outside; a geometry that
-		 * is wholly inside or outside (section 5.3) comes back itself.
+		 * is wholly inside or outside (section 5.1) comes back itself.
 		 *
-		 * The result is the same with or without lists (phase4b-design.md section 5.3): with
-		 * neither (the result-only path, section 10.2), the cut is made the same way and only
+		 * The result is the same with or without lists (section 5.1): with
+		 * neither (the result-only path), the cut is made the same way and only
 		 * its output geometries are not built.
 		 *
 		 * @throws PolygonOverlay::InconsistentOverlayException if the overlay's classes are
-		 * inconsistent (phase4b-design.md section 9.2), with or without lists.
+		 * inconsistent (section 5.6), with or without lists.
 		 */
 		Result
 		partition_geometry(

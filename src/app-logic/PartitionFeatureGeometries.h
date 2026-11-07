@@ -46,9 +46,9 @@
 
 /**
  * Partitioning a feature's geometry properties, with their scalar coverages, by a cookie cutter
- * (phase4b-design.md sections 7.3 and 8.3): the part of PartitionFeatureUtils that pyGPlates'
- * 'partition_features' shares with GPlates' Assign Plate IDs, kept apart from PartitionFeatureUtils'
- * GPlates-only dependencies (Assign Plate IDs itself, reconstructions).
+ * (spherical-geometry.md section 5.4): the part of PartitionFeatureUtils that pyGPlates'
+ * 'partition_features' shares with GPlates' Assign Plate IDs, kept apart from
+ * PartitionFeatureUtils' GPlates-only dependencies (Assign Plate IDs itself, reconstructions).
  */
 namespace GPlatesAppLogic
 {

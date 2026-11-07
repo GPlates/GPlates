@@ -483,7 +483,7 @@ TEST(PolygonOverlayTest, StructureHoleCrossedOnly)
 }
 
 
-// The acute wedge (catalogue 4.1): a subject vertex x on the bisector of a 30 degree corner of the
+// The acute wedge (family 'wedge'): a subject vertex x on the bisector of a 30 degree corner of the
 // clip, within the thickness of both its edges but not of its apex. The two touch records name x
 // and are one vertex; the clip's tip piece runs x, apex, x; so six ends meet there.
 TEST(PolygonOverlayTest, StructureAcuteWedge)
@@ -542,7 +542,7 @@ TEST(PolygonOverlayTest, StructureAcuteWedge)
 }
 
 
-// A twist on the clip (catalogue 4.3): the subject's two crossing edges both cross the clip's top
+// A twist on the clip (family 'twist'): the subject's two crossing edges both cross the clip's top
 // edge near the crossing X. Crossings name no original vertex, so every record is its own vertex,
 // even where two lie at one point.
 TEST(PolygonOverlayTest, StructureTwistOnClip)
@@ -569,7 +569,7 @@ TEST(PolygonOverlayTest, StructureTwistOnClip)
 }
 
 
-// Two clip vertices within the thickness of one subject vertex (catalogue 4.6): every record naming
+// Two clip vertices within the thickness of one subject vertex (family 'ss'): every record naming
 // any of them is one vertex, and the clip's short edge between them is a single arc from that
 // vertex back to itself (the loop the loop rule will make internal).
 TEST(PolygonOverlayTest, StructureTwoClipVerticesAtOneSubjectVertex)
@@ -629,8 +629,8 @@ TEST(PolygonOverlayTest, StructureTwoClipVerticesAtOneSubjectVertex)
 }
 
 
-// Neighbouring plates sharing an edge exactly (catalogue 4.5): both shared vertices are SS records,
-// and each polygon has a single arc between the two vertices (the future common pair).
+// Neighbouring plates sharing an edge exactly (family 'shared'): both shared vertices are SS
+// records, and each polygon has a single arc between the two vertices (the future common pair).
 TEST(PolygonOverlayTest, StructureSharedEdge)
 {
 	const auto P = polygon(square(-0.02, -0.01, 0.0, 0.01));
@@ -718,7 +718,7 @@ TEST(PolygonOverlayTest, StructurePolyline)
 
 
 
-// The loop rule (catalogue 4.6): the clip's short edge between its two vertices at one subject
+// The loop rule (family 'ss'): the clip's short edge between its two vertices at one subject
 // vertex is a single arc from that vertex to itself, so it is internal and leaves no ray; four ends
 // remain.
 TEST(PolygonOverlayTest, LoopRuleTwoClipVerticesAtOneSubjectVertex)
@@ -750,10 +750,10 @@ TEST(PolygonOverlayTest, LoopRuleTwoClipVerticesAtOneSubjectVertex)
 
 // The loop rule leaves the wedge's tip piece (x, apex, x) alone: it has an original vertex. The six
 // rays all start at x, the vertex's output position; anticlockwise they are east, the two tip rays,
-// west, and the two rays of the rest of the clip (catalogue 4.1). x is the subject's vertex, so the
+// west, and the two rays of the rest of the clip. x is the subject's vertex, so the
 // subject's rays have no cone; but it lies r sin 15 degrees (about 0.52h) off each clip edge's line,
 // so a clip ray's arc can leave x away from its edge's tangent, and its cone is that offset over
-// the arc's length (phase4b-design.md section 3.8 as amended in step 15: the cone was once zero
+// the arc's length (spherical-geometry.md section 5.2: the cone was once zero
 // here, which is the assumption that let the true order fall outside the admissible ones).
 TEST(PolygonOverlayTest, RaysAcuteWedge)
 {
@@ -805,7 +805,7 @@ TEST(PolygonOverlayTest, RaysAcuteWedge)
 }
 
 
-// A crossing lies on both its segments by construction (phase4b-design.md section 3.8): a clip
+// A crossing lies on both its segments by construction (section 5.2): a clip
 // edge zigzagging across the subject's at an angle of about 1e-5 radians, at ten places on the
 // sphere, whose crossings' stored positions (the normalised cross product of two nearly parallel
 // planes) lie off the segments' great circles by more than 1e-12 radians. Every ray at a crossing
@@ -863,7 +863,7 @@ TEST(PolygonOverlayTest, RaysCrossingsOnTheirSegments)
 
 
 // A ray's cone counts how far its first arc's far end lies off the segment's great circle
-// (phase4b-design.md section 3.8, prototype configuration 'r5o'): a subject edge crossed by the
+// (section 5.2, prototype configuration 'r5o'): a subject edge crossed by the
 // clip at x = -0.01 and x = -0.0075, and touched from outside at x = 0 by a clip vertex half the
 // thickness below it. At the second crossing the subject's ray east ends at the touch, so its
 // offset is the clip vertex's from the subject's edge; every other ray there ends at a crossing or
@@ -912,7 +912,7 @@ TEST(PolygonOverlayTest, RaysFarEndOffset)
 }
 
 
-// Neighbouring plates sharing an edge (catalogue 4.5), exactly and with the clip's edge offset by
+// Neighbouring plates sharing an edge (family 'shared'), exactly and with the clip's edge offset by
 // half the thickness: the shared edge is a common pair, and each of its vertices has three rays,
 // the common one first-class. With the offset, the clip's arcs start at its own vertices, off the
 // subject's, so the clip-only ray and the common ray have small cones; the subject-only ray none.
@@ -954,7 +954,7 @@ TEST(PolygonOverlayTest, CommonPairSharedEdge)
 
 
 // A subject segment shorter than twice the thickness, crossing the clip's edge at right angles
-// (catalogue 4.4, D4): both its ends touch the clip's edge, as two vertices, and the segment and
+// (family 'd4'): both its ends touch the clip's edge, as two vertices, and the segment and
 // the clip's stretch between the touches are a common pair, as the prototype finds.
 TEST(PolygonOverlayTest, CommonPairShortSegmentAcrossEdge)
 {
@@ -1017,7 +1017,7 @@ TEST(PolygonOverlayTest, SpikeRule)
 
 
 //
-// Classification (phase4b-design.md section 3.7). The expected classes are the prototype's for the
+// Classification (section 5.2). The expected classes are the prototype's for the
 // same catalogue cases.
 //
 
@@ -1087,7 +1087,7 @@ TEST(PolygonOverlayTest, ClassifyHoleCrossedOnly)
 }
 
 
-// The clip's apex on the subject's edge (walk-through 6.4's case): one touch, four ends, the free
+// The clip's apex on the subject's edge (the case 'apex on edge'): one touch, four ends, the free
 // rule; the clip is inside, the subject outside it.
 TEST(PolygonOverlayTest, ClassifyApexOnEdge)
 {
@@ -1165,7 +1165,7 @@ TEST(PolygonOverlayTest, ClassifySharedEdge)
 }
 
 
-// A narrow neck of the clip (catalogue 4.5): a subject apex x in a neck narrower than the
+// A narrow neck of the clip (family 'neck'): a subject apex x in a neck narrower than the
 // thickness touches both its sides; the clip's piece round the far side is outside the subject.
 TEST(PolygonOverlayTest, ClassifyNeck)
 {
@@ -1188,7 +1188,7 @@ TEST(PolygonOverlayTest, ClassifyNeck)
 }
 
 
-// The T-intersection (walk-through section 3): the subject's edge A-B passes just above the
+// The T-intersection (section 5.2): the subject's edge A-B passes just above the
 // clip's corner and touches its top edge at B. A test at the longest arc's midpoint could fall
 // within rounding of the clip; the vertex tests decide both rings, outside each other.
 TEST(PolygonOverlayTest, ClassifyTIntersection)
@@ -1273,9 +1273,9 @@ TEST(PolygonOverlayTest, ClassifyResultOfTouches)
 
 
 // A subject segment shorter than GreatCircleArc's zero length (0.5h) between two touches of the
-// clip's edge, with the apex of a subject hole touching that edge between them (catalogue 4.4, d4
+// clip's edge, with the apex of a subject hole touching that edge between them (family 'd4', case
 // hole-between): a self-touch of the subject on the stretch it shares with the clip, so the segment
-// is cut at the apex (phase4b-design.md 3.5), its own plane standing in for the axis GreatCircleArc
+// is cut at the apex (section 5.2), its own plane standing in for the axis GreatCircleArc
 // has not for it, and both parts pair as common. (Before the cut its rays had no direction, the
 // only case that had such rays; none now does.)
 TEST(PolygonOverlayTest, ShortSegmentSelfTouch)
@@ -1294,7 +1294,7 @@ TEST(PolygonOverlayTest, ShortSegmentSelfTouch)
 
 
 
-// Anchorless chains (phase4b-design.md section 3.9, option 3): rings that run together all the way
+// Anchorless chains (section 5.2, classification step 4): rings that run together all the way
 // round meet no non-common piece, so the sector walk has no anchor. Identical polygons are one
 // same-side chain, the subject wholly inside; a subject equal to a hole of the clip is an
 // opposite-sides chain, the subject wholly outside; and the same with the clip's vertices moved
@@ -1343,7 +1343,7 @@ TEST(PolygonOverlayTest, ClassifyAnchorless)
 
 
 //
-// Repair and failure (phase4b-design.md sections 3.9 and 9). No normal input needs repair, so the
+// Repair and failure (sections 5.2 and 5.6). No normal input needs repair, so the
 // inconsistencies are provoked: a class set wrong by hand, then the check and repair run again.
 //
 
@@ -1475,8 +1475,8 @@ TEST(PolygonOverlayTest, InconsistentOverlayThrows)
 
 
 //
-// Linking, split and clean-up (phase4b-design.md sections 3.10 and 3.11): the rings of each
-// operation, checked by the output oracle (section 11.3).
+// Linking, split and clean-up (section 5.2): the rings of each operation, checked by the output
+// oracle (section 6).
 //
 
 namespace
@@ -1579,7 +1579,7 @@ TEST(PolygonOverlayTest, LinkClipInsideSubject)
 }
 
 
-// Walk-through 6.4: the clip's apex on the subject's edge. The difference is the subject with the
+// The clip's apex on the subject's edge (section 5.2). The difference is the subject with the
 // clip as a hole touching its exterior at the apex: the apex is a bounce of four kept ends, which
 // the free rule pairs by input, so no walk passes it twice (the split is pinned by the wedge, in
 // LinkCatalogueFamilies).
@@ -1655,8 +1655,8 @@ TEST(PolygonOverlayTest, LinkCatalogueFamilies)
 
 
 //
-// Grouping, the output side and orientation (phase4b-design.md sections 4.2 and 4.3): output
-// polygons with holes, checked by the oracle read polygon by polygon.
+// Grouping, the output side and orientation (section 5.2): output polygons with holes, checked by
+// the oracle read polygon by polygon.
 //
 
 namespace
@@ -1847,7 +1847,7 @@ TEST(PolygonOverlayTest, GroupIslandsInHoles)
 }
 
 
-// The grouping's containment test (phase4b-design.md section 4.2), directly: output rings can cross
+// The grouping's containment test (section 5.2), directly: output rings can cross
 // within an overlay vertex by its record cluster's width. A triangle inside a square but for its
 // first vertex, 1.6 h outside the square's eastern edge, is decided by that vertex with a margin
 // of h (the margin once used, which put a hole outside its exterior), and inside with the
@@ -1922,11 +1922,11 @@ TEST(PolygonOverlayTest, OrientationIndependentOfInputs)
 }
 
 
-// A union over a hemisphere throws, never returning its complement (phase4b-design.md section
-// 5.2), unless told only to count; the intersection and the differences of the same inputs do not
-// throw. The symmetric difference of two overlapping caps is two crescents, each inside an input;
-// but that of two polygons sharing an edge is joined across it (the opposite-sides chain is not
-// kept), and exceeds a hemisphere with their union. Under a hemisphere, the union is returned.
+// A union over a hemisphere throws, never returning its complement (section 5.6), unless told only
+// to count; the intersection and the differences of the same inputs do not throw. The symmetric
+// difference of two overlapping caps is two crescents, each inside an input; but that of two
+// polygons sharing an edge is joined across it (the opposite-sides chain is not kept), and exceeds
+// a hemisphere with their union. Under a hemisphere, the union is returned.
 TEST(PolygonOverlayTest, UnionOverHemisphereThrows)
 {
 	{
@@ -2017,8 +2017,7 @@ TEST(PolygonOverlayTest, UnionOverHemisphereThrows)
 
 
 //
-// Self-touching inputs (phase5-review-3.md 1.1 and 1.2), and pairings that only a rare vertex
-// shows (its section 2).
+// Self-touching inputs (section 5.2), and pairings that only a rare vertex shows.
 //
 
 namespace
@@ -2052,8 +2051,8 @@ namespace
 
 
 // Identical inputs that touch themselves: at the touch, every ray is common, so the sector walk
-// knows the memberships only up to swapping both, and pairs consecutive kept rays (review 3 1.1:
-// the intersection and the union threw).
+// knows the memberships only up to swapping both, and pairs consecutive kept rays (the
+// intersection and the union once threw).
 TEST(PolygonOverlayTest, IdenticalSelfTouching)
 {
 	{
@@ -2099,7 +2098,7 @@ TEST(PolygonOverlayTest, IdenticalSelfTouching)
 // A stretch the inputs share, which one of them touches itself on (a hole's tip on its own
 // exterior's edge): GeometryIntersect cuts the other input's segment at the tip and not the
 // touched one, so the stretch is cut on one side only. The overlay cuts the touched segment there
-// too, so that the stretch pairs as common (review 3 1.2: the intersection and the difference were
+// too, so that the stretch pairs as common (the intersection and the difference were once
 // silently wrong, the union threw).
 TEST(PolygonOverlayTest, SelfTouchOnSharedEdge)
 {
@@ -2155,8 +2154,8 @@ TEST(PolygonOverlayTest, LinkBothPassTwice)
 
 
 //
-// A polyline subject (phase4b-design.md section 6.1): classification and output, checked by the
-// oracle along the polyline (section 11.3).
+// A polyline subject (section 5.2): classification and output, checked by the oracle along the
+// polyline (section 6).
 //
 
 namespace
@@ -2248,7 +2247,7 @@ TEST(PolygonOverlayTest, PolylineNoRecord)
 }
 
 
-// Along the clip's edge (requirements Q2): the piece along it is inside, decided, so that a
+// Along the clip's edge (section 5.2): the piece along it is inside, decided, so that a
 // polyline running along a plate boundary goes to the inside list only; outside if asked. It is
 // never a source of deduction, so its class does not leak to the pieces beside it.
 TEST(PolygonOverlayTest, PolylineAlong)
@@ -2315,7 +2314,7 @@ TEST(PolygonOverlayTest, PolylineTouchAndEnd)
 // Through the point where the clip's exterior and a hole touch (a pinch): outside before it, inside
 // after (the hole is beside, not ahead). The crossing of the exterior's edge and the hole's vertex
 // are two vertices at one point (no original vertex in common), so the inside run starts with
-// both (near-zero output edges, PLAN.md, step 14).
+// both (near-zero output edges, section 5.5).
 TEST(PolygonOverlayTest, PolylinePinch)
 {
 	const auto Q = polygon(
@@ -2330,7 +2329,7 @@ TEST(PolygonOverlayTest, PolylinePinch)
 
 
 //
-// Provenance (phase4b-design.md section 7): every output point's resolves to it, and composes
+// Provenance (section 5.4): every output point's resolves to it, and composes
 // through a cascade (the outside pieces of one plate cut by the next).
 //
 
@@ -2381,7 +2380,7 @@ namespace
 }
 
 
-// The provenance of each kind of point (section 7.1), on holes too: two squares overlapping at a
+// The provenance of each kind of point (section 5.4), on holes too: two squares overlapping at a
 // corner, the subject with a hole. Original vertices of either input, crossings (a subject segment
 // and a clip segment), and the clip's vertex inside the subject (a cut point, with no subject
 // location).
@@ -2429,7 +2428,7 @@ TEST(PolygonOverlayTest, Provenance)
 }
 
 
-// A two-step cascade (section 7.2): the subject's pieces outside plate 1 are cut by plate 2 with
+// A two-step cascade (section 5.4): the subject's pieces outside plate 1 are cut by plate 2 with
 // their provenance tables, and every output point resolves against the original subject, or plate
 // 1 or plate 2 by its clip index. Plate 2 both beside plate 1 (sharing its edge, along which the
 // pieces' cut points run) and cutting the pieces again (composing a ratio along a segment of a
@@ -2549,7 +2548,7 @@ TEST(PolygonOverlayTest, ProvenancePolyline)
 }
 
 
-// Provenance at a vertex where a ring is split (review 4 1.1): the clip is the subject's square
+// Provenance at a vertex where a ring is split (section 5.4): the clip is the subject's square
 // with a hole whose tip touches its bottom edge, so the tip holds a clip vertex and no subject
 // vertex, and the intersection's walk passes it twice, once along the subject's (shared) edge and
 // once along the hole. After the split, each half takes its location from its own pieces: on the

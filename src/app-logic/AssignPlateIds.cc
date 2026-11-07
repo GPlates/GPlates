@@ -299,8 +299,8 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_id_internal(
 			}
 			catch (const GPlatesMaths::PolygonOverlay::InconsistentOverlayException &)
 			{
-				// Leave the feature as it was, and go on with the others (phase4b-design.md
-				// section 9.2): a task partitions every geometry of the feature before it modifies
+				// Leave the feature as it was, and go on with the others (spherical-geometry.md
+				// section 5.6): a task partitions every geometry of the feature before it modifies
 				// the feature, so the exception leaves it untouched. The caller reports it.
 				d_features_not_partitioned.push_back(feature_ref);
 			}
