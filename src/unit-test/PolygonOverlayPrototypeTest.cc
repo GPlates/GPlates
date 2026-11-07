@@ -101,9 +101,21 @@ namespace
 	const double H = Intersection::get_on_segment_start_threshold_sine();
 
 	//! The provenance checks' tolerances: a first step's locations against their points, and a
-	//! second cascade step's (measured, review 4: within 1.0h and 1.63h).
+	//! second cascade step's (measured, review 4: within 1.0h and 1.63h). An output point at an
+	//! overlay vertex is at the vertex's output position, which can be as far from the record its
+	//! location was made from as the vertex's record cluster is wide (in the dense shared edges of
+	//! the 'shared' hunt, more than 2h: step 15's hunt), so get_provenance_tolerance widens them to
+	//! the case's widest cluster, with a tenth of h for the rounding of a location's ratio.
 	const double PROVENANCE_TOLERANCE = 2 * H;
 	const double CASCADE_PROVENANCE_TOLERANCE = 3 * H;
+
+	double
+	get_provenance_tolerance(
+			double tolerance,
+			const Overlay::Overlay &overlay)
+	{
+		return (std::max)(tolerance, PolygonOverlayOracle::get_cluster_width(overlay) + 0.1 * H);
+	}
 
 	//! Marks a stop key as a self-touch cut's (a stop no record of its ring names).
 	const unsigned int SELF_TOUCH_CUT = 0xffffffff;
@@ -183,6 +195,12 @@ namespace
 		std::string line;
 		while (std::getline(file, line))
 		{
+			// A file checked out with CRLF line endings (core.autocrlf on Windows, or 'git archive' there)
+			// would otherwise leave a '\r' on every case name, and no case could be found by name.
+			if (!line.empty() && line.back() == '\r')
+			{
+				line.pop_back();
+			}
 			std::stringstream stream(line);
 			std::string keyword;
 			stream >> keyword;
@@ -705,6 +723,98 @@ namespace
 	}
 
 
+	//! A case's inputs: the subject polygon (or a stand-in), the clip, and a polyline subject.
+	class CaseInputs
+	{
+	public:
+		explicit
+		CaseInputs(
+				const PrototypeCase &prototype_case) :
+			// A polyline subject's polygon stands in where a polygon is needed (it is never used
+			// then).
+			P(create_polygon(prototype_case.polyline
+					? std::vector<std::vector<PointOnSphere>>{ prototype_case.rings[1].front() }
+					: prototype_case.rings[0])),
+			Q(create_polygon(prototype_case.rings[1])),
+			L(prototype_case.polyline
+					? polyline_type(PolylineOnSphere::create(prototype_case.rings[0].front()))
+					: boost::none)
+		{  }
+
+		//! The overlay's options: counting an inconsistency rather than throwing (a complete
+		//! report), with provenance.
+		static
+		Overlay::Options
+		get_options()
+		{
+			Overlay::Options options;
+			options.throw_if_inconsistent = false;
+			options.want_provenance = true;
+			return options;
+		}
+
+		std::unique_ptr<Overlay::Overlay>
+		create_overlay() const
+		{
+			return std::unique_ptr<Overlay::Overlay>(L
+					? new Overlay::Overlay(**L, *Q, get_options())
+					: new Overlay::Overlay(*P, *Q, get_options()));
+		}
+
+		static
+		PolygonOnSphere::non_null_ptr_to_const_type
+		create_polygon(
+				const std::vector<std::vector<PointOnSphere>> &rings)
+		{
+			return PolygonOnSphere::create(
+					rings.front(),
+					std::vector<std::vector<PointOnSphere>>(rings.begin() + 1, rings.end()));
+		}
+
+		typedef boost::optional<PolylineOnSphere::non_null_ptr_to_const_type> polyline_type;
+
+		const PolygonOnSphere::non_null_ptr_to_const_type P;
+		const PolygonOnSphere::non_null_ptr_to_const_type Q;
+		const polyline_type L;
+	};
+
+
+	/**
+	 * What the C++ does with a case the prototype fails: its repairs and the checks still failing
+	 * after them, for the hunt (design 9.2: a failure left after repair throws in production).
+	 */
+	std::string
+	describe_overlay_outcome(
+			const PrototypeCase &prototype_case)
+	{
+		const CaseInputs inputs(prototype_case);
+		const std::unique_ptr<Overlay::Overlay> overlay = inputs.create_overlay();
+		overlay->classify();
+		const Overlay::Diagnostics &diagnostics = overlay->get_diagnostics();
+		std::stringstream report;
+		report << diagnostics.repairs << " repairs (" << diagnostics.whole_chain_repairs
+				<< " whole-chain), " << diagnostics.check_failures_before_repair
+				<< " check failures before repair, " << diagnostics.check_failures << " after, "
+				<< diagnostics.bundle_vertices << " bundle vertices";
+		return report.str();
+	}
+
+
+	//! The number of cases read and the first few names, for a failure to find a case by name.
+	std::string
+	describe_cases(
+			const std::vector<PrototypeCase> &cases)
+	{
+		std::stringstream description;
+		description << cases.size() << " cases read:";
+		for (unsigned int c = 0; c < cases.size() && c < 5; ++c)
+		{
+			description << " '" << cases[c].name << "'";
+		}
+		return description.str();
+	}
+
+
 	/**
 	 * Compare one case; returns an empty string if it matches, else what differed.
 	 */
@@ -714,29 +824,12 @@ namespace
 			unsigned int &num_band_differences,
 			unsigned int &num_oracle_failures)
 	{
-		const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
-		{
-			return PolygonOnSphere::create(
-					rings.front(),
-					std::vector<std::vector<PointOnSphere>>(rings.begin() + 1, rings.end()));
-		};
-		// A polyline subject's polygon stands in where a polygon is needed (it is never used then).
-		const PolygonOnSphere::non_null_ptr_to_const_type P = polygon(prototype_case.polyline
-				? std::vector<std::vector<PointOnSphere>>{ prototype_case.rings[1].front() }
-				: prototype_case.rings[0]);
-		const PolygonOnSphere::non_null_ptr_to_const_type Q = polygon(prototype_case.rings[1]);
-		typedef boost::optional<PolylineOnSphere::non_null_ptr_to_const_type> polyline_type;
-		const polyline_type L = prototype_case.polyline
-				? polyline_type(PolylineOnSphere::create(prototype_case.rings[0].front()))
-				: boost::none;
+		const CaseInputs inputs(prototype_case);
+		const PolygonOnSphere::non_null_ptr_to_const_type &P = inputs.P;
+		const PolygonOnSphere::non_null_ptr_to_const_type &Q = inputs.Q;
+		const CaseInputs::polyline_type &L = inputs.L;
 
-		// Count an inconsistency rather than throw, so that the case's report is complete.
-		Overlay::Options options;
-		options.throw_if_inconsistent = false;
-		options.want_provenance = true;
-		const std::unique_ptr<Overlay::Overlay> overlay_ptr(L
-				? new Overlay::Overlay(**L, *Q, options)
-				: new Overlay::Overlay(*P, *Q, options));
+		const std::unique_ptr<Overlay::Overlay> overlay_ptr = inputs.create_overlay();
 		Overlay::Overlay &overlay = *overlay_ptr;
 		overlay.classify();
 
@@ -1025,7 +1118,7 @@ namespace
 								{ prototype_case.rings[1] },
 								ring.points,
 								ring.provenances,
-								PROVENANCE_TOLERANCE);
+								get_provenance_tolerance(PROVENANCE_TOLERANCE, overlay));
 						if (!input_rings_cross)
 						{
 							provenance_failures +=
@@ -1103,7 +1196,8 @@ namespace
 							moved.back().push_back(move * point);
 						}
 					}
-					const PolygonOnSphere::non_null_ptr_to_const_type moved_clip = polygon(moved);
+					const PolygonOnSphere::non_null_ptr_to_const_type moved_clip =
+							CaseInputs::create_polygon(moved);
 					const auto moved_rings =
 							[&](const PolygonOnSphere::non_null_ptr_to_const_type &c)
 					{
@@ -1129,7 +1223,7 @@ namespace
 						for (const PolygonOnSphere::non_null_ptr_to_const_type &clip_2 :
 								{ Q, moved_clip })
 						{
-							Overlay::Options second_options = options;
+							Overlay::Options second_options = CaseInputs::get_options();
 							second_options.subject_provenance = &table;
 							second_options.clip_index = 1;
 							second_options.original_subject = P.get();
@@ -1332,7 +1426,8 @@ namespace
 			if (!prototype_clean)
 			{
 				++num_prototype_failures;
-				std::cout << "the prototype fails too: " << prototype_case.name << std::endl;
+				std::cout << "the prototype fails too: " << prototype_case.name << "; the C++: "
+						<< describe_overlay_outcome(prototype_case) << std::endl;
 				continue;
 			}
 
@@ -1461,7 +1556,7 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 				cases.begin(),
 				cases.end(),
 				[&e](const PrototypeCase &c) { return c.name == e.name; });
-		ASSERT_TRUE(found != cases.end());
+		ASSERT_TRUE(found != cases.end()) << describe_cases(cases);
 
 		const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
 		{
@@ -1500,7 +1595,7 @@ TEST(PolygonOverlayPrototypeTest, PartitionerCollapsedRegion)
 			cases.begin(),
 			cases.end(),
 			[](const PrototypeCase &c) { return c.name == "shared#247 seed 1"; });
-	ASSERT_TRUE(found != cases.end());
+	ASSERT_TRUE(found != cases.end()) << describe_cases(cases);
 	const auto polygon = [](const std::vector<std::vector<PointOnSphere>> &rings)
 	{
 		return PolygonOnSphere::create(

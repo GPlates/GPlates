@@ -140,14 +140,13 @@ namespace PolygonOverlayOracle
 	}
 
 
-	//! The oracle's margin M: max(10h, twice the widest record cluster, the records of a vertex).
+	//! The widest record cluster: the largest distance between two records of one overlay vertex.
 	inline
 	double
-	get_margin(
+	get_cluster_width(
 			const GPlatesMaths::PolygonOverlay::Overlay &overlay)
 	{
 		using namespace GPlatesMaths;
-		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
 		double cluster_width = 0;
 		const auto &records = overlay.get_graph().unordered_intersections;
 		for (const auto &vertex : overlay.get_vertices())
@@ -163,7 +162,19 @@ namespace PolygonOverlayOracle
 				}
 			}
 		}
-		return (std::max)(10 * h, 2 * cluster_width);
+		return cluster_width;
+	}
+
+
+	//! The oracle's margin M: max(10h, twice the widest record cluster, the records of a vertex).
+	inline
+	double
+	get_margin(
+			const GPlatesMaths::PolygonOverlay::Overlay &overlay)
+	{
+		using namespace GPlatesMaths;
+		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+		return (std::max)(10 * h, 2 * get_cluster_width(overlay));
 	}
 
 
@@ -346,6 +357,11 @@ namespace PolygonOverlayOracle
 	 * of its edges' cross products) along its vertices' mean direction, which is not how the
 	 * overlay orients (PolygonOrientation), and is right for a ring within a hemisphere of that
 	 * direction, as every test's ring is.
+	 *
+	 * A ring whose mean width is at rounding level (under a hundredth of the thickness) has no
+	 * orientation, and is not counted: an input that overlaps itself along a stretch (the 'shared'
+	 * hunt's dense vertices) bounds rings of three or four points on one great circle, which enclose
+	 * no area (Phase 5 step 15, 35 of 119,198 cases), and which a partitioner's sliver filter drops.
 	 */
 	inline
 	unsigned int
@@ -367,13 +383,24 @@ namespace PolygonOverlayOracle
 			}
 			return dot(vector_area, mean).dval() > 0;
 		};
+		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+		const auto has_orientation = [h](const PolygonOverlay::OutputRing &ring)
+		{
+			return PolygonOverlay::get_mean_width(ring.points) >= 0.01 * h;
+		};
 		unsigned int num_misoriented = 0;
 		for (const PolygonOverlay::OutputPolygon &polygon : polygons)
 		{
-			num_misoriented += anticlockwise(polygon.exterior) ? 0 : 1;
+			if (has_orientation(polygon.exterior))
+			{
+				num_misoriented += anticlockwise(polygon.exterior) ? 0 : 1;
+			}
 			for (const PolygonOverlay::OutputRing &interior : polygon.interiors)
 			{
-				num_misoriented += anticlockwise(interior) ? 1 : 0;
+				if (has_orientation(interior))
+				{
+					num_misoriented += anticlockwise(interior) ? 1 : 0;
+				}
 			}
 		}
 		return num_misoriented;
