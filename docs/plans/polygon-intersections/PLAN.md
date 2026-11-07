@@ -860,6 +860,29 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - GPlates 198 of 198, pyGPlates 7 of 7; mutations reverting either fix are caught by the committed
     cases.
 
+- 2026-11-08: **Review 8 (Fable) of steps 14 and 15, and its fixes** (`phase5-review-8.md`, committed
+  `820e9757d`), in five code commits, one per finding, and design 3.8, 4.5, 8.4, 9.2 and 11.4 amended.
+  - **1.1, a silent wrong answer**: `get_mean_width` fanned its triangles from the vertices' mean
+    direction, which for a ring on one great circle lies in the ring's plane, so a 36-point equator
+    ring measured 0 and the default filter reported a hemisphere wholly inside a 10-degree box (all
+    three public paths). The apex is now the ring's vector area. Tested on the equator and meridian
+    rings and a hemisphere partitioned by a box, in both products.
+  - **1.2**: the cone's offsets are decided by the stop's type (only a touch record inside a segment
+    and a self-touch cut are measured), not by the `1e-12` threshold, which crossings in dense shared
+    edges exceeded. Pinned by `RaysCrossingsOnTheirSegments` (whose first version, at one place on the
+    sphere, had crossings off their circles by only `3.5e-13`, so it now samples ten) and the far end's
+    offset by `RaysFarEndOffset` (it was pinned only by `BundleRule`'s counts).
+  - **1.3**: a ring inside a dropped ring is dropped with it (an island of a filled hole once stayed, as
+    a polygon overlapping it).
+  - **1.4**: a single-window coverage's range is written back constant with its domain by "most
+    overlapping plate".
+  - **1.5 and the test gaps**: `:type ...: float, or None`; `is_ring_inside_ring` moved into the
+    `PolygonOverlay` namespace and tested directly (`GroupRingInsideRing`); the real-data harness's
+    area cut subtracts holes.
+  - Each fix reverted in turn fails its new test (a scratchpad mutation script); the hunt's 119,198
+    cases give the same 13 differences as before. GPlates 203 of 203, pyGPlates 7 of 7; docs built
+    from scratch with no warnings.
+
 - **Resume here** (updated 2026-11-08):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -873,7 +896,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     real-data measurements) done, 2026-11-07, and the two `partition_features` items from the
     `src/api` audit (Status, 2026-11-07); step 15's hunt at scale and its fixes done, 2026-11-08
     (Status), and a clean Linux run of the tip (`ce3324a79`: pyGPlates 7 of 7, GPlates 198 of 198, Ubuntu
-    22.04). Next: the distillation (Phase 6). Open: the
+    22.04); review 8 and its fixes done (Status, 2026-11-08). Next: the distillation (Phase 6), then
+    a full review of PR B split by area. Open: the
     residue `shared#2288` seed 2 (design 9.1); the 4 second-step and 4 coincident-ring differences
     of the hunt (Status, 2026-11-08); for PR C, the symmetric difference's crossing pairing. The
     prototype configuration is now `r5o`. The prototype comparison is

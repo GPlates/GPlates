@@ -664,9 +664,15 @@ lie on the segment (67) and failed for 59 of the 73 starting off it.
 So the offset in the cone's bound is the start's distance from the vertex's output position plus the
 start's and the far end's distances from the segment's great circle: `delta' = delta + off(start) +
 off(far)`, then `theta = 0` only if `delta' = 0`, `pi` if `L <= delta'`, else `atan2(delta', L - delta')`
-(run 3's planar bound with the offsets included). In the C++ (`measure_ray`) an offset under `1e-12`
-radians counts as none, as the prototype's exact zero for a stop on the segment's own great circle (a
-vertex of the ring, a crossing). Measured: the four cases are clean, and over 28,155 `shared` cases no
+(run 3's planar bound with the offsets included). In the C++ (`measure_ray`) the offset is decided by
+the stop's type, as the prototype's exact zero: only a stop inside a segment at a touch record (the
+other polygon's vertex) and a self-touch cut are measured; a vertex of the ring and a crossing lie on
+the segment by construction. (First built with a threshold, an offset under `1e-12` radians counting
+as none. Review 8 found that wrong at crossings: a crossing's stored position, the normalised cross
+product of two nearly parallel planes, lies off them by up to about `2.4e-11` radians in a dense shared
+edge, so 30 of the 824 rays of the bundle snapshot had cones of up to `1.5e-5` radians where the
+prototype's are 0. No committed outcome changed either way; `RaysCrossingsOnTheirSegments` pins the
+rule and `RaysFarEndOffset` the far end's offset.) Measured: the four cases are clean, and over 28,155 `shared` cases no
 other repair or check count changes; classes changed in 17 clean cases, every one on a piece within
 0.92h of the other outline over its whole length. The costs: more rays float, so admissible sets grow
 (4 to 312 at one vertex), midpoint tests rise about 1%, and the cap (step 2) is reached at 2 vertices
@@ -948,16 +954,30 @@ As built (step 14):
 
 - `Options::sliver_min_width` (`boost::optional<double>`, radians), set by `PolygonPartitioner::create`'s
   third argument and by the last argument of each `GeometryCookieCutter` constructor, which passes it to
-  every partitioning polygon's partitioner. Off by default, and not in pyGPlates.
+  every partitioning polygon's partitioner. (Off by default, and not in pyGPlates, until the decision
+  below.)
 - **The measure is `PolygonOverlay::get_mean_width`, not `SphericalArea`.** `SphericalArea`'s fan
   drops the triangle of every edge that `GreatCircleArc` takes for zero length (under about `1e-6`
   radians), and a cut makes such edges next to a vertex. At a width of `h` each one is an error of up
   to about a quarter of a sliver's area, and a disc drawn with edges under `h` has no area at all. The
-  function sums Van Oosterom and Strackee's triangles from the vertices' mean direction, modulo
-  `4 pi`, and takes the smaller side, so the ring's direction doesn't matter; the perimeter is by
-  `atan2`. The real-data harness (11.4) measures with the same function.
+  function sums Van Oosterom and Strackee's triangles from an apex, modulo `4 pi`, and takes the
+  smaller side, so the ring's direction doesn't matter; the perimeter is by `atan2`. The sum is the
+  area for any apex no ring point is antipodal to *and that is not in the plane of a ring lying on one
+  great circle*: there every triangle is degenerate, each term 0 or `2 pi` by the sign of its
+  denominator. Built first with the vertices' mean direction as the apex, which lies in that plane:
+  review 8 found a 36-point equator ring measured 0, so the default filter dropped a hemisphere's
+  exterior and reported the hemisphere wholly inside a 10-degree box, through all three public paths.
+  The apex is now the ring's vector area, `sum(a_i x a_(i+1))`, normalised: the plane's normal for a
+  great-circle ring, near the centre for any other; where that is rounding (magnitude under `1e-9`, a
+  ring of no area whichever apex is used), the mean direction. The real-data harness (11.4) measures
+  with the same function.
 - Counted: `sliver_exteriors_dropped`, `sliver_holes_dropped` (alone) and `sliver_area_dropped` (the
   dropped exteriors' areas).
+- **What lies inside a dropped ring goes with it** (review 8): the rings are decided outermost first,
+  and a ring inside a dropped one is dropped with it, uncounted. A dropped exterior's region goes to
+  the other output, and a dropped hole is filled, with everything inside either; an island of a filled
+  hole, kept on its own, would overlap its polygon (built first that way; reachable only by a hole whose
+  perimeter exceeds its island's by more than their areas' ratio, a wiggly hole round a smooth island).
 - **A rule this section left open**: when the filter empties both outputs (a subject thinner than the
   width, cut across), the subject is whole on the side that lost the larger area. With no filter the
   tie keeps the old rule, outside.
@@ -1447,7 +1467,10 @@ pre-existing (the old comparison did the same), consumed only by a running maxim
   - **A time-dependent geometry** is partitioned only if it is a `GpmlPiecewiseAggregation` with a single
     time window that contains the reconstruction time. It is then partitioned as a constant geometry.
     Its property clone is a constant property of the same name, so a cut piece and, by "most
-    overlapping plate", the whole geometry are both written back constant. Any other time-dependent
+    overlapping plate", the whole geometry are both written back constant. So is a scalar coverage's
+    range in a single time window of its own (review 8 found the range's clone, which "most overlapping
+    plate" writes back, left time-dependent beside a constant domain; the cut pieces' ranges are built
+    new, constant, either way). Any other time-dependent
     geometry is not partitioned and stays unchanged; a `GpmlIrregularSampling` is never partitioned.
   - **A feature with nothing partitioned** (no geometry, or only geometry that isn't partitioned) is
     returned unpartitioned, whole. GPlates already left such a feature as it was.
@@ -1536,6 +1559,11 @@ Candidates, untried: run 4's along rule, or a repair candidate flipping a chain 
 
 The overlay never returns a best guess as if it were the answer. The failure surfaces in each product
 as follows.
+
+The sliver filter (4.5) is outside this guarantee: it is a distance rule on the output, applied after
+the overlay's decisions, that can only drop rings, and its measure is the one place where a wrong
+number silently changes a result. Review 8 found one (a ring on one great circle measured 0 wide, so
+a hemisphere was reported inside a small box), since fixed; its tests cover such rings.
 
 - **`PolygonOverlay::Overlay`**: `classify()` throws `InconsistentOverlayException` (a new class in
   `src/maths/`, derived from `GPlatesMaths::MathematicalException`, `src/maths/MathematicalException.h:38`,
@@ -1779,7 +1807,9 @@ As built (step 14), in two harnesses:
   lays it out). It runs the cascade as Assign Plate IDs does: `GeometryCookieCutter`'s order (through
   `get_partitioning_polygons`), the partitioner's bounding-circle shortcut and result rule. It calls the
   overlay itself, so every cut's diagnostics and the oracle can be read. Its piece counts equal
-  pyGPlates' at every time measured.
+  pyGPlates' at every time measured. It measures with the filter off, by design (it measures the
+  widths the filter would act on), so it does not exercise the filter; its area cut is each polygon's
+  exterior ring's area less its holes' (the exterior's alone until review 8).
 
 ### 11.5 pyGPlates tests
 
