@@ -536,7 +536,7 @@ def partition_into_plates(
 
     :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped \
         (see :meth:`PlatePartitioner.__init__`); defaults to about 90 metres on the Earth, and zero keeps every piece
-    :type sliver_width_threshold_radians: float
+    :type sliver_width_threshold_radians: float, or None
 
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
         (see :class:`PartitionReturn`) \

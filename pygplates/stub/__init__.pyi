@@ -10157,7 +10157,7 @@ class PlatePartitioner:
     def __hash__(self) -> int: ...
 
     @overload
-    def __init__(self, partitioning_plates: Sequence[ReconstructionGeometry], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float = ...) -> None:
+    def __init__(self, partitioning_plates: Sequence[ReconstructionGeometry], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float | None = ...) -> None:
         """A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...
 
         The *sort_partitioning_plates* parameter determines the order in which the partitioning plates are searched. See :class:`SortPartitioningPlates` for the sorting criteria of each value, and why the order matters when plates overlap.
@@ -10189,7 +10189,7 @@ class PlatePartitioner:
         :param anchor_plate_id: The anchored plate id that *partitioning_plates* were reconstructed/resolved with (and that is used to reverse reconstruct in :meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
         :type anchor_plate_id: int
         :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps every piece
-        :type sliver_width_threshold_radians: float
+        :type sliver_width_threshold_radians: float, or None
         :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same :meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`
         :raises ValueError: if *sliver_width_threshold_radians* is negative
 
@@ -10215,7 +10215,7 @@ class PlatePartitioner:
         """
 
     @overload
-    def __init__(self, partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant = 0, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float = ...) -> None:
+    def __init__(self, partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant = 0, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float | None = ...) -> None:
         """Create a partitioner by reconstructing/resolving plates from a sequence of plate features.
 
         :param partitioning_features: A sequence of plate features to partition with.
@@ -10229,7 +10229,7 @@ class PlatePartitioner:
         :param anchor_plate_id: The anchored plate id used to reconstruct/resolve *partitioning_features* (and that is used to reverse reconstruct in :meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
         :type anchor_plate_id: int
         :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps every piece
-        :type sliver_width_threshold_radians: float
+        :type sliver_width_threshold_radians: float, or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`, or *sliver_width_threshold_radians* is negative
 
         The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>` and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and optional reconstruction time.
@@ -11204,7 +11204,7 @@ class PolygonOnSphere(GeometryOnSphere):
            The inside of each ring is its smaller side. Previously it was the side away from the antipode of :meth:`get_boundary_centroid`, so a ring that wraps round the globe could be inside out.
         """
 
-    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ..., sliver_width_threshold_radians: float = ...) -> PolygonOnSpherePartitionResult:
+    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ..., sliver_width_threshold_radians: float | None = ...) -> PolygonOnSpherePartitionResult:
         """Partition a geometry into optional inside/outside lists of partitioned geometry pieces.
 
         :param geometry: the geometry to be partitioned
@@ -11214,7 +11214,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon (note that the list is *not* cleared first)
         :type partitioned_geometries_outside: list of GeometryOnSphere, or None
         :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see below); defaults to about 9 metres on the Earth, and zero keeps every piece
-        :type sliver_width_threshold_radians: float
+        :type sliver_width_threshold_radians: float, or None
         :rtype: PolygonOnSphere.PartitionResult
         :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result (whether or not the lists are specified)
         :raises ValueError: if *sliver_width_threshold_radians* is negative
@@ -18503,7 +18503,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     :type anchor_plate_id: int
 
     :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped         (see :meth:`PlatePartitioner.__init__`); defaults to about 90 metres on the Earth, and zero keeps every piece
-    :type sliver_width_threshold_radians: float
+    :type sliver_width_threshold_radians: float, or None
 
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]

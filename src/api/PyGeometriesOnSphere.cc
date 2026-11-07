@@ -4484,7 +4484,7 @@ export_polygon_on_sphere()
 				"  :type partitioned_geometries_outside: list of GeometryOnSphere, or None\n"
 				"  :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are "
 				"dropped (see below); defaults to about 9 metres on the Earth, and zero keeps every piece\n"
-				"  :type sliver_width_threshold_radians: float\n"
+				"  :type sliver_width_threshold_radians: float, or None\n"
 				"  :rtype: PolygonOnSphere.PartitionResult\n"
 				"  :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result "
 				"(whether or not the lists are specified)\n"

@@ -34,6 +34,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include "AngularExtent.h"
 #include "GeometryIntersect.h"
 #include "GreatCircleArc.h"
 #include "MathematicalException.h"
@@ -164,6 +165,29 @@ namespace GPlatesMaths
 		get_mean_width(
 				const std::vector<PointOnSphere> &ring,
 				double *area = nullptr);
+
+
+		/**
+		 * Whether a ring (its points) lies inside another ring (a polygon of that ring alone),
+		 * for the grouping of phase4b-design.md section 4.2.
+		 *
+		 * The rings do not cross but within an overlay vertex: a vertex's output position can
+		 * be up to its record cluster's width off its records, so two output rings can cross
+		 * there by about that width (two holes facing each other across a gap under 2h, the
+		 * 'six' hunt's 'two-holes', cross by the gap). So one point of the ring decides, tested
+		 * exactly (threshold off), with a margin beyond that: the first vertex farther from the
+		 * other ring's outline than @a margin (a margin of the point-on-polygon threshold alone
+		 * let a vertex 1.6h across a gap decide that a hole lay outside its exterior); else (a
+		 * ring thinner than the margin along the other, the 'six' hunt's necks) the farthest of
+		 * its vertices and its edges' midpoints (every vertex can be a shared overlay vertex: a
+		 * triangle of three touches, in the 'chain' hunt), unless all of those are on the other
+		 * ring. None then: the rings coincide.
+		 */
+		boost::optional<bool>
+		is_ring_inside_ring(
+				const std::vector<PointOnSphere> &ring_points,
+				const PolygonOnSphere &other_ring,
+				const AngularExtent &margin);
 
 
 		/**

@@ -178,78 +178,61 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Whether a ring (its points) lies inside another ring (a polygon of that ring alone),
-			 * for the grouping of phase4b-design.md section 4.2.
-			 *
-			 * The rings do not cross but within an overlay vertex: a vertex's output position can
-			 * be up to its record cluster's width off its records, so two output rings can cross
-			 * there by about that width (two holes facing each other across a gap under 2h, the
-			 * 'six' hunt's 'two-holes', cross by the gap). So one point of the ring decides, tested
-			 * exactly (threshold off), with a margin beyond that: the first vertex farther from the
-			 * other ring's outline than @a margin (a margin of the point-on-polygon threshold alone
-			 * let a vertex 1.6h across a gap decide that a hole lay outside its exterior); else (a
-			 * ring thinner than the margin along the other, the 'six' hunt's necks) the farthest of
-			 * its vertices and its edges' midpoints (every vertex can be a shared overlay vertex: a
-			 * triangle of three touches, in the 'chain' hunt), unless all of those are on the other
-			 * ring. None then: the rings coincide.
-			 */
-			boost::optional<bool>
-			is_ring_inside_ring(
-					const std::vector<PointOnSphere> &ring_points,
-					const PolygonOnSphere &other_ring,
-					const AngularExtent &margin)
-			{
-				boost::optional<PointOnSphere> farthest;
-				double farthest_distance = 0;
-				const auto consider = [&](const PointOnSphere &point)
-				{
-					const boost::optional<AngularDistance> distance =
-							minimum_distance(point, other_ring, false, margin);
-					const double angle = distance
-							? distance->calculate_angle().dval()
-							: (std::numeric_limits<double>::max)();  // farther than the margin
-					if (angle > farthest_distance)
-					{
-						farthest = point;
-						farthest_distance = angle;
-					}
-					return !distance;
-				};
-				for (const PointOnSphere &point : ring_points)
-				{
-					if (consider(point))
-					{
-						return other_ring.is_point_in_polygon(
-								point, PolygonOnSphere::ADAPTIVE, false);
-					}
-				}
-				for (unsigned int j = 0; j < ring_points.size(); ++j)
-				{
-					const Vector3D sum =
-							Vector3D(ring_points[j].position_vector()) +
-							Vector3D(ring_points[(j + 1) % ring_points.size()].position_vector());
-					if (sum.magSqrd().dval() > 0)
-					{
-						consider(PointOnSphere(sum.get_normalisation()));
-					}
-				}
-				if (!farthest)
-				{
-					return boost::none;
-				}
-				return other_ring.is_point_in_polygon(*farthest, PolygonOnSphere::ADAPTIVE, false);
-			}
-
-
-			/**
 			 * The hemisphere check's reference point's distance from both inputs' outlines: ten
 			 * times the thickness, so that its point-in-polygon tests, threshold off, have a
 			 * margin.
 			 */
 			const double HEMISPHERE_CHECK_MARGIN = 10.0;
-
 		}
 	}
+}
+
+
+boost::optional<bool>
+GPlatesMaths::PolygonOverlay::is_ring_inside_ring(
+		const std::vector<PointOnSphere> &ring_points,
+		const PolygonOnSphere &other_ring,
+		const AngularExtent &margin)
+{
+	boost::optional<PointOnSphere> farthest;
+	double farthest_distance = 0;
+	const auto consider = [&](const PointOnSphere &point)
+	{
+		const boost::optional<AngularDistance> distance =
+				minimum_distance(point, other_ring, false, margin);
+		const double angle = distance
+				? distance->calculate_angle().dval()
+				: (std::numeric_limits<double>::max)();  // farther than the margin
+		if (angle > farthest_distance)
+		{
+			farthest = point;
+			farthest_distance = angle;
+		}
+		return !distance;
+	};
+	for (const PointOnSphere &point : ring_points)
+	{
+		if (consider(point))
+		{
+			return other_ring.is_point_in_polygon(
+					point, PolygonOnSphere::ADAPTIVE, false);
+		}
+	}
+	for (unsigned int j = 0; j < ring_points.size(); ++j)
+	{
+		const Vector3D sum =
+				Vector3D(ring_points[j].position_vector()) +
+				Vector3D(ring_points[(j + 1) % ring_points.size()].position_vector());
+		if (sum.magSqrd().dval() > 0)
+		{
+			consider(PointOnSphere(sum.get_normalisation()));
+		}
+	}
+	if (!farthest)
+	{
+		return boost::none;
+	}
+	return other_ring.is_point_in_polygon(*farthest, PolygonOnSphere::ADAPTIVE, false);
 }
 
 

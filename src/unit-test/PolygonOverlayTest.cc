@@ -1847,6 +1847,33 @@ TEST(PolygonOverlayTest, GroupIslandsInHoles)
 }
 
 
+// The grouping's containment test (phase4b-design.md section 4.2), directly: output rings can cross
+// within an overlay vertex by its record cluster's width. A triangle inside a square but for its
+// first vertex, 1.6 h outside the square's eastern edge, is decided by that vertex with a margin
+// of h (the margin once used, which put a hole outside its exterior), and inside with the
+// grouping's margin of 10 h. A ring thinner than the margin, along the square's northern edge, is
+// decided by its farthest point, inside or outside.
+TEST(PolygonOverlayTest, GroupRingInsideRing)
+{
+	const auto E = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	const ring_type triangle{ F.at(0.01 + 1.6 * H, 0.0), F.at(0.0, 0.005), F.at(0.0, -0.005) };
+	const GPlatesMaths::AngularExtent h_margin = GPlatesMaths::AngularExtent::create_from_angle(H);
+	const GPlatesMaths::AngularExtent margin =
+			GPlatesMaths::AngularExtent::create_from_angle(10 * H);
+	EXPECT_EQ(Overlay::is_ring_inside_ring(triangle, *E, h_margin), boost::optional<bool>(false));
+	EXPECT_EQ(Overlay::is_ring_inside_ring(triangle, *E, margin), boost::optional<bool>(true));
+
+	for (const double side : { -1.0, 1.0 })
+	{
+		SCOPED_TRACE(side);
+		const ring_type thin{
+				F.at(-0.005, 0.01 + side * 0.3 * H), F.at(0.005, 0.01 + side * 0.3 * H),
+				F.at(0.005, 0.01 + side * 0.7 * H), F.at(-0.005, 0.01 + side * 0.7 * H) };
+		EXPECT_EQ(Overlay::is_ring_inside_ring(thin, *E, margin), boost::optional<bool>(side < 0));
+	}
+}
+
+
 // The orientation does not depend on the inputs': with input rings reversed, every operation's
 // polygons have the same rings in the same direction (the output on the left).
 TEST(PolygonOverlayTest, OrientationIndependentOfInputs)

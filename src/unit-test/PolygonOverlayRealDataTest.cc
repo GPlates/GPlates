@@ -514,9 +514,14 @@ TEST(PolygonOverlayRealDataTest, Coastlines)
 			{
 				count_edges(ring, 0);
 			}
-			double polygon_area = 0.0;
-			Overlay::get_mean_width(rings_of(**polygon).front(), &polygon_area);
-			area_cut += polygon_area;
+			// The polygon's area: its exterior ring's less its holes'.
+			const std::vector<ring_type> polygon_rings = rings_of(**polygon);
+			for (unsigned int r = 0; r < polygon_rings.size(); ++r)
+			{
+				double ring_area = 0.0;
+				Overlay::get_mean_width(polygon_rings[r], &ring_area);
+				area_cut += (r == 0) ? ring_area : -ring_area;
+			}
 			const GPlatesModel::FeatureHandle::weak_ref feature = rfg->get_feature_ref();
 			const std::string feature_id = feature.is_valid()
 					? GPlatesUtils::make_qstring_from_icu_string(feature->feature_id().get())
