@@ -2437,6 +2437,19 @@ class PlatePartitionerTestCase(unittest.TestCase):
                     plates, pygplates.RotationModel([]), [feature], sliver_width_threshold_radians=threshold)
             self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == expected)
 
+        # The northern hemisphere, bounded by one great circle (a 36-point equator ring), over a 10-degree plate:
+        # cut at the default width. (Its exterior was once measured 0 wide, so it went into the plate whole.)
+        box = [(10, 10), (10, 20), (20, 20), (20, 10)]
+        hemisphere = pygplates.PolygonOnSphere([(0, 10 * i) for i in range(36)])
+        inside, outside = [], []
+        pygplates.PlatePartitioner(self._static_plates((7, box)), pygplates.RotationModel([])).partition_geometry(
+                hemisphere, inside, outside)
+        self.assertTrue(len(inside) == 1 and len(inside[0][1]) == 1)
+        self.assertAlmostEqual(inside[0][1][0].get_area(), pygplates.PolygonOnSphere(box).get_area(), places=9)
+        self.assertTrue(len(outside) == 1)
+        self.assertAlmostEqual(outside[0].get_area(), 2 * math.pi - pygplates.PolygonOnSphere(box).get_area(),
+                               places=9)
+
     def test_partition_point(self):
         rotation_model = pygplates.RotationModel(self.rotation_features)
         resolved_topologies = []

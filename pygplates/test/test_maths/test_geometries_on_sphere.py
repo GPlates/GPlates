@@ -1897,6 +1897,18 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=0) ==
                         pygplates.PolygonOnSphere.PartitionResult.intersecting)
 
+        # The northern hemisphere, bounded by one great circle (a 36-point equator ring), partitioned by a 10-degree
+        # box inside it: intersecting at every width. (Its exterior was once measured 0 wide, so the filter dropped
+        # the hemisphere outside the box, and reported it inside.)
+        hemisphere = pygplates.PolygonOnSphere([(0, 10 * i) for i in range(36)])
+        box = pygplates.PolygonOnSphere([(10, 10), (10, 20), (20, 20), (20, 10)])
+        for threshold in (None, 0, 1.4142e-5):
+            inside, outside = [], []
+            self.assertTrue(box.partition(hemisphere, inside, outside, sliver_width_threshold_radians=threshold) ==
+                            pygplates.PolygonOnSphere.PartitionResult.intersecting)
+            self.assertTrue(len(inside) == 1 and len(outside) == 1)
+            self.assertAlmostEqual(outside[0].get_area(), 2 * math.pi - box.get_area(), places=9)
+
     def test_partition(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         

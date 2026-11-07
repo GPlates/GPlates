@@ -1207,4 +1207,62 @@ TEST(PolygonPartitionerTest, SliverFilterMeanWidth)
 			2 * large_polygon->get_area().dval() / large_polygon->get_arc_length().dval(),
 			width,
 			1e-9);
+
+	// A ring on one great circle: a hemisphere, of mean width 2 (an area of 2 pi over a perimeter
+	// of 2 pi), whichever way it runs. A fan from the vertices' mean direction, in the ring's
+	// plane, measured the 36-point equator ring 0. The meridians 0 and 180 too.
+	ring_type equator, meridians;
+	for (unsigned int i = 0; i < 36; ++i)
+	{
+		const double angle = 2 * GPlatesMaths::PI * i / 36;
+		equator.push_back(at(0, 10.0 * i));
+		meridians.push_back(PointOnSphere(
+				GPlatesMaths::UnitVector3D(std::cos(angle), 0, std::sin(angle))));
+	}
+	for (ring_type ring : { equator, meridians })
+	{
+		for (const bool reversed : { false, true })
+		{
+			SCOPED_TRACE(reversed);
+			if (reversed)
+			{
+				std::reverse(ring.begin(), ring.end());
+			}
+			EXPECT_NEAR(Overlay::get_mean_width(ring, &area), 2.0, 1e-12);
+			EXPECT_NEAR(area, 2 * GPlatesMaths::PI, 1e-12);
+		}
+	}
+}
+
+
+// The filter on a ring on one great circle: the northern hemisphere, bounded by a 36-point equator
+// ring, partitioned by a 10-degree box inside it. Its exterior once measured 0, so the filter
+// dropped the difference and reported the hemisphere wholly inside the box.
+TEST(PolygonPartitionerTest, SliverFilterGreatCircleRing)
+{
+	ring_type equator;
+	for (unsigned int i = 0; i < 36; ++i)
+	{
+		equator.push_back(at(0, 10.0 * i));
+	}
+	const auto P = polygon(equator);
+	const auto Q = polygon(box(10, 20, 10, 20));
+
+	const std::vector<boost::optional<double>> widths{ boost::none, H, 10 * H };
+	for (const boost::optional<double> &width : widths)
+	{
+		SCOPED_TRACE(width);
+		PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+		EXPECT_EQ(
+				partition(*filtering(Q, width), P, inside, outside),
+				PolygonPartitioner::GEOMETRY_INTERSECTING);
+		ASSERT_EQ(inside.size(), 1u);
+		EXPECT_NEAR(inside.front()->get_area().dval(), Q->get_area().dval(), 1e-9);
+		ASSERT_EQ(outside.size(), 1u);
+		EXPECT_EQ(outside.front()->number_of_interior_rings(), 1u);
+		EXPECT_NEAR(
+				outside.front()->get_area().dval(),
+				2 * GPlatesMaths::PI - Q->get_area().dval(),
+				1e-9);
+	}
 }

@@ -265,9 +265,14 @@ GPlatesMaths::PolygonOverlay::get_mean_width(
 		double *area)
 {
 	// A fan of signed triangles from an apex, each by Van Oosterom and Strackee's formula: the sum
-	// is the enclosed area modulo 4 pi for any apex no ring point is antipodal to. The vertices'
-	// mean direction keeps every triangle small (its first point if they cancel, as for a ring
-	// round a great circle). The perimeter by atan2, which keeps a short edge's precision.
+	// is the enclosed area modulo 4 pi for any apex no ring point is antipodal to, and that is not
+	// in the plane of a ring lying on one great circle (every triangle is then degenerate, each
+	// term 0 or 2 pi by the sign of its denominator, and the sum is not the area: the vertices'
+	// mean direction measured a 36-point equator ring 0, and the filter dropped a hemisphere).
+	// So the apex is the ring's vector area, sum(a_i x a_(i+1)): the plane's normal for a ring on
+	// a great circle, near the centre for any other. Where that is rounding (a ring of no area,
+	// whichever apex is used), the vertices' mean direction, or the first vertex if that cancels
+	// too. The perimeter by atan2, which keeps a short edge's precision.
 	if (ring.empty())
 	{
 		if (area)
@@ -276,13 +281,18 @@ GPlatesMaths::PolygonOverlay::get_mean_width(
 		}
 		return 0.0;
 	}
+	Vector3D vector_area(0, 0, 0);
 	Vector3D sum(0, 0, 0);
-	for (const PointOnSphere &point : ring)
+	for (unsigned int i = 0; i < ring.size(); ++i)
 	{
-		sum = sum + Vector3D(point.position_vector());
+		const UnitVector3D &a = ring[i].position_vector();
+		vector_area = vector_area + cross(a, ring[(i + 1) % ring.size()].position_vector());
+		sum = sum + Vector3D(a);
 	}
-	const Vector3D apex = (sum.magSqrd() > 1e-12)
-			? Vector3D(sum.get_normalisation())
+	// A cross product's components carry rounding of about 1e-16 an edge.
+	const Vector3D apex =
+			(vector_area.magSqrd() > 1e-18) ? Vector3D(vector_area.get_normalisation())
+			: (sum.magSqrd() > 1e-12) ? Vector3D(sum.get_normalisation())
 			: Vector3D(ring.front().position_vector());
 
 	double fan_area = 0.0;
