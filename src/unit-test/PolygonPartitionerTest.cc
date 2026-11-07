@@ -1102,6 +1102,55 @@ TEST(PolygonPartitionerTest, SliverFilterHoleAlone)
 }
 
 
+// A hole dropped is filled with all that lies inside it: a clip with a hole, inside the subject, so
+// that the difference holds the clip's exterior as a hole and the clip's hole as an island inside
+// it. The clip's exterior has ten spikes, so its mean width (about 0.009 radians) is under the
+// width of 0.015, and the island's (a square, about 0.017) is not. The filled hole covers the
+// island, which is dropped with it rather than kept as a polygon overlapping it.
+TEST(PolygonPartitionerTest, SliverFilterHoleWithIsland)
+{
+	ring_type spiked{ at(-1.3, -1.3), at(-1.3, 1.3), at(1.3, 1.3) };
+	for (int i = 9; i >= 0; --i)
+	{
+		const double lon = -1.2 + 0.25 * i;
+		spiked.push_back(at(1.3, lon + 0.1));
+		spiked.push_back(at(2.3, lon + 0.05));
+		spiked.push_back(at(1.3, lon));
+	}
+	spiked.push_back(at(1.3, -1.3));
+	const ring_type island = box(-1, 1, -1, 1);
+	const auto P = polygon(box(-10, 10, -10, 10));
+	const auto Q = polygon(spiked, { island });
+	const double width = 0.015;
+	ASSERT_LT(Overlay::get_mean_width(spiked), width);
+	ASSERT_GT(Overlay::get_mean_width(island), width);
+
+	std::vector<Overlay::OutputPolygon> intersection, difference;
+	Overlay::Diagnostics diagnostics =
+			extract_filtered(*P, *Q, boost::none, intersection, difference);
+	ASSERT_EQ(intersection.size(), 1u);
+	EXPECT_EQ(intersection.front().interiors.size(), 1u);
+	ASSERT_EQ(difference.size(), 2u);  // the subject less the clip's exterior, and the island
+
+	intersection.clear();
+	difference.clear();
+	diagnostics = extract_filtered(*P, *Q, width, intersection, difference);
+	EXPECT_TRUE(intersection.empty());
+	ASSERT_EQ(difference.size(), 1u);
+	EXPECT_TRUE(difference.front().interiors.empty());
+	EXPECT_EQ(diagnostics.sliver_exteriors_dropped, 1u);  // the intersection's, with its hole
+	EXPECT_EQ(diagnostics.sliver_holes_dropped, 1u);      // the difference's, with its island
+
+	PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+	EXPECT_EQ(
+			partition(*filtering(Q, width), P, inside, outside),
+			PolygonPartitioner::GEOMETRY_OUTSIDE);
+	ASSERT_EQ(outside.size(), 1u);
+	EXPECT_EQ(outside.front().get(), P.get());
+	EXPECT_TRUE(inside.empty());
+}
+
+
 // A subject thinner than the width, cut across: the filter drops both halves, and the subject is
 // whole on the side that lost the larger area (phase4b-design.md section 4.5 as built).
 TEST(PolygonPartitionerTest, SliverFilterEmptiesBoth)

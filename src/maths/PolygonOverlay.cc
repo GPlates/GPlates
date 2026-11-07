@@ -4053,18 +4053,52 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	};
 
 	// Even depth is an exterior; odd depth a hole of its parent, which has even depth (an island
-	// inside a hole is an exterior of its own, filtered on its own).
-	std::vector<boost::optional<unsigned int>> polygon_of_ring(num_rings);
-	std::vector<bool> dropped(num_rings, false);
+	// inside a hole is an exterior of its own, filtered on its own). Decided outermost first: a
+	// ring inside a dropped ring is dropped with it, uncounted, since a dropped exterior's region
+	// goes to the other output and a dropped hole is filled, with all that lies inside either (an
+	// island of a filled hole, kept, would overlap its polygon).
+	std::vector<unsigned int> outermost_first(num_rings);
 	for (unsigned int r = 0; r < num_rings; ++r)
 	{
-		if (containers[r].size() % 2 == 0)
+		outermost_first[r] = r;
+	}
+	std::stable_sort(
+			outermost_first.begin(),
+			outermost_first.end(),
+			[&containers](unsigned int a, unsigned int b)
+			{
+				return containers[a].size() < containers[b].size();
+			});
+	std::vector<bool> dropped(num_rings, false);
+	for (unsigned int r : outermost_first)
+	{
+		if (parent[r] && dropped[*parent[r]])
+		{
+			dropped[r] = true;
+		}
+		else if (containers[r].size() % 2 == 0)
 		{
 			if (is_sliver(r))
 			{
 				dropped[r] = true;
 				++d_diagnostics.sliver_exteriors_dropped;
 				d_diagnostics.sliver_area_dropped += ring_areas[r];
+			}
+		}
+		else if (parent[r] && containers[*parent[r]].size() % 2 == 0 && is_sliver(r))
+		{
+			dropped[r] = true;
+			++d_diagnostics.sliver_holes_dropped;
+		}
+	}
+
+	std::vector<boost::optional<unsigned int>> polygon_of_ring(num_rings);
+	for (unsigned int r = 0; r < num_rings; ++r)
+	{
+		if (containers[r].size() % 2 == 0)
+		{
+			if (dropped[r])
+			{
 				continue;
 			}
 			polygon_of_ring[r] = polygons.size();
@@ -4073,17 +4107,8 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	}
 	for (unsigned int r = 0; r < num_rings; ++r)
 	{
-		if (containers[r].size() % 2 == 0)
+		if (containers[r].size() % 2 == 0 || dropped[r])
 		{
-			continue;
-		}
-		if (parent[r] && dropped[*parent[r]])
-		{
-			continue;  // dropped with its exterior
-		}
-		if (parent[r] && polygon_of_ring[*parent[r]] && is_sliver(r))
-		{
-			++d_diagnostics.sliver_holes_dropped;
 			continue;
 		}
 		if (!parent[r] || !polygon_of_ring[*parent[r]])
