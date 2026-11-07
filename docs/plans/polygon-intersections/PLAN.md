@@ -883,6 +883,18 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     cases give the same 13 differences as before. GPlates 203 of 203, pyGPlates 7 of 7; docs built
     from scratch with no warnings. Linux (Ubuntu 22.04, the tip `1a2f2ddac`): the same.
 
+- 2026-11-08: **Phase 6: PR B distilled** (Fable), in three commits.
+  - `9bc4f3754`: `spherical-geometry.md` section 5 rewritten from the code (5.1 the layers to 5.7 the
+    rejected alternatives; `DateLineWrapper` is now 5.8), with the tolerance table, Testing and
+    Deferred work; traps not yet at the code put in comments; two changelog details. The report,
+    with what moved where, what may be dropped at PR C and where the plan disagreed with the code:
+    `prB-distillation.md`. My review corrected a few overclaims and historical phrasings.
+  - `d7bf5c585`: about 270 comment citations of the plan repointed to the page, from the report's
+    mapping (an Opus subagent; reviewed: comments only, both trees build).
+  - The Fable claim check of the new text (`prB-claim-check.md`): 0 high, 2 medium, 17 low, all
+    applied (the commit after this entry). The measurements quoted are consistent with the plan's
+    records; 29 of 33 sampled comment citations held, and the other 4 are fixed.
+
 - **Resume here** (updated 2026-11-08):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -896,8 +908,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     real-data measurements) done, 2026-11-07, and the two `partition_features` items from the
     `src/api` audit (Status, 2026-11-07); step 15's hunt at scale and its fixes done, 2026-11-08
     (Status), and a clean Linux run of the tip (`ce3324a79`: pyGPlates 7 of 7, GPlates 198 of 198, Ubuntu
-    22.04); review 8 and its fixes done (Status, 2026-11-08). Next: the distillation (Phase 6), then
-    a full review of PR B split by area. Open: the
+    22.04); review 8 and its fixes done, and the distillation with its claim check (Phase 6; Status,
+    2026-11-08). Next: the developer's visual check of Assign Plate IDs on polygons in a running
+    GPlates (and its skipped-features dialog); then a full Fable review of PR B split by area, one
+    Fable agent at a time with a pause between them for the 5-hour limit. Open: the
     residue `shared#2288` seed 2 (design 9.1); the 4 second-step and 4 coincident-ring differences
     of the hunt (Status, 2026-11-08); for PR C, the symmetric difference's crossing pairing. The
     prototype configuration is now `r5o`. The prototype comparison is
