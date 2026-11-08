@@ -277,8 +277,8 @@ namespace GPlatesMaths
 		 * Partition @a multipoint_to_be_partitioned into an optional multipoint inside and
 		 * an optional multipoint outside the partitioning polygon.
 		 *
-		 * @a GEOMETRY_INTERSECTING is returned if any points were on the boundary
-		 * of the partitioning polygon or if points were partitioned both inside and outside.
+		 * @a GEOMETRY_INTERSECTING is returned if points were partitioned both inside and
+		 * outside (a point on the boundary of the partitioning polygon is inside).
 		 *
 		 * Example usage:
 		 *   partitioned_point_seq_type partitioned_points_inside;

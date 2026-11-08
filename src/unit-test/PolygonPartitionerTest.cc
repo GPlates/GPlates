@@ -1315,3 +1315,92 @@ TEST(PolygonPartitionerTest, SliverFilterGreatCircleRing)
 				1e-9);
 	}
 }
+
+
+// The cookie cutter's options change nothing a cut gives (section 5.1): a plate with a hole and a
+// plate filling the hole (a network and its rigid block), and a subject from outside both across
+// the outer plate into the inner one, with the polygons grouped or not, sorted by plate ID or by
+// area, at every point-in-polygon speed. Each plate's area, and what is outside both, are the
+// same every time, and add up to the subject's.
+TEST(PolygonPartitionerTest, CookieCutterOptions)
+{
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type plates =
+			GPlatesModel::FeatureCollectionHandle::create();
+	add_plate(plates->reference(), 7, polygon(box(-20, 20, -20, 20), { box(-5, 5, -5, 5) }));
+	add_plate(plates->reference(), 8, polygon(box(-5, 5, -5, 5)));
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type rotations =
+			GPlatesModel::FeatureCollectionHandle::create();
+	const GPlatesAppLogic::ReconstructMethodRegistry registry;
+	const auto P = polygon(box(-2, 2, -30, 2));
+
+	boost::optional<std::vector<double>> first_areas;
+	for (const bool grouped : { true, false })
+	{
+		for (const CookieCutter::SortPlates sort :
+				{ CookieCutter::SORT_BY_PLATE_ID, CookieCutter::SORT_BY_PLATE_AREA })
+		{
+			for (const PolygonOnSphere::PointInPolygonSpeedAndMemory speed : {
+					PolygonOnSphere::ADAPTIVE,
+					PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE,
+					PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE,
+					PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE })
+			{
+				SCOPED_TRACE(testing::Message()
+						<< "grouped " << grouped << ", sort " << sort << ", speed " << speed);
+				const CookieCutter cookie_cutter(
+						0.0,
+						registry,
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+								1,
+								plates->reference()),
+						GPlatesAppLogic::create_cached_reconstruction_tree_creator(
+								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+										1,
+										rotations->reference())),
+						grouped,
+						sort,
+						speed);
+				CookieCutter::partition_seq_type inside;
+				CookieCutter::partitioned_geometry_seq_type outside;
+				EXPECT_TRUE(cookie_cutter.partition_geometry(P, inside, outside));
+
+				// Areas in the outer plate, the inner plate, and outside both.
+				std::vector<double> areas(3, 0.0);
+				const auto area_of = [](const CookieCutter::PartitionedGeometry &piece)
+				{
+					const PolygonOnSphere *polygon_piece =
+							dynamic_cast<const PolygonOnSphere *>(piece.geometry.get());
+					return polygon_piece ? polygon_piece->get_area().dval() : 0.0;
+				};
+				for (const CookieCutter::Partition &partition : inside)
+				{
+					const PolygonOnSphere::non_null_ptr_to_const_type boundary =
+							*GPlatesAppLogic::ReconstructionGeometryUtils::get_boundary_polygon(
+									partition.reconstruction_geometry);
+					const bool outer = boundary->number_of_interior_rings() == 1;
+					for (const CookieCutter::PartitionedGeometry &piece :
+							partition.partitioned_geometries)
+					{
+						areas[outer ? 0 : 1] += area_of(piece);
+					}
+				}
+				for (const CookieCutter::PartitionedGeometry &piece : outside)
+				{
+					areas[2] += area_of(piece);
+				}
+				EXPECT_GT(areas[0], 0.0);
+				EXPECT_GT(areas[1], 0.0);
+				EXPECT_GT(areas[2], 0.0);
+				EXPECT_NEAR(areas[0] + areas[1] + areas[2], P->get_area().dval(), 1e-12);
+				if (!first_areas)
+				{
+					first_areas = areas;
+				}
+				for (unsigned int i = 0; i < 3; ++i)
+				{
+					EXPECT_NEAR(areas[i], (*first_areas)[i], 1e-14);
+				}
+			}
+		}
+	}
+}

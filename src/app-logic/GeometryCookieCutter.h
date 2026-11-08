@@ -142,7 +142,9 @@ namespace GPlatesAppLogic
 		 * found directly through the networks in @a resolved_topological_networks.
 		 *
 		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
-		 * point-in-polygon tests for partitioned *point* geometries.
+		 * point-in-polygon tests against the partitioning polygons: for partitioned point
+		 * geometries, and the polygon overlay's tests against them (its clip speed) when cutting
+		 * polylines and polygons.
 		 *
 		 * @a sliver_min_width is the width of the sliver filter of every partitioning polygon's cuts
 		 * (GPlatesMaths::PolygonPartitioner::create): @a get_default_sliver_min_width by default,
