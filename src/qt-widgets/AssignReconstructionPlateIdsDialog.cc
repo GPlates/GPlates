@@ -549,11 +549,12 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_features_not_partit
 		features_listed.append(
 				GPlatesAppLogic::AssignPlateIds::get_feature_description(features_not_partitioned[n]));
 	}
-	QString message = tr(
-			"%n feature(s) could not be partitioned and were left as they were: cutting their "
-			"geometry by a partitioning polygon gave an inconsistent result.\n\n",
-			nullptr,
-			features_not_partitioned.size());
+	QString message = (features_not_partitioned.size() == 1)
+			? tr("1 feature could not be partitioned and was left as it was: cutting its geometry "
+					"by a partitioning polygon gave an inconsistent result.\n\n")
+			: tr("%1 features could not be partitioned and were left as they were: cutting their "
+					"geometry by a partitioning polygon gave an inconsistent result.\n\n")
+					.arg(features_not_partitioned.size());
 	message += features_listed.join("\n");
 	if (features_not_partitioned.size() > max_features_listed)
 	{

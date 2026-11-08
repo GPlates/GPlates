@@ -280,8 +280,9 @@ namespace GPlatesAppLogic
 		 * Finds the partitioning polygon that contains the most partitioned geometries
 		 * of @a partitioned_feature.
 		 *
-		 * This is based on arc distance of the partitioned geometries if they are
-		 * line geometries (polyline, polygon) or number of points if point geometries.
+		 * This compares GeometrySizeMetric: the area of the partitioned polygons, then the arc
+		 * length of the polylines, then the number of points. The first partitioning polygon
+		 * with any partitioned geometry is taken even if its size is zero.
 		 *
 		 * Returns the none if @a partitioned_feature has no partitioned inside geometries.
 		 */
@@ -398,9 +399,9 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Visits a @a GeometryOnSphere and accumulates a size metric for it;
-		 * for points/multipoints this is number of points and for polylines/polygons
-		 * this is arc distance.
+		 * Visits a @a GeometryOnSphere and accumulates a size metric for it: area for polygons,
+		 * arc length for polylines and number of points for points and multipoints, compared in
+		 * that order (so that a feature with polygons is decided by them).
 		 */
 		class GeometrySizeMetric :
 				public boost::less_than_comparable<GeometrySizeMetric>

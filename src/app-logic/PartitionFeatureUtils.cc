@@ -527,9 +527,11 @@ GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
 			partition_size_metric.accumulate(
 					calculate_partition_size_metric(partition));
 
-			// If the current partition contains more geometry then
-			// set it as the maximum partition so far.
-			if (partition_size_metric > max_partition_size_metric)
+			// If the current partition contains more geometry then set it as the maximum
+			// partition so far. The first partition with anything inside is taken whatever its
+			// size, so that a geometry of no measure (a polygon whose edges are all too short for
+			// an area, a polyline at one position) still gets a plate, as in pyGPlates.
+			if (!max_partition || partition_size_metric > max_partition_size_metric)
 			{
 				max_partition_size_metric = partition_size_metric;
 				max_partition = partition.reconstruction_geometry.get();

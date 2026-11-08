@@ -933,6 +933,48 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsSkipsInconsistentFeature)
 	ASSERT_TRUE(plate_id);
 	EXPECT_EQ(plate_id.get()->get_value(), 5u);
 	EXPECT_FALSE(GPlatesAppLogic::AssignPlateIds::get_feature_description(feature).isEmpty());
+
+	// The inconsistent geometry as a feature's second geometry property, after one that is
+	// partitioned cleanly (the plate's own boundary, wholly in it): the feature is still left as
+	// it was (every geometry is partitioned before the feature is modified), and reported once.
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type two_geometries =
+			GPlatesModel::FeatureCollectionHandle::create();
+	const GPlatesModel::FeatureHandle::weak_ref second = GPlatesModel::FeatureHandle::create(
+			two_geometries->reference(),
+			GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature"));
+	second->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					GPlatesPropertyValues::GpmlPlateId::create(5)));
+	for (const auto &geometry : { Q, P })
+	{
+		second->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"),
+						GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry)));
+	}
+	const unsigned int second_num_properties = std::distance(second->begin(), second->end());
+	for (const auto method : {
+			GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE,
+			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE })
+	{
+		SCOPED_TRACE(method);
+		const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type second_assigner =
+				GPlatesAppLogic::AssignPlateIds::create(
+						method,
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+								1,
+								plates->reference()),
+						GPlatesAppLogic::create_cached_reconstruction_tree_creator(
+								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+										1,
+										rotations->reference())),
+						0.0);
+		second_assigner->assign_reconstruction_plate_ids(two_geometries->reference());
+		ASSERT_EQ(second_assigner->get_features_not_partitioned().size(), 1u);
+		EXPECT_EQ(std::distance(second->begin(), second->end()), int(second_num_properties));
+		EXPECT_EQ(std::distance(two_geometries->begin(), two_geometries->end()), 1);
+	}
 }
 
 
@@ -941,14 +983,15 @@ namespace
 	/**
 	 * A feature in @a collection with plate ID 5 and @a polygon as its geometry, in a piecewise
 	 * aggregation with a time window per (begin, end) of @a windows; and, if @a with_coverage, a
-	 * scalar coverage of it in the same windows.
+	 * scalar coverage of it in the same windows (or in @a coverage_windows, if given).
 	 */
 	GPlatesModel::FeatureHandle::weak_ref
 	add_time_dependent_feature(
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
 			const std::vector<std::pair<double, double>> &windows,
-			bool with_coverage = false)
+			bool with_coverage = false,
+			const std::vector<std::pair<double, double>> &coverage_windows = {})
 	{
 		const GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(
 				collection,
@@ -959,11 +1002,12 @@ namespace
 						GPlatesPropertyValues::GpmlPlateId::create(5)));
 		const auto add_in_windows = [&](
 				const char *property_name,
+				const std::vector<std::pair<double, double>> &property_windows,
 				const std::function<
 					GPlatesModel::PropertyValue::non_null_ptr_type ()> &create_value)
 		{
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
-			for (const std::pair<double, double> &window : windows)
+			for (const std::pair<double, double> &window : property_windows)
 			{
 				const GPlatesModel::PropertyValue::non_null_ptr_type value = create_value();
 				time_windows.push_back(
@@ -980,10 +1024,11 @@ namespace
 							GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
 									time_windows,
 									time_windows.front()->time_dependent_value()
-							->get_structural_type())));
+											->get_structural_type())));
 		};
 		add_in_windows(
 				"unclassifiedGeometry",
+				windows,
 				[&polygon]()
 				{
 					return GPlatesAppLogic::GeometryUtils::create_geometry_property_value(polygon);
@@ -992,6 +1037,7 @@ namespace
 		{
 			add_in_windows(
 					"unclassifiedGeometryCoverage",
+					coverage_windows.empty() ? windows : coverage_windows,
 					[&polygon]()
 					{
 						std::vector<double> values(polygon->number_of_vertices());
@@ -1081,11 +1127,13 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsTimeDependentGeometry)
 	const auto assign = [&](
 			GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType method,
 			const std::vector<std::pair<double, double>> &windows,
-			bool with_coverage = false)
+			bool with_coverage = false,
+			const std::vector<std::pair<double, double>> &coverage_windows = {})
 	{
 		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type features =
 				GPlatesModel::FeatureCollectionHandle::create();
-		add_time_dependent_feature(features->reference(), P, windows, with_coverage);
+		add_time_dependent_feature(
+				features->reference(), P, windows, with_coverage, coverage_windows);
 		GPlatesAppLogic::AssignPlateIds::create(
 				method,
 				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, plates->reference()),
@@ -1140,4 +1188,178 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsTimeDependentGeometry)
 					true),
 			(results_type{ { 100, false } }));
 	EXPECT_EQ(num_coverages, 1u);
+
+	// A single-window geometry whose coverage has two windows is not partitioned, by either method
+	// (written back constant beside the time-dependent range, or cut with one window's values).
+	for (const auto method : {
+			GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE,
+			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE })
+	{
+		SCOPED_TRACE(method);
+		EXPECT_EQ(
+				assign(method, { { 10, 0 } }, true, { { 10, 0 }, { 50, 10 } }),
+				(results_type{ { 5, true } }));
+		EXPECT_EQ(num_coverages, 1u);
+	}
+}
+
+
+namespace
+{
+	//! A feature in @a collection with plate ID @a plate_id and nothing else.
+	GPlatesModel::FeatureHandle::weak_ref
+	add_feature(
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+			GPlatesModel::integer_plate_id_type plate_id = 5)
+	{
+		const GPlatesModel::FeatureHandle::weak_ref feature = GPlatesModel::FeatureHandle::create(
+				collection,
+				GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature"));
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+						GPlatesPropertyValues::GpmlPlateId::create(plate_id)));
+		return feature;
+	}
+
+	//! Add @a geometry to @a feature as 'gpml:unclassifiedGeometry'.
+	void
+	add_geometry(
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
+	{
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"),
+						GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry)));
+	}
+
+	//! Add a coverage range of @a values to @a feature, as 'gpml:unclassifiedGeometryCoverage'.
+	void
+	add_range(
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
+			const std::vector<double> &values)
+	{
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("unclassifiedGeometryCoverage"),
+						GPlatesPropertyValues::GmlDataBlock::create(
+								std::vector<GmlDataBlockCoordinateList::non_null_ptr_type>{
+									GmlDataBlockCoordinateList::create(
+											ValueObjectType::create_gpml("TestScalar0"),
+											GmlDataBlockCoordinateList::xml_attributes_type(),
+											values) })));
+	}
+
+	//! The number of properties of @a feature named 'gpml:<name>'.
+	unsigned int
+	count_properties(
+			const GPlatesModel::FeatureHandle &feature,
+			const char *name)
+	{
+		unsigned int count = 0;
+		for (const auto &property : feature)
+		{
+			count += property->get_property_name() == GPlatesModel::PropertyName::create_gpml(name);
+		}
+		return count;
+	}
+}
+
+
+// Assign Plate IDs on features the other tests do not build (section 5.4): plates 100 and 101
+// share the equator, and a strip plate 102 lies east of them.
+TEST(PartitionFeatureUtilsTest, AssignPlateIdsFeatureCases)
+{
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type plates =
+			GPlatesModel::FeatureCollectionHandle::create();
+	GPlatesModel::integer_plate_id_type plate_id = 100;
+	for (const auto &boundary : {
+			polygon(box(0, 40, -20, 20)),
+			polygon(box(-40, 0, -20, 20)),
+			polygon(box(-20, 20, 48, 52)) })
+	{
+		add_geometry(add_feature(plates->reference(), plate_id++), boundary);
+	}
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type rotations =
+			GPlatesModel::FeatureCollectionHandle::create();
+	const auto assign = [&](
+			GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType method,
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &features)
+	{
+		const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type assigner =
+				GPlatesAppLogic::AssignPlateIds::create(
+						method,
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+								1,
+								plates->reference()),
+						GPlatesAppLogic::create_cached_reconstruction_tree_creator(
+								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(
+										1,
+										rotations->reference())),
+						0.0);
+		assigner->assign_reconstruction_plate_ids(features);
+		return assigner->get_features_not_partitioned().size();
+	};
+	typedef std::vector<std::pair<GPlatesModel::integer_plate_id_type, bool>> results_type;
+
+	// A polygon of no measure (every edge too short for GreatCircleArc, so its area is zero) in
+	// plate 100 is still assigned it: the first plate with any piece is taken, as in pyGPlates.
+	for (const auto method : {
+			GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE,
+			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE })
+	{
+		SCOPED_TRACE(method);
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type features =
+				GPlatesModel::FeatureCollectionHandle::create();
+		const double d = 3e-6;  // degrees, about 5e-8 radians
+		add_geometry(
+				add_feature(features->reference()),
+				polygon(ring_type{ at(10, 0), at(10, d), at(10 + d, 0) }));
+		EXPECT_EQ(assign(method, features->reference()), 0u);
+		EXPECT_EQ(get_plate_ids_and_time_dependence(*features), (results_type{ { 100, false } }));
+	}
+
+	// A range matching no geometry (three values for a four-point polygon) is removed with the
+	// cut geometry, not copied into every piece's feature, where the piece of its number of
+	// points could read it back as its coverage.
+	{
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type features =
+				GPlatesModel::FeatureCollectionHandle::create();
+		const GPlatesModel::FeatureHandle::weak_ref feature = add_feature(features->reference());
+		add_geometry(feature, polygon(box(-5, 5, -5, 5)));
+		add_range(feature, { 1, 2, 3 });
+		EXPECT_EQ(
+				assign(GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE, features->reference()),
+				0u);
+		EXPECT_EQ(
+				get_plate_ids_and_time_dependence(*features),
+				(results_type{ { 100, false }, { 101, false } }));
+		for (const auto &partitioned_feature : *features)
+		{
+			EXPECT_EQ(count_properties(*partitioned_feature, "unclassifiedGeometryCoverage"), 0u);
+		}
+	}
+
+	// A polygon with a coverage cut by the strip plate into three pieces of four points each, two
+	// of them outside every plate: each piece with a coverage is in a feature of its own, since
+	// two coverages of four points under one name in one feature would be ambiguous.
+	{
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type features =
+				GPlatesModel::FeatureCollectionHandle::create();
+		const GPlatesModel::FeatureHandle::weak_ref feature = add_feature(features->reference());
+		add_geometry(feature, polygon(box(-5, 5, 40, 60)));
+		add_range(feature, { 1, 2, 3, 4 });
+		EXPECT_EQ(
+				assign(GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE, features->reference()),
+				0u);
+		EXPECT_EQ(
+				get_plate_ids_and_time_dependence(*features),
+				(results_type{ { 5, false }, { 5, false }, { 102, false } }));
+		for (const auto &partitioned_feature : *features)
+		{
+			EXPECT_EQ(count_properties(*partitioned_feature, "unclassifiedGeometry"), 1u);
+			EXPECT_EQ(count_properties(*partitioned_feature, "unclassifiedGeometryCoverage"), 1u);
+		}
+	}
 }

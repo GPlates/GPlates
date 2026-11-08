@@ -29,6 +29,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
+#include <QDebug>
 
 #include "PartitionFeatureGeometries.h"
 
@@ -414,6 +415,15 @@ namespace GPlatesAppLogic
 				add_geometry(
 						const geometry_domain_type &geometry_domain)
 				{
+					// A single time window's geometry whose coverage's range is time-dependent in
+					// other windows too is not partitioned (as any other time-dependent geometry):
+					// written back constant, the domain would sit beside a time-dependent range, and
+					// pieces would carry the current window's values only, the others dropped.
+					if (d_single_time_window_value && has_range_in_other_windows())
+					{
+						return;
+					}
+
 					// The geometry domain may also have a range (scalar coverage).
 					boost::optional<Range> geometry_range;
 
@@ -423,6 +433,30 @@ namespace GPlatesAppLogic
 
 					// Partition the current geometry property and store results.
 					partition_geometry(geometry_domain, geometry_range, partitioned_geometry_property);
+				}
+
+				//! Whether the current geometry property's coverage, if any, has a range in a
+				//! piecewise aggregation of more than one time window.
+				bool
+				has_range_in_other_windows() const
+				{
+					const feature_iterator_type &domain_property = *current_top_level_propiter();
+					for (const ScalarCoverageFeatureProperties::Coverage &coverage :
+							d_geometry_coverages)
+					{
+						if (coverage.domain_property != domain_property)
+						{
+							continue;
+						}
+						const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> range_value =
+								GPlatesModel::ModelUtils::get_property_value(**coverage.range_property);
+						const GPlatesPropertyValues::GpmlPiecewiseAggregation *range_windows = range_value
+								? dynamic_cast<const GPlatesPropertyValues::GpmlPiecewiseAggregation *>(
+										range_value->get())
+								: nullptr;
+						return range_windows && range_windows->time_windows().size() > 1;
+					}
+					return false;
 				}
 
 				static
@@ -873,7 +907,61 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 			partitioned_properties);
 	feature_partitioner.visit_feature(feature_ref);
 
-	return feature_partitioner.get_partitioned_feature_geometries();
+	// A range property under a partitioned geometry's range name that matched no coverage (its
+	// number of scalars is no geometry's, or two geometries of the name share it) is unreadable as
+	// a coverage now; copied unchanged into the piece features, it could be read back as the
+	// coverage of whichever piece has its number of points. So it is partitioned away with the
+	// geometry (removed, as pyGPlates' set_geometry removes every property of the range name),
+	// and reported.
+	const boost::shared_ptr<const PartitionedFeature> partitioned_feature =
+			feature_partitioner.get_partitioned_feature_geometries();
+	if (partitioned_properties && partitioned_feature)
+	{
+		for (const auto &geometry_property : partitioned_feature->partitioned_geometry_properties)
+		{
+			const boost::optional<GPlatesModel::PropertyName> range_property_name =
+					ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+							geometry_property.first);
+			if (!range_property_name)
+			{
+				continue;
+			}
+			for (GPlatesModel::FeatureHandle::iterator property = feature_ref->begin();
+				property != feature_ref->end();
+				++property)
+			{
+				const auto is_property =
+						[&property](const GPlatesModel::FeatureHandle::iterator &other)
+				{
+					return other == property;
+				};
+				if ((*property)->get_property_name() != *range_property_name ||
+					std::any_of(
+							geometry_coverages.begin(),
+							geometry_coverages.end(),
+							[&property](const ScalarCoverageFeatureProperties::Coverage &coverage)
+							{
+								return coverage.range_property == property;
+							}) ||
+					std::any_of(
+							partitioned_properties->begin(),
+							partitioned_properties->end(),
+							is_property))
+				{
+					continue;
+				}
+				partitioned_properties->push_back(property);
+				qWarning()
+						<< "Removed a"
+						<< convert_qualified_xml_name_to_qstring(*range_property_name)
+						<< "coverage range matching no geometry from feature-id"
+						<< feature_ref->feature_id().get().qstring()
+						<< "while partitioning it.";
+			}
+		}
+	}
+
+	return partitioned_feature;
 }
 
 
