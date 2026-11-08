@@ -2405,6 +2405,25 @@ class PlatePartitionerTestCase(unittest.TestCase):
         values = [property.get_time_dependent_value() for property in unpartitioned[0] if property.get_name() == name]
         self.assertTrue(len(values) == 1 and isinstance(values[0], pygplates.GpmlPiecewiseAggregation))
 
+        # Most overlapping plate counts what splitting would partition: a geometry with two windows (the first containing
+        # present day) is not, so it decides no plate and the feature is returned unpartitioned (its window at present day
+        # once decided the plate, whatever the reconstruction time).
+        feature = pygplates.Feature()
+        feature.add(name, pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 10, 0),
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 50, 10)]), pygplates.VerifyInformationModel.no)
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature],
+                partition_method=pygplates.PartitionMethod.most_overlapping_plate,
+                partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(not partitioned and len(unpartitioned) == 1)
+        # A single window containing it does decide the plate.
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature_with_window(10, 0)],
+                partition_method=pygplates.PartitionMethod.most_overlapping_plate,
+                partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(partitioned) == 1 and not unpartitioned)
+
     def test_partition_features_removes_partitioned_properties(self):
         # Each feature returned holds only its own pieces: a polygon wholly in plate 1 and a polyline (under another
         # property name) wholly in plate 2 go to two features, neither keeping the other's geometry.
@@ -2460,6 +2479,7 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(plate_ids(sliver_width_threshold_radians=0) == [1, 2])
         self.assertTrue(plate_ids(sliver_width_threshold_radians=1e-6) == [1, 2])
         self.assertRaises(ValueError, plate_ids, sliver_width_threshold_radians=-1e-6)
+        self.assertRaises(ValueError, plate_ids, sliver_width_threshold_radians=float('nan'))
 
         # From reconstructed plates too, and through partition_into_plates.
         reconstructed = []

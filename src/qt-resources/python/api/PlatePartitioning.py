@@ -187,8 +187,9 @@ def plate_partitioner_partition_features(
 
     A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
     that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
-    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned. A feature
-    with nothing to partition (such as no geometry) is returned unpartitioned.
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned (with
+    *PartitionMethod.most_overlapping_plate*, only the geometries partitioned decide the plate). A feature with nothing to
+    partition (such as no geometry) is returned unpartitioned.
     
     .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.
     
@@ -425,9 +426,17 @@ def plate_partitioner_partition_features(
             
         else: # partition_method == PartitionMethod.most_overlapping_plate
             
-            # Partition all geometries of the current feature so that we can do partition overlap testing.
-            partitioned_inside_geometries = []
-            plate_partitioner.partition_geometry(feature.get_all_geometries(), partitioned_inside_geometries)
+            # Partition the feature's geometries so that we can do partition overlap testing: the geometries
+            # 'split_into_plates' would partition, by the same code (so a time-dependent geometry counts only in a single
+            # time window that contains the reconstruction time; 'get_all_geometries()' would give any time-dependent
+            # geometry's window at present day, whatever the reconstruction time).
+            partitioned_inside_geometries_by_plate = {}
+            partitioned_feature_geometries, _ = plate_partitioner._partition_feature_geometries(feature)
+            for _, _, partitioned_inside_geometries, _ in partitioned_feature_geometries:
+                for partitioning_plate, inside_geometries in partitioned_inside_geometries:
+                    partitioned_inside_geometries_by_plate.setdefault(partitioning_plate, []).extend(
+                            geometry[0] if isinstance(geometry, tuple) else geometry for geometry in inside_geometries)
+            partitioned_inside_geometries = list(partitioned_inside_geometries_by_plate.items())
             
             if partitioned_inside_geometries:
                 # Determine which partitioning plate (if feature is partitioned into any) overlaps the current feature the most.
@@ -574,8 +583,9 @@ def partition_into_plates(
 
     A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
     that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
-    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned. A feature
-    with nothing to partition (such as no geometry) is returned unpartitioned.
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned (with
+    *PartitionMethod.most_overlapping_plate*, only the geometries partitioned decide the plate). A feature with nothing to
+    partition (such as no geometry) is returned unpartitioned.
     
     .. note:: New features are always returned. The original features (passed into the *features_to_partition* argument) are never modified or returned.
     

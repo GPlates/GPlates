@@ -3654,9 +3654,9 @@ namespace GPlatesApi
 		const double sliver_width_threshold_radians = sliver_width_threshold_radians_argument
 				? *sliver_width_threshold_radians_argument
 				: GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
-		if (sliver_width_threshold_radians < 0)
+		if (!(sliver_width_threshold_radians >= 0))  // negative, or NaN
 		{
-			PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative.");
+			PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative or NaN.");
 			bp::throw_error_already_set();
 		}
 
@@ -4488,7 +4488,7 @@ export_polygon_on_sphere()
 				"  :rtype: PolygonOnSphere.PartitionResult\n"
 				"  :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result "
 				"(whether or not the lists are specified)\n"
-				"  :raises ValueError: if *sliver_width_threshold_radians* is negative\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN\n"
 				"\n"
 				"  The returned result is:\n"
 				"\n"

@@ -1883,6 +1883,8 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=1e-6) ==
                         pygplates.PolygonOnSphere.PartitionResult.intersecting)
         self.assertRaises(ValueError, partitioning_polygon.partition, polygon, sliver_width_threshold_radians=-1e-6)
+        self.assertRaises(ValueError, partitioning_polygon.partition, polygon,
+                          sliver_width_threshold_radians=float('nan'))
 
         # A polygon whose slanted western edge crosses this polygon's eastern edge at a shallow angle, leaving
         # inside it a triangle 2.1e-6 radians (about 13 metres, 1.5 times the thickness, so that it is cut) wide
