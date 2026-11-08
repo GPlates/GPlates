@@ -1341,6 +1341,100 @@ TEST(PolygonOverlayTest, ClassifyAnchorless)
 }
 
 
+// An anchorless chain's test point is put on each input's own great circle (section 5.2,
+// classification step 4): a thin needle P, and a near-copy Q with one vertex moved sideways by
+// up to 0.3 h and one vertex inserted 2 h along the edge after it, so that Q's segment there is
+// 2 h long. The chosen arc's midpoint lies off Q's great circle by up to 0.3 h, and the crossing
+// arc from Q's outside point met Q's great circle past the end of that short segment, inverting
+// Q's membership: every piece came out 'opposite', the subject wholly outside its copy, with
+// every vertex consistent.
+TEST(PolygonOverlayTest, ClassifyAnchorlessNearCopy)
+{
+	const double l = 0.01;
+	for (const double w : { 1e-4, 1e-5 })
+	{
+		const double slope = w / (0.4 * l);
+		const double norm = std::sqrt(1 + slope * slope);
+		const double eu = 1 / norm, ev = slope / norm;  // along the edge from the first vertex
+		const double pu = -ev, pv = eu;                 // perpendicular to it, out of P
+		const double au = 0.1 * l, av = 0.1 * l * slope;
+		const ring_type P_ring{
+				F.at(0, 0), F.at(au, av), F.at(0.4 * l, w), F.at(l, 0), F.at(0.5 * l, -w) };
+		for (const double a : { 0.3, -0.3, 0.0 })
+		{
+			for (const double b : { 0.5, -0.5, 0.0 })
+			{
+				SCOPED_TRACE(testing::Message() << "w " << w << ", a " << a << ", b " << b);
+				const ring_type Q_ring{
+						F.at(0, 0),
+						F.at(au + a * H * pu, av + a * H * pv),
+						F.at(au + 2 * H * eu + b * H * pu, av + 2 * H * ev + b * H * pv),
+						F.at(0.4 * l, w), F.at(l, 0), F.at(0.5 * l, -w) };
+				const auto P = polygon(P_ring);
+				const auto Q = polygon(Q_ring);
+				Overlay::Overlay overlay(*P, *Q);
+				EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INSIDE);
+				EXPECT_EQ(overlay.get_diagnostics().anchorless_resolved, 1u);
+				EXPECT_EQ(overlay.get_diagnostics().repairs, 0u);
+			}
+		}
+	}
+}
+
+
+// The LL rule (section 5.2, classification step 2): at a vertex that is one LL record each
+// input's two classes differ, so one known class fixes its own input's other. An octagram, a
+// square and the same square turned 45 degrees: each corner piece is vertex-tested (outside the
+// other), and each piece between two crossings is a single arc with no test point, deduced only
+// by the LL rule (the four-end rule needs three known classes, and has two), with no midpoint
+// test.
+TEST(PolygonOverlayTest, ClassifyLLRule)
+{
+	const double r = 0.01 * std::sqrt(2.0);
+	const auto P = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	const auto Q = polygon(ring_type{ F.at(r, 0.0), F.at(0.0, r), F.at(-r, 0.0), F.at(0.0, -r) });
+	Overlay::Overlay overlay(*P, *Q);
+	EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_INTERSECTING);
+	EXPECT_EQ(record_kinds(overlay), "LL LL LL LL LL LL LL LL");
+	EXPECT_EQ(overlay.get_diagnostics().midpoint_tests, 0u);
+	EXPECT_EQ(
+			ring_classes(overlay, Overlay::SUBJECT, 0),
+			"in in in in out out out out");
+}
+
+
+// A whole answer extracts nothing, so it has its own hemisphere check (section 5.6): a point of
+// the subject clear of both outlines must be on the side the answer says. A subject inside the
+// clip, and one outside it, each given the other answer.
+TEST(PolygonOverlayTest, CheckWholeResult)
+{
+	const auto Q = polygon(square(-0.03, -0.03, 0.03, 0.03));
+	const auto inside = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	const auto outside = polygon(square(0.05, -0.01, 0.07, 0.01));
+	for (const auto &P : { inside, outside })
+	{
+		SCOPED_TRACE(P == inside ? "inside" : "outside");
+		const Overlay::Result right =
+				(P == inside) ? Overlay::RESULT_INSIDE : Overlay::RESULT_OUTSIDE;
+		const Overlay::Result wrong =
+				(P == inside) ? Overlay::RESULT_OUTSIDE : Overlay::RESULT_INSIDE;
+
+		Overlay::Overlay overlay(*P, *Q);
+		EXPECT_EQ(overlay.classify(), right);
+		EXPECT_EQ(overlay.get_diagnostics().hemisphere_check_failures, 0u);
+		EXPECT_NO_THROW(overlay.check_whole_result(right));
+		EXPECT_THROW(overlay.check_whole_result(wrong), Overlay::InconsistentOverlayException);
+
+		Overlay::Options counting;
+		counting.throw_if_inconsistent = false;
+		Overlay::Overlay counted(*P, *Q, counting);
+		EXPECT_EQ(counted.classify(), right);
+		counted.check_whole_result(wrong);
+		EXPECT_EQ(counted.get_diagnostics().hemisphere_check_failures, 1u);
+	}
+}
+
+
 
 //
 // Repair and failure (sections 5.2 and 5.6). No normal input needs repair, so the

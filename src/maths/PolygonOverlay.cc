@@ -2084,7 +2084,78 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 	}
 
 	classify_pieces();
-	return check_and_repair();
+	const Result result = check_and_repair();
+	if (result != RESULT_INTERSECTING)
+	{
+		check_whole_result(result);
+	}
+	return result;
+}
+
+
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesMaths::PolygonOverlay::Overlay::find_reference_point() const
+{
+	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+	const AngularExtent margin = AngularExtent::create_from_angle(HEMISPHERE_CHECK_MARGIN * h);
+	std::vector<UnitVector3D> candidates;
+	for (const PolygonOnSphere *polygon : { d_subject_polygon, &d_clip })
+	{
+		const UnitVector3D &centre = polygon->get_bounding_small_circle().get_centre();
+		candidates.push_back(centre);
+		candidates.push_back(-centre);
+	}
+	for (const UnitVector3D &axis : {
+			UnitVector3D::xBasis(), UnitVector3D::yBasis(), UnitVector3D::zBasis() })
+	{
+		candidates.push_back(axis);
+		candidates.push_back(-axis);
+	}
+	for (const UnitVector3D &candidate : candidates)
+	{
+		const PointOnSphere point(candidate);
+		if (!minimum_distance(point, *d_subject_polygon, false, margin) &&
+			!minimum_distance(point, d_clip, false, margin))
+		{
+			return point;
+		}
+	}
+	return boost::none;
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::check_whole_result(
+		Result result)
+{
+	// A whole answer extracts nothing, so extract's check never sees it; the partitioner returns
+	// the subject itself. A wrong but consistent classification (every vertex consistent, as an
+	// anchorless chain's class inverted would be) then passes every other check. Only a reference
+	// point inside the subject can tell: outside it, both outputs are empty whatever the answer.
+	const boost::optional<PointOnSphere> point = find_reference_point();
+	if (!point)
+	{
+		++d_diagnostics.hemisphere_check_skipped;
+		return;
+	}
+	if (!d_subject_polygon->is_point_in_polygon(*point, PolygonOnSphere::ADAPTIVE, false))
+	{
+		return;
+	}
+	const bool in_clip = d_clip.is_point_in_polygon(*point, d_options.clip_speed, false);
+	if (in_clip != (result == RESULT_INSIDE))
+	{
+		++d_diagnostics.hemisphere_check_failures;
+		if (d_options.throw_if_inconsistent)
+		{
+			throw InconsistentOverlayException(
+					GPLATES_EXCEPTION_SOURCE,
+					"The subject is whole on one side of the clip, but a point of it clear of both "
+							"outlines is on the other: the classes are wrong.",
+					d_diagnostics,
+					*point);
+		}
+	}
 }
 
 
@@ -3009,29 +3080,43 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	//
 	// The arc whose great circle is farthest from both reference points (the largest of the smaller
 	// of the two |dot(R, axis)|), so that each crossing arc from a reference point meets that great
-	// circle only at the arc's midpoint X, well away from both ends.
+	// circle only at the arc's test point (its midpoint, below), well away from both ends.
 	//
-	boost::optional<unsigned int> best;
-	double best_score = -1.0;
-	for (unsigned int p : chain)
+	// Prefer an arc whose clip partner has a direction too, so that each input's test point can be
+	// put on its own segment's great circle (below); failing that, any arc with a direction.
+	const auto segment_of = [this](const Piece &piece) -> const GreatCircleArc &
 	{
-		// Only an unclassified arc: on consistent data every arc of the chain is, but on
-		// inconsistent data deduction can have reached part of it, and its class must not be
-		// overwritten (nor the loop above make no progress).
-		const Piece &piece = d_pieces[p];
-		const GreatCircleArc &segment = d_rings[piece.ring].segments[*piece.single_arc_segment];
-		if (segment.is_zero_length() || piece.is_classified())
+		return d_rings[piece.ring].segments[*piece.single_arc_segment];
+	};
+	boost::optional<unsigned int> best;
+	for (const bool need_partner_direction : { true, false })
+	{
+		double best_score = -1.0;
+		for (unsigned int p : chain)
 		{
-			continue;
+			// Only an unclassified arc: on consistent data every arc of the chain is, but on
+			// inconsistent data deduction can have reached part of it, and its class must not be
+			// overwritten (nor the loop above make no progress).
+			const Piece &piece = d_pieces[p];
+			const GreatCircleArc &segment = segment_of(piece);
+			if (segment.is_zero_length() || piece.is_classified() ||
+				(need_partner_direction && segment_of(d_pieces[*piece.common]).is_zero_length()))
+			{
+				continue;
+			}
+			const UnitVector3D &axis = segment.rotation_axis();
+			const double score = (std::min)(
+					std::fabs(dot(subject_outside, axis).dval()),
+					std::fabs(dot(clip_outside, axis).dval()));
+			if (score > best_score)
+			{
+				best_score = score;
+				best = p;
+			}
 		}
-		const UnitVector3D &axis = segment.rotation_axis();
-		const double score = (std::min)(
-				std::fabs(dot(subject_outside, axis).dval()),
-				std::fabs(dot(clip_outside, axis).dval()));
-		if (score > best_score)
+		if (best)
 		{
-			best_score = score;
-			best = p;
+			break;
 		}
 	}
 	if (!best)
@@ -3043,36 +3128,47 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	const Piece &partner = d_pieces[*piece.common];
 	const RingView &subject_ring = d_rings[piece.ring];
 	const RingView &clip_ring = d_rings[partner.ring];
-	const UnitVector3D &axis = subject_ring.segments[*piece.single_arc_segment].rotation_axis();
-	const UnitVector3D midpoint = (
+	const UnitVector3D &subject_axis = segment_of(piece).rotation_axis();
+	const UnitVector3D &clip_axis = segment_of(partner).is_zero_length()
+			? subject_axis
+			: segment_of(partner).rotation_axis();
+	const Vector3D midpoint =
 			Vector3D(d_stops[piece.start_stop].position.position_vector()) +
-			Vector3D(d_stops[piece.end_stop].position.position_vector())).get_normalisation();
+			Vector3D(d_stops[piece.end_stop].position.position_vector());
 
 	//
 	// Each input's membership on its reference point's side of the chain, from the parity of the
-	// crossings from that point to X leaving out the input's own segment along the chain. The
-	// outside point is outside its polygon; if its distance from the chain's great circle is below
-	// about 1e-6 radians (where the crossing arc could meet that great circle twice), or it is
-	// within that of X or its antipode, the polygon's second reference point is used, with its
-	// cached status.
+	// crossings from that point to a test point on the input's own segment along the chain, that
+	// segment left out: the midpoint X of the piece's stops projected onto the segment's great
+	// circle. The crossing arc then meets that great circle only at the test point. (X itself can
+	// lie up to the thickness off the clip's great circle, where the crossing arc meets the clip's
+	// great circle at a point displaced along the chain, past the end of a short clip segment:
+	// the clip's membership, and so the chain's class, was then inverted with every vertex
+	// consistent.) The outside point is outside its polygon; if its distance from the great
+	// circle is below about 1e-6 radians (where the crossing arc could meet that great circle
+	// twice), or it is within that of the test point or its antipode, the polygon's second
+	// reference point is used, with its cached status.
 	//
 	const auto membership = [&](
 			const PolygonOnSphere &polygon,
 			const UnitVector3D &outside_point,
+			const UnitVector3D &axis,
 			unsigned int excluded_segment,
 			UnitVector3D &reference) -> bool
 	{
+		const double above = dot(midpoint, Vector3D(axis)).dval();
+		const UnitVector3D test_point = (midpoint - above * Vector3D(axis)).get_normalisation();
 		const double min_sine = 1e-6;
 		bool status = false;
 		reference = outside_point;
 		if (std::fabs(dot(outside_point, axis).dval()) <= min_sine ||
-			cross(outside_point, midpoint).magSqrd().dval() <= min_sine * min_sine)
+			cross(outside_point, test_point).magSqrd().dval() <= min_sine * min_sine)
 		{
 			reference = polygon.get_second_reference_point().point;
 			status = polygon.get_second_reference_point().is_in_polygon;
 		}
 		return status != PointInPolygon::get_crossing_parity_excluding_segment(
-				polygon, reference, midpoint, excluded_segment);
+				polygon, reference, test_point, excluded_segment);
 	};
 
 	UnitVector3D subject_reference = subject_outside;
@@ -3080,16 +3176,22 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	const bool in_subject = membership(
 			*d_subject_polygon,
 			subject_outside,
+			subject_axis,
 			subject_ring.first_segment_index + *piece.single_arc_segment,
 			subject_reference);
 	bool in_clip = membership(
 			d_clip,
 			clip_outside,
+			clip_axis,
 			clip_ring.first_segment_index + *partner.single_arc_segment,
 			clip_reference);
 
-	// The two memberships describe the reference points' sides; crossing the chain flips both.
-	if ((dot(subject_reference, axis).dval() > 0) != (dot(clip_reference, axis).dval() > 0))
+	// The two memberships describe the reference points' sides, each of its own input's great
+	// circle (the two within the thickness of each other, their axes aligned by sign); crossing
+	// the chain flips both.
+	const double clip_sign = (dot(subject_axis, clip_axis).dval() < 0) ? -1.0 : 1.0;
+	if ((dot(subject_reference, subject_axis).dval() > 0) !=
+		(clip_sign * dot(clip_reference, clip_axis).dval() > 0))
 	{
 		in_clip = !in_clip;
 	}
@@ -3898,36 +4000,10 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	// pieces are band pieces, and a ring of an input whose rings cross has no one side.)
 	//
 	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
-	const AngularExtent margin = AngularExtent::create_from_angle(HEMISPHERE_CHECK_MARGIN * h);
-	boost::optional<UnitVector3D> reference_point;
-	{
-		std::vector<UnitVector3D> candidates;
-		for (const PolygonOnSphere *polygon : { d_subject_polygon, &d_clip })
-		{
-			const UnitVector3D &centre = polygon->get_bounding_small_circle().get_centre();
-			candidates.push_back(centre);
-			candidates.push_back(-centre);
-		}
-		for (const UnitVector3D &axis : {
-				UnitVector3D::xBasis(), UnitVector3D::yBasis(), UnitVector3D::zBasis() })
-		{
-			candidates.push_back(axis);
-			candidates.push_back(-axis);
-		}
-		for (const UnitVector3D &candidate : candidates)
-		{
-			const PointOnSphere point(candidate);
-			if (!minimum_distance(point, *d_subject_polygon, false, margin) &&
-				!minimum_distance(point, d_clip, false, margin))
-			{
-				reference_point = candidate;
-				break;
-			}
-		}
-	}
+	const boost::optional<PointOnSphere> reference_point = find_reference_point();
 	if (reference_point)
 	{
-		const PointOnSphere point(*reference_point);
+		const PointOnSphere &point = *reference_point;
 		bool read_in_output = false;
 		for (const auto &ring_polygon : ring_polygons)
 		{

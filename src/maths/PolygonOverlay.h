@@ -895,7 +895,8 @@ namespace GPlatesMaths
 			 * section 5.1's result extracts and looks, as PolygonPartitioner does).
 			 *
 			 * @throws InconsistentOverlayException if a vertex is still inconsistent after repair,
-			 * or a piece is left unclassified (unless Options::throw_if_inconsistent is false).
+			 * a piece is left unclassified, or a whole result fails its hemisphere check
+			 * (@a check_whole_result); unless Options::throw_if_inconsistent is false.
 			 */
 			Result
 			classify();
@@ -908,6 +909,19 @@ namespace GPlatesMaths
 			 */
 			Result
 			check_and_repair();
+
+			/**
+			 * The hemisphere check for a polygon subject found whole on one side (@a result inside
+			 * or outside), which extracts nothing to check (section 5.6): the reference point, if
+			 * inside the subject, must be inside the clip exactly when the result is inside.
+			 * Counted (Diagnostics::hemisphere_check_failures, hemisphere_check_skipped). Called by
+			 * @a classify; public so that a test can give it a wrong result.
+			 *
+			 * @throws InconsistentOverlayException on a failure if Options::throw_if_inconsistent.
+			 */
+			void
+			check_whole_result(
+					Result result);
 
 			/**
 			 * Set a piece's class (a common pair's, on both its pieces) and the method recorded for
@@ -1145,6 +1159,15 @@ namespace GPlatesMaths
 			//! The first vertex with no consistent placement, if any.
 			boost::optional<unsigned int>
 			find_failing_vertex() const;
+
+			/**
+			 * The hemisphere check's reference point (section 5.2): the first of the inputs'
+			 * bounding-circle centres, their antipodes and the six axis points farther than
+			 * HEMISPHERE_CHECK_MARGIN thicknesses from both inputs' outlines; none if no candidate
+			 * is.
+			 */
+			boost::optional<PointOnSphere>
+			find_reference_point() const;
 
 			//! Apply deductions at every vertex until nothing changes; true if anything did.
 			bool

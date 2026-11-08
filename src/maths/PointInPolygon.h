@@ -112,11 +112,15 @@ namespace GPlatesMaths
 		 * exterior ring and then each interior ring, as 'PolygonOnSphere::get_segment()' does),
 		 * counted as point-in-polygon counts them: exact sign tests, no threshold, low speed.
 		 *
-		 * For a @a to_point on (or within the thickness of) the excluded segment, this is the
-		 * parity at the points just before @a to_point, on @a from_point's side of that segment's
-		 * great circle, provided the arc meets the great circle only at @a to_point (that is,
-		 * @a from_point is not on it). With @a from_point outside the polygon, odd parity means
-		 * those points are inside it. The polygon overlay uses it to classify a common chain that
+		 * For a @a to_point on the excluded segment, this is the parity at the points just before
+		 * @a to_point, on @a from_point's side of that segment's great circle, provided the arc
+		 * meets the great circle only at @a to_point (that is, @a from_point is not on it). A
+		 * @a to_point merely within the thickness of the segment is not enough: the arc then meets
+		 * the great circle at a point displaced along it, which near a short segment's end can lie
+		 * past the end, so that the excluded segment is not crossed where it should be and the
+		 * parity is that of @a to_point itself. So project @a to_point onto the great circle
+		 * first. With @a from_point outside the polygon, odd parity means those points are inside
+		 * it. The polygon overlay uses it to classify a common chain that
 		 * no other piece reaches.
 		 *
 		 * @a from_point must not be within about 1e-6 radians of @a to_point or its antipode
