@@ -895,6 +895,32 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     applied (the commit after this entry). The measurements quoted are consistent with the plan's
     records; 29 of 33 sampled comment citations held, and the other 4 are fixed.
 
+- 2026-11-08: **The full PR B review, by area** (Fable, five reviews one at a time:
+  `prB-review-1-overlay-classification.md` to `prB-review-5-pygplates.md`), and its fixes (the
+  developer approved the consolidated list), in seven code commits from `3180ea66e` to `bb28c7824`
+  and the page's amendments.
+  - **Three wrong answers fixed**: an anchorless chain's clip parity counted off the clip's great
+    circle (a thin polygon partitioned by a near-copy of itself came back wholly outside; review 1),
+    with a new hemisphere check for whole answers, which extract never saw; a polyline's hairpin made
+    internal by the spike rule (review 2); `partition_features` dropping an unpartitioned property
+    that shares a partitioned one's name (review 5).
+  - **Decided (developer)**: a hairpin along the clip's edge is along (inside); an unmatched coverage
+    range is removed with its geometry (both products now agree); a single-window geometry with a
+    multi-window coverage is not partitioned; pyGPlates' most overlapping measures what splitting
+    partitions; the cookie cutter without lists keeps its early return (the page says so).
+  - **A decision reversed by evidence**: review 2's grouping failure was to throw (review 2 found no
+    input reaching it). Made to throw, the hunt threw in 255 cases, every one an input whose rings
+    cross, which partitioning has always accepted, so it stays counted (comment and page say why).
+  - Small fixes: zero-measure most overlapping, `NaN` widths refused, self-touch cuts keyed by stop,
+    stale comments, both changelogs. Tests for each and for the reviews' gaps (the LL rule, the cookie
+    cutter's options on a plate with a hole, coverage pieces per feature, the exception in a second
+    property); eight mutations reverting the fixes each fail their test.
+  - GPlates 209 of 209, pyGPlates 7 of 7, docs from scratch clean; real-data timing unchanged (0.280 s
+    against 0.277 s at 0 Ma) and nothing refused. The hunt: the same 13 polygon differences, plus about
+    35 polyline cases where the prototype (`r5o`) still makes a hairpin internal, all passing the
+    polyline oracle. **Open**: mirror the polyline rule in the prototype (`r5p`) so the hunt is clean
+    again; the margin order still has no hand-built test (the prototype comparison pins it).
+
 - **Resume here** (updated 2026-11-08):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -909,9 +935,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     `src/api` audit (Status, 2026-11-07); step 15's hunt at scale and its fixes done, 2026-11-08
     (Status), and a clean Linux run of the tip (`ce3324a79`: pyGPlates 7 of 7, GPlates 198 of 198, Ubuntu
     22.04); review 8 and its fixes done, and the distillation with its claim check (Phase 6; Status,
-    2026-11-08). Next: the developer's visual check of Assign Plate IDs on polygons in a running
-    GPlates (and its skipped-features dialog); then a full Fable review of PR B split by area, one
-    Fable agent at a time with a pause between them for the 5-hour limit. Open: the
+    2026-11-08); the full review by area and its fixes (Status, 2026-11-08). Next: a Fable review
+    of those fixes, a Linux run, and the developer's visual check of Assign Plate IDs on polygons in
+    a running GPlates (and its skipped-features dialog). Open: the prototype's polyline rule (`r5p`);
+    the
     residue `shared#2288` seed 2 (design 9.1); the 4 second-step and 4 coincident-ring differences
     of the hunt (Status, 2026-11-08); for PR C, the symmetric difference's crossing pairing. The
     prototype configuration is now `r5o`. The prototype comparison is
