@@ -1341,6 +1341,28 @@ TEST(PartitionFeatureUtilsTest, AssignPlateIdsFeatureCases)
 		}
 	}
 
+	// A time-dependent geometry with its coverage in a window not containing present day, beside a
+	// constant geometry of the same name that is cut: the coverage's range matches nothing now,
+	// but it belongs with its own geometry, which is not partitioned and is kept on every feature,
+	// so it is kept too (only a constant unmatched range is removed).
+	{
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type features =
+				GPlatesModel::FeatureCollectionHandle::create();
+		const GPlatesModel::FeatureHandle::weak_ref feature = add_time_dependent_feature(
+				features->reference(), polygon(box(-5, 5, -5, 5)), { { 50, 10 } }, true);
+		add_geometry(feature, polygon(box(-5, 5, -5, 5)));
+		EXPECT_EQ(
+				assign(GPlatesAppLogic::AssignPlateIds::PARTITION_FEATURE, features->reference()),
+				0u);
+		EXPECT_EQ(
+				get_plate_ids_and_time_dependence(*features),
+				(results_type{ { 100, true }, { 101, true } }));
+		for (const auto &partitioned_feature : *features)
+		{
+			EXPECT_EQ(count_properties(*partitioned_feature, "unclassifiedGeometryCoverage"), 1u);
+		}
+	}
+
 	// A polygon with a coverage cut by the strip plate into three pieces of four points each, two
 	// of them outside every plate: each piece with a coverage is in a feature of its own, since
 	// two coverages of four points under one name in one feature would be ambiguous.

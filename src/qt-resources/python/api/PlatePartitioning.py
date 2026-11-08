@@ -87,11 +87,12 @@ def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grou
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
         # If so then try again by cloning one feature per extra geometry.
+        # ('set_geometry()' without coverages also replaces every property of the range name.)
         def set_geometry(feature, geometry_or_geometries):
             _plate_partitioning_set_keeping_unpartitioned(
                     feature,
                     lambda: feature.set_geometry(geometry_or_geometries, geometry_property_name),
-                    [geometry_property_name])
+                    [name for name in (geometry_property_name, range_property_name) if name is not None])
         try:
             set_geometry(feature_for_geometries, geometries)
         except InformationModelError:

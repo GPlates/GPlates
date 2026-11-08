@@ -55,6 +55,7 @@
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlTimeWindow.h"
 
@@ -935,7 +936,18 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 				{
 					return other == property;
 				};
+				// Only a constant range: a time-dependent one belongs with a time-dependent
+				// geometry, which is not partitioned and keeps it (it can be unmatched only
+				// because it has no value at the reconstruction time).
+				const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> range_value =
+						GPlatesModel::ModelUtils::get_property_value(**property);
+				const bool time_dependent = range_value &&
+						(dynamic_cast<const GPlatesPropertyValues::GpmlPiecewiseAggregation *>(
+								range_value->get()) ||
+							dynamic_cast<const GPlatesPropertyValues::GpmlIrregularSampling *>(
+								range_value->get()));
 				if ((*property)->get_property_name() != *range_property_name ||
+					time_dependent ||
 					std::any_of(
 							geometry_coverages.begin(),
 							geometry_coverages.end(),

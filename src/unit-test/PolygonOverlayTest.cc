@@ -1408,16 +1408,27 @@ TEST(PolygonOverlayTest, ClassifyLLRule)
 // clip, and one outside it, each given the other answer.
 TEST(PolygonOverlayTest, CheckWholeResult)
 {
-	const auto Q = polygon(square(-0.03, -0.03, 0.03, 0.03));
+	const auto Q_plain = polygon(square(-0.03, -0.03, 0.03, 0.03));
 	const auto inside = polygon(square(-0.01, -0.01, 0.01, 0.01));
 	const auto outside = polygon(square(0.05, -0.01, 0.07, 0.01));
-	for (const auto &P : { inside, outside })
+	// An annulus, whose bounding circle's centre and interior centroid are both in its hole, in a
+	// clip whose own hole covers the centre: a point there is outside both, and judged as the
+	// subject's it would fail the right answer. The check takes a point off one of the annulus's
+	// edges instead (it once silently took the centre and returned).
+	const auto annulus = polygon(
+			square(-0.01, -0.01, 0.01, 0.01),
+			{ square(-0.008, -0.008, 0.008, 0.008) });
+	const auto Q_with_hole = polygon(
+			square(-0.03, -0.03, 0.03, 0.03),
+			{ square(-0.005, -0.005, 0.005, 0.005) });
+	for (const auto &P : { inside, outside, annulus })
 	{
-		SCOPED_TRACE(P == inside ? "inside" : "outside");
+		SCOPED_TRACE(P == inside ? "inside" : (P == outside ? "outside" : "annulus"));
+		const auto &Q = (P == annulus) ? Q_with_hole : Q_plain;
 		const Overlay::Result right =
-				(P == inside) ? Overlay::RESULT_INSIDE : Overlay::RESULT_OUTSIDE;
+				(P == outside) ? Overlay::RESULT_OUTSIDE : Overlay::RESULT_INSIDE;
 		const Overlay::Result wrong =
-				(P == inside) ? Overlay::RESULT_OUTSIDE : Overlay::RESULT_INSIDE;
+				(P == outside) ? Overlay::RESULT_INSIDE : Overlay::RESULT_OUTSIDE;
 
 		Overlay::Overlay overlay(*P, *Q);
 		EXPECT_EQ(overlay.classify(), right);
@@ -1431,6 +1442,7 @@ TEST(PolygonOverlayTest, CheckWholeResult)
 		EXPECT_EQ(counted.classify(), right);
 		counted.check_whole_result(wrong);
 		EXPECT_EQ(counted.get_diagnostics().hemisphere_check_failures, 1u);
+		EXPECT_EQ(counted.get_diagnostics().whole_check_skipped, 0u);
 	}
 }
 

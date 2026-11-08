@@ -2384,9 +2384,16 @@ class PlatePartitionerTestCase(unittest.TestCase):
         two_windows = pygplates.GpmlPiecewiseAggregation([
                 pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 10, 0),
                 pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 20, 10)])
+        # Its coverage, in the same two windows, is kept too (setting a plain geometry replaces every property of the
+        # range name as well).
+        coverage_name = pygplates.PropertyName.create_gpml('unclassifiedGeometryCoverage')
+        two_window_range = pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(pygplates.GmlDataBlock({scalar_type: [1, 2, 3, 4]}), 10, 0),
+                pygplates.GpmlTimeWindow(pygplates.GmlDataBlock({scalar_type: [1, 2, 3, 4]}), 20, 10)])
         feature = pygplates.Feature()
         feature.add(pygplates.PropertyName.gpml_unclassified_geometry, pygplates.GmlPolygon(polygon))
         feature.add(pygplates.PropertyName.gpml_unclassified_geometry, two_windows, pygplates.VerifyInformationModel.no)
+        feature.add(coverage_name, two_window_range, pygplates.VerifyInformationModel.no)
         partitioned = plate_partitioner.partition_features([feature])
         self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
         for partitioned_feature in partitioned:
@@ -2396,6 +2403,9 @@ class PlatePartitionerTestCase(unittest.TestCase):
             self.assertTrue(sum(isinstance(value, pygplates.GpmlPiecewiseAggregation) for value in values) == 1)
             kept = next(value for value in values if isinstance(value, pygplates.GpmlPiecewiseAggregation))
             self.assertTrue(len(kept.get_time_windows()) == 2)
+            ranges = [property.get_time_dependent_value() for property in partitioned_feature
+                      if property.get_name() == coverage_name]
+            self.assertTrue(len(ranges) == 1 and len(ranges[0].get_time_windows()) == 2)
 
         # The window doesn't contain the reconstruction time: returned whole, unpartitioned, its window kept.
         partitioned, unpartitioned = plate_partitioner.partition_features(

@@ -232,8 +232,8 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 127 |  |  | 8 | 36 | 156 | 15 | 88 | 79 | 2 | 3 | 115 | 5 | 29 |  | 44 |  |
-| app-logic |  |  | 949 |  |  | 7 | 21 | 163 |  | 285 | 302 | 12 |  | 313 |  | 25 |  | 123 |  |
+| api |  | 275 | 128 |  |  | 8 | 36 | 156 | 15 | 88 | 79 | 2 | 3 | 115 | 5 | 29 |  | 44 |  |
+| app-logic |  |  | 949 |  |  | 7 | 21 | 163 |  | 285 | 302 | 12 |  | 314 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |

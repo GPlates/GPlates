@@ -40,6 +40,7 @@
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ScalarCoverageFeatureProperties.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -536,12 +537,18 @@ namespace GPlatesApi
 				outside.append(to_python(piece));
 			}
 
+			// The range property name: the coverage's, or (with no coverage) the name a coverage of
+			// the geometry would have, which 'Feature.set_geometry()' also replaces.
+			namespace ScalarCoverage = GPlatesAppLogic::ScalarCoverageFeatureProperties;
+			const boost::optional<GPlatesModel::PropertyName> range_property_name =
+					property.range_property_name
+							? property.range_property_name
+							: ScalarCoverage::get_range_property_name_from_domain(
+									property.domain_property_name);
 			properties.append(
 					bp::make_tuple(
 							property.domain_property_name,
-							property.range_property_name
-									? bp::object(property.range_property_name.get())
-									: bp::object(),
+							range_property_name ? bp::object(range_property_name.get()) : bp::object(),
 							inside,
 							outside));
 		}

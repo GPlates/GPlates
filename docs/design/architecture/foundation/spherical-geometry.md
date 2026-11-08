@@ -1316,7 +1316,9 @@ gives `0`.
    at a point displaced along the chain, which near a short clip segment lies past its end, so the
    clip's membership and the chain's class were inverted with every vertex consistent, and a thin
    polygon partitioned by a near-copy of itself came back wholly outside it.) An arc whose clip
-   partner has a direction is preferred, so that both projections are defined. If `R` is within
+   partner has a direction is preferred, so that both projections are defined; failing that (every
+   such partner a segment `GreatCircleArc` calls zero length), the clip's parity is counted to the
+   subject's projection, as before. If `R` is within
    about `1e-6` radians of the great circle (where the arc could meet it twice) or of `X_i` or its
    antipode, the input's second reference point `R2` with its cached status is used instead
    (section 3.8). If the two reference points are on opposite sides of their inputs' great circles
@@ -1476,11 +1478,14 @@ throws for every operation (section 5.6); no point clear of both outlines (never
 (`hemisphere_check_skipped`).
 
 A whole answer (`classify()` finding the subject wholly inside or outside, which the partitioner
-returns without extracting) has the same check at one point (`check_whole_result`): the reference
-point, if it is inside the subject, must be inside the clip exactly when the answer is inside. A
-wrong but consistent classification (every vertex consistent, as the inverted anchorless chain
-above was) passes every other check; a point outside the subject tells nothing, so a subject
-thinner than the margin everywhere is not checked.
+returns without extracting) has the same check at one point (`check_whole_result`): the first
+candidate clear of both outlines and inside the subject among the subject's bounding-circle centre,
+its interior centroid and points twice the margin off either side of four of its exterior edges (for
+a C shape or an annulus) must be inside the clip exactly when the answer is inside. A wrong but
+consistent classification (every vertex consistent, as the inverted anchorless chain above was)
+passes every other check. A point outside the subject tells nothing, so with no candidate inside it
+(a subject thinner than the margin everywhere, which is routine) the check is counted as skipped
+(`whole_check_skipped`).
 
 **The sliver filter** (section 5.5), applied in `extract` after grouping: rings are decided
 outermost first, and a ring inside a dropped ring is dropped with it, since a dropped exterior's
@@ -1652,10 +1657,13 @@ stays unchanged on every feature returned (pyGPlates puts back a kept property t
 with a partitioned one, which setting the pieces replaces), and a `GpmlIrregularSampling` never is.
 Which properties are partitioned is decided once, in that visitor: pyGPlates' `partition_features`
 removes exactly the properties it reports as partitioned, so the two products cannot disagree. A
-range property under a partitioned geometry's range name that matched no coverage (its number of
-values is no geometry's) is reported as partitioned too, with a warning, and so removed: copied into
-every piece's feature, it could be read back as the coverage of a piece that happened to have its
-number of points.
+constant range property under a partitioned geometry's range name that matched no coverage (its
+number of values is no geometry's, or two same-named geometries share it) is reported as partitioned
+too, with a warning, and so removed: copied into every piece's feature, it could be read back as the
+coverage of a piece that happened to have its number of points. A time-dependent one is kept: it
+belongs with a time-dependent geometry, which is kept (it is unmatched only for having no value at
+the reconstruction time). pyGPlates puts back, after setting the pieces, every kept property of the
+geometry's name and of its range name, which setting a geometry also replaces.
 
 ### 5.5 The sliver filter
 
@@ -2256,7 +2264,9 @@ touches returned whole, `PartitionError` on the same input, the sliver argument 
 negative and NaN), coverages through `partition_features` and their pieces, time-dependent geometry
 (a kept property sharing a partitioned one's name, and most overlapping), removing exactly the
 partitioned properties, a feature with no geometry, and the most overlapping plate by area. The
-reviews' fixes are each pinned by a test, most of them checked by reverting the fix.
+reviews' fixes are pinned by tests, all but two (the self-touch cuts' key, which no constructed
+input reaches, and the whole answer's check being called from `classify()`) checked by reverting the
+fix.
 
 **Real data** (`PolygonOverlayRealDataTest.Coastlines`, skipped unless
 `GPLATES_POLYGON_OVERLAY_REAL_DATA` names a plate model's directory, with the times in

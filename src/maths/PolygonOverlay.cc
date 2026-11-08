@@ -2104,30 +2104,75 @@ GPlatesMaths::PolygonOverlay::Overlay::classify()
 
 
 boost::optional<GPlatesMaths::PointOnSphere>
-GPlatesMaths::PolygonOverlay::Overlay::find_reference_point() const
+GPlatesMaths::PolygonOverlay::Overlay::find_reference_point(
+		bool inside_subject) const
 {
 	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
 	const AngularExtent margin = AngularExtent::create_from_angle(HEMISPHERE_CHECK_MARGIN * h);
-	std::vector<UnitVector3D> candidates;
-	for (const PolygonOnSphere *polygon : { d_subject_polygon, &d_clip })
+	const auto accept = [&](const UnitVector3D &candidate)
 	{
-		const UnitVector3D &centre = polygon->get_bounding_small_circle().get_centre();
-		candidates.push_back(centre);
-		candidates.push_back(-centre);
+		const PointOnSphere point(candidate);
+		return !minimum_distance(point, *d_subject_polygon, false, margin) &&
+				!minimum_distance(point, d_clip, false, margin) &&
+				(!inside_subject || d_subject_polygon->is_point_in_polygon(
+						point, PolygonOnSphere::ADAPTIVE, false));
+	};
+
+	// The subject's bounding circle's centre first: for most subjects it is the answer.
+	const UnitVector3D &subject_centre =
+			d_subject_polygon->get_bounding_small_circle().get_centre();
+	if (accept(subject_centre))
+	{
+		return PointOnSphere(subject_centre);
 	}
-	for (const UnitVector3D &axis : {
-			UnitVector3D::xBasis(), UnitVector3D::yBasis(), UnitVector3D::zBasis() })
+	std::vector<UnitVector3D> candidates;
+	if (inside_subject)
 	{
-		candidates.push_back(axis);
-		candidates.push_back(-axis);
+		// For a subject whose bounding circle's centre is outside it (a C shape), its interior
+		// centroid; and for one whose centroid is outside it too (an annulus), points twice the
+		// margin off either side of four of its exterior edges' midpoints; nothing else (the
+		// antipodes and the axis points are rarely inside a subject, and every candidate costs
+		// two distance tests, for every whole answer of the cascade).
+		candidates.push_back(d_subject_polygon->get_interior_centroid());
+		const unsigned int num_edges = d_subject_polygon->number_of_vertices_in_exterior_ring();
+		const unsigned int num_tried = (std::min)(num_edges, 4u);
+		for (unsigned int i = 0; i < num_tried; ++i)
+		{
+			const GreatCircleArc &edge = d_subject_polygon->get_segment(i * num_edges / num_tried);
+			if (edge.is_zero_length())
+			{
+				continue;
+			}
+			const Vector3D midpoint =
+					Vector3D(edge.start_point().position_vector()) +
+					Vector3D(edge.end_point().position_vector());
+			const Vector3D centre(midpoint.get_normalisation());
+			const Vector3D offset =
+					2 * HEMISPHERE_CHECK_MARGIN * h * Vector3D(edge.rotation_axis());
+			for (const double side : { 1.0, -1.0 })
+			{
+				candidates.push_back((centre + side * offset).get_normalisation());
+			}
+		}
+	}
+	else
+	{
+		candidates.push_back(-subject_centre);
+		const UnitVector3D &clip_centre = d_clip.get_bounding_small_circle().get_centre();
+		candidates.push_back(clip_centre);
+		candidates.push_back(-clip_centre);
+		for (const UnitVector3D &axis : {
+				UnitVector3D::xBasis(), UnitVector3D::yBasis(), UnitVector3D::zBasis() })
+		{
+			candidates.push_back(axis);
+			candidates.push_back(-axis);
+		}
 	}
 	for (const UnitVector3D &candidate : candidates)
 	{
-		const PointOnSphere point(candidate);
-		if (!minimum_distance(point, *d_subject_polygon, false, margin) &&
-			!minimum_distance(point, d_clip, false, margin))
+		if (accept(candidate))
 		{
-			return point;
+			return PointOnSphere(candidate);
 		}
 	}
 	return boost::none;
@@ -2141,15 +2186,14 @@ GPlatesMaths::PolygonOverlay::Overlay::check_whole_result(
 	// A whole answer extracts nothing, so extract's check never sees it; the partitioner returns
 	// the subject itself. A wrong but consistent classification (every vertex consistent, as an
 	// anchorless chain's class inverted would be) then passes every other check. Only a reference
-	// point inside the subject can tell: outside it, both outputs are empty whatever the answer.
-	const boost::optional<PointOnSphere> point = find_reference_point();
+	// point inside the subject can tell (outside it, both outputs are empty whatever the answer),
+	// so the first candidate clear of both outlines and inside the subject; none (a subject
+	// thinner than the margin everywhere, which is routine) is counted as skipped, apart from the
+	// extracted outputs' skips (which have never been seen).
+	const boost::optional<PointOnSphere> point = find_reference_point(true/*inside_subject*/);
 	if (!point)
 	{
-		++d_diagnostics.hemisphere_check_skipped;
-		return;
-	}
-	if (!d_subject_polygon->is_point_in_polygon(*point, PolygonOnSphere::ADAPTIVE, false))
-	{
+		++d_diagnostics.whole_check_skipped;
 		return;
 	}
 	const bool in_clip = d_clip.is_point_in_polygon(*point, d_options.clip_speed, false);

@@ -568,6 +568,7 @@ namespace GPlatesMaths
 			unsigned int grouping_failures = 0;       // a hole whose parent is not an exterior
 			unsigned int hemisphere_check_failures = 0;  // the output read as its complement
 			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
+			unsigned int whole_check_skipped = 0;        // a whole answer, none inside the subject
 
 			// The sliver filter (Options::sliver_min_width), accumulated over every extract.
 			unsigned int sliver_exteriors_dropped = 0;   // each with its holes
@@ -914,7 +915,7 @@ namespace GPlatesMaths
 			 * The hemisphere check for a polygon subject found whole on one side (@a result inside
 			 * or outside), which extracts nothing to check (section 5.6): the reference point, if
 			 * inside the subject, must be inside the clip exactly when the result is inside.
-			 * Counted (Diagnostics::hemisphere_check_failures, hemisphere_check_skipped). Called by
+			 * Counted (Diagnostics::hemisphere_check_failures, whole_check_skipped). Called by
 			 * @a classify; public so that a test can give it a wrong result.
 			 *
 			 * @throws InconsistentOverlayException on a failure if Options::throw_if_inconsistent.
@@ -1169,10 +1170,12 @@ namespace GPlatesMaths
 			 * The hemisphere check's reference point (section 5.2): the first of the inputs'
 			 * bounding-circle centres, their antipodes and the six axis points farther than
 			 * HEMISPHERE_CHECK_MARGIN thicknesses from both inputs' outlines; none if no candidate
-			 * is.
+			 * is. With @a inside_subject, the first such point inside the subject among the
+			 * subject's centre, its interior centroid and points off four of its exterior edges.
 			 */
 			boost::optional<PointOnSphere>
-			find_reference_point() const;
+			find_reference_point(
+					bool inside_subject = false) const;
 
 			//! Apply deductions at every vertex until nothing changes; true if anything did.
 			bool
