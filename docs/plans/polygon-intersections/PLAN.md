@@ -918,7 +918,9 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - GPlates 209 of 209, pyGPlates 7 of 7, docs from scratch clean; real-data timing unchanged (0.280 s
     against 0.277 s at 0 Ma) and nothing refused. The hunt: the same 13 polygon differences, plus about
     35 polyline cases where the prototype (`r5o`) still makes a hairpin internal, all passing the
-    polyline oracle. **Open**: mirror the polyline rule in the prototype (`r5p`) so the hunt is clean
+    polyline oracle. Linux (Ubuntu 22.04, `b41aa8223`): pyGPlates 7 of 7, GPlates 209 of 209. A Fable
+    review of the fixes (`prB-review-6-fixes.md`) found three medium gaps in them, fixed next.
+    **Open**: mirror the polyline rule in the prototype (`r5p`) so the hunt is clean
     again; the margin order still has no hand-built test (the prototype comparison pins it).
 
 - **Resume here** (updated 2026-11-08):
