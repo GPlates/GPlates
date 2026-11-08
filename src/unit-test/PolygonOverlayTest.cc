@@ -2016,8 +2016,10 @@ TEST(PolygonOverlayTest, OrientationIndependentOfInputs)
 }
 
 
-// A union over a hemisphere throws, never returning its complement (section 5.6), unless told only
-// to count; the intersection and the differences of the same inputs do not throw. The symmetric
+// A union over a hemisphere whose rings would read as its complement throws, never returning the
+// complement (section 5.6), unless told only to count; the intersection and the differences of the
+// same inputs do not throw. (Not every union over a hemisphere throws: one whose rings each bound
+// their output on their smaller side, a parity output of several rings, reads right.) The symmetric
 // difference of two overlapping caps is two crescents, each inside an input; but that of two
 // polygons sharing an edge is joined across it (the opposite-sides chain is not kept), and exceeds
 // a hemisphere with their union. Under a hemisphere, the union is returned.

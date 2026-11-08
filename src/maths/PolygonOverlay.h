@@ -952,12 +952,16 @@ namespace GPlatesMaths
 			 * if Options::sliver_min_width is set. Appended to @a polygons.
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if the rings would be
-			 * read as the output's complement (section 5.2): the union or the symmetric difference
-			 * exceeds a hemisphere, or the classes are wrong (the only cause for the intersection
-			 * and the differences, which lie inside an input). Unless
-			 * Options::throw_if_inconsistent is false: then counted
-			 * (Diagnostics::hemisphere_check_failures) and the rings returned as read, which a
-			 * caller must not take for the output. Also throws as @a extract_rings does.
+			 * read as the output's complement (section 5.2): a union or a symmetric difference
+			 * larger than a hemisphere can be (not every one is), or the classes are wrong (the
+			 * only cause for the intersection and the differences, each of whose rings' inside lies
+			 * within one input ring's smaller side). Unless Options::throw_if_inconsistent is
+			 * false: then counted (Diagnostics::hemisphere_check_failures) and the rings returned
+			 * as read, which a caller must not take for the output. Counted only: a hole with no
+			 * exterior containing it, kept as an exterior (Diagnostics::grouping_failures; the
+			 * output of an input whose rings cross), and coincident rings
+			 * (Diagnostics::coincident_rings, rings of no area that clean-up missed). Also throws
+			 * as @a extract_rings does.
 			 */
 			void
 			extract(
@@ -1023,8 +1027,9 @@ namespace GPlatesMaths
 			/**
 			 * Where a ring is cut at an overlay vertex that no record of its own names: the input
 			 * touches itself there, on a stretch it shares with the other input (@a
-			 * find_self_touch_cuts). Keyed by (ring, ring-local segment, the vertex whose stop the
-			 * cuts follow); each cut is (ratio along the segment, vertex), in order along it.
+			 * find_self_touch_cuts). Keyed by (ring, ring-local segment, the first record of the
+			 * stop the cuts follow); each cut is (ratio along the segment, vertex), in order along
+			 * it.
 			 */
 			std::map<std::tuple<unsigned int, unsigned int, unsigned int>,
 					std::vector<std::pair<double, unsigned int>>> d_self_touch_cuts;

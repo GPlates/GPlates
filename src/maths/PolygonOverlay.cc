@@ -630,17 +630,19 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 	// arc whose class is deduced (two crossings of a twist lying on the other input), and either
 	// order is a valid output, differing only in ring structure.
 	//
-	// The self-touch cuts that follow the stop of vertex 'vertex' on segment 'k', if any.
+	// The self-touch cuts that follow, on segment 'k', the stop whose first record is 'record',
+	// if any. Keyed by the stop (its first record), not its vertex: a vertex can have two stops on
+	// one segment, and the cuts belong after the one the cut piece starts at.
 	std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> self_touch_cuts_added;
-	const auto add_self_touch_cuts = [&](unsigned int k, unsigned int vertex)
+	const auto add_self_touch_cuts = [&](unsigned int k, unsigned int record)
 	{
-		const auto key = std::make_tuple(ring, k, vertex);
+		const auto key = std::make_tuple(ring, k, record);
 		const auto cuts = d_self_touch_cuts.find(key);
 		if (cuts == d_self_touch_cuts.end() ||
 			std::find(self_touch_cuts_added.begin(), self_touch_cuts_added.end(), key) !=
 					self_touch_cuts_added.end())
 		{
-			return;  // none, or already added after another record of the vertex
+			return;  // none, or already added
 		}
 		self_touch_cuts_added.push_back(key);
 		for (const std::pair<double, unsigned int> &cut : cuts->second)
@@ -688,7 +690,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 						GPLATES_ASSERTION_SOURCE);
 				d_stop_records.push_back(r);
 			}
-			add_self_touch_cuts(k, vertex);
+			add_self_touch_cuts(k, at_vertex_records[k].front());
 		}
 		else
 		{
@@ -722,7 +724,7 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 					records[r].position,
 					ratio_along_segment(ring_view.segments[k], records[r].position)});
 			d_stop_records.push_back(r);
-			add_self_touch_cuts(k, d_vertex_of_record[r]);
+			add_self_touch_cuts(k, r);
 		}
 	}
 	ring_view.end_stop = d_stops.size();
@@ -1201,8 +1203,12 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 
 		const double segment_angle =
 				angle_between(segment_start, segment.end_point().position_vector());
+		const Stop &start_stop = d_stops[piece.start_stop];
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				start_stop.num_records > 0,
+				GPLATES_ASSERTION_SOURCE);
 		std::vector<std::pair<double, unsigned int>> &cuts = d_self_touch_cuts[std::make_tuple(
-				piece.ring, *piece.single_arc_segment, *piece.start_vertex)];
+				piece.ring, *piece.single_arc_segment, d_stop_records[start_stop.first_record])];
 		for (unsigned int i = 1; i < chain.size(); ++i)
 		{
 			cuts.push_back(std::make_pair(chain_along[i] / segment_angle, chain[i]));
@@ -4212,7 +4218,10 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 		if (!parent[r] || !polygon_of_ring[*parent[r]])
 		{
 			// The containment is not a nesting (it is, for rings that do not cross): kept as an
-			// exterior, and counted.
+			// exterior, and counted. Not thrown: an input whose rings cross (a self-intersecting
+			// polygon, common in real data) gives output rings that cross, which nest arbitrarily,
+			// and the hunt's 255 grouping failures in 119,198 generated cases were all of that
+			// kind; throwing would refuse such inputs, which partitioning has always accepted.
 			++d_diagnostics.grouping_failures;
 			polygon_of_ring[r] = polygons.size();
 			polygons.push_back(OutputPolygon{ oriented(r, true), std::vector<OutputRing>() });
