@@ -919,7 +919,9 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     against 0.277 s at 0 Ma) and nothing refused. The hunt: the same 13 polygon differences, plus about
     35 polyline cases where the prototype (`r5o`) still makes a hairpin internal, all passing the
     polyline oracle. Linux (Ubuntu 22.04, `b41aa8223`): pyGPlates 7 of 7, GPlates 209 of 209. A Fable
-    review of the fixes (`prB-review-6-fixes.md`) found three medium gaps in them, fixed next.
+    review of the fixes (`prB-review-6-fixes.md`) found three medium gaps in them, fixed in the next
+    commit (the hunt unchanged, both suites green). Still unpinned: the self-touch key (no constructed
+    input reaches it) and classify() calling the whole answer's check.
     **Open**: mirror the polyline rule in the prototype (`r5p`) so the hunt is clean
     again; the margin order still has no hand-built test (the prototype comparison pins it).
 
