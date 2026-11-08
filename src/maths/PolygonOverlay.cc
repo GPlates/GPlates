@@ -28,6 +28,7 @@
 #include <limits>
 #include <map>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <unordered_map>
 #include <utility>
@@ -929,8 +930,11 @@ GPlatesMaths::PolygonOverlay::Overlay::apply_loop_and_spike_rules()
 
 	//
 	// The spike rule: two consecutive single arcs of one ring going from vertex A to vertex B and
-	// straight back to A are both internal (the hairpin they bound is no wider than the identity
-	// groups at its ends). The pieces are stored ring by ring, in ring order.
+	// straight back to A are both internal (the hairpin they bound has no area). The pieces are
+	// stored ring by ring, in ring order. Polygon rings only: a polyline's hairpin is real
+	// geometry (a polyline from one clip vertex to another and straight back has a class, and
+	// made internal it took its neighbour's class untested, so a polyline across the clip came
+	// back whole outside).
 	//
 	unsigned int ring_first_piece = 0;
 	while (ring_first_piece < d_pieces.size())
@@ -942,11 +946,11 @@ GPlatesMaths::PolygonOverlay::Overlay::apply_loop_and_spike_rules()
 			++ring_end_piece;
 		}
 
-		// Consecutive pieces of a closed ring wrap round; a polyline's last and first do not meet.
+		// Consecutive pieces of a closed ring wrap round. A polyline's ring has no pairs.
 		const unsigned int num_ring_pieces = ring_end_piece - ring_first_piece;
 		const unsigned int num_pairs = d_rings[d_pieces[ring_first_piece].ring].closed
 				? num_ring_pieces
-				: num_ring_pieces - 1;
+				: 0;
 		for (unsigned int i = 0; i < num_pairs; ++i)
 		{
 			Piece &a = d_pieces[ring_first_piece + i];
@@ -2170,11 +2174,31 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
 	const std::pair<unsigned int, unsigned int> range =
 			ring_piece_range(d_side_rings_begin[SUBJECT]);
 
-	// (1) A piece along the clip's outline (a common pair) gets the along class (section 5.2).
+	// (1) A piece along the clip's outline gets the along class (section 5.2): a common pair, or a
+	// single arc between two vertices that a clip single arc also joins, which pairs nothing when
+	// the polyline runs there more than once (a hairpin along the clip's edge, from one clip
+	// vertex to the next and straight back: two subject arcs and one clip arc).
+	std::set<std::pair<unsigned int, unsigned int>> clip_single_arcs;
+	for (const Piece &piece : d_pieces)
+	{
+		if (d_rings[piece.ring].side == CLIP && !piece.closed && !piece.internal &&
+			!piece.has_interior_vertex && piece.start_vertex && piece.end_vertex)
+		{
+			clip_single_arcs.insert(std::make_pair(
+					(std::min)(*piece.start_vertex, *piece.end_vertex),
+					(std::max)(*piece.start_vertex, *piece.end_vertex)));
+		}
+	}
 	for (unsigned int p = range.first; p < range.second; ++p)
 	{
 		Piece &piece = d_pieces[p];
-		if (!piece.internal && piece.common)
+		const bool along_clip_arc = !piece.internal && !piece.has_interior_vertex &&
+				piece.start_vertex && piece.end_vertex &&
+				*piece.start_vertex != *piece.end_vertex &&
+				clip_single_arcs.count(std::make_pair(
+						(std::min)(*piece.start_vertex, *piece.end_vertex),
+						(std::max)(*piece.start_vertex, *piece.end_vertex)));
+		if (!piece.internal && (piece.common || along_clip_arc))
 		{
 			piece.piece_class = d_options.polyline_along_is_inside ? CLASS_INSIDE : CLASS_OUTSIDE;
 			piece.method = METHOD_ALONG;
@@ -2188,7 +2212,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
 	for (unsigned int p = range.first; p < range.second; ++p)
 	{
 		Piece &piece = d_pieces[p];
-		if (piece.internal || piece.common)
+		if (piece.internal || piece.method == METHOD_ALONG)
 		{
 			continue;
 		}
@@ -2267,7 +2291,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_polyline_pieces()
 				}
 				Piece &a = d_pieces[polyline_pieces[0]];
 				Piece &b = d_pieces[polyline_pieces[1]];
-				if (a.common || b.common)
+				if (a.method == METHOD_ALONG || b.method == METHOD_ALONG)
 				{
 					continue;
 				}

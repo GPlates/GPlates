@@ -2373,6 +2373,34 @@ TEST(PolygonOverlayTest, PolylineAlong)
 }
 
 
+// A polyline's hairpin is real geometry (section 5.2: the spike rule is for polygon rings): a
+// polyline from outside to the clip's corner Y, across to the opposite corner Z, straight back to
+// Y and out again is inside from Y to Z and back. Made internal by the spike rule, the hairpin
+// once took its neighbours' class untested, and the polyline came back whole outside. Along the
+// clip's edge instead (Z the next corner), the two arcs and the clip's edge pair as nothing, and
+// both arcs are along, so inside.
+TEST(PolygonOverlayTest, PolylineHairpin)
+{
+	const auto Q = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	const PointOnSphere Y = F.at(-0.01, 0.01);
+	for (const bool along : { false, true })
+	{
+		SCOPED_TRACE(along ? "along" : "across");
+		const PointOnSphere Z = along ? F.at(0.01, 0.01) : F.at(0.01, -0.01);
+		const auto L = PolylineOnSphere::create(
+				ring_type{ F.at(-0.02, 0.02), Y, Z, Y, F.at(-0.02, 0.03) });
+		Overlay::Overlay overlay(*L, *Q);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_INTERSECTING);
+		EXPECT_EQ(overlay.get_diagnostics().spikes, 0u);
+		EXPECT_EQ(overlay.get_diagnostics().along_pieces, along ? 2u : 0u);
+		EXPECT_EQ(
+				polyline_runs(overlay),
+				(runs_type{ { false, 2 }, { true, 3 }, { false, 2 } }));
+		check_polyline_oracle(*L, *Q, overlay);
+	}
+}
+
+
 // A touch: a vertex of the polyline on the clip's edge with both neighbours outside. No deduction
 // across a touch (the polyline bounces), so both pieces are tested and the polyline is outside.
 // And an end on the clip's edge: the output starts at the end point itself.
