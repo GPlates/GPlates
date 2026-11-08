@@ -18,6 +18,19 @@
 
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
+def _plate_partitioning_set_keeping_unpartitioned(feature, set_function, property_names):
+    # 'set_geometry()' replaces every property of its geometry (and range) property name. The feature here holds only
+    # the properties that were not partitioned (the partitioned ones were removed), and one of those can share the
+    # name of a partitioned one (a time-dependent geometry beside a constant one, say), so it is put back afterwards,
+    # unchanged, as GPlates' Assign Plate IDs keeps it.
+    kept = [(property.get_name(), property.get_time_dependent_value())
+            for property in feature if property.get_name() in property_names]
+    set_function()
+    for property_name, property_value in kept:
+        feature.add(property_name, property_value, VerifyInformationModel.no)
+
+
+# This function is private in this 'pygplates' module (function name prefixed with a single underscore).
 def _plate_partitioning_set_geometry(feature, geometries, geometry_property_name, range_property_name):
     # Each geometry is a geometry, or a (geometry, scalars) coverage. A coverage whose scalars cover a
     # polygon's exterior ring only (an older file's, kept in that form for its pieces, as GPlates' Assign Plate IDs
@@ -33,12 +46,17 @@ def _plate_partitioning_set_geometry(feature, geometries, geometry_property_name
         raise AssertionError('A partitioned coverage has {0} scalars for a geometry of {1} points.'.format(
                 num_scalars, len(geometry.get_points())))
 
-    if any(isinstance(geometry, tuple) and is_exterior_ring_only(geometry) for geometry in geometries):
-        feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name)
-        for geometry, scalars in geometries:
-            feature.add(range_property_name, GmlDataBlock(scalars), VerifyInformationModel.no)
-    else:
-        feature.set_geometry(geometries, geometry_property_name)
+    def set_geometries():
+        if any(isinstance(geometry, tuple) and is_exterior_ring_only(geometry) for geometry in geometries):
+            feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name)
+            for geometry, scalars in geometries:
+                feature.add(range_property_name, GmlDataBlock(scalars), VerifyInformationModel.no)
+        else:
+            feature.set_geometry(geometries, geometry_property_name)
+
+    _plate_partitioning_set_keeping_unpartitioned(
+            feature, set_geometries,
+            [name for name in (geometry_property_name, range_property_name) if name is not None])
 
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
@@ -69,12 +87,17 @@ def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grou
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
         # If so then try again by cloning one feature per extra geometry.
+        def set_geometry(feature, geometry_or_geometries):
+            _plate_partitioning_set_keeping_unpartitioned(
+                    feature,
+                    lambda: feature.set_geometry(geometry_or_geometries, geometry_property_name),
+                    [geometry_property_name])
         try:
-            feature_for_geometries.set_geometry(geometries, geometry_property_name)
+            set_geometry(feature_for_geometries, geometries)
         except InformationModelError:
-            feature_for_geometries.set_geometry(geometries[0], geometry_property_name)
+            set_geometry(feature_for_geometries, geometries[0])
             for geometry_index in range(1, len(geometries)):
-                new_feature().set_geometry(geometries[geometry_index], geometry_property_name)
+                set_geometry(new_feature(), geometries[geometry_index])
 
     # Return sequence of features.
     return features

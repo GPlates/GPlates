@@ -2378,6 +2378,25 @@ class PlatePartitionerTestCase(unittest.TestCase):
             self.assertFalse(any(isinstance(property.get_time_dependent_value(), pygplates.GpmlPiecewiseAggregation)
                                  for property in partitioned_feature))
 
+        # A time-dependent geometry that is not partitioned (two windows) beside a constant one of the same property name
+        # that is: the time-dependent one is kept, unchanged, on every feature returned (setting the pieces replaces every
+        # property of the name, which once dropped it from them all).
+        two_windows = pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 10, 0),
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 20, 10)])
+        feature = pygplates.Feature()
+        feature.add(pygplates.PropertyName.gpml_unclassified_geometry, pygplates.GmlPolygon(polygon))
+        feature.add(pygplates.PropertyName.gpml_unclassified_geometry, two_windows, pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            values = [property.get_time_dependent_value() for property in partitioned_feature
+                      if property.get_name() == pygplates.PropertyName.gpml_unclassified_geometry]
+            self.assertTrue(len(values) == 2)
+            self.assertTrue(sum(isinstance(value, pygplates.GpmlPiecewiseAggregation) for value in values) == 1)
+            kept = next(value for value in values if isinstance(value, pygplates.GpmlPiecewiseAggregation))
+            self.assertTrue(len(kept.get_time_windows()) == 2)
+
         # The window doesn't contain the reconstruction time: returned whole, unpartitioned, its window kept.
         partitioned, unpartitioned = plate_partitioner.partition_features(
                 [feature_with_window(50, 10)],
