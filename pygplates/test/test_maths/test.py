@@ -21,6 +21,17 @@ FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
 class DateLineWrapperCase(unittest.TestCase):
+    def test_wrap_tessellate_degrees(self):
+        date_line_wrapper = pygplates.DateLineWrapper()
+        polyline = pygplates.PolylineOnSphere([(0, 170), (0, 170.01)])
+        # A threshold that is not positive (or NaN) means no tessellation, as documented.
+        for tessellate_degrees in (None, 0, -1, float('nan')):
+            wrapped_polylines = date_line_wrapper.wrap(polyline, tessellate_degrees)
+            self.assertEqual(len(wrapped_polylines[0].get_points()), 2)
+        # A tiny positive threshold is clamped up to a minimum (rather than exhausting memory).
+        wrapped_polylines = date_line_wrapper.wrap(polyline, 1e-12)
+        self.assertTrue(2 < len(wrapped_polylines[0].get_points()) < 100000)
+
     def test_wrap(self):
         date_line_wrapper = pygplates.DateLineWrapper()
         date_line_wrapper_90 = pygplates.DateLineWrapper(90)
@@ -441,6 +452,9 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertRaises(pygplates.IndeterminateGreatCircleArcDirectionError, zero_length_gca.get_arc_direction, 0.5)
     
     def test_tessellate(self):
+        # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
+        for tessellate_radians in (0, -1, float('nan'), 1e-12):
+            self.assertRaises(ValueError, self.gca.to_tessellated, tessellate_radians)
         tessellation_points = self.gca.to_tessellated(math.radians(91))
         self.assertTrue(len(tessellation_points) == 2)
         self.assertTrue(tessellation_points[0] == self.gca.get_start_point())

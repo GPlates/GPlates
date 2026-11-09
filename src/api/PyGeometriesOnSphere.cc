@@ -36,6 +36,7 @@
 #include <boost/tuple/tuple.hpp>
 
 #include "PyGeometriesOnSphere.h"
+#include "PyGreatCircleArc.h"
 
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
@@ -1997,11 +1998,7 @@ namespace GPlatesApi
 			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
 			const double &tessellate_radians)
 	{
-		if (tessellate_radians <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
-			bp::throw_error_already_set();
-		}
+		raise_value_error_if_invalid_tessellate_radians(tessellate_radians);
 
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -2819,7 +2816,7 @@ export_polyline_on_sphere()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: PolylineOnSphere\n"
-				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
+				"  :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -3594,11 +3591,7 @@ namespace GPlatesApi
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
 			const double &tessellate_radians)
 	{
-		if (tessellate_radians <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
-			bp::throw_error_already_set();
-		}
+		raise_value_error_if_invalid_tessellate_radians(tessellate_radians);
 
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -4599,7 +4592,7 @@ export_polygon_on_sphere()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: PolygonOnSphere\n"
-				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
+				"  :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"

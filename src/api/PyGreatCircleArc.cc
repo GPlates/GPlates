@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <limits>
+#include <sstream>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
@@ -38,6 +40,7 @@
 
 #include "maths/GreatCircleArc.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Real.h"
 #include "maths/Rotation.h"
@@ -45,6 +48,36 @@
 
 
 namespace bp = boost::python;
+
+
+double
+GPlatesApi::get_minimum_tessellate_radians()
+{
+	// The tessellation of a great circle arc (see 'tessellate()' in "maths/GreatCircleArc.cc") counts
+	// its segments in an 'int', as 1 + arc_length / threshold, and an arc is at most PI long.
+	return GPlatesMaths::PI / (std::numeric_limits<int>::max)();
+}
+
+
+void
+GPlatesApi::raise_value_error_if_invalid_tessellate_radians(
+		const double &tessellate_radians)
+{
+	// Note: '!(x > 0)' also catches NaN.
+	if (!(tessellate_radians > 0))
+	{
+		PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
+		bp::throw_error_already_set();
+	}
+
+	if (tessellate_radians < get_minimum_tessellate_radians())
+	{
+		std::ostringstream error_message;
+		error_message << "'tessellate_radians' should not be less than " << get_minimum_tessellate_radians();
+		PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
+		bp::throw_error_already_set();
+	}
+}
 
 
 namespace GPlatesApi
@@ -134,11 +167,7 @@ namespace GPlatesApi
 			const GPlatesMaths::GreatCircleArc &great_circle_arc,
 			const double &tessellate_radians)
 	{
-		if (tessellate_radians <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
-			bp::throw_error_already_set();
-		}
+		raise_value_error_if_invalid_tessellate_radians(tessellate_radians);
 
 		std::vector<GPlatesMaths::PointOnSphere> tessellation_points;
 		tessellate(tessellation_points, great_circle_arc, tessellate_radians);
@@ -444,7 +473,7 @@ export_great_circle_arc()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: list of PointOnSphere\n"
-				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
+				"  :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)\n"
 				"\n"
 				"  .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then "
 				"only its :meth:`start point <get_start_point>` and :meth:`end point <get_end_point>` are returned. "

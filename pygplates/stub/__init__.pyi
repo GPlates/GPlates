@@ -199,7 +199,7 @@ class DateLineWrapper:
 
         :param geometry: the geometry to wrap
         :type geometry: GeometryOnSphere
-        :param tessellate_degrees: optional tessellation threshold (in degrees) - threshold is clamped to the range [0, 180] if specified
+        :param tessellate_degrees: optional tessellation threshold (in degrees) - threshold is clamped to the range [0, 180] if specified (zero, negative or NaN means no tessellation)
         :type tessellate_degrees: float or None
         :rtype: LatLonPoint, or DateLineWrapper.LatLonMultiPoint, or list of DateLineWrapper.LatLonPolyline, or list of DateLineWrapper.LatLonPolygon
 
@@ -7994,7 +7994,7 @@ class GreatCircleArc:
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: list of PointOnSphere
-        :raises ValueError: if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)
 
         .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then only its :meth:`start point <get_start_point>` and :meth:`end point <get_end_point>` are returned. For example, this applies to a :meth:`zero length <is_zero_length>` arc. Otherwise tessellated points *within* this arc are *also* returned.
 
@@ -11257,7 +11257,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: PolygonOnSphere
-        :raises ValueError: if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)
 
         Adjacent points (in the returned tessellated polygon) are separated by no more than *tessellate_radians* on the globe.
 
@@ -11817,7 +11817,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: PolylineOnSphere
-        :raises ValueError: if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)
 
         Adjacent points (in the returned tessellated polyline) are separated by no more than *tessellate_radians* on the globe.
 

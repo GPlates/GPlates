@@ -150,6 +150,7 @@ Changes since 1.0.0:
     * A sampling built least recent first (which `get_value()` and `get_time_samples_bounding_time()` accepted) now has its most recent time sample first.
     * Changing the time samples directly (eg, a time sample's time) must keep them in that order, as `GpmlIrregularSampling` now documents.
   * `PolylineOnSphere.rotation_interpolate()` raises `ValueError` for an interpolate interval that is zero, negative or NaN, or so small that the number of interpolated polylines doesn't fit a 32-bit integer (previously a small negative interval tried to allocate billions of polylines, and zero or NaN silently returned just the two polylines), and for an interpolate ratio outside [0, 1] or NaN (previously `PreconditionViolationError`).
+  * `to_tessellated()` on `PolylineOnSphere`, `PolygonOnSphere` and `GreatCircleArc` raises `ValueError` for a NaN threshold (previously accepted), and for a threshold less than about 1.5e-9 radians, where the number of points no longer fits a 32-bit integer (previously undefined behaviour). `DateLineWrapper.wrap()` treats a NaN `tessellate_degrees` as no tessellation, like zero or a negative value, and raises a tiny positive one to the minimum at which the number of points fits a 32-bit integer (previously undefined behaviour).
 
 pyGPlates 1.0.0
 ===============

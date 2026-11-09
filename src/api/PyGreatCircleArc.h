@@ -32,6 +32,25 @@
 namespace GPlatesApi
 {
 	/**
+	 * The smallest tessellation threshold, in radians, for which the number of segments tessellating
+	 * a great circle arc (at most PI long) fits an 'int' (about 1.5e-9 radians).
+	 */
+	double
+	get_minimum_tessellate_radians();
+
+	/**
+	 * Raises Python 'ValueError' if @a tessellate_radians is not positive (including NaN), or is
+	 * less than @a get_minimum_tessellate_radians.
+	 *
+	 * Used by the 'to_tessellated()' methods. Note that, below that, a small threshold still means
+	 * many points (that is the caller's cost).
+	 */
+	void
+	raise_value_error_if_invalid_tessellate_radians(
+			const double &tessellate_radians);
+
+
+	/**
 	 * Cannot calculate great circle normal for zero length arc.
 	 */
 	class IndeterminateGreatCircleArcNormalException :

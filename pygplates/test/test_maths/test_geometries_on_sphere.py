@@ -1248,6 +1248,9 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(isinstance(self.polyline.get_centroid(), pygplates.PointOnSphere))
     
     def test_tessellate(self):
+        # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
+        for tessellate_radians in (0, -1, float('nan'), 1e-12):
+            self.assertRaises(ValueError, self.polyline.to_tessellated, tessellate_radians)
         tessellated = self.polyline.to_tessellated(math.radians(91))
         self.assertTrue(tessellated == self.polyline)
         
@@ -1916,6 +1919,9 @@ class PolygonOnSphereCase(unittest.TestCase):
             self.assertLess(_angle(polygon.get_interior_centroid().to_xyz(), _normalise(total)), 2e-5)
     
     def test_tessellate(self):
+        # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
+        for tessellate_radians in (0, -1, float('nan'), 1e-12):
+            self.assertRaises(ValueError, self.polygon.to_tessellated, tessellate_radians)
         tessellated = self.polygon.to_tessellated(math.radians(91))
         self.assertTrue(tessellated == self.polygon)
         
