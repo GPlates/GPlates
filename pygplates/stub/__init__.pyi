@@ -16963,7 +16963,7 @@ class TopologicalModel:
         :type oldest_time: float or GeoTimeInstant
         :param youngest_time: Youngest time in the history of topologies. Defaults to present day.
         :type youngest_time: float or GeoTimeInstant
-        :param time_increment: Time step in the history of topologies (``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My.
+        :param time_increment: Time step in the history of topologies (``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My. There can be at most 100,000 time slots (``(oldest_time - youngest_time) / time_increment + 1``). Note that the run time grows with the square of the number of time slots (and memory linearly), so a small increment over a long time span is expensive.
         :type time_increment: float
         :param reconstruction_plate_id: If specified then *geometry* is assumed to be a snapshot at present day, and this will rotate it to *initial_time*. If not specified then *geometry* is assumed to already be a snapshot at *initial_time* - this is the default.
         :type reconstruction_plate_id: int
@@ -16976,7 +16976,8 @@ class TopologicalModel:
         :rtype: ReconstructedGeometryTimeSpan
         :raises ValueError: if initial time, oldest time or youngest time is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
         :raises ValueError: if oldest time is later than (or same as) youngest time.
-        :raises ValueError: if time increment is negative or zero.
+        :raises ValueError: if time increment is negative or zero (or NaN).
+        :raises ValueError: if there would be more than 100,000 time slots.
         :raises ValueError: if oldest to youngest time period is not an integer multiple of the time increment.
         :raises ValueError: if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values, or the number of scalars is not equal to the number of points in *geometry*
 

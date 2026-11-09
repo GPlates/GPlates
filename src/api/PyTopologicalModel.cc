@@ -1264,9 +1264,27 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		bp::throw_error_already_set();
 	}
 
-	if (time_increment <= 0)
+	// Note: '!(x > 0)' also rejects NaN.
+	if (!(time_increment > 0))
 	{
 		PyErr_SetString(PyExc_ValueError, "Time increment must be positive.");
+		bp::throw_error_already_set();
+	}
+
+	// Limit the number of time slots (computed as a double, before creating the time range, since it
+	// might not fit an integer).
+	//
+	// Run time is quadratic in the number of time slots (and memory is linear). 1e5 slots covers 1,000 Myr
+	// at 0.01 Myr, which on even a tiny topology is already about 1.5 GB and many minutes.
+	const double max_num_time_slots = 1e5;
+	const double num_time_slots_double = (oldest_time.value() - youngest_time.value()) / time_increment + 1;
+	if (!(num_time_slots_double <= max_num_time_slots))
+	{
+		std::ostringstream error_message;
+		error_message << "Too many time slots (" << num_time_slots_double
+				<< ") from oldest time to youngest time with the time increment (the limit is "
+				<< max_num_time_slots << ").";
+		PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
 		bp::throw_error_already_set();
 	}
 
@@ -2284,7 +2302,10 @@ export_topological_model()
 				"  :param youngest_time: Youngest time in the history of topologies. Defaults to present day.\n"
 				"  :type youngest_time: float or GeoTimeInstant\n"
 				"  :param time_increment: Time step in the history of topologies ("
-				"``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My.\n"
+				"``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My. "
+				"There can be at most 100,000 time slots (``(oldest_time - youngest_time) / time_increment + 1``). "
+				"Note that the run time grows with the square of the number of time slots (and memory linearly), "
+				"so a small increment over a long time span is expensive.\n"
 				"  :type time_increment: float\n"
 				"  :param reconstruction_plate_id: If specified then *geometry* is assumed to be a snapshot at present day, and this will "
 				"rotate it to *initial_time*. If not specified then *geometry* is assumed to already be a snapshot at *initial_time* - this is the default.\n"
@@ -2307,7 +2328,8 @@ export_topological_model()
 				"  :raises ValueError: if initial time, oldest time or youngest time is "
 				"distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 				"  :raises ValueError: if oldest time is later than (or same as) youngest time.\n"
-				"  :raises ValueError: if time increment is negative or zero.\n"
+				"  :raises ValueError: if time increment is negative or zero (or NaN).\n"
+				"  :raises ValueError: if there would be more than 100,000 time slots.\n"
 				"  :raises ValueError: if oldest to youngest time period is not an integer multiple of the time increment.\n"
 				"  :raises ValueError: if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
 				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "

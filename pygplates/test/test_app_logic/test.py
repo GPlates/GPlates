@@ -3726,6 +3726,22 @@ class TopologicalModelTestCase(unittest.TestCase):
                 100.0,
                 oldest_time=4,
                 time_increment=0)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4,
+                time_increment=float('nan'))
+        # At most 100,000 time slots (previously, a tiny increment could overflow the slot count and exhaust memory).
+        for time_increment in (100 / 2**31, 1e-7, 0.0009):
+            self.assertRaises(
+                    ValueError,
+                    self.topological_model.reconstruct_geometry,
+                    multipoint,
+                    100.0,
+                    oldest_time=100,
+                    time_increment=time_increment)
 
     def test_get_reconstructed_data(self):
         multipoint =  pygplates.MultiPointOnSphere([(0,0), (0,-30), (0,-60)])

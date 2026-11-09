@@ -167,6 +167,7 @@ Changes since 1.0.0:
   * Fixed `resolve_topologies()` ignoring its `default_resolve_topology_parameters` argument (it always used the default parameters, eg, no strain rate clamping).
   * `resolve_topologies()` raises `ValueError` for a `resolve_topological_section_types` other than `ResolveTopologyType.boundary` and/or `ResolveTopologyType.network`, as documented (previously it gave no sections, and wrote no file, without an error). When not specified, it defaults to `resolve_topology_types` without any `ResolveTopologyType.line`.
   * A `ResolvedTopologicalNetwork` keeps the features of its rigid blocks and other interior geometries alive, as it does its boundary sections' features. Previously, once the features used to resolve it were gone (eg, after `TopologicalSnapshot(filenames, ...).get_resolved_topologies()`), a rigid block's `get_feature()` returned `None`, and `get_resolved_geometry_point_features(True)` raised `PreconditionViolationError`.
+  * `TopologicalModel.reconstruct_geometry()` raises `ValueError` for a NaN `time_increment`, and for more than 100,000 time slots from `oldest_time` to `youngest_time`. Previously a tiny increment could overflow the number of time slots (undefined behaviour, using gigabytes of memory in a second), and a small one took a very long time (the run time grows with the square of the number of time slots).
 
 pyGPlates 1.0.0
 ===============
