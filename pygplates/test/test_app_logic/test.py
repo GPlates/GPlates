@@ -2249,6 +2249,70 @@ class PlatePartitionerTestCase(unittest.TestCase):
 
 
 class ResolvedTopologiesTestCase(unittest.TestCase):
+    @staticmethod
+    def _straining_network():
+        # A network whose interior point (plate 2) moves relative to its boundary (plate 1), so it strains.
+        rotation_features = [pygplates.Feature.create_total_reconstruction_sequence(
+                0, 2, pygplates.GpmlIrregularSampling([
+                        pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation.create_identity_rotation()), 0),
+                        pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 90), 0.5)), 100)]))]
+        boundary_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                pygplates.PolygonOnSphere([(-20, -20), (-20, 20), (20, 20), (20, -20)]), reconstruction_plate_id=1)
+        interior_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                pygplates.MultiPointOnSphere([(5, 5)]), reconstruction_plate_id=2)
+        network = pygplates.GpmlTopologicalNetwork(
+                [pygplates.GpmlTopologicalSection.create(boundary_feature, topological_geometry_type=pygplates.GpmlTopologicalPolygon)],
+                [pygplates.GpmlTopologicalSection.create_network_interior(interior_feature)])
+        topological_features = [boundary_feature, interior_feature, pygplates.Feature.create_topological_network_feature(network)]
+        return topological_features, rotation_features
+
+    @staticmethod
+    def _max_strain_rate(resolved_topologies):
+        return max(vertex.strain_rate.get_total_strain_rate()
+                   for resolved_topology in resolved_topologies if isinstance(resolved_topology, pygplates.ResolvedTopologicalNetwork)
+                   for vertex in resolved_topology.get_network_triangulation().get_vertices())
+
+    def test_resolve_topologies_default_resolve_topology_parameters(self):
+        # 'default_resolve_topology_parameters' is used (it was ignored, giving the defaults).
+        topological_features, rotation_features = self._straining_network()
+        clamping = pygplates.ResolveTopologyParameters(enable_strain_rate_clamping=True, max_clamped_strain_rate=1e-30)
+        snapshot_resolved_topologies = pygplates.TopologicalSnapshot(
+                topological_features, rotation_features, 10, default_resolve_topology_parameters=clamping).get_resolved_topologies()
+        for keyword in (True, False):
+            resolved_topologies = []
+            if keyword:
+                pygplates.resolve_topologies(topological_features, rotation_features, resolved_topologies, 10,
+                                             default_resolve_topology_parameters=clamping)
+            else:
+                pygplates.resolve_topologies(topological_features, rotation_features, resolved_topologies, 10, None, None, clamping)
+            self.assertAlmostEqual(self._max_strain_rate(resolved_topologies), self._max_strain_rate(snapshot_resolved_topologies), places=40)
+        self.assertTrue(self._max_strain_rate(snapshot_resolved_topologies) <= 1e-30)
+        # Without clamping it strains much more.
+        self.assertTrue(self._max_strain_rate(
+                pygplates.TopologicalSnapshot(topological_features, rotation_features, 10).get_resolved_topologies()) > 1e-20)
+
+    def test_resolve_topologies_section_types(self):
+        # Topological section types other than boundary and network raise ValueError (and write no file).
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            sections_filename = os.path.join(tmp_dir, 'sections.gmt')
+            for resolve_topological_section_types in (
+                    pygplates.ResolveTopologyType.line,
+                    pygplates.ResolveTopologyType.boundary | (1 << 10)):
+                self.assertRaises(ValueError, pygplates.resolve_topologies,
+                        os.path.join(FIXTURES, 'topologies.gpml'), os.path.join(FIXTURES, 'rotations.rot'),
+                        [], 10, sections_filename,
+                        resolve_topological_section_types=resolve_topological_section_types)
+                self.assertFalse(os.path.exists(sections_filename))
+            # But 'line' in 'resolve_topology_types', from which the section types default, is fine.
+            resolved_topological_sections = []
+            pygplates.resolve_topologies(
+                    os.path.join(FIXTURES, 'topologies.gpml'), os.path.join(FIXTURES, 'rotations.rot'),
+                    [], 10, resolved_topological_sections,
+                    resolve_topology_types=pygplates.ResolveTopologyType.line | pygplates.ResolveTopologyType.boundary)
+            self.assertTrue(resolved_topological_sections)
+
     def test_resolve_topologies(self):
         pygplates.resolve_topologies(
             os.path.join(FIXTURES, 'topologies.gpml'),
