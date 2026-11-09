@@ -8814,6 +8814,7 @@ class NetRotation:
         :type finite_rotation: FiniteRotation
         :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).
         :type time_interval: float
+        :raises ValueError: if *time_interval* is not positive and finite
         :rtype: Vector3D
 
         To convert a finite rotation over 10Myr to a rotation rate vector (in radians per Myr):  ::
@@ -8829,6 +8830,7 @@ class NetRotation:
         :type rotation_rate_vector: Vector3D
         :param time_interval: The time interval of the returned finite rotation (defaults to 1Myr).
         :type time_interval: float
+        :raises ValueError: if *time_interval* is not positive and finite
         :rtype: FiniteRotation
 
         To convert a rotation rate vector (in radians per Myr) to a finite rotation over 10Myr (ie, having the same pole but with an angle multiplied by 10):  ::
@@ -8848,6 +8850,7 @@ class NetRotation:
         :type finite_rotation: FiniteRotation
         :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).
         :type time_interval: float
+        :raises ValueError: if *time_interval* is not positive and finite
         :rtype: NetRotation
 
         In this contrived example we calculate the net rotation of a single plate. This is just for demonstration purposes in case you wanted to do your own intersections of point samples with plates (otherwise it's easier to just use :class:`NetRotationSnapshot` which does all this for you).
@@ -8950,7 +8953,7 @@ class NetRotationModel:
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.
+        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:
 
@@ -9052,7 +9055,7 @@ class NetRotationSnapshot:
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.
+        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:
 

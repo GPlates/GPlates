@@ -173,6 +173,8 @@ Changes since 1.0.0:
   * Documentation: `TopologicalModel.reconstruct_geometry()` says that an `initial_time` between time slots is snapped to the nearest one (and what that means with and without `reconstruction_plate_id`), and that a polyline or polygon is accepted as a sequence of points. `ReconstructedGeometryTimeSpan.get_time_span()` gives the right number of time slots (one more than it said), and `DeactivatePoints.deactivate()` says its times are always `float`. The type stub follows.
   * Fixed a `FeatureType` (or other qualified name) read from a GPML file that binds the GPML namespace to another prefix (eg, `xmlns:gp=`) hashing differently from the equal canonical name, so `set` and `dict` lookups missed it.
   * `create_gpml()`, `create_gml()`, `create_xsi()` (of `PropertyName`, `FeatureType`, `EnumerationType`, `ScalarType` and `StructuralType`) raise `ValueError` for an empty name, and `create_from_qualified_string()` returns `None` for one (eg, `''` or `'gpml:'`).
+  * A `point_distribution` of zero or less (of `NetRotationModel`, `NetRotationSnapshot`) raises `ValueError`, as documented (previously a negative one raised `OverflowError`).
+  * `NetRotation.create_sample_from_finite_rotation()`, `convert_finite_rotation_to_rotation_rate_vector()` and `convert_rotation_rate_vector_to_finite_rotation()` raise `ValueError` for a `time_interval` that is zero, negative, infinite or NaN. Previously zero, infinity or NaN gave a sample with an area but no rotation (which halved a summed net rotation), a negative interval reversed the rotation, and converting with zero raised `PreconditionViolationError`.
 
 pyGPlates 1.0.0
 ===============

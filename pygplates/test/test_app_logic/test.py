@@ -1443,6 +1443,26 @@ class NetRotationTestCase(unittest.TestCase):
         self.topological_model = pygplates.TopologicalModel(topologies, rotation_model)
         self.net_rotation_model = pygplates.NetRotationModel(self.topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
     
+    def test_point_distribution(self):
+        # A point distribution of zero or less raises ValueError (previously a negative one raised OverflowError).
+        topological_snapshot = self.topological_model.topological_snapshot(10)
+        for point_distribution in (-1, 0):
+            self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, point_distribution=point_distribution)
+            self.assertRaises(ValueError, pygplates.NetRotationModel, self.topological_model, point_distribution=point_distribution)
+        pygplates.NetRotationSnapshot(topological_snapshot, point_distribution=1)
+        # A point distribution too large for a 32-bit integer is still an OverflowError.
+        self.assertRaises(OverflowError, pygplates.NetRotationSnapshot, topological_snapshot, point_distribution=2**33)
+
+    def test_time_interval(self):
+        # The time interval of a finite rotation must be positive and finite.
+        for time_interval in (0, -1, float('nan'), float('inf')):
+            self.assertRaises(ValueError, pygplates.NetRotation.create_sample_from_finite_rotation,
+                    pygplates.PointOnSphere(0, 0), 1.0, pygplates.FiniteRotation((0, 0), 0.1), time_interval)
+            self.assertRaises(ValueError, pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector,
+                    pygplates.FiniteRotation((0, 0), 0.1), time_interval)
+            self.assertRaises(ValueError, pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation,
+                    pygplates.Vector3D(0, 0, 0.1), time_interval)
+
     def test_pickle(self):
         # Pickle a NetRotationModel.
         pickled_net_rotation_model = pickle.loads(pickle.dumps(self.net_rotation_model))
