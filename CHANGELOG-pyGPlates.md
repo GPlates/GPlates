@@ -169,6 +169,7 @@ Changes since 1.0.0:
   * A `ResolvedTopologicalNetwork` keeps the features of its rigid blocks and other interior geometries alive, as it does its boundary sections' features. Previously, once the features used to resolve it were gone (eg, after `TopologicalSnapshot(filenames, ...).get_resolved_topologies()`), a rigid block's `get_feature()` returned `None`, and `get_resolved_geometry_point_features(True)` raised `PreconditionViolationError`.
   * `TopologicalModel.reconstruct_geometry()` raises `ValueError` for a NaN `time_increment`, and for more than 100,000 time slots from `oldest_time` to `youngest_time`. Previously a tiny increment could overflow the number of time slots (undefined behaviour, using gigabytes of memory in a second), and a small one took a very long time (the run time grows with the square of the number of time slots).
   * Fixed `TopologicalModel.reconstruct_geometry()` deactivating points differently depending on earlier calls: a `ReconstructedGeometryTimeSpan.DefaultDeactivatePoints` (including the default `deactivate_points` argument, one instance shared by every call) reused stage rotations from an earlier call with a different time increment or direction.
+  * `TopologicalSnapshot.calculate_plate_boundary_statistics()` raises `ValueError` for a negative (or NaN) `first_uniform_point_spacing_radians` (previously the first point of each boundary section was extrapolated off the boundary, giving a negative boundary length), and for a NaN `uniform_point_spacing_radians`.
 
 pyGPlates 1.0.0
 ===============

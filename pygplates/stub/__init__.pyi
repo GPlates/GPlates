@@ -17086,7 +17086,7 @@ class TopologicalSnapshot:
         :type return_shared_sub_segment_dict: bool
         :returns: list of :class:`PlateBoundaryStatistic` for all uniform points, or (if *return_shared_sub_segment_dict* is ``True``) a ``dict`` mapping each :class:`ResolvedTopologicalSharedSubSegment` to a list of :class:`PlateBoundaryStatistic`
         :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]
-        :raises ValueError: if *uniform_point_spacing_radians* is negative or zero
+        :raises ValueError: if *uniform_point_spacing_radians* is negative or zero (or NaN), or *first_uniform_point_spacing_radians* is negative (or NaN)
         :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.

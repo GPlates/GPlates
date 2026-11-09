@@ -241,9 +241,19 @@ namespace GPlatesApi
 			bp::object boundary_section_filter_object,
 			bool return_shared_sub_segment_dict)
 	{
-		if (uniform_point_spacing_radians <= 0)
+		// Note: '!(x > 0)' also rejects NaN.
+		if (!(uniform_point_spacing_radians > 0))
 		{
 			PyErr_SetString(PyExc_ValueError, "'uniform_point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Zero is fine (a point at the start of each section), but a negative spacing would extrapolate
+		// the first point off the boundary (giving a negative boundary length).
+		if (first_uniform_point_spacing_radians &&
+			!(first_uniform_point_spacing_radians.get() >= 0))
+		{
+			PyErr_SetString(PyExc_ValueError, "'first_uniform_point_spacing_radians' should not be negative");
 			bp::throw_error_already_set();
 		}
 
@@ -3052,7 +3062,8 @@ export_topological_snapshot()
 				"  :returns: list of :class:`PlateBoundaryStatistic` for all uniform points, or (if *return_shared_sub_segment_dict* is ``True``) a "
 				"``dict`` mapping each :class:`ResolvedTopologicalSharedSubSegment` to a list of :class:`PlateBoundaryStatistic`\n"
 				"  :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]\n"
-				"  :raises ValueError: if *uniform_point_spacing_radians* is negative or zero\n"
+				"  :raises ValueError: if *uniform_point_spacing_radians* is negative or zero (or NaN), or "
+				"*first_uniform_point_spacing_radians* is negative (or NaN)\n"
 				"  :raises ValueError: if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.\n"

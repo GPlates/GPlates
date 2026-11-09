@@ -4590,6 +4590,12 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             pygplates.GeoTimeInstant(10))
 
         plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0)
+        # Spacings out of range (or NaN) raise ValueError (zero is fine for the first spacing, but not for the spacing).
+        for uniform_point_spacing_radians, first_uniform_point_spacing_radians in (
+                (math.radians(-5), None), (0, None), (float('nan'), None),
+                (math.radians(10), math.radians(-5)), (math.radians(10), float('nan'))):
+            self.assertRaises(ValueError, snapshot.calculate_plate_boundary_statistics,
+                    uniform_point_spacing_radians, first_uniform_point_spacing_radians)
         self.assertTrue(len(plate_boundary_stats) == 46)
         plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0, include_network_boundaries=True)
         self.assertTrue(len(plate_boundary_stats) == 60)
