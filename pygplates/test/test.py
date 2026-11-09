@@ -186,6 +186,61 @@ class VersionCase(unittest.TestCase):
             self.assertTrue(version == pickle.loads(pickle.dumps(version)))
 
 
+class IterableArgumentCase(unittest.TestCase):
+    """
+    Tests of how arguments taking an iterable, or a sequence, are iterated
+    (shared by many functions, so tested here through a few of them).
+    """
+
+    class _RaisingIterable(object):
+        # An iterable (not an iterator) whose iteration raises part-way.
+        def __init__(self, first_item):
+            self.first_item = first_item
+        def __iter__(self):
+            yield self.first_item
+            raise ValueError('raised by the iteration')
+
+    def test_iterable(self):
+        # An iterable argument is iterated once, so a generator works.
+        polyline = pygplates.PolylineOnSphere(pygplates.PointOnSphere(0, lon) for lon in range(3))
+        self.assertEqual(len(polyline), 3)
+        # An item that doesn't convert raises the function's own TypeError.
+        self.assertRaises(TypeError, pygplates.PolylineOnSphere, [(0, 0), 'not a point'])
+        self.assertRaises(TypeError, pygplates.PolylineOnSphere, 1)
+        # Anything the iteration itself raises propagates unchanged
+        # (rather than being replaced by the function's TypeError).
+        self.assertRaises(ValueError, pygplates.PolylineOnSphere,
+                          self._RaisingIterable(pygplates.PointOnSphere(0, 0)))
+
+    def test_sequence(self):
+        # A sequence argument is iterated more than once, so an iterator raises TypeError.
+        self.assertRaises(TypeError, pygplates.FeaturesFunctionArgument, iter([pygplates.Feature()]))
+        self.assertRaises(TypeError, pygplates.FeatureCollection, iter([pygplates.Feature()]))
+        # Anything the iteration itself raises propagates (rather than being left pending).
+        self.assertRaises(ValueError, pygplates.FeaturesFunctionArgument,
+                          self._RaisingIterable(pygplates.Feature()))
+        self.assertRaises(ValueError, pygplates.FeaturesFunctionArgument.contains_features,
+                          self._RaisingIterable(pygplates.Feature()))
+
+    def test_contains_features(self):
+        contains_features = pygplates.FeaturesFunctionArgument.contains_features
+        self.assertTrue(contains_features([pygplates.Feature()]))
+        self.assertTrue(contains_features([[pygplates.Feature()]]))
+        # An iterator, top-level or nested, gives False (rather than raising).
+        self.assertFalse(contains_features(iter([pygplates.Feature()])))
+        self.assertFalse(contains_features([iter([pygplates.Feature()])]))
+        self.assertFalse(contains_features(1))
+
+    def test_point_and_vector_from_iterator(self):
+        # An iterator isn't converted to a point or vector (it's a sequence of 2 or 3 floats),
+        # and the error says what is expected (rather than "not an iterator").
+        with self.assertRaisesRegex(TypeError, 'Expected PointOnSphere'):
+            pygplates.PointOnSphere(x for x in (0.0, 0.0, 1.0))
+        with self.assertRaisesRegex(TypeError, 'Expected sequence'):
+            pygplates.Vector3D(x for x in (0.0, 0.0, 1.0))
+        self.assertEqual(pygplates.PointOnSphere((0.0, 0.0, 1.0)), pygplates.PointOnSphere.north_pole)
+
+
 class PackageCase(unittest.TestCase):
     """
     Tests of the 'pygplates' Python package itself (as opposed to the API it exposes).
@@ -228,6 +283,7 @@ def suite():
     # Add test cases from this module.
     test_cases = [
             HashableCase,
+            IterableArgumentCase,
             PackageCase,
             VersionCase
         ]

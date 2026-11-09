@@ -75,11 +75,28 @@ namespace GPlatesApi
 
 
 		/**
+		 * What @a check_sequence does when given an iterator (which cannot be iterated over twice).
+		 */
+		enum IfIterator
+		{
+			// Raise Python 'TypeError' saying that a sequence is needed, not an iterator.
+			// Suits a constructor, where the message tells the user what to pass instead.
+			RAISE_TYPE_ERROR_IF_ITERATOR,
+
+			// Return none (not a sequence), without raising.
+			// Suits a query (such as 'contains_features()'), and a from-python converter's
+			// 'convertible()', which must answer "no" rather than raise: a raise there stops
+			// Boost.Python's overload resolution instead of letting it try the next overload.
+			NOT_A_SEQUENCE_IF_ITERATOR
+		};
+
+
+		/**
 		 * Checks whether a Python iterable is a sequence (not iterator) of objects of
 		 * type 'ObjectType' (such as a list or tuple).
 		 *
-		 * Raises Python exception 'TypeError' with the following error message
-		 * if @a sequence_object is an iterator:
+		 * If @a sequence_object is an iterator then, depending on @a if_iterator, either returns none
+		 * or raises Python exception 'TypeError' with the following error message:
 		 *
 		 *   "Iterable must be a sequence (eg, list or tuple), not an iterator, since need more than one iteration pass"
 		 *
@@ -87,12 +104,31 @@ namespace GPlatesApi
 		 * call to @a check_sequence is followed by a call to @a extract_sequence
 		 * (and both calls iterate over the iterable).
 		 *
+		 * An exception raised by the iteration itself (eg, by a user-defined '__next__') propagates.
+		 *
 		 * Returns the number of items in sequence, or none if not a sequence of 'ObjectType'.
 		 */
 		template <typename ObjectType>
 		boost::optional<unsigned int>
 		check_sequence(
-				boost::python::object sequence_object);
+				boost::python::object sequence_object,
+				IfIterator if_iterator = RAISE_TYPE_ERROR_IF_ITERATOR);
+
+
+		/**
+		 * The same as @a check_sequence, except that each item is checked by @a is_item_convertible
+		 * (a callable taking a 'boost::python::object' item and returning bool) instead of
+		 * by 'boost::python::extract<ObjectType>(item).check()'.
+		 *
+		 * This lets a caller pass @a if_iterator down to the check of each item (eg, a sequence
+		 * of sequences, where a nested iterator should also give none rather than raise).
+		 */
+		template <typename IsItemConvertibleType>
+		boost::optional<unsigned int>
+		check_sequence_items(
+				boost::python::object sequence_object,
+				const IsItemConvertibleType &is_item_convertible,
+				IfIterator if_iterator = RAISE_TYPE_ERROR_IF_ITERATOR);
 
 
 		/**
@@ -113,6 +149,10 @@ namespace GPlatesApi
 		 *
 		 * Raises Python exception 'TypeError' with the error message @a type_error_string if
 		 * @a iterable_object is not iterable or if it contains any items not convertible to 'ObjectType'.
+		 * Any other exception raised while iterating (eg, a 'ValueError' raised by a user's generator,
+		 * or 'KeyboardInterrupt') propagates unchanged.
+		 *
+		 * This makes one pass over @a iterable_object.
 		 *
 		 * The error message @a type_error_string should contain something like:
 		 *
@@ -142,22 +182,69 @@ namespace GPlatesApi
 			void
 			raise_type_error_if_iterator(
 					boost::python::object iterable_object);
+
+			/**
+			 * Returns the next item of @a iterator, or a null handle at the end of the iteration.
+			 *
+			 * If the iteration raised (eg, a user's '__next__' raised 'ValueError') then that
+			 * exception is re-raised (as 'boost::python::error_already_set'), rather than being
+			 * mistaken for the end of the iteration and left pending.
+			 */
+			boost::python::handle<>
+			get_next_item(
+					const boost::python::handle<> &iterator);
+
+
+			template <typename ObjectType>
+			class IsItemExtractable
+			{
+			public:
+				bool
+				operator()(
+						const boost::python::object &item) const
+				{
+					return boost::python::extract<ObjectType>(item).check();
+				}
+			};
 		}
 
 
 		template <typename ObjectType>
 		boost::optional<unsigned int>
 		check_sequence(
-				boost::python::object sequence_object)
+				boost::python::object sequence_object,
+				IfIterator if_iterator)
 		{
-			// We don't want an iterator because we can't iterate over an iterator more than once.
-			Implementation::raise_type_error_if_iterator(sequence_object);
-
-			// Iterate over the sequence of 'ObjectType'.
-			//
 			// NOTE: We avoid iterating using 'boost::python::stl_input_iterator<ObjectType>'
 			// because we want to avoid actually extracting the objects.
 			// We're just checking if there's a sequence of 'ObjectType' here.
+			return check_sequence_items(
+					sequence_object,
+					Implementation::IsItemExtractable<ObjectType>(),
+					if_iterator);
+		}
+
+
+		template <typename IsItemConvertibleType>
+		boost::optional<unsigned int>
+		check_sequence_items(
+				boost::python::object sequence_object,
+				const IsItemConvertibleType &is_item_convertible,
+				IfIterator if_iterator)
+		{
+			// We don't want an iterator because we can't iterate over an iterator more than once.
+			if (if_iterator == NOT_A_SEQUENCE_IF_ITERATOR)
+			{
+				if (PyIter_Check(sequence_object.ptr()))
+				{
+					return boost::none;
+				}
+			}
+			else
+			{
+				Implementation::raise_type_error_if_iterator(sequence_object);
+			}
+
 			boost::python::handle<> iterator =
 					boost::python::handle<>(boost::python::allow_null(PyObject_GetIter(sequence_object.ptr())));
 			if (!iterator)
@@ -168,11 +255,10 @@ namespace GPlatesApi
 
 			unsigned int num_items = 0;
 
-			// Iterate using iterator and check that each item can be converted to a 'ObjectType'.
-			while (boost::python::handle<> item =
-					boost::python::handle<>(boost::python::allow_null(PyIter_Next(iterator.get()))))
+			// Iterate using iterator and check that each item is convertible.
+			while (boost::python::handle<> item = Implementation::get_next_item(iterator))
 			{
-				if (!boost::python::extract<ObjectType>(item.get()).check())
+				if (!is_item_convertible(boost::python::object(item)))
 				{
 					return boost::none;
 				}
@@ -205,19 +291,45 @@ namespace GPlatesApi
 				boost::python::object iterable_object,
 				const char *type_error_string)
 		{
-			try
+			// NOTE: We iterate by hand, rather than with 'boost::python::stl_input_iterator<ObjectType>',
+			// so that an exception raised by the iteration itself propagates unchanged, and only
+			// "not iterable" and "item not convertible" become the caller's 'TypeError'.
+			boost::python::handle<> iterator =
+					boost::python::handle<>(boost::python::allow_null(PyObject_GetIter(iterable_object.ptr())));
+			if (!iterator)
 			{
-				std::copy(
-						boost::python::stl_input_iterator<ObjectType>(iterable_object),
-						boost::python::stl_input_iterator<ObjectType>(),
-						std::back_inserter(iterable));
-			}
-			catch (const boost::python::error_already_set &)
-			{
-				PyErr_Clear();
-
-				PyErr_SetString(PyExc_TypeError, type_error_string);
+				// PyObject_GetIter() raises TypeError when not iterable.
+				// Anything else (eg, raised by a user's '__iter__') propagates.
+				if (PyErr_ExceptionMatches(PyExc_TypeError))
+				{
+					PyErr_Clear();
+					PyErr_SetString(PyExc_TypeError, type_error_string);
+				}
 				boost::python::throw_error_already_set();
+			}
+
+			while (boost::python::handle<> item = Implementation::get_next_item(iterator))
+			{
+				boost::python::extract<ObjectType> extract_item(item.get());
+				if (!extract_item.check())
+				{
+					PyErr_SetString(PyExc_TypeError, type_error_string);
+					boost::python::throw_error_already_set();
+				}
+
+				// The extraction itself can still fail after a successful check
+				// (eg, a negative integer extracted as 'unsigned int' raises OverflowError).
+				// That is a conversion failure too, so it also becomes the caller's 'TypeError'.
+				try
+				{
+					iterable.push_back(extract_item());
+				}
+				catch (const boost::python::error_already_set &)
+				{
+					PyErr_Clear();
+					PyErr_SetString(PyExc_TypeError, type_error_string);
+					boost::python::throw_error_already_set();
+				}
 			}
 		}
 	}

@@ -182,7 +182,8 @@ namespace GPlatesApi
 
 bool
 GPlatesApi::FeatureCollectionFunctionArgument::is_convertible(
-		bp::object python_function_argument)
+		bp::object python_function_argument,
+		PythonExtractUtils::IfIterator if_iterator)
 {
 	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
 	if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(python_function_argument).check() ||
@@ -195,7 +196,9 @@ GPlatesApi::FeatureCollectionFunctionArgument::is_convertible(
 	// Else it's a boost::python::object so we're expecting it to be a sequence of
 	// GPlatesModel::FeatureHandle::non_null_ptr_type's which requires further checking.
 	return static_cast<bool>(
-			PythonExtractUtils::check_sequence<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument));
+			PythonExtractUtils::check_sequence<GPlatesModel::FeatureHandle::non_null_ptr_type>(
+					python_function_argument,
+					if_iterator));
 }
 
 
@@ -294,10 +297,15 @@ GPlatesApi::FeatureCollectionFunctionArgument::get_file() const
 
 bool
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
-		bp::object python_function_argument)
+		bp::object python_function_argument,
+		PythonExtractUtils::IfIterator if_iterator)
 {
 	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
-	if (bp::extract<FeatureCollectionFunctionArgument>(python_function_argument).check())
+	//
+	// NOTE: We call FeatureCollectionFunctionArgument::is_convertible() directly, rather than
+	// 'bp::extract<FeatureCollectionFunctionArgument>(...).check()' (its registered converter),
+	// so that 'if_iterator' also applies to a sequence of features nested in the sequence.
+	if (FeatureCollectionFunctionArgument::is_convertible(python_function_argument, if_iterator))
 	{
 		return true;
 	}
@@ -305,7 +313,13 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
 	// Else it's a boost::python::object so we're expecting it to be a sequence of
 	// FeatureCollectionFunctionArgument's which requires further checking.
 	return static_cast<bool>(
-			PythonExtractUtils::check_sequence<FeatureCollectionFunctionArgument>(python_function_argument));
+			PythonExtractUtils::check_sequence_items(
+					python_function_argument,
+					[if_iterator](const bp::object &item)
+					{
+						return FeatureCollectionFunctionArgument::is_convertible(item, if_iterator);
+					},
+					if_iterator));
 }
 
 
@@ -394,7 +408,10 @@ namespace GPlatesApi
 		contains_features(
 				bp::object function_argument)
 		{
-			return FeatureCollectionSequenceFunctionArgument::is_convertible(function_argument);
+			// An iterator (top-level or nested) gives false rather than raising: this is a query.
+			return FeatureCollectionSequenceFunctionArgument::is_convertible(
+					function_argument,
+					PythonExtractUtils::NOT_A_SEQUENCE_IF_ITERATOR);
 		}
 
 		static

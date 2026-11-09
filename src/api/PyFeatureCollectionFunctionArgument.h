@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "PyFilePathFunctionArgument.h"
+#include "PythonExtractUtils.h"
 
 #include "file-io/File.h"
 
@@ -70,11 +71,14 @@ namespace GPlatesApi
 
 		/**
 		 * Returns true if @a python_function_argument is convertible to an instance of this class.
+		 *
+		 * @a if_iterator says whether an iterator (in place of a sequence of features) raises or gives false.
 		 */
 		static
 		bool
 		is_convertible(
-				boost::python::object python_function_argument);
+				boost::python::object python_function_argument,
+				PythonExtractUtils::IfIterator if_iterator = PythonExtractUtils::RAISE_TYPE_ERROR_IF_ITERATOR);
 
 
 		explicit
@@ -141,11 +145,15 @@ namespace GPlatesApi
 		 * Returns true if @a python_function_argument is convertible to an instance of this class.
 		 *
 		 * This also checks if the function argument is a valid sequence of feature collections / filenames.
+		 *
+		 * @a if_iterator says whether an iterator (top-level, or nested in place of a sequence of features)
+		 * raises or gives false.
 		 */
 		static
 		bool
 		is_convertible(
-				boost::python::object python_function_argument);
+				boost::python::object python_function_argument,
+				PythonExtractUtils::IfIterator if_iterator = PythonExtractUtils::RAISE_TYPE_ERROR_IF_ITERATOR);
 
 
 		explicit

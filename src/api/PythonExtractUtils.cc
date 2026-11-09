@@ -95,3 +95,19 @@ GPlatesApi::PythonExtractUtils::Implementation::raise_type_error_if_iterator(
 		boost::python::throw_error_already_set();
 	}
 }
+
+
+bp::handle<>
+GPlatesApi::PythonExtractUtils::Implementation::get_next_item(
+		const bp::handle<> &iterator)
+{
+	bp::handle<> item(bp::allow_null(PyIter_Next(iterator.get())));
+
+	// PyIter_Next() returns NULL both at the end of the iteration and when the iteration raised.
+	if (!item && PyErr_Occurred())
+	{
+		bp::throw_error_already_set();
+	}
+
+	return item;
+}

@@ -118,6 +118,8 @@ Changes since 1.0.0:
   * `TopologicalSnapshot.calculate_plate_boundary_statistics()` returns its statistics in the order of the topological features, and then along each boundary section (previously the order could change from one run of a script to the next).
   * `NetRotationSnapshot.get_net_rotation()`, without a resolved topology, returns its `dict` in the order of the resolved boundaries and then networks (previously the order could change from one run of a script to the next).
   * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
+  * Functions that take an iterable (eg, `PolylineOnSphere(points)`) no longer replace an exception raised while iterating it (eg, a `ValueError` raised by a generator, or `KeyboardInterrupt`) with their own `TypeError`: it now propagates unchanged. Likewise, an exception raised while iterating a sequence (eg, the features given to `FeatureCollection()`) now propagates, instead of being left pending (which surfaced as `SystemError`, possibly in unrelated later code).
+  * `FeaturesFunctionArgument.contains_features()` returns `False` for an iterator, including one nested in a sequence (previously raised `TypeError`).
 
 pyGPlates 1.0.0
 ===============

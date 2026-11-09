@@ -795,7 +795,12 @@ namespace GPlatesApi
 			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
 
 			// Is a sequence containing floats ?
-			boost::optional<unsigned int> sequence_size = PythonExtractUtils::check_sequence<double>(py_obj);
+			//
+			// An iterator gives "not convertible" rather than raising, since a raise here would stop
+			// Boost.Python's overload resolution (rather than trying the next overload).
+			boost::optional<unsigned int> sequence_size = PythonExtractUtils::check_sequence<double>(
+					py_obj,
+					PythonExtractUtils::NOT_A_SEQUENCE_IF_ITERATOR);
 			if (!sequence_size)
 			{
 				return NULL;

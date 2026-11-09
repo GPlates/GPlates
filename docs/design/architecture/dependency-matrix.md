@@ -232,7 +232,7 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 126 |  |  | 8 | 36 | 156 | 15 | 86 | 78 | 2 | 3 | 114 | 5 | 29 |  | 44 |  |
+| api |  | 276 | 126 |  |  | 8 | 36 | 156 | 15 | 86 | 78 | 2 | 3 | 114 | 5 | 29 |  | 44 |  |
 | app-logic |  |  | 944 |  |  | 7 | 21 | 161 |  | 281 | 294 | 12 |  | 309 |  | 25 |  | 122 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
