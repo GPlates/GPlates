@@ -13333,20 +13333,20 @@ class ReconstructedGeometryTimeSpan:
 
         def __init__(self, *args: Any, **kwargs: Any) -> None: ...
 
-        def deactivate(self, prev_point: PointOnSphere, prev_location: TopologyPointLocation, prev_time: float | GeoTimeInstant, current_point: PointOnSphere, current_location: TopologyPointLocation, current_time: float | GeoTimeInstant) -> bool:
+        def deactivate(self, prev_point: PointOnSphere, prev_location: TopologyPointLocation, prev_time: float, current_point: PointOnSphere, current_location: TopologyPointLocation, current_time: float) -> bool:
             """Return true if the point should be deactivated.
 
             * **prev_point** (:class:`PointOnSphere`): the previous position of the point
 
             * **prev_location** (:class:`TopologyPointLocation`): the previous location of the point in the topologies
 
-            * **prev_time** (float or :class:`GeoTimeInstant`): the time associated with the previous position of the point
+            * **prev_time** (float): the time associated with the previous position of the point
 
             * **current_point** (:class:`PointOnSphere`): the current position of the point
 
             * **current_location** (:class:`TopologyPointLocation`): the current location of the point in the topologies
 
-            * **current_time** (float or :class:`GeoTimeInstant`): the time associated with the current position of the point
+            * **current_time** (float): the time associated with the current position of the point
 
             * **Return type**: bool
 
@@ -13535,7 +13535,7 @@ class ReconstructedGeometryTimeSpan:
         :returns: the 4-tuple of (oldest time, youngest time, time increment, number of time slots)
         :rtype: tuple[float, float, float, int]
 
-        The oldest time, youngest time and time increment are the same as were specified in :meth:`TopologicalModel.reconstruct_geometry`. And the number of time slots is :math:`\frac{(oldest\_time - youngest\_time)}{time\_increment}` which is an integer value (since :meth:`TopologicalModel.reconstruct_geometry` requires the oldest to youngest time period to be an integer multiple of the time increment).
+        The oldest time, youngest time and time increment are the same as were specified in :meth:`TopologicalModel.reconstruct_geometry`. And the number of time slots is :math:`\frac{(oldest\_time - youngest\_time)}{time\_increment} + 1` which is an integer value (since :meth:`TopologicalModel.reconstruct_geometry` requires the oldest to youngest time period to be an integer multiple of the time increment).
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span` in the *Primer* documentation.
 
@@ -16952,12 +16952,12 @@ class TopologicalModel:
         .. note:: The reconstruction tree cache size of the returned rotation model is equal to the *topological_snapshot_cache_size* argument specified in the :meth:`constructor<__init__>` plus one (or unlimited if not specified).
         """
 
-    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | Sequence[PointOnSphere | tuple[float, float, float] | tuple[float, float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
+    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Sequence[PointOnSphere | tuple[float, float, float] | tuple[float, float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
         """Reconstruct a geometry (and optional scalars) over a time span.
 
-        :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. Polylines and polygons to be introduced in future.
-        :type geometry: MultiPointOnSphere, or PointOnSphere, or sequence of points (where a point can be PointOnSphere or (x,y,z) tuple or (latitude,longitude) tuple in degrees)
-        :param initial_time: The time that reconstruction by topologies starts at.
+        :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points (all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. Reconstructing polylines and polygons as such is to be introduced in future.
+        :type geometry: MultiPointOnSphere, or PointOnSphere, or PolylineOnSphere, or PolygonOnSphere, or sequence of points (where a point can be PointOnSphere or (x,y,z) tuple or (latitude,longitude) tuple in degrees)
+        :param initial_time: The time that reconstruction by topologies starts at. If it's not one of the time slots (from *oldest_time* to *youngest_time* in steps of *time_increment*) then it's snapped to the nearest one, at a cost in accuracy: if *reconstruction_plate_id* is specified then the present-day *geometry* is rigidly rotated to that time slot's time (so it's correct for that time slot), otherwise *geometry* is treated as being at that time slot's time.
         :type initial_time: float or GeoTimeInstant
         :param oldest_time: Oldest time in the history of topologies. Defaults to *initial_time*.
         :type oldest_time: float or GeoTimeInstant

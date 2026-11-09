@@ -3743,6 +3743,12 @@ class TopologicalModelTestCase(unittest.TestCase):
                     oldest_time=100,
                     time_increment=time_increment)
 
+    def test_get_time_span(self):
+        # The number of time slots is (oldest_time - youngest_time) / time_increment + 1.
+        time_span = self.topological_model.reconstruct_geometry(
+                pygplates.PointOnSphere(0, 0), 30, oldest_time=30, youngest_time=10, time_increment=1)
+        self.assertEqual(time_span.get_time_span(), (30, 10, 1, 21))
+
     def test_deactivate_points_independent_of_earlier_calls(self):
         # The same reconstruction gives the same active points whether its DefaultDeactivatePoints is fresh,
         # or was used earlier with a different time increment (its cached stage rotations were keyed by time
