@@ -5461,8 +5461,9 @@ class GpmlConstantValue(PropertyValue):
     def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value of this constant value wrapper.
 
-        :param property_value: arbitrary property value
+        :param property_value: property value of the same type as the current value (see :meth:`get_value`)
         :type property_value: PropertyValue
+        :raises ValueError: if *property_value* is not of the same type as the current value
 
         This essentially replaces the previous property value. Note that an alternative is to directly modify the property value returned by :meth:`get_value` using its property value methods.
         """
@@ -6830,8 +6831,9 @@ class GpmlTimeSample:
     def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value associated with this time sample.
 
-        :param property_value: arbitrary property value
+        :param property_value: property value of the same type as :meth:`get_value_type`
         :type property_value: PropertyValue
+        :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`
 
         This essentially replaces the previous property value. Note that an alternative is to directly modify the property value returned by :meth:`get_value` using its property value methods.
         """
@@ -7091,8 +7093,9 @@ class GpmlTimeWindow:
     def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value associated with this time window.
 
-        :param property_value: arbitrary property value
+        :param property_value: property value of the same type as :meth:`get_value_type`
         :type property_value: PropertyValue
+        :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`
 
         This essentially replaces the previous property value. Note that an alternative is to directly modify the property value returned by :meth:`get_value` using its property value methods.
         """

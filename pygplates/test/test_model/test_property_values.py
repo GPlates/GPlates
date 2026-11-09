@@ -4,6 +4,7 @@ Unit tests for the pygplates property values.
 
 import os
 import pickle
+import tempfile
 import unittest
 import pygplates
 
@@ -952,6 +953,38 @@ class GpmlPropertyDelegateCase(unittest.TestCase):
         self.assertTrue(self.gpml_property_delegate == pickle.loads(pickle.dumps(self.gpml_property_delegate)))
 
 
+class SetValueTypeCase(unittest.TestCase):
+    def test_set_value_of_another_type(self):
+        # A time sample, time window or constant value wrapper only accepts a value of its own type,
+        # and a rejected value changes nothing.
+        for wrapper in (pygplates.GpmlTimeSample(pygplates.GpmlPlateId(701), 10),
+                        pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(701), 20, 10),
+                        pygplates.GpmlConstantValue(pygplates.GpmlPlateId(701))):
+            self.assertRaises(ValueError, wrapper.set_value, pygplates.XsInteger(801))
+            self.assertEqual(wrapper.get_value(), pygplates.GpmlPlateId(701))
+            wrapper.set_value(pygplates.GpmlPlateId(801))
+            self.assertEqual(wrapper.get_value(), pygplates.GpmlPlateId(801))
+
+    def test_set_value_round_trip(self):
+        # A rotation sample replaced with 'set_value()' reads back from a file as a rotation.
+        total_reconstruction_pole = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation.create_identity_rotation()), 0),
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 0), 0.1)), 10)])
+        total_reconstruction_pole[1].set_value(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 0), 0.2)))
+        feature = pygplates.Feature.create_total_reconstruction_sequence(0, 801, total_reconstruction_pole)
+        filename = os.path.join(tempfile.mkdtemp(), 'set_value_round_trip.gpml')
+        try:
+            pygplates.FeatureCollection([feature]).write(filename)
+            read_feature = next(iter(pygplates.FeatureCollection(filename)))
+        finally:
+            os.remove(filename)
+            os.rmdir(os.path.dirname(filename))
+        _, _, read_total_reconstruction_pole = read_feature.get_total_reconstruction_pole()
+        self.assertTrue(read_total_reconstruction_pole.get_value_type() == pygplates.GpmlFiniteRotation)
+        self.assertTrue(read_total_reconstruction_pole[1].get_value().get_finite_rotation() == (
+                pygplates.FiniteRotation((0, 0), 0.2)))
+
+
 class GpmlTimeSampleCase(unittest.TestCase):
     def setUp(self):
         self.property_value1 = pygplates.GpmlPlateId(701)
@@ -1467,6 +1500,7 @@ def suite():
             EnumerationCase,
             GeoTimeInstantCase,
             IteratorCase,
+            SetValueTypeCase,
             GmlDataBlockCase,
             GmlLineStringCase,
             GmlMultiPointCase,

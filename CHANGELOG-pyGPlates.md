@@ -143,6 +143,7 @@ Changes since 1.0.0:
   * Fixed `GpmlTimeSample.set_enabled(is_enabled=...)` raising `ArgumentError`: the documented keyword `is_enabled` now works (the keyword that worked, `set_enabled`, no longer does).
   * `GpmlIrregularSampling.set_value(..., is_enabled=None)` gives an enabled time sample, the default, as documented (previously disabled, so a rotation sample set that way was ignored).
   * `GmlDataBlock.set()` can change the number of scalar values of a data block's only scalar type (previously raised `ValueError`), and a replaced scalar type keeps its place in the data block (previously it moved to the end).
+  * `set_value()` on `GpmlTimeSample`, `GpmlTimeWindow` and `GpmlConstantValue` raises `ValueError` for a property value of a different type from the one it replaces. Previously it was accepted but the old value type was kept, which could make a file written with it read back wrongly (eg, a whole total reconstruction pole read back uninterpreted, or an `XsInteger` read back as a `GpmlPlateId`).
 
 pyGPlates 1.0.0
 ===============

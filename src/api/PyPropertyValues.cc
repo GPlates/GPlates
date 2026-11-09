@@ -1755,6 +1755,56 @@ export_gpml_array()
 
 namespace GPlatesApi
 {
+	/**
+	 * Raises Python 'ValueError' if @a property_value is not of type @a value_type.
+	 *
+	 * The value type of a time sample, time window or constant value wrapper never changes
+	 * (and it must match the value type of any sampling or aggregation containing it).
+	 * So a 'set_value()' with a property value of another type is rejected (before changing anything)
+	 * rather than leaving the value type inconsistent with the value.
+	 */
+	void
+	raise_value_error_if_not_value_type(
+			const GPlatesModel::PropertyValue &property_value,
+			const GPlatesPropertyValues::StructuralType &value_type)
+	{
+		if (!(property_value.get_structural_type() == value_type))
+		{
+			PyErr_SetString(PyExc_ValueError, "Property value is not of the same type as the value it replaces");
+			bp::throw_error_already_set();
+		}
+	}
+
+	void
+	gpml_constant_value_set_value(
+			GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value,
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		raise_value_error_if_not_value_type(*property_value, gpml_constant_value.get_value_type());
+
+		gpml_constant_value.set_value(property_value);
+	}
+
+	void
+	gpml_time_sample_set_value(
+			GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample,
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		raise_value_error_if_not_value_type(*property_value, gpml_time_sample.get_value_type());
+
+		gpml_time_sample.set_value(property_value);
+	}
+
+	void
+	gpml_time_window_set_value(
+			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window,
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		raise_value_error_if_not_value_type(*property_value, gpml_time_window.get_value_type());
+
+		gpml_time_window.set_time_dependent_value(property_value);
+	}
+
 	const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 	gpml_constant_value_create(
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
@@ -1850,13 +1900,14 @@ export_gpml_constant_value()
 		.def("_get_value",
 				&GPlatesApi::gpml_constant_value_get_value)
 		.def("set_value",
-				&GPlatesPropertyValues::GpmlConstantValue::set_value,
+				&GPlatesApi::gpml_constant_value_set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
 				"  Sets the property value of this constant value wrapper.\n"
 				"\n"
-				"  :param property_value: arbitrary property value\n"
+				"  :param property_value: property value of the same type as the current value (see :meth:`get_value`)\n"
 				"  :type property_value: PropertyValue\n"
+				"  :raises ValueError: if *property_value* is not of the same type as the current value\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
@@ -3995,13 +4046,14 @@ export_gpml_time_sample()
 				"\n"
 				"  .. versionadded:: 0.21\n")
 		.def("set_value",
-				&GPlatesPropertyValues::GpmlTimeSample::set_value,
+				&GPlatesApi::gpml_time_sample_set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
 				"  Sets the property value associated with this time sample.\n"
 				"\n"
-				"  :param property_value: arbitrary property value\n"
+				"  :param property_value: property value of the same type as :meth:`get_value_type`\n"
 				"  :type property_value: PropertyValue\n"
+				"  :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
@@ -4224,13 +4276,14 @@ export_gpml_time_window()
 				"\n"
 				"  .. versionadded:: 0.21\n")
 		.def("set_value",
-				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
+				&GPlatesApi::gpml_time_window_set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
 				"  Sets the property value associated with this time window.\n"
 				"\n"
-				"  :param property_value: arbitrary property value\n"
+				"  :param property_value: property value of the same type as :meth:`get_value_type`\n"
 				"  :type property_value: PropertyValue\n"
+				"  :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
