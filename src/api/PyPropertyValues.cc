@@ -733,27 +733,38 @@ namespace GPlatesApi
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type scalar_values;
 		PythonExtractUtils::extract_iterable(scalar_values, scalar_values_object, "Expected a sequence of float");
 
-		// Make sure has the same number of scalar values as existing scalar values.
-		if (!coordinate_lists.empty() &&
-			scalar_values.size() != coordinate_lists.front()->get_coordinates().size())
+		// Make sure has the same number of scalar values as the *other* scalar types (if any).
+		//
+		// Note that the list being replaced (if any) doesn't count, so that the only scalar type
+		// can change its number of scalar values.
+		for (auto other_coordinate_lists_iter = coordinate_lists.begin();
+			other_coordinate_lists_iter != coordinate_lists_end;
+			++other_coordinate_lists_iter)
 		{
-			PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
-			bp::throw_error_already_set();
+			if (other_coordinate_lists_iter != coordinate_lists_iter &&
+				scalar_values.size() != (*other_coordinate_lists_iter)->get_coordinates().size())
+			{
+				PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
+				bp::throw_error_already_set();
+			}
 		}
 
 		// Now that all exceptions have been dealt with we can make modifications.
-		if (coordinate_lists_iter != coordinate_lists_end)
-		{
-			// Remove the existing list of scalar values (we'll add the new list of scalar values after the loop).
-			coordinate_lists.erase(coordinate_lists_iter);
-		}
-
-		// Add a new list of scalar values to the data block.
-		coordinate_lists.push_back(
+		const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type new_coordinate_list =
 				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 						scalar_type,
 						GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
-						scalar_values));
+						scalar_values);
+		if (coordinate_lists_iter != coordinate_lists_end)
+		{
+			// Replace the existing list of scalar values in place (keeping the order of the scalar types).
+			*coordinate_lists_iter = new_coordinate_list;
+		}
+		else
+		{
+			// Add a new list of scalar values to the data block.
+			coordinate_lists.push_back(new_coordinate_list);
+		}
 	}
 
 	void
@@ -929,7 +940,8 @@ export_gml_data_block()
 				"        [-1.5, -1.6, -1.55])\n"
 				"\n"
 				"  .. note:: If there is no list of scalar values associated with *scalar_type* then "
-				"a new list is added, otherwise the existing list is replaced.\n")
+				"a new list is added, otherwise the existing list is replaced (keeping its place in the "
+				"order of scalar types).\n")
 		.def("remove",
 				&GPlatesApi::gml_data_block_remove,
 				(bp::arg("scalar_type")),

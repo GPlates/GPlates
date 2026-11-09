@@ -250,6 +250,14 @@ class GmlDataBlockCase(unittest.TestCase):
         self.gml_data_block.set(pygplates.ScalarType.create_gpml('TestType'), [100,200,300,400])
         self.assertTrue(len(self.gml_data_block) == 3)
         self.assertTrue(self.gml_data_block.get_scalar_values(pygplates.ScalarType.create_gpml('TestType')) == [100,200,300,400])
+        # Replacing a scalar type keeps its place in the order of scalar types.
+        scalar_types = list(self.gml_data_block)
+        self.gml_data_block.set(self.velocity_colat_type, [1,2,3,4])
+        self.assertTrue(list(self.gml_data_block) == scalar_types)
+        # The only scalar type can change its number of scalar values (there's nothing else to match).
+        gml_data_block = pygplates.GmlDataBlock([(self.velocity_colat_type, [1,2])])
+        gml_data_block.set(self.velocity_colat_type, [1,2,3])
+        self.assertTrue(gml_data_block.get_scalar_values(self.velocity_colat_type) == [1,2,3])
 
     def test_remove(self):
         self.assertTrue(len(self.gml_data_block) == 2)

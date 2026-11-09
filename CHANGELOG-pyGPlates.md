@@ -142,6 +142,7 @@ Changes since 1.0.0:
   * `sort()` on the list-like classes (eg, `GpmlIrregularSampling`) now sorts exactly like `list.sort()`: it is stable with `reverse=True` (equal keys keep their order), keys of mixed types (eg, `int` and `float`, or NumPy numbers) compare as in Python (previously raised `TypeError`), and a key function that raises leaves the list unchanged.
   * Fixed `GpmlTimeSample.set_enabled(is_enabled=...)` raising `ArgumentError`: the documented keyword `is_enabled` now works (the keyword that worked, `set_enabled`, no longer does).
   * `GpmlIrregularSampling.set_value(..., is_enabled=None)` gives an enabled time sample, the default, as documented (previously disabled, so a rotation sample set that way was ignored).
+  * `GmlDataBlock.set()` can change the number of scalar values of a data block's only scalar type (previously raised `ValueError`), and a replaced scalar type keeps its place in the data block (previously it moved to the end).
 
 pyGPlates 1.0.0
 ===============

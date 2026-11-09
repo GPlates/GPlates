@@ -4906,7 +4906,7 @@ class GmlDataBlock(PropertyValue):
               pygplates.ScalarType.create_gpml('VelocityColat'),
               [-1.5, -1.6, -1.55])
 
-        .. note:: If there is no list of scalar values associated with *scalar_type* then a new list is added, otherwise the existing list is replaced.
+        .. note:: If there is no list of scalar values associated with *scalar_type* then a new list is added, otherwise the existing list is replaced (keeping its place in the order of scalar types).
         """
 
 class GmlLineString(PropertyValue):
