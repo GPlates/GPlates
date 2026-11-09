@@ -4438,6 +4438,7 @@ class GeoTimeInstant:
 
         :param time_value: the time position - positive values represent times in the *past*
         :type time_value: float or GeoTimeInstant
+        :raises ValueError: if *time_value* is NaN
 
         Note that if *time_value* is +infinity then :meth:`is_distant_past` will subsequently return true. And if *time_value* is -infinity then :meth:`is_distant_future` will subsequently return true.
         ::

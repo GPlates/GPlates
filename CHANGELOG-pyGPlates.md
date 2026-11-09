@@ -159,6 +159,7 @@ Changes since 1.0.0:
   * Fixed writing a `.grot` rotation file copying a sequence's poles into the next sequence when the two have the same moving plate (`MPRS:pid`), eg either side of a crossover. The copied poles grew with every save. This affected `FeatureCollection.write()` and `synchronise_crossovers()` with a `.grot` file.
   * Fixed a feature with the reconstruction method `ByPlateId` (eg, a motion path created by pyGPlates 1.0, or a feature given it explicitly) losing it when written to a Shapefile, GeoJSON or GeoPackage file and read back (the reader expected `ByPlateID`, which it still accepts).
   * Fixed `synchronise_crossovers()` writing an identity rotation as the synchronised crossover pole (shifting the rest of that sequence to match, and reporting it as synchronised) when there is no plate circuit from the moving plate to the synchronised crossover's fixed plate at the crossover time (eg, when the preserved crossover sequence has only one enabled pole). That crossover is now left unchanged, reported as `CrossoverResult.error`, and `synchronise_crossovers()` returns `False`.
+  * A NaN time (eg, `GeoTimeInstant(float('nan'))`, or NaN as a reconstruction time) raises `ValueError` (previously `AbortError`, with a call-stack trace, wherever a time is taken).
 
 pyGPlates 1.0.0
 ===============

@@ -36,6 +36,7 @@
 
 #include "PyFeatureCollectionFunctionArgument.h"
 #include "PyFilePathFunctionArgument.h"
+#include "PyGeoTimeInstant.h"
 #include "PyReconstructSnapshot.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
@@ -148,7 +149,7 @@ namespace GPlatesApi
 
 			reconstructable_features = boost::get<0>(reconstruct_args);
 			rotation_model = boost::get<1>(reconstruct_args);
-			reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(boost::get<2>(reconstruct_args));
+			reconstruction_time = convert_float_to_geo_time_instant(boost::get<2>(reconstruct_args));
 			anchor_plate_id = boost::get<3>(reconstruct_args);
 			reconstructed_geometries = boost::get<4>(reconstruct_args);
 

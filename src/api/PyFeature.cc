@@ -37,6 +37,7 @@
 #include <QString>
 
 #include "PyFeature.h"
+#include "PyGeoTimeInstant.h"
 
 #include "PyInformationModel.h"
 #include "PyPropertyValues.h"
@@ -1031,7 +1032,7 @@ namespace GPlatesApi
 						feature_handle.reference(),
 						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
 						GPlatesModel::ModelUtils::create_gml_time_instant(
-								GPlatesPropertyValues::GeoTimeInstant(
+								convert_float_to_geo_time_instant(
 										reverse_reconstruct_parameters.second/*reconstruction_time*/)),
 						true/*check_property_name_allowed_for_feature_type*/,
 						true/*check_property_value_type*/);
@@ -1211,7 +1212,7 @@ namespace GPlatesApi
 						feature_handle.reference(),
 						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
 						GPlatesModel::ModelUtils::create_gml_time_instant(
-								GPlatesPropertyValues::GeoTimeInstant(
+								convert_float_to_geo_time_instant(
 										reverse_reconstruct_parameters->second/*reconstruction_time*/)),
 						true/*check_property_name_allowed_for_feature_type*/,
 						true/*check_property_value_type*/);

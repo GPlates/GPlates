@@ -1577,6 +1577,31 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
 
 class GeoTimeInstantCase(unittest.TestCase):
 
+    def test_nan(self):
+        # A NaN time raises ValueError (previously AbortError, with a call stack), wherever a time is taken.
+        nan = float('nan')
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)
+        for function in (
+                lambda: pygplates.GeoTimeInstant(nan),
+                lambda: pygplates.GeoTimeInstant(1) == nan,
+                lambda: pygplates.GmlTimePeriod(nan, 0),
+                lambda: pygplates.GpmlTimeSample(pygplates.XsDouble(1), nan),
+                lambda: feature.set_valid_time(nan, 0),
+                lambda: feature.set_geometry(pygplates.PointOnSphere(0, 0), reverse_reconstruct=(rotation_model, nan)),
+                lambda: pygplates.Feature.create_reconstructable_feature(
+                        pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0),
+                        reconstruction_plate_id=801, reverse_reconstruct=(rotation_model, nan)),
+                lambda: pygplates.reconstruct([feature], rotation_model, [], nan),
+                lambda: rotation_model.get_rotation(nan, 801),
+                lambda: pygplates.ReconstructSnapshot([feature], rotation_model, nan),
+                lambda: pygplates.TopologicalSnapshot(os.path.join(FIXTURES, 'topologies.gpml'), rotation_model, nan)):
+            self.assertRaises(ValueError, function)
+        # But infinities are distant past and future.
+        self.assertTrue(pygplates.GeoTimeInstant(float('inf')).is_distant_past())
+        self.assertTrue(pygplates.GeoTimeInstant(float('-inf')).is_distant_future())
+
     def test_create(self):
         age = 10.0
         instant = pygplates.GeoTimeInstant(age)

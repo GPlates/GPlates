@@ -23,9 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "PyGeoTimeInstant.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 #include "PythonPickle.h"
@@ -49,13 +51,18 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	/**
-	 * Handle conversion from +/- infinity (in a 'float') to distant-past and distant future.
-	 */
 	GPlatesPropertyValues::GeoTimeInstant
 	convert_float_to_geo_time_instant(
 			const double &time_value)
 	{
+		// NaN is not a time (the GeoTimeInstant constructor aborts on it).
+		if (std::isnan(time_value))
+		{
+			PyErr_SetString(PyExc_ValueError, "Time cannot be NaN");
+			bp::throw_error_already_set();
+		}
+
+		// Handle conversion from +/- infinity (in a 'float') to distant-past and distant future.
 		if (GPlatesMaths::is_positive_infinity(time_value))
 		{
 			return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
@@ -655,6 +662,7 @@ export_geo_time_instant()
 				"\n"
 				"  :param time_value: the time position - positive values represent times in the *past*\n"
 				"  :type time_value: float or GeoTimeInstant\n"
+				"  :raises ValueError: if *time_value* is NaN\n"
 				"\n"
 				"  Note that if *time_value* is +infinity then :meth:`is_distant_past` will subsequently return true. "
 				"And if *time_value* is -infinity then :meth:`is_distant_future` will subsequently return true.\n"
