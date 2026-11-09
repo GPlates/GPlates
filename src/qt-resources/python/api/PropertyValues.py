@@ -278,6 +278,10 @@ def gpml_piecewise_aggregation_get_time_window_containing_time(gpml_piecewise_ag
     Returns ``None`` if *time* is outside the time ranges of all time windows.
     """
     
+    # Use GeoTimeInstant to compare (within epsilon) floating point time values
+    # (so a 'float' time compares the same way as a 'GeoTimeInstant' time).
+    time = GeoTimeInstant(time)
+
     # Find the time window containing the time.
     for window in gpml_piecewise_aggregation.get_time_windows():
         # Time period includes begin time and end time.
@@ -297,10 +301,11 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
     :param time: the time to extract value (defaults to present day)
     :type time: float or GeoTimeInstant
     :rtype: PropertyValue or None
-    :raises InterpolationError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
-    :meth:`distant future<GeoTimeInstant.is_distant_future>`
+    :raises InterpolationError: if a :meth:`time sample<get_time_samples>` bounding *time* has a time that is \
+    :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
-    Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`.
+    Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`
+    (including a *time* that is itself distant past or distant future).
     
     Note that the extracted property value is interpolated (at reconstruction *time*) if property
     value can be interpolated (currently only :class:`GpmlFiniteRotation` and :class:`XsDouble`),

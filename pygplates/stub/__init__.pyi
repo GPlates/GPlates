@@ -5681,9 +5681,10 @@ class GpmlIrregularSampling(PropertyValue):
         :param time: the time to extract value (defaults to present day)
         :type time: float or GeoTimeInstant
         :rtype: PropertyValue or None
-        :raises InterpolationError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or     :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises InterpolationError: if a :meth:`time sample<get_time_samples>` bounding *time* has a time that is     :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
-        Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`.
+        Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`
+        (including a *time* that is itself distant past or distant future).
 
         Note that the extracted property value is interpolated (at reconstruction *time*) if property
         value can be interpolated (currently only :class:`GpmlFiniteRotation` and :class:`XsDouble`),

@@ -144,6 +144,8 @@ Changes since 1.0.0:
   * `GpmlIrregularSampling.set_value(..., is_enabled=None)` gives an enabled time sample, the default, as documented (previously disabled, so a rotation sample set that way was ignored).
   * `GmlDataBlock.set()` can change the number of scalar values of a data block's only scalar type (previously raised `ValueError`), and a replaced scalar type keeps its place in the data block (previously it moved to the end).
   * `set_value()` on `GpmlTimeSample`, `GpmlTimeWindow` and `GpmlConstantValue` raises `ValueError` for a property value of a different type from the one it replaces. Previously it was accepted but the old value type was kept, which could make a file written with it read back wrongly (eg, a whole total reconstruction pole read back uninterpreted, or an `XsInteger` read back as a `GpmlPlateId`).
+  * `GpmlPiecewiseAggregation.get_time_window_containing_time()` compares a `float` time within a small epsilon, as it already did for a `GeoTimeInstant` time (previously a `float` time at a window's begin or end time, but for rounding, could miss the window).
+  * Documentation: `GpmlIrregularSampling.get_value()` raises `InterpolationError` when a time sample bounding *time* has a distant past or distant future time; a *time* that is itself distant past or future returns `None`.
 
 pyGPlates 1.0.0
 ===============

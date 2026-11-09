@@ -1355,6 +1355,11 @@ class GetTimeWindowsCase(unittest.TestCase):
         time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(pygplates.GeoTimeInstant(2.5))
         self.assertTrue(time_window)
         self.assertTrue(time_window.get_value().get_integer() == 20)
+        # A 'float' time compares within epsilon, like a 'GeoTimeInstant' time.
+        for time in (4 + 1e-10, pygplates.GeoTimeInstant(4 + 1e-10)):
+            time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(time)
+            self.assertTrue(time_window)
+            self.assertTrue(time_window.get_value().get_integer() == 30)
 
     def test_set(self):
         self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,

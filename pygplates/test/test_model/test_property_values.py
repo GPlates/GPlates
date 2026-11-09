@@ -613,6 +613,19 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         self.assertTrue(list(self.gpml_irregular_sampling) == self.original_time_samples)
         self.assertTrue([time_sample for time_sample in self.gpml_irregular_sampling] == self.original_time_samples)
 
+    def test_get_value_distant_times(self):
+        # A time sample bounding 'time' at distant past raises InterpolationError...
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(1), 0),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(2), pygplates.GeoTimeInstant.create_distant_past())])
+        self.assertRaises(pygplates.InterpolationError, gpml_irregular_sampling.get_value, 10)
+        # ...but a distant past (or future) 'time' is just outside the time range of the time samples.
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(1), 0),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(2), 10)])
+        self.assertTrue(gpml_irregular_sampling.get_value(pygplates.GeoTimeInstant.create_distant_past()) is None)
+        self.assertTrue(gpml_irregular_sampling.get_value(float('-inf')) is None)
+
     def test_set_value_is_enabled(self):
         # 'is_enabled=None' means enabled (the default), both for a new and an existing time sample.
         self.gpml_irregular_sampling.set_value(pygplates.XsInteger(10), 10, is_enabled=None)
