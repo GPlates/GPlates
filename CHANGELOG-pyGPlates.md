@@ -156,6 +156,7 @@ Changes since 1.0.0:
   * Documented argument names now work as keyword arguments (previously raised `ArgumentError`): `GreatCircleArc.get_arc_point()` and `get_arc_direction()`, `FiniteRotation.create_great_circle_point_rotation()`, `create_small_circle_point_rotation()` and `create_segment_rotation()`, the `visit_...()` methods of `PropertyValueVisitor`, and the `create_gpml()`, `create_gml()`, `create_xsi()` and `create_from_qualified_string()` methods of `PropertyName`, `FeatureType`, `EnumerationType`, `ScalarType` and `StructuralType`.
   * `PropertyValueVisitor.visit_gpml_finite_rotation()` names its argument `gpml_finite_rotation` (previously documented as `ppml_finite_rotation`).
   * Fixed `PolylineOnSphere.join()` with `PolylineConversion.raise_if_non_polyline` returning `[]` for an iterator or generator of geometries (it iterated them twice). It is documented as taking any iterable, and the type stub says `Iterable`.
+  * Fixed writing a `.grot` rotation file copying a sequence's poles into the next sequence when the two have the same moving plate (`MPRS:pid`), eg either side of a crossover. The copied poles grew with every save. This affected `FeatureCollection.write()` and `synchronise_crossovers()` with a `.grot` file.
 
 pyGPlates 1.0.0
 ===============

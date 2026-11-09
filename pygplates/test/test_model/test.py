@@ -928,6 +928,36 @@ class FeatureCollectionCase(unittest.TestCase):
             with open(rewritten_filename) as rewritten_file:
                 self.assertEqual(rewritten_file.read(), written_text)
 
+    def test_grot_crossover_round_trip(self):
+        # Two sequences of one moving plate (a crossover) share an 'MPRS:pid'. Writing the second one
+        # once also wrote the first one's poles again (and more of them on every save).
+        grot_text = (
+                '> @MPRS:pid"801" @MPRS:code"AUS" @MPRS:name"Australia"\n'
+                '801  0.0   90.0    0.0    0.0  701\n'
+                '801 10.0   10.0   20.0    5.0  701\n'
+                '> @MPRS:pid"801" @MPRS:code"AUS" @MPRS:name"Australia"\n'
+                '801 10.0   10.0   20.0    5.0  501\n'
+                '801 20.0   11.0   21.0    9.0  501\n')
+        expected_poles = [
+                (701, 801, 0.0, True),
+                (701, 801, 10.0, True),
+                (501, 801, 10.0, True),
+                (501, 801, 20.0, True)]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(filename, 'w') as grot_file:
+                grot_file.write(grot_text)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(filename)), expected_poles)
+
+            # Saved twice, the poles are unchanged.
+            for _ in range(2):
+                written_filename = os.path.join(tmp_dir, 'written.grot')
+                pygplates.FeatureCollection(filename).write(written_filename)
+                self.assertEqual(self._get_poles(pygplates.FeatureCollection(written_filename)), expected_poles)
+                filename = os.path.join(tmp_dir, 'rotations2.grot')
+                os.replace(written_filename, filename)
+
     def test_grot_unclosed_multi_line_attribute(self):
         # An unclosed triple-quoted attribute on a pole line once made the reader loop forever.
         with tempfile.TemporaryDirectory() as tmp_dir:

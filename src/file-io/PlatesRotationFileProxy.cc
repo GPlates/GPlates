@@ -1191,6 +1191,14 @@ GPlatesFileIO::GrotWriterWithoutCfg::initialise_pre_feature_properties(
 			return false;
 	}
 
+	// Reset the accumulator (of the previous feature's poles).
+	//
+	// NOTE: This must happen before writing the MPRS header, which returns early when this sequence
+	// has the same 'MPRS:pid' as the previous one (eg, either side of a crossover). Resetting after it
+	// skipped the reset then, so the previous sequence's poles were written again in this one
+	// (and more of them on every save).
+	d_accum = PlatesRotationFormatAccumulator();
+
 	//write out MPRS(Moving Plate Rotation Sequence) metadata
 	try
 	{
@@ -1236,8 +1244,6 @@ GPlatesFileIO::GrotWriterWithoutCfg::initialise_pre_feature_properties(
 		e.write(ostr);
 		qDebug() << ostr.str().c_str();
 	}
-	// Reset the accumulator.
-	d_accum = PlatesRotationFormatAccumulator();
 
 	return true;
 }
