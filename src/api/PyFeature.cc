@@ -1579,113 +1579,152 @@ namespace GPlatesApi
 	}
 #endif
 
-	bp::object
-	feature_handle_add_property_internal(
+	/**
+	 * Prepares (but does not add) the top-level properties for adding the property value(s) in
+	 * @a property_value_object (a property value, or a sequence of them) to @a feature_handle.
+	 *
+	 * The properties are appended to @a top_level_properties, which can already hold properties
+	 * prepared earlier in the same call. Those count towards a property's multiplicity too
+	 * (eg, two values of a property that can occur at most once in a feature).
+	 *
+	 * Raises 'TypeError' (with @a type_error_string) or 'InformationModelError' without changing
+	 * the feature. So the caller prepares everything first, and then adds what was prepared,
+	 * which cannot fail (prepare then commit), and an error leaves the feature unchanged.
+	 *
+	 * Returns true if @a property_value_object is a single property value (rather than a sequence).
+	 */
+	bool
+	feature_handle_prepare_properties_to_add(
+			std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> &top_level_properties,
 			GPlatesModel::FeatureHandle &feature_handle,
 			const GPlatesModel::PropertyName &property_name,
 			bp::object property_value_object,
 			VerifyInformationModel::Value verify_information_model,
 			const char *type_error_string)
 	{
+		typedef std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_value_seq_type;
+		property_value_seq_type property_values;
+
 		// 'property_value_object' is either a property value or a sequence of property values.
+		bool is_single_property_value = false;
 		bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type> extract_property_value(property_value_object);
 		if (extract_property_value.check())
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value = extract_property_value();
-
-			if (verify_information_model == VerifyInformationModel::NO)
-			{
-				// Just create a top-level property without checking information model.
-				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-						create_top_level_property_without_verifying_information_model(property_name, property_value);
-
-				GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.add(property);
-
-				// Return the newly added property.
-				return bp::object(*property_iter);
-			}
-
-			// Only add property if valid property name for the feature's type.
-			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
-			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
-					GPlatesModel::ModelUtils::add_property(
-							feature_handle.reference(),
-							property_name,
-							property_value,
-							true/*check_property_name_allowed_for_feature_type*/,
-							true/*check_property_multiplicity*/,
-							true/*check_property_value_type*/,
-							&add_property_error_code);
-			if (!feature_property_iter)
-			{
-				throw InformationModelException(
-						GPLATES_EXCEPTION_SOURCE,
-						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
-			}
-
-			// Return the newly added property.
-			return bp::object(*feature_property_iter.get());
+			property_values.push_back(extract_property_value());
+			is_single_property_value = true;
 		}
-		// ...else a sequence of property values.
-
-		// Attempt to extract a sequence of property values.
-		typedef std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_value_seq_type;
-		property_value_seq_type property_values;
-		PythonExtractUtils::extract_iterable(property_values, property_value_object, type_error_string);
+		else
+		{
+			PythonExtractUtils::extract_iterable(property_values, property_value_object, type_error_string);
+		}
 
 		if (verify_information_model == VerifyInformationModel::NO)
 		{
-			bp::list properties;
-
-			// Just create top-level properties without checking information model.
-			property_value_seq_type::const_iterator property_values_iter = property_values.begin();
-			property_value_seq_type::const_iterator property_values_end = property_values.end();
-			for ( ; property_values_iter != property_values_end; ++property_values_iter)
+			for (const auto &property_value : property_values)
 			{
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
-
-				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-						create_top_level_property_without_verifying_information_model(property_name, property_value);
-
-				GPlatesModel::FeatureHandle::iterator feature_property_iter = feature_handle.add(property);
-
-				properties.append(*feature_property_iter);
+				// Just create a top-level property without checking information model.
+				top_level_properties.push_back(
+						create_top_level_property_without_verifying_information_model(property_name, property_value));
 			}
 
-			// Return the property list.
-			return properties;
+			return is_single_property_value;
 		}
 
-		bp::list properties;
-
-		property_value_seq_type::const_iterator property_values_iter = property_values.begin();
-		property_value_seq_type::const_iterator property_values_end = property_values.end();
-		for ( ; property_values_iter != property_values_end; ++property_values_iter)
+		// No property values means nothing to add, and nothing to check (as when each value was checked
+		// as it was added), even if the property name is not allowed for the feature's type.
+		if (property_values.empty())
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
+			return is_single_property_value;
+		}
 
-			// Only add property if valid property name for the feature's type.
-			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
-			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
-					GPlatesModel::ModelUtils::add_property(
-							feature_handle.reference(),
-							property_name,
+		// Only add property if valid property name for the feature's type.
+		GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
+		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+				GPlatesModel::ModelUtils::get_gpgim_property(
+						property_name,
+						feature_handle.feature_type(),
+						&add_property_error_code);
+		if (!gpgim_property)
+		{
+			throw InformationModelException(
+					GPLATES_EXCEPTION_SOURCE,
+					QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
+		}
+
+		const bool can_occur_at_most_once =
+				gpgim_property.get()->get_multiplicity() == GPlatesModel::GpgimProperty::ZERO_OR_ONE ||
+				gpgim_property.get()->get_multiplicity() == GPlatesModel::GpgimProperty::ONE;
+
+		for (const auto &property_value : property_values)
+		{
+			if (can_occur_at_most_once)
+			{
+				// Look for the property both in the feature and among those prepared earlier in this call.
+				bool property_exists = false;
+				GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+				GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+				for ( ; properties_iter != properties_end; ++properties_iter)
+				{
+					if ((*properties_iter)->get_property_name() == property_name)
+					{
+						property_exists = true;
+					}
+				}
+				for (const auto &top_level_property : top_level_properties)
+				{
+					if (top_level_property->get_property_name() == property_name)
+					{
+						property_exists = true;
+					}
+				}
+
+				if (property_exists)
+				{
+					add_property_error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::
+							PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE;
+					throw InformationModelException(
+							GPLATES_EXCEPTION_SOURCE,
+							QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
+				}
+			}
+
+			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> top_level_property =
+					GPlatesModel::ModelUtils::create_top_level_property(
+							*gpgim_property.get(),
 							property_value,
-							true/*check_property_name_allowed_for_feature_type*/,
-							true/*check_property_multiplicity*/,
 							true/*check_property_value_type*/,
 							&add_property_error_code);
-			if (!feature_property_iter)
+			if (!top_level_property)
 			{
 				throw InformationModelException(
 						GPLATES_EXCEPTION_SOURCE,
 						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
 			}
 
-			properties.append(*feature_property_iter.get());
+			top_level_properties.push_back(top_level_property.get());
 		}
 
-		// Return the property list.
+		return is_single_property_value;
+	}
+
+	/**
+	 * Adds the properties prepared by @a feature_handle_prepare_properties_to_add (this cannot fail),
+	 * and returns them in a list.
+	 */
+	bp::list
+	feature_handle_add_prepared_properties(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> &top_level_properties)
+	{
+		bp::list properties;
+
+		for (const auto &top_level_property : top_level_properties)
+		{
+			GPlatesModel::FeatureHandle::iterator feature_property_iter = feature_handle.add(top_level_property);
+
+			properties.append(*feature_property_iter);
+		}
+
 		return properties;
 	}
 
@@ -1696,12 +1735,25 @@ namespace GPlatesApi
 			bp::object property_value_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
-		return feature_handle_add_property_internal(
+		// Prepare every property before adding any, so that an error leaves the feature unchanged.
+		std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> top_level_properties;
+		const bool is_single_property_value = feature_handle_prepare_properties_to_add(
+				top_level_properties,
 				feature_handle,
 				property_name,
 				property_value_object,
 				verify_information_model,
 				"Expected a PropertyName and PropertyValue, or PropertyName and sequence of PropertyValue");
+
+		bp::list properties = feature_handle_add_prepared_properties(feature_handle, top_level_properties);
+
+		// Return the newly added property (or list of properties if given a sequence of property values).
+		if (is_single_property_value)
+		{
+			return properties[0];
+		}
+
+		return properties;
 	}
 
 	bp::list
@@ -1710,12 +1762,14 @@ namespace GPlatesApi
 			bp::object properties_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
-		bp::list properties_list;
-
 		const char *type_error_string = "Expected a sequence of (PropertyName, PropertyValue(s))";
 
 		std::vector<bp::object> properties;
 		PythonExtractUtils::extract_iterable(properties, properties_object, type_error_string);
+
+		// Prepare every property (of every pair) before adding any,
+		// so that an error leaves the feature unchanged.
+		std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> top_level_properties;
 
 		// Retrieve the (PropertyName, PropertyValue) pairs.
 		std::vector<bp::object>::const_iterator properties_iter = properties.begin();
@@ -1736,7 +1790,7 @@ namespace GPlatesApi
 			const bp::object property_value_object = name_value_vector[1];
 
 			// Make sure we can extract PropertyName.
-			// The PropertyValue(s) is handled by 'feature_handle_add_property()'.
+			// The PropertyValue(s) is handled by 'feature_handle_prepare_properties_to_add()'.
 			bp::extract<GPlatesModel::PropertyName> extract_property_name(property_name_object);
 			if (!extract_property_name.check())
 			{
@@ -1744,27 +1798,16 @@ namespace GPlatesApi
 				bp::throw_error_already_set();
 			}
 
-			bp::object property =
-					feature_handle_add_property_internal(
-							feature_handle,
-							extract_property_name(),
-							property_value_object,
-							verify_information_model,
-							type_error_string);
-
-			// It could be a list of properties if we passed in a sequence of property values.
-			bp::extract<bp::list> extract_property_list(property);
-			if (extract_property_list.check())
-			{
-				properties_list.extend(extract_property_list());
-			}
-			else
-			{
-				properties_list.append(property);
-			}
+			feature_handle_prepare_properties_to_add(
+					top_level_properties,
+					feature_handle,
+					extract_property_name(),
+					property_value_object,
+					verify_information_model,
+					type_error_string);
 		}
 
-		return properties_list;
+		return feature_handle_add_prepared_properties(feature_handle, top_level_properties);
 	}
 
 	void

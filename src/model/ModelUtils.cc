@@ -794,9 +794,28 @@ GPlatesModel::ModelUtils::set_properties(
 		}
 	}
 
-	typedef std::vector<PropertyValue::non_null_ptr_type> property_value_seq_type;
-	property_value_seq_type::const_iterator property_value_seq_iter = property_values.begin();
-	property_value_seq_type::const_iterator property_value_seq_end = property_values.end();
+	// Create every top-level property before changing the feature, so that an error
+	// (eg, the wrong type of property value) leaves the feature unchanged.
+	typedef std::vector<TopLevelProperty::non_null_ptr_type> top_level_property_seq_type;
+	top_level_property_seq_type top_level_properties;
+	for (const PropertyValue::non_null_ptr_type &property_value : property_values)
+	{
+		boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
+				create_top_level_property(
+						gpgim_property,
+						property_value,
+						check_property_value_type,
+						error_code);
+		if (!top_level_property)
+		{
+			return false;
+		}
+
+		top_level_properties.push_back(top_level_property.get());
+	}
+
+	top_level_property_seq_type::const_iterator top_level_property_seq_iter = top_level_properties.begin();
+	top_level_property_seq_type::const_iterator top_level_property_seq_end = top_level_properties.end();
 
 	// Search for an existing property with the same name.
 	// We will override existing properties with new property values where possible.
@@ -808,27 +827,15 @@ GPlatesModel::ModelUtils::set_properties(
 
 		if (gpgim_property.get_property_name() == feature_property->get_property_name())
 		{
-			// If we have a property value to set...
-			if (property_value_seq_iter != property_value_seq_end)
+			// If we have a property to set...
+			if (top_level_property_seq_iter != top_level_property_seq_end)
 			{
-				// Get the next property value to set.
-				PropertyValue::non_null_ptr_type property_value = *property_value_seq_iter;
-				++property_value_seq_iter;
-
-				// Create a top-level property.
-				boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
-						create_top_level_property(
-								gpgim_property,
-								property_value,
-								check_property_value_type,
-								error_code);
-				if (!top_level_property)
-				{
-					return false;
-				}
+				// Get the next property to set.
+				TopLevelProperty::non_null_ptr_type top_level_property = *top_level_property_seq_iter;
+				++top_level_property_seq_iter;
 
 				// Change the property.
-				feature->set(properties_iter, top_level_property.get());
+				feature->set(properties_iter, top_level_property);
 
 				feature_properties.push_back(properties_iter);
 			}
@@ -841,24 +848,9 @@ GPlatesModel::ModelUtils::set_properties(
 	}
 
 	// If there are any remaining properties then just add them.
-	for ( ; property_value_seq_iter != property_value_seq_end; ++property_value_seq_iter)
+	for ( ; top_level_property_seq_iter != top_level_property_seq_end; ++top_level_property_seq_iter)
 	{
-		// Get the next property value to set.
-		PropertyValue::non_null_ptr_type property_value = *property_value_seq_iter;
-
-		// Create a top-level property.
-		boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
-				create_top_level_property(
-						gpgim_property,
-						property_value,
-						check_property_value_type,
-						error_code);
-		if (!top_level_property)
-		{
-			return false;
-		}
-
-		FeatureHandle::iterator feature_property_iter = feature->add(top_level_property.get());
+		FeatureHandle::iterator feature_property_iter = feature->add(*top_level_property_seq_iter);
 
 		feature_properties.push_back(feature_property_iter);
 	}

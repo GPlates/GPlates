@@ -489,7 +489,8 @@ namespace GPlatesModel
 		 * property value in @a property_values is checked to see if it is allowed for @a property_name.
 		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
-		 * Returns false if there is an error setting any property.
+		 * Returns false if there is an error setting any property
+		 * (in which case the feature is unchanged).
 		 */
 		bool
 		set_properties(

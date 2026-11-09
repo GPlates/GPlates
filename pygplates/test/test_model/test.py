@@ -650,6 +650,41 @@ class FeatureCase(unittest.TestCase):
         self.assertRaises(ValueError, self.feature.remove, other_property)
         self.assertEqual(len(self.feature), self.property_count - 2)
 
+    def test_add_set_unchanged_on_error(self):
+        # An error part-way through adding or setting several properties leaves the feature unchanged.
+        feature = pygplates.Feature(pygplates.FeatureType.gpml_coastline)
+        feature.set_name('name')
+        properties = list(feature)
+        # A property value of the wrong type after a good one.
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          pygplates.PropertyName.gml_name, [pygplates.XsString('a'), pygplates.XsInteger(1)])
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          [(pygplates.PropertyName.gml_name, pygplates.XsString('a')),
+                           (pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.XsString('not a plate ID'))])
+        self.assertRaises(pygplates.InformationModelError, feature.set,
+                          pygplates.PropertyName.gml_name, [pygplates.XsString('a'), pygplates.XsInteger(1)])
+        # A property that can occur at most once, given twice in the same call.
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          pygplates.PropertyName.gpml_reconstruction_plate_id,
+                          [pygplates.GpmlPlateId(1), pygplates.GpmlPlateId(2)])
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          [(pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.GpmlPlateId(1)),
+                           (pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.GpmlPlateId(2))])
+        self.assertEqual(list(feature), properties)
+        self.assertEqual(feature.get_name(), 'name')
+        # What succeeds is still added, and returned as before.
+        self.assertTrue(isinstance(feature.add(pygplates.PropertyName.gml_name, pygplates.XsString('a')), pygplates.Property))
+        self.assertEqual(len(feature.add(pygplates.PropertyName.gml_name, [pygplates.XsString('b'), pygplates.XsString('c')])), 2)
+        self.assertEqual(len(feature.add([(pygplates.PropertyName.gml_name, pygplates.XsString('d')),
+                                          (pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.GpmlPlateId(1))])), 2)
+        self.assertEqual(len(feature), len(properties) + 5)
+        # No values to add: nothing added, and nothing checked, even for a property name the feature type doesn't allow
+        # (as before, when each value was checked as it was added).
+        not_allowed = pygplates.PropertyName.create_gpml('notAllowedHere')
+        self.assertEqual(feature.add(not_allowed, []), [])
+        self.assertEqual(feature.add([(not_allowed, [])]), [])
+        self.assertEqual(len(feature), len(properties) + 5)
+
     def test_predicate_truth_value(self):
         # A predicate's result is tested for truth, so it need not be a 'bool'.
         self.assertEqual(len(self.feature.get(lambda property: 'yes', pygplates.PropertyReturn.all)), len(self.feature))

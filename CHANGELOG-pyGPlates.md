@@ -126,6 +126,7 @@ Changes since 1.0.0:
     * Fixed a list naming the same feature (or property) instance more than once, not next to each other (eg, `[f1, f2, f1]`), raising `ValueError` after removing the others.
     * When `ValueError` is raised (an instance not found), nothing is removed (previously some of the others could already have been removed).
     * A feature added to a collection more than once (`FeatureCollection.add()` doesn't check for duplicates) has every copy removed (previously only one copy, so it was still in the collection, and was written to files).
+  * `Feature.add()` and `Feature.set()` with several property values (or `Feature.add()` with several property name/value pairs) leave the feature unchanged when one of them raises `InformationModelError` (eg, a value of the wrong type, or two values of a property that can occur only once). Previously the values before it had already been added or set.
 
 pyGPlates 1.0.0
 ===============
