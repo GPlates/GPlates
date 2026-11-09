@@ -3743,6 +3743,23 @@ class TopologicalModelTestCase(unittest.TestCase):
                     oldest_time=100,
                     time_increment=time_increment)
 
+    def test_deactivate_points_independent_of_earlier_calls(self):
+        # The same reconstruction gives the same active points whether its DefaultDeactivatePoints is fresh,
+        # or was used earlier with a different time increment (its cached stage rotations were keyed by time
+        # only, and the default 'deactivate_points' argument is one instance shared by every call).
+        points = pygplates.MultiPointOnSphere([(lat, lon) for lat in range(-80, 81, 2) for lon in range(-180, 180, 2)])
+        def active_points(deactivate_points, initial_time, time_increment):
+            time_span = self.topological_model.reconstruct_geometry(
+                    points, initial_time, oldest_time=40, youngest_time=0,
+                    time_increment=time_increment, deactivate_points=deactivate_points)
+            return [[point is not None for point in time_span.get_geometry_points(time, return_inactive_points=True)]
+                    for time in range(0, 41)]
+        fresh = active_points(pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints(), 20, 20)
+        for earlier_initial_time, earlier_time_increment in ((0, 1), (20, 10)):
+            deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()
+            active_points(deactivate_points, earlier_initial_time, earlier_time_increment)
+            self.assertEqual(active_points(deactivate_points, 20, 20), fresh)
+
     def test_get_reconstructed_data(self):
         multipoint =  pygplates.MultiPointOnSphere([(0,0), (0,-30), (0,-60)])
         
