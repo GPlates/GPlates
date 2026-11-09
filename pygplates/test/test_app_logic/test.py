@@ -2,6 +2,7 @@
 Unit tests for the pygplates application logic API.
 """
 
+import gc
 import math
 import os
 import sys
@@ -2292,6 +2293,39 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
         # Without clamping it strains much more.
         self.assertTrue(self._max_strain_rate(
                 pygplates.TopologicalSnapshot(topological_features, rotation_features, 10).get_resolved_topologies()) > 1e-20)
+
+    def test_network_keeps_interior_features_alive(self):
+        # A resolved network keeps the features of its rigid blocks (and other interior geometries) alive,
+        # as it does its boundary sections' features. So they're still available once the features used to
+        # resolve it are gone (eg, 'TopologicalSnapshot(files, ...).get_resolved_topologies()').
+        def resolve_networks():
+            boundary_feature = pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere([(-20, -20), (-20, 20), (20, 20), (20, -20)]), reconstruction_plate_id=1)
+            rigid_block_feature = pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere([(-5, -5), (-5, 5), (5, 5), (5, -5)]), reconstruction_plate_id=1,
+                    name='rigid block')
+            interior_feature = pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.MultiPointOnSphere([(10, 10)]), reconstruction_plate_id=2)
+            network = pygplates.GpmlTopologicalNetwork(
+                    [pygplates.GpmlTopologicalSection.create(boundary_feature, topological_geometry_type=pygplates.GpmlTopologicalPolygon)],
+                    [pygplates.GpmlTopologicalSection.create_network_interior(rigid_block_feature),
+                     pygplates.GpmlTopologicalSection.create_network_interior(interior_feature)])
+            features = [boundary_feature, rigid_block_feature, interior_feature,
+                        pygplates.Feature.create_topological_network_feature(network)]
+            return pygplates.TopologicalSnapshot(features, [], 10).get_resolved_topologies(pygplates.ResolveTopologyType.network)
+
+        networks = resolve_networks()
+        gc.collect()
+        self.assertEqual(len(networks), 1)
+        rigid_blocks = networks[0].get_rigid_blocks()
+        self.assertEqual(len(rigid_blocks), 1)
+        self.assertEqual(rigid_blocks[0].get_feature().get_name(), 'rigid block')
+        self.assertTrue(rigid_blocks[0].get_present_day_geometry())
+        point_features = networks[0].get_resolved_geometry_point_features(True)
+        self.assertTrue(any(feature.get_name() == 'rigid block' for feature in point_features))
 
     def test_resolve_topologies_section_types(self):
         # Topological section types other than boundary and network raise ValueError (and write no file).

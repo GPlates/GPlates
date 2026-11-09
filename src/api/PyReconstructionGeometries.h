@@ -489,6 +489,15 @@ namespace GPlatesApi
 		std::vector<ResolvedTopologicalGeometrySubSegmentWrapper> d_boundary_sub_segments;
 
 		/**
+		 * Keep the features/properties of the interior geometries (including rigid blocks) alive.
+		 *
+		 * For example, a rigid block's 'get_feature()', and the source features returned by
+		 * 'get_resolved_geometry_point_features(True)', need them after the features used to resolve
+		 * the network are gone (eg, 'TopologicalSnapshot(files, ...).get_resolved_topologies()').
+		 */
+		std::vector<KeepReconstructionGeometryFeatureAndPropertyAlive> d_interior_geometries_keep_alive;
+
+		/**
 		 * A feature containing the resolved (not present day) line geometry.
 		 *
 		 * NOTE: It is only created when first requested by @a get_resolved_feature.

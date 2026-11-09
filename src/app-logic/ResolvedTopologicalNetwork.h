@@ -86,6 +86,11 @@ namespace GPlatesAppLogic
 		{  }
 
 
+		//! Typedef for a sequence of the reconstruction geometries the network's interior geometries came from.
+		typedef std::vector<ReconstructionGeometry::non_null_ptr_to_const_type>
+				interior_source_geometry_seq_type;
+
+
 		/**
 		 * Create a ResolvedTopologicalNetwork instance.
 		 */
@@ -99,6 +104,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_begin,
 				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_end,
+				const interior_source_geometry_seq_type &interior_source_geometries_ =
+						interior_source_geometry_seq_type(),
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
@@ -111,6 +118,7 @@ namespace GPlatesAppLogic
 							property_iterator_,
 							boundary_sub_segment_sequence_begin,
 							boundary_sub_segment_sequence_end,
+							interior_source_geometries_,
 							plate_id_,
 							time_of_formation_,
 							reconstruct_handle_));
@@ -194,6 +202,21 @@ namespace GPlatesAppLogic
 		get_triangulation_network() const
 		{
 			return *d_triangulation_network;
+		}
+
+		/**
+		 * The reconstruction geometries that the network's interior geometries came from
+		 * (including its rigid blocks).
+		 *
+		 * The features they reference are used later, for example to calculate velocities, but
+		 * (like the features of the boundary sections) are only referenced weakly. So something that
+		 * outlives the features that resolved the network (eg, a pyGPlates wrapper) can use this to
+		 * keep them alive.
+		 */
+		const interior_source_geometry_seq_type &
+		get_interior_source_geometries() const
+		{
+			return d_interior_source_geometries;
 		}
 
 		/**
@@ -377,6 +400,11 @@ namespace GPlatesAppLogic
 		 */
 		ResolvedTriangulation::Network::non_null_ptr_type d_triangulation_network;
 
+		/**
+		 * The reconstruction geometries that the network's interior geometries came from.
+		 */
+		interior_source_geometry_seq_type d_interior_source_geometries;
+
 
 		/**
 		 * Each point in the boundary of the resolved topological network can potentially reference a different source info.
@@ -417,6 +445,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_begin,
 				BoundarySubSegmentForwardIter boundary_sub_segment_sequence_end,
+				const interior_source_geometry_seq_type &interior_source_geometries_,
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_) :
@@ -426,7 +455,8 @@ namespace GPlatesAppLogic
 			d_plate_id(plate_id_),
 			d_time_of_formation(time_of_formation_),
 			d_boundary_sub_segment_seq(boundary_sub_segment_sequence_begin, boundary_sub_segment_sequence_end),
-			d_triangulation_network(triangulation_network)
+			d_triangulation_network(triangulation_network),
+			d_interior_source_geometries(interior_source_geometries_)
 		{  }
 
 		void

@@ -166,6 +166,7 @@ Changes since 1.0.0:
   * A topological network whose rift parameters, read from a file, are out of range uses the default for each (with a warning) instead, and a rift edge length threshold is at least 0.001 degrees, which bounds how finely rift edges are subdivided.
   * Fixed `resolve_topologies()` ignoring its `default_resolve_topology_parameters` argument (it always used the default parameters, eg, no strain rate clamping).
   * `resolve_topologies()` raises `ValueError` for a `resolve_topological_section_types` other than `ResolveTopologyType.boundary` and/or `ResolveTopologyType.network`, as documented (previously it gave no sections, and wrote no file, without an error). When not specified, it defaults to `resolve_topology_types` without any `ResolveTopologyType.line`.
+  * A `ResolvedTopologicalNetwork` keeps the features of its rigid blocks and other interior geometries alive, as it does its boundary sections' features. Previously, once the features used to resolve it were gone (eg, after `TopologicalSnapshot(filenames, ...).get_resolved_topologies()`), a rigid block's `get_feature()` returned `None`, and `get_resolved_geometry_point_features(True)` raised `PreconditionViolationError`.
 
 pyGPlates 1.0.0
 ===============

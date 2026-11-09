@@ -870,6 +870,9 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 	}
 
 
+	// The reconstruction geometries the interior geometries came from (the resolved network records them).
+	ResolvedTopologicalNetwork::interior_source_geometry_seq_type interior_source_geometries;
+
 	// Iterate over the interior geometries.
 	ResolvedNetwork::interior_geometry_seq_type::const_iterator interior_geometry_iter =
 			d_current_resolved_network.interior_geometries.begin();
@@ -884,6 +887,8 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 		{
 			continue;
 		}
+
+		interior_source_geometries.push_back(interior_geometry.d_source_rg);
 
 		// Get the points for this interior geometry.
 		std::vector<GPlatesMaths::PointOnSphere> interior_geometry_points;
@@ -1000,6 +1005,7 @@ GPlatesAppLogic::TopologyNetworkResolver::create_resolved_topology_network()
 					d_current_resolved_network.topological_network_property.get(),
 					boundary_subsegments.begin(),
 					boundary_subsegments.end(),
+					interior_source_geometries,
 					d_current_reconstruction_params.get_recon_plate_id(),
 					d_current_reconstruction_params.get_time_of_appearance(),
 					d_reconstruct_handle/*identify where/when this RTN was resolved*/);
