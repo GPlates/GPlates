@@ -460,14 +460,17 @@ class TypeExpressionParser(object):
         if structural == 'any':
             if self._peek_structural(stream, 1) == 'combination':
                 return self._parse_any_combination(stream, prior)
-            if self._peek_structural(stream, 1) in ('sequence', 'sequences', 'list',
-                                                    'lists', 'tuple', 'tuples', 'dict'):
+            if self._peek_structural(stream, 1) in ('sequence', 'sequences', 'iterable',
+                                                    'iterables', 'list', 'lists', 'tuple',
+                                                    'tuples', 'dict'):
                 stream.next()  # 'any sequence of X' is just a sequence of X
                 self._skip_articles(stream)
                 structural = self._peek_structural(stream)
 
         if structural in ('sequence', 'sequences'):
             return self._parse_sequence(stream, prior)
+        if structural in ('iterable', 'iterables'):
+            return self._parse_iterable(stream, prior)
         if structural in ('list', 'lists'):
             return self._parse_list(stream, prior)
         if structural in ('tuple', 'tuples'):
@@ -616,6 +619,22 @@ class TypeExpressionParser(object):
         # 'Any sequence such as a ``list`` or a ``tuple``' - element type unspecified.
         self.generator.uses_any = True
         return 'Sequence[Any]'
+
+    def _parse_iterable(self, stream, prior):
+        # 'iterable of X': something iterated once (eg, a list, or a generator), unlike a
+        # 'sequence of X', which can be iterated more than once.
+        stream.next()  # 'iterable'
+        while True:
+            if self._peek_punct(stream, '('):
+                self._collect_paren_group(stream)
+                continue
+            break
+        self.generator.uses_iterable = True
+        if stream.peek_word() == 'of':
+            stream.next()
+            return 'Iterable[%s]' % self._parse_of_target(stream, prior)
+        self.generator.uses_any = True
+        return 'Iterable[Any]'
 
     def _parse_list(self, stream, prior):
         stream.next()  # 'list'
@@ -1180,6 +1199,7 @@ class StubGenerator(object):
         self.uses_any = False
         self.uses_callable = False
         self.uses_classvar = False
+        self.uses_iterable = False
         self.uses_named_tuple = False
         self.uses_numpy = False
         self.uses_overload = False
@@ -1348,6 +1368,8 @@ class StubGenerator(object):
             self.uses_numpy = True
         if 'Sequence[' in signature_text:
             self.uses_sequence = True
+        if 'Iterable[' in signature_text:
+            self.uses_iterable = True
         if 'os.PathLike' in signature_text:
             self.uses_os = True
 
@@ -1398,6 +1420,8 @@ class StubGenerator(object):
             typing_names.append('Callable')
         if self.uses_classvar:
             typing_names.append('ClassVar')
+        if self.uses_iterable:
+            typing_names.append('Iterable')
         if self.uses_named_tuple:
             typing_names.append('NamedTuple')
         if self.uses_sequence:

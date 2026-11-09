@@ -269,7 +269,7 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
     Joins geometries that have end points closer than a distance threshold.
     
     :param geometries: the geometries to join
-    :type geometries: sequence (eg, list or tuple) of GeometryOnSphere
+    :type geometries: iterable of GeometryOnSphere
     :param distance_threshold_radians: optional closeness distance threshold in radians for joining to occur \
     (if not specified then end point *equality* is used)
     :type distance_threshold_radians: float
@@ -337,10 +337,13 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
                 raise GeometryTypeError('Expected geometries (iterable of GeometryOnSphere)')
     else: # polyline_conversion == PolylineConversion.raise_if_non_polyline
         # Raise error if any geometry is not a PolylineOnSphere.
+        #
+        # Note: Check and add in the same loop (one pass), since 'geometries' can be an iterator.
+        joined_polylines = []
         for geometry in geometries:
             if not isinstance(geometry, PolylineOnSphere):
                 raise GeometryTypeError('Expected PolylineOnSphere geometries')
-        joined_polylines = list(geometries)
+            joined_polylines.append(geometry)
     
     #
     # Do N^2 search over pairs of geometries to test for joining.

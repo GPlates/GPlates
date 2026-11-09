@@ -932,6 +932,16 @@ class PolylineOnSphereCase(unittest.TestCase):
         point_sequence = self.polyline.get_points()
         self.assertEqual(self.polyline, pygplates.PolylineOnSphere(point_sequence))
     
+    def test_join_iterable(self):
+        # The geometries are iterated once, so a generator works (with each polyline conversion).
+        polylines = [pygplates.PolylineOnSphere([(0,0), (0,10)]), pygplates.PolylineOnSphere([(0,10), (0,20)])]
+        for polyline_conversion in (pygplates.PolylineConversion.convert_to_polyline,
+                                    pygplates.PolylineConversion.ignore_non_polyline,
+                                    pygplates.PolylineConversion.raise_if_non_polyline):
+            joined_polylines = pygplates.PolylineOnSphere.join(
+                    (polyline for polyline in polylines), polyline_conversion=polyline_conversion)
+            self.assertEqual(len(joined_polylines), 1)
+
     def test_join(self):
         # Should work on any GeometryOnSphere type.
         joined_polylines = pygplates.PolylineOnSphere.join(

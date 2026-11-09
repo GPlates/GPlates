@@ -10,7 +10,7 @@
 import numpy
 import os
 
-from typing import Any, Callable, ClassVar, NamedTuple, Sequence, overload
+from typing import Any, Callable, ClassVar, Iterable, NamedTuple, Sequence, overload
 
 __version__: str
 
@@ -11600,11 +11600,11 @@ class PolylineOnSphere(GeometryOnSphere):
         """
 
     @staticmethod
-    def join(geometries: Sequence[GeometryOnSphere], distance_threshold_radians: float | None = None, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere]:
+    def join(geometries: Iterable[GeometryOnSphere], distance_threshold_radians: float | None = None, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere]:
         """Joins geometries that have end points closer than a distance threshold.
 
         :param geometries: the geometries to join
-        :type geometries: sequence (eg, list or tuple) of GeometryOnSphere
+        :type geometries: iterable of GeometryOnSphere
         :param distance_threshold_radians: optional closeness distance threshold in radians for joining to occur     (if not specified then end point *equality* is used)
         :type distance_threshold_radians: float
         :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to     *PolylineConversion.ignore_non_polyline*
