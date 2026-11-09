@@ -111,6 +111,19 @@ GPlatesApi::PythonExtractUtils::is_true(
 }
 
 
+void
+GPlatesApi::PythonExtractUtils::raise_type_error_if_not_callable(
+		const bp::object &object,
+		const char *type_error_string)
+{
+	if (!PyCallable_Check(object.ptr()))
+	{
+		PyErr_SetString(PyExc_TypeError, type_error_string);
+		bp::throw_error_already_set();
+	}
+}
+
+
 bp::handle<>
 GPlatesApi::PythonExtractUtils::Implementation::get_next_item(
 		const bp::handle<> &iterator)

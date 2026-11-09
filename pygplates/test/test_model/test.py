@@ -646,6 +646,15 @@ class FeatureCase(unittest.TestCase):
         self.assertTrue(self.feature.get_geometries(lambda property: [1]))
         self.feature.remove(lambda property: [])
         self.assertEqual(len(self.feature), self.property_count)
+        # A query that isn't a PropertyName, callable or None raises TypeError
+        # (rather than "'str' object is not callable", or None for a feature with no properties).
+        for feature in (self.feature, pygplates.Feature()):
+            self.assertRaises(TypeError, feature.get, 'gml:name')
+            self.assertRaises(TypeError, feature.get_value, 'gml:name')
+            self.assertRaises(TypeError, feature.get_geometry, 'gpml:position')
+            self.assertRaises(TypeError, feature.get_geometries, 'gpml:position')
+            self.assertRaises(TypeError, feature.get_topological_geometry, 'gpml:boundary')
+            self.assertRaises(TypeError, feature.remove, 'gml:name')
         self.feature.remove(lambda property: numpy.bool_(True))
         self.assertEqual(len(self.feature), 0)
 
@@ -1342,6 +1351,11 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertEqual(len(self.feature_collection.get(lambda feature: 'yes', pygplates.FeatureReturn.all)), num_features)
         self.assertFalse(self.feature_collection.get(lambda feature: [], pygplates.FeatureReturn.all))
         self.assertEqual(len(self.feature_collection.get(lambda feature: numpy.bool_(True), pygplates.FeatureReturn.all)), num_features)
+        # A query that isn't a FeatureType, FeatureId or callable raises TypeError
+        # (rather than "'str' object is not callable", or no error at all on an empty collection).
+        self.assertRaises(TypeError, self.feature_collection.get, 'gpml:Isochron')
+        self.assertRaises(TypeError, pygplates.FeatureCollection().get, 'gpml:Isochron', pygplates.FeatureReturn.all)
+        self.assertRaises(TypeError, self.feature_collection.remove, 'gpml:Isochron')
         # An exception raised by the truth test propagates.
         class NoTruth(object):
             def __bool__(self):

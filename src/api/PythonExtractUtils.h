@@ -89,6 +89,20 @@ namespace GPlatesApi
 
 
 		/**
+		 * Raises Python exception 'TypeError' with the error message @a type_error_string
+		 * if @a object is not callable.
+		 *
+		 * Use this before treating a query that isn't any of the other accepted types as a predicate,
+		 * so that (for example) a 'str' gets the caller's own message rather than
+		 * "'str' object is not callable" (or no error at all when there is nothing to call it on).
+		 */
+		void
+		raise_type_error_if_not_callable(
+				const boost::python::object &object,
+				const char *type_error_string);
+
+
+		/**
 		 * What @a check_sequence does when given an iterator (which cannot be iterated over twice).
 		 */
 		enum IfIterator

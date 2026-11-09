@@ -1824,7 +1824,7 @@ namespace GPlatesApi
 		}
 
 		// See if a single predicate callable.
-		if (PyObject_HasAttrString(property_query_object.ptr(), "__call__"))
+		if (PyCallable_Check(property_query_object.ptr()))
 		{
 			// Search for the property using a predicate callable.
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
@@ -1888,7 +1888,7 @@ namespace GPlatesApi
 			}
 
 			// See if a predicate callable.
-			if (PyObject_HasAttrString(property_query.ptr(), "__call__"))
+			if (PyCallable_Check(property_query.ptr()))
 			{
 				predicates_seq.push_back(property_query);
 				continue;
@@ -2198,7 +2198,11 @@ namespace GPlatesApi
 		}
 		else if (property_query_object != bp::object()/*Py_None*/)
 		{
-			// Property query is a callable predicate.
+			// Property query should be a callable predicate.
+			PythonExtractUtils::raise_type_error_if_not_callable(
+					property_query_object,
+					"Expected PropertyName, or predicate, or None");
+
 			property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 			{
 				return PythonExtractUtils::is_true(property_query_object(feature_property));
@@ -2614,8 +2618,12 @@ namespace GPlatesApi
 					return feature_property->get_property_name() == property_name.get();
 				};
 			}
-			else  // property query is a callable predicate...
+			else  // property query should be a callable predicate...
 			{
+				PythonExtractUtils::raise_type_error_if_not_callable(
+						property_query_object,
+						"Expected PropertyName, or predicate, or None");
+
 				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 				{
 					return PythonExtractUtils::is_true(property_query_object(feature_property));
@@ -2958,8 +2966,12 @@ namespace GPlatesApi
 					return feature_property->get_property_name() == property_name.get();
 				};
 			}
-			else  // property query is a callable predicate...
+			else  // property query should be a callable predicate...
 			{
+				PythonExtractUtils::raise_type_error_if_not_callable(
+						property_query_object,
+						"Expected PropertyName, or predicate, or None");
+
 				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 				{
 					return PythonExtractUtils::is_true(property_query_object(feature_property));

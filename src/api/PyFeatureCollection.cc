@@ -375,7 +375,7 @@ namespace GPlatesApi
 		}
 
 		// See if a single predicate callable.
-		if (PyObject_HasAttrString(feature_query_object.ptr(), "__call__"))
+		if (PyCallable_Check(feature_query_object.ptr()))
 		{
 			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
 			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
@@ -450,7 +450,7 @@ namespace GPlatesApi
 			}
 
 			// See if a predicate callable.
-			if (PyObject_HasAttrString(feature_query.ptr(), "__call__"))
+			if (PyCallable_Check(feature_query.ptr()))
 			{
 				predicates_seq.push_back(feature_query);
 				continue;
@@ -617,6 +617,13 @@ namespace GPlatesApi
 			if (extract_feature_id.check())
 			{
 				feature_id = extract_feature_id();
+			}
+			else
+			{
+				// Else feature query should be a callable predicate.
+				PythonExtractUtils::raise_type_error_if_not_callable(
+						feature_query_object,
+						"Expected FeatureType, or FeatureId, or predicate");
 			}
 		}
 
