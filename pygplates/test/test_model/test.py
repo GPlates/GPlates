@@ -1668,6 +1668,35 @@ class PropertyCase(unittest.TestCase):
 
 class PropertyNameCase(unittest.TestCase):
 
+    def test_hash_with_another_prefix(self):
+        # A GPML file can bind the GPML namespace to another prefix, which feature types keep when read.
+        # Such a name equals the canonical one, so it also hashes equal (eg, for 'set' and 'dict' lookups).
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            filename = os.path.join(tmp_dir, 'prefix.gpml')
+            pygplates.FeatureCollection([feature]).write(filename)
+            with open(filename, encoding='utf-8') as gpml_file:
+                gpml_text = gpml_file.read()
+            with open(filename, 'w', encoding='utf-8') as gpml_file:
+                gpml_file.write(gpml_text.replace('xmlns:gpml=', 'xmlns:gx=').replace('gpml:', 'gx:'))
+            feature_type = next(iter(pygplates.FeatureCollection(filename))).get_feature_type()
+        self.assertEqual(feature_type.to_qualified_string(), 'gx:Coastline')
+        self.assertEqual(feature_type, pygplates.FeatureType.gpml_coastline)
+        self.assertEqual(hash(feature_type), hash(pygplates.FeatureType.gpml_coastline))
+        self.assertTrue(feature_type in {pygplates.FeatureType.gpml_coastline})
+
+    def test_empty_name(self):
+        # An empty name is rejected (creating), or gives None (parsing).
+        self.assertRaises(ValueError, pygplates.PropertyName.create_gpml, '')
+        self.assertRaises(ValueError, pygplates.PropertyName.create_gml, '')
+        self.assertRaises(ValueError, pygplates.FeatureType.create_gpml, '')
+        self.assertRaises(ValueError, pygplates.ScalarType.create_xsi, '')
+        self.assertTrue(pygplates.PropertyName.create_from_qualified_string('') is None)
+        self.assertTrue(pygplates.PropertyName.create_from_qualified_string('gpml:') is None)
+        self.assertTrue(pygplates.FeatureType.create_from_qualified_string('gpml:') is None)
+        self.assertEqual(pygplates.PropertyName.create_from_qualified_string('gpml:name'), pygplates.PropertyName.create_gpml('name'))
+
     def setUp(self):
         feature = next(iter(pygplates.FeatureCollectionFileFormatRegistry().read(
             os.path.join(FIXTURES, 'volcanoes.gpml'))))

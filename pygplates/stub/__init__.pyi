@@ -514,7 +514,7 @@ class EnumerationType:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:SubductionPolarityEnumeration``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           enumeration_type = pygplates.EnumerationType.create_from_qualified_string('gpml:SubductionPolarityEnumeration')
@@ -526,6 +526,7 @@ class EnumerationType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: EnumerationType
 
         ::
@@ -3579,7 +3580,7 @@ class FeatureType:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:Coastline``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           feature_type = pygplates.FeatureType.create_from_qualified_string('gpml:Coastline')
@@ -3591,6 +3592,7 @@ class FeatureType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: FeatureType
 
         ::
@@ -12133,7 +12135,7 @@ class PropertyName:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:reconstructionPlateId``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           property_name = pygplates.PropertyName.create_from_qualified_string('gpml:reconstructionPlateId')
@@ -12145,6 +12147,7 @@ class PropertyName:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: PropertyName
 
         ::
@@ -12158,6 +12161,7 @@ class PropertyName:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: PropertyName
 
         ::
@@ -12171,6 +12175,7 @@ class PropertyName:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: PropertyName
 
         ::
@@ -16207,7 +16212,7 @@ class ScalarType:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:VelocityColat``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           gpml_velocity_colat_scalar_type = pygplates.ScalarType.create_from_qualified_string('gpml:VelocityColat')
@@ -16219,6 +16224,7 @@ class ScalarType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: ScalarType
         """
 
@@ -16228,6 +16234,7 @@ class ScalarType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: ScalarType
 
         ::
@@ -16241,6 +16248,7 @@ class ScalarType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: ScalarType
         """
 

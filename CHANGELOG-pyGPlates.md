@@ -171,6 +171,8 @@ Changes since 1.0.0:
   * Fixed `TopologicalModel.reconstruct_geometry()` deactivating points differently depending on earlier calls: a `ReconstructedGeometryTimeSpan.DefaultDeactivatePoints` (including the default `deactivate_points` argument, one instance shared by every call) reused stage rotations from an earlier call with a different time increment or direction.
   * `TopologicalSnapshot.calculate_plate_boundary_statistics()` raises `ValueError` for a negative (or NaN) `first_uniform_point_spacing_radians` (previously the first point of each boundary section was extrapolated off the boundary, giving a negative boundary length), and for a NaN `uniform_point_spacing_radians`.
   * Documentation: `TopologicalModel.reconstruct_geometry()` says that an `initial_time` between time slots is snapped to the nearest one (and what that means with and without `reconstruction_plate_id`), and that a polyline or polygon is accepted as a sequence of points. `ReconstructedGeometryTimeSpan.get_time_span()` gives the right number of time slots (one more than it said), and `DeactivatePoints.deactivate()` says its times are always `float`. The type stub follows.
+  * Fixed a `FeatureType` (or other qualified name) read from a GPML file that binds the GPML namespace to another prefix (eg, `xmlns:gp=`) hashing differently from the equal canonical name, so `set` and `dict` lookups missed it.
+  * `create_gpml()`, `create_gml()`, `create_xsi()` (of `PropertyName`, `FeatureType`, `EnumerationType`, `ScalarType` and `StructuralType`) raise `ValueError` for an empty name, and `create_from_qualified_string()` returns `None` for one (eg, `''` or `'gpml:'`).
 
 pyGPlates 1.0.0
 ===============
