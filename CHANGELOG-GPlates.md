@@ -101,6 +101,7 @@ Changes since 2.5:
     * A motion path whose times include a repeated time skips it, as flowlines do, rather than repeating a point of the motion path (also when exported).
   * Fixed the wrong one of two errors being reported for a property not allowed in a feature (eg, in the Create Feature dialog, or in the Read Errors dialog when loading a GPML file from an older GPlates version): a property name valid only for other feature types was reported as not recognised, and an unrecognised property name as not valid for the feature type.
   * Time samples in a GPML file (eg, the poles of a total reconstruction sequence) that aren't in time order are now sorted by time when loaded. Previously they were used in file order, which could give the wrong rotations or values, or none.
+  * Fixed a feature with the reconstruction method "ByPlateId" losing it (with a warning in the Read Errors dialog) when saved to a Shapefile, GeoJSON or GeoPackage file and loaded again.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).

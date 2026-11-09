@@ -88,28 +88,35 @@ namespace
 {
 
 	/**
-	 * @brief recon_method_is_valid returns true if @a recon_method is "ByPlateID",
-	 * "HalfStageRotation", "HalfStageRotationVersion2" or "HalfStageRotationVersion3".
+	 * @brief get_valid_recon_method returns the GPGIM value of the reconstruction method @a recon_method
+	 * if it is "ByPlateId", "HalfStageRotation", "HalfStageRotationVersion2" or "HalfStageRotationVersion3",
+	 * otherwise none.
 	 *
-	 * Note that currently (Feb 2014) only HalfStageRotationVersion2 gets exported by any part of GPlates. ByPlateID
-	 * is considered as the default and is not explicitly exported in any of GPlates' export functionality, and
-	 * features will not normally contain a gpml:reconstructionMethod property. In this case shapefile export
-	 * will write an empty string as the reconstructionMethod. As this returns false from this function,
-	 * no reconstructionMethod will be added to the feature, and so the normal by-plate-id reconstruction method
-	 * will be used.
+	 * "ByPlateId" is the GPGIM value (see "gpgim.xml"), and what is exported for a feature that has it
+	 * (eg, a motion path created by pyGPlates 1.0, or any feature given it explicitly). This reader once
+	 * accepted only "ByPlateID" (capital D), so such a feature lost its reconstruction method when read back.
+	 * "ByPlateID" is still accepted (as "ByPlateId") in case any file has it.
+	 *
+	 * Most features have no gpml:reconstructionMethod property (by plate ID is the default), and are
+	 * exported with an empty string as the reconstructionMethod. That gives none here, so no
+	 * reconstructionMethod is added to the feature, and the default by-plate-id reconstruction method is used.
 	 */
-	bool
-	recon_method_is_valid(
+	boost::optional<QString>
+	get_valid_recon_method(
 			const QString &recon_method)
 	{
-		if (recon_method == "ByPlateID" ||
-			recon_method == "HalfStageRotation" ||
+		if (recon_method == "ByPlateId" ||
+			recon_method == "ByPlateID")
+		{
+			return QString("ByPlateId");
+		}
+		if (recon_method == "HalfStageRotation" ||
 			recon_method == "HalfStageRotationVersion2" ||
 			recon_method == "HalfStageRotationVersion3")
 		{
-			return true;
+			return recon_method;
 		}
-		return false;
+		return boost::none;
 	}
 
 
@@ -655,9 +662,10 @@ namespace
 			{
 				QString recon_method = attribute.toString();
 
-				if (recon_method_is_valid(recon_method))
+				const boost::optional<QString> valid_recon_method = get_valid_recon_method(recon_method);
+				if (valid_recon_method)
 				{
-					append_recon_method_to_feature(feature, recon_method);
+					append_recon_method_to_feature(feature, valid_recon_method.get());
 				}
 				else
 				{

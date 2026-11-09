@@ -928,6 +928,19 @@ class FeatureCollectionCase(unittest.TestCase):
             with open(rewritten_filename) as rewritten_file:
                 self.assertEqual(rewritten_file.read(), written_text)
 
+    def test_ogr_reconstruction_method_round_trip(self):
+        # The reconstruction method 'ByPlateId' (the GPGIM value) was lost when read back from an OGR format
+        # (the reader only accepted 'ByPlateID').
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_mid_ocean_ridge, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)
+        feature.set_enumeration(pygplates.PropertyName.gpml_reconstruction_method, 'ByPlateId')
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            for extension in ('shp', 'geojson', 'gpkg'):
+                filename = os.path.join(tmp_dir, 'reconstruction_method.' + extension)
+                pygplates.FeatureCollection([feature]).write(filename)
+                read_feature = next(iter(pygplates.FeatureCollection(filename)))
+                self.assertEqual(read_feature.get_enumeration(pygplates.PropertyName.gpml_reconstruction_method), 'ByPlateId', extension)
+
     def test_grot_crossover_round_trip(self):
         # Two sequences of one moving plate (a crossover) share an 'MPRS:pid'. Writing the second one
         # once also wrote the first one's poles again (and more of them on every save).

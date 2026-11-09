@@ -157,6 +157,7 @@ Changes since 1.0.0:
   * `PropertyValueVisitor.visit_gpml_finite_rotation()` names its argument `gpml_finite_rotation` (previously documented as `ppml_finite_rotation`).
   * Fixed `PolylineOnSphere.join()` with `PolylineConversion.raise_if_non_polyline` returning `[]` for an iterator or generator of geometries (it iterated them twice). It is documented as taking any iterable, and the type stub says `Iterable`.
   * Fixed writing a `.grot` rotation file copying a sequence's poles into the next sequence when the two have the same moving plate (`MPRS:pid`), eg either side of a crossover. The copied poles grew with every save. This affected `FeatureCollection.write()` and `synchronise_crossovers()` with a `.grot` file.
+  * Fixed a feature with the reconstruction method `ByPlateId` (eg, a motion path created by pyGPlates 1.0, or a feature given it explicitly) losing it when written to a Shapefile, GeoJSON or GeoPackage file and read back (the reader expected `ByPlateID`, which it still accepts).
 
 pyGPlates 1.0.0
 ===============
