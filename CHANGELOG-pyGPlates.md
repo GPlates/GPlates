@@ -139,6 +139,7 @@ Changes since 1.0.0:
     * `index(x, i, j)` interprets *i* and *j* like slice indices, and raises only `ValueError` (eg, `index(x, 2)` searched the whole list after an index of 0 was treated as the end, an index out of range raised `IndexError`, and so did an empty list).
     * `remove(x)` on an empty list raises `ValueError` (previously `IndexError`).
     * Assigning an empty sequence to an empty extended slice (eg, `a[2:2:2] = []`) does nothing (previously raised `ValueError`), and a slice step of zero raises `ValueError` (previously `IndexError`).
+  * `sort()` on the list-like classes (eg, `GpmlIrregularSampling`) now sorts exactly like `list.sort()`: it is stable with `reverse=True` (equal keys keep their order), keys of mixed types (eg, `int` and `float`, or NumPy numbers) compare as in Python (previously raised `TypeError`), and a key function that raises leaves the list unchanged.
 
 pyGPlates 1.0.0
 ===============

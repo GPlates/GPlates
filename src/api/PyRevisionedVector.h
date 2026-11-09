@@ -322,27 +322,6 @@ namespace GPlatesApi
 			typedef typename boost::iterator_difference<iterator_type>::type iterator_difference_type;
 
 
-			/**
-			 * Sort key for the @a sort function sorts based on the result of converting 'element_type'
-			 * to an unknown key type (done by a 'key' function provided on the python side).
-			 */
-			struct SortKey
-			{
-				bool
-				operator()(
-						const std::pair<boost::python::object/*key*/, element_type> &lhs,
-						const std::pair<boost::python::object/*key*/, element_type> &rhs) const
-				{
-					// Use '__lt__', otherwise '__cmp__', for comparison.
-					// Python 'int' has no '__lt__', but 'float' does.
-					if (PyObject_HasAttrString(lhs.first.ptr(), "__lt__"))
-					{
-						return boost::python::extract<bool>(lhs.first.attr("__lt__")(rhs.first));
-					}
-					return boost::python::extract<int>(lhs.first.attr("__cmp__")(rhs.first)) < 0;
-				}
-			};
-
 		public:
 
 			/**
@@ -1224,32 +1203,32 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
-			typedef std::pair<bp::object/*key*/, element_type> key_element_type;
-			std::vector<key_element_type> sorted_keys;
-
-			// Decorate the elements with their keys...
-			// Extract the existing elements and associate with their key
-			// provided by the python 'key_callable' function.
+			// Let Python's 'sorted()' do the sorting, so that it behaves exactly like 'list.sort()':
+			// it's stable (also with 'reverse=True'), it compares keys with Python's own comparison
+			// (eg, mixed 'int' and 'float' keys, which calling '__lt__' directly can't compare), and
+			// a key that raises leaves this list unchanged (nothing is assigned until it returns).
+			bp::list elements;
 			BOOST_FOREACH(element_type element, *revisioned_vector)
 			{
-				// Convert the element to its key.
-				boost::python::object key = key_callable(element);
-				sorted_keys.push_back(key_element_type(key, element));
+				elements.append(element);
 			}
 
-			// Sort the elements by their key.
-			std::stable_sort(sorted_keys.begin(), sorted_keys.end(), SortKey());
+			bp::dict sorted_keyword_args;
+			sorted_keyword_args["key"] = key_callable;
+			sorted_keyword_args["reverse"] = reverse_;
+			const bp::object sorted_function = bp::import("builtins").attr("sorted");
+			const bp::object sorted_elements_object(
+					bp::handle<>(
+							PyObject_Call(
+									sorted_function.ptr(),
+									bp::make_tuple(elements).ptr(),
+									sorted_keyword_args.ptr())));
 
-			// Un-decorate the elements (remove the keys).
 			std::vector<element_type> sorted_elements;
-			BOOST_FOREACH(const key_element_type &key, sorted_keys)
+			const long num_elements = bp::len(sorted_elements_object);
+			for (long n = 0; n < num_elements; ++n)
 			{
-				sorted_elements.push_back(key.second);
-			}
-
-			if (reverse_)
-			{
-				std::reverse(sorted_elements.begin(), sorted_elements.end());
+				sorted_elements.push_back(bp::extract<element_type>(sorted_elements_object[n]));
 			}
 
 			// Assign the sorted elements in one go (in one revision update).

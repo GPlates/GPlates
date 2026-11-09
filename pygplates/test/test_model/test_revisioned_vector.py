@@ -2,6 +2,7 @@
 Unit tests for the pygplates property values.
 """
 
+import numpy
 import os
 import unittest
 import pygplates
@@ -273,6 +274,27 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.gpml_time_sample_list.reverse()
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(list(self.gpml_time_sample_list) == list(reversed(self.original_time_samples)))
+
+    def test_sort_like_list(self):
+        def strings(array):
+            return [element.get_string() for element in array]
+        # Sorting is stable, also in reverse (equal keys keep their order, as for a Python list).
+        values = ['a1', 'b1', 'a2', 'b2', 'a3']
+        array = pygplates.GpmlArray([pygplates.XsString(value) for value in values])
+        array.sort(key=lambda element: element.get_string()[0], reverse=True)
+        self.assertEqual(strings(array), sorted(values, key=lambda value: value[0], reverse=True))
+        self.assertEqual(strings(array), ['b1', 'b2', 'a1', 'a2', 'a3'])
+        # Mixed 'int' and 'float' keys (and NumPy numbers) compare as in Python.
+        mixed_keys = {'a1': 2, 'b1': 1.5, 'a2': numpy.int64(1), 'b2': numpy.float64(0.5), 'a3': 0}
+        array.sort(key=lambda element: mixed_keys[element.get_string()])
+        self.assertEqual(strings(array), ['a3', 'b2', 'a2', 'b1', 'a1'])
+        # A key that raises leaves the list unchanged.
+        def raising_key(element):
+            if element.get_string() == 'a2':
+                raise ValueError('raised by the key')
+            return element.get_string()
+        self.assertRaises(ValueError, array.sort, key=raising_key)
+        self.assertEqual(strings(array), ['a3', 'b2', 'a2', 'b1', 'a1'])
 
     def test_matches_list(self):
         # 'index()', 'remove()' and slice assignment behave like a Python list.
