@@ -151,6 +151,8 @@ Changes since 1.0.0:
     * Changing the time samples directly (eg, a time sample's time) must keep them in that order, as `GpmlIrregularSampling` now documents.
   * `PolylineOnSphere.rotation_interpolate()` raises `ValueError` for an interpolate interval that is zero, negative or NaN, or so small that the number of interpolated polylines doesn't fit a 32-bit integer (previously a small negative interval tried to allocate billions of polylines, and zero or NaN silently returned just the two polylines), and for an interpolate ratio outside [0, 1] or NaN (previously `PreconditionViolationError`).
   * `to_tessellated()` on `PolylineOnSphere`, `PolygonOnSphere` and `GreatCircleArc` raises `ValueError` for a NaN threshold (previously accepted), and for a threshold less than about 1.5e-9 radians, where the number of points no longer fits a 32-bit integer (previously undefined behaviour). `DateLineWrapper.wrap()` treats a NaN `tessellate_degrees` as no tessellation, like zero or a negative value, and raises a tiny positive one to the minimum at which the number of points fits a 32-bit integer (previously undefined behaviour).
+  * Fixed `FiniteRotation.get_rotation_distance()` returning a negative distance for a rotation with a negative angle (including some returned by `get_inverse()`, `interpolate()` and `*`).
+  * Fixed `FiniteRotation.are_equal()` with a threshold comparing pole longitudes without wrapping, so poles either side of the dateline (eg, longitudes 180 and -180) were unequal.
 
 pyGPlates 1.0.0
 ===============

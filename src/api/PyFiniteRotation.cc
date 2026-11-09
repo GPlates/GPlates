@@ -237,7 +237,9 @@ namespace GPlatesApi
 		const GPlatesMaths::real_t small_circle_radius =
 				cross(rotation_params.axis, from_point.position_vector()).magnitude();
 
-		return small_circle_radius * rotation_params.angle;
+		// The angle's sign only records which way the (axis-hinted) axis points, which doesn't
+		// change the distance (eg, a negative angle, or the result of 'get_inverse()' or 'interpolate()').
+		return small_circle_radius * std::fabs(rotation_params.angle.dval());
 	}
 
 	bool
@@ -308,8 +310,15 @@ namespace GPlatesApi
 			// rotations because doing that results in the exact same rotation (quaternion).
 			// Also note that we return the original UnitQuaternion3D::get_rotation_params() above
 			// by not specifying an axis hint (and hence avoids returning flipped angle/axis version.
+			//
+			// The longitude difference wraps around the dateline (eg, 180 and -180 are the same longitude).
+			double lon_difference = std::fabs(rotation2_lon - rotation1_lon);
+			if (lon_difference > 180)
+			{
+				lon_difference = 360 - lon_difference;
+			}
 			return std::fabs(rotation2_lat - rotation1_lat) <= threshold_degrees.get() &&
-					std::fabs(rotation2_lon - rotation1_lon) <= threshold_degrees.get() &&
+					lon_difference <= threshold_degrees.get() &&
 					std::fabs(rotation2_angle - rotation1_angle) <= threshold_degrees.get();
 		}
 

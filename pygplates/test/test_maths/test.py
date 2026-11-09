@@ -310,6 +310,14 @@ class FiniteRotationCase(unittest.TestCase):
         # Rotating along small circle arc.
         self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((45,0)), math.sin(math.radians(45)) * 0.5 * math.pi)
         self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((-45,0)), math.sin(math.radians(45)) * 0.5 * math.pi)
+        # A distance is never negative (eg, for a negative angle, or an inverse or interpolated rotation).
+        self.assertAlmostEqual(pygplates.FiniteRotation((90,0), -0.5).get_rotation_distance((0,0)), 0.5)
+        self.assertAlmostEqual(pygplates.FiniteRotation((90,0), 0.5).get_inverse().get_rotation_distance((0,0)), 0.5)
+        self.assertAlmostEqual(
+                pygplates.FiniteRotation.interpolate(
+                        pygplates.FiniteRotation.create_identity_rotation(), pygplates.FiniteRotation((90,0), -1.0), 0, 1, 0.5)
+                .get_rotation_distance((0,0)),
+                0.5)
     
     def test_identity(self):
         # Create identity rotation explicitly.
@@ -345,6 +353,19 @@ class FiniteRotationCase(unittest.TestCase):
         self.assertFalse(pygplates.FiniteRotation.are_equal(
                 pygplates.FiniteRotation((10,20), math.radians(30)),
                 pygplates.FiniteRotation((10.5,20.4), math.radians(29.6))))
+        # Pole longitudes compare across the dateline.
+        self.assertTrue(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,180), math.radians(30)),
+                pygplates.FiniteRotation((10,-180), math.radians(30)),
+                0.01))
+        self.assertTrue(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,179.9), math.radians(30)),
+                pygplates.FiniteRotation((10,-179.9), math.radians(30)),
+                1))
+        self.assertFalse(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,170), math.radians(30)),
+                pygplates.FiniteRotation((10,-170), math.radians(30)),
+                1))
     
     def test_equivalent(self):
         pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())
