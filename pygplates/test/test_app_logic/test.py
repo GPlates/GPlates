@@ -615,6 +615,18 @@ class ReconstructSnapshotTestCase(unittest.TestCase):
 
 
 class ReconstructTestCase(unittest.TestCase):
+    def test_reconstructed_geometries_keyword(self):
+        # The documented keyword 'reconstructed_geometries' works, as does 'reconstructed_feature_geometries'
+        # (the only one that worked from 2014), but not both together.
+        features = os.path.join(FIXTURES, 'volcanoes.gpml')
+        rotations = os.path.join(FIXTURES, 'rotations.rot')
+        for keyword in ('reconstructed_geometries', 'reconstructed_feature_geometries'):
+            reconstructed_geometries = []
+            pygplates.reconstruct(features, rotations, reconstruction_time=10, **{keyword: reconstructed_geometries})
+            self.assertTrue(reconstructed_geometries)
+        self.assertRaises(TypeError, pygplates.reconstruct, features, rotations,
+                          reconstructed_geometries=[], reconstructed_feature_geometries=[], reconstruction_time=10)
+
     def test_reconstruct(self):
         pygplates.reconstruct(
             os.path.join(FIXTURES, 'volcanoes.gpml'),

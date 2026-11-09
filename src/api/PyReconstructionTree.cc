@@ -645,6 +645,10 @@ namespace GPlatesApi
 		// build trees for different reconstruction times (as done by the ReconstructionTreeCreator)
 		// but it needs to be handled in a different way to account for the fact that poles can
 		// come from different sources (not just rotation features).
+		//
+		// NOTE: Building the graph empties the builder (it consumes the poles), so a second call gives an
+		// empty tree. That is intended for this deprecated (and undocumented) class, and is pinned by
+		// 'test_app_logic/test.py' ('ReconstructionTreeCase.test_build').
 		const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
 				reconstruction_graph_builder.build_graph();
 

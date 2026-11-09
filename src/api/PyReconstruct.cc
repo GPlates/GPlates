@@ -218,7 +218,7 @@ namespace GPlatesApi
 					explicit_arg_names(
 							"reconstructable_features",
 							"rotation_model",
-							"reconstructed_feature_geometries",
+							"reconstructed_geometries",
 							"reconstruction_time",
 							"anchor_plate_id");
 
@@ -226,10 +226,28 @@ namespace GPlatesApi
 			typedef boost::tuple<boost::optional<GPlatesModel::integer_plate_id_type>> default_args_type;
 			default_args_type defaults_args(boost::none/*anchor_plate_id*/);
 
+			// The third argument is documented as 'reconstructed_geometries', but from 2014 (bff54e286)
+			// only 'reconstructed_feature_geometries' was accepted as a keyword, so accept that too
+			// (but not both).
+			bp::dict reconstruct_keyword_args = keyword_args.copy();
+			if (reconstruct_keyword_args.has_key("reconstructed_feature_geometries"))
+			{
+				if (reconstruct_keyword_args.has_key("reconstructed_geometries"))
+				{
+					PyErr_SetString(
+							PyExc_TypeError,
+							"reconstruct() got both 'reconstructed_geometries' and 'reconstructed_feature_geometries' "
+							"(they are the same argument)");
+					bp::throw_error_already_set();
+				}
+				reconstruct_keyword_args["reconstructed_geometries"] =
+						reconstruct_keyword_args.attr("pop")("reconstructed_feature_geometries");
+			}
+
 			const reconstruct_args_type reconstruct_args =
 					VariableArguments::get_explicit_args<reconstruct_args_type>(
 							positional_args,
-							keyword_args,
+							reconstruct_keyword_args,
 							explicit_arg_names,
 							defaults_args,
 							boost::none/*unused_positional_args*/,
