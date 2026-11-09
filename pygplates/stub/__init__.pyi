@@ -5510,6 +5510,10 @@ class GpmlFiniteRotation(PropertyValue):
 class GpmlIrregularSampling(PropertyValue):
     """A time-dependent property consisting of a sequence of time samples irregularly spaced in time.
 
+    The time samples are kept in order of time, from most recent (closest to present day) to least recent (furthest in the geological past). The :meth:`constructor<__init__>` sorts them into that order (keeping time samples with equal times in the order given). Everything that uses the time samples relies on that order (eg, :meth:`get_value` and :class:`RotationModel`).
+
+    **Keep the time samples in that order when changing them directly** (eg, inserting a time sample, or changing a time sample's time with :meth:`GpmlTimeSample.set_time`). Otherwise interpolation finds the wrong time samples, or none. For example, :meth:`sort` them afterwards, or use :meth:`set_value`, which keeps them in order.
+
     GpmlIrregularSampling behaves like a regular python ``list`` (of :class:`GpmlTimeSample` elements) in that the following operations are supported:
 
     =========================== ==========================================================
@@ -5574,7 +5578,7 @@ class GpmlIrregularSampling(PropertyValue):
     def __init__(self, time_samples: Sequence[Any]) -> None:
         """Create an irregularly sampled time-dependent property from a sequence of time samples.
 
-        :param time_samples: A sequence of :class:`GpmlTimeSample` elements.
+        :param time_samples: A sequence of :class:`GpmlTimeSample` elements, in any order (they are sorted by time, from most recent to least recent).
         :type time_samples: Any sequence such as a list or a tuple
         :raises RuntimeError: if time sample sequence is empty
 
@@ -5583,6 +5587,9 @@ class GpmlIrregularSampling(PropertyValue):
         ::
 
           irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)
+
+        .. versionchanged:: 1.1
+           Sorts the time samples by time (previously they were kept in the order given).
         """
 
     def __iter__(self) -> Any: ...

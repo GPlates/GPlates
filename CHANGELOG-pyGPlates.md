@@ -146,6 +146,9 @@ Changes since 1.0.0:
   * `set_value()` on `GpmlTimeSample`, `GpmlTimeWindow` and `GpmlConstantValue` raises `ValueError` for a property value of a different type from the one it replaces. Previously it was accepted but the old value type was kept, which could make a file written with it read back wrongly (eg, a whole total reconstruction pole read back uninterpreted, or an `XsInteger` read back as a `GpmlPlateId`).
   * `GpmlPiecewiseAggregation.get_time_window_containing_time()` compares a `float` time within a small epsilon, as it already did for a `GeoTimeInstant` time (previously a `float` time at a window's begin or end time, but for rounding, could miss the window).
   * Documentation: `GpmlIrregularSampling.get_value()` raises `InterpolationError` when a time sample bounding *time* has a distant past or distant future time; a *time* that is itself distant past or future returns `None`.
+  * `GpmlIrregularSampling()` sorts its time samples by time, from most recent to least recent (keeping time samples with equal times in the order given), as do reading a GPML file and reading a `.grot` rotation file. Everything using a sampling (eg, `get_value()` and `RotationModel`) relies on that order, and a sampling out of order silently gave `None` or the wrong value.
+    * A sampling built least recent first (which `get_value()` and `get_time_samples_bounding_time()` accepted) now has its most recent time sample first.
+    * Changing the time samples directly (eg, a time sample's time) must keep them in that order, as `GpmlIrregularSampling` now documents.
 
 pyGPlates 1.0.0
 ===============

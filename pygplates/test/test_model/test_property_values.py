@@ -613,6 +613,42 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         self.assertTrue(list(self.gpml_irregular_sampling) == self.original_time_samples)
         self.assertTrue([time_sample for time_sample in self.gpml_irregular_sampling] == self.original_time_samples)
 
+    def test_sorted_at_creation(self):
+        # The constructor sorts the time samples from most recent to least recent
+        # (keeping time samples with equal times in the order given).
+        time_samples = [pygplates.GpmlTimeSample(pygplates.XsDouble(value), time)
+                        for value, time in ((1, 10), (2, 0), (3, 5), (4, 0))]
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [0, 0, 5, 10])
+        self.assertEqual([time_sample.get_value().get_double() for time_sample in gpml_irregular_sampling], [2, 4, 3, 1])
+        self.assertAlmostEqual(gpml_irregular_sampling.get_value(7.5).get_double(), 2)
+        # Reordered least recent first afterwards (eg, reversed), it still interpolates.
+        gpml_irregular_sampling.reverse()
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [10, 5, 0, 0])
+        self.assertAlmostEqual(gpml_irregular_sampling.get_value(7.5).get_double(), 2)
+        self.assertEqual(len(gpml_irregular_sampling.get_time_samples_bounding_time(7.5)), 2)
+        # So a sampling given least recent first works too (previously its samples were kept in that order).
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(list(reversed(time_samples[:3])))
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [0, 5, 10])
+
+    def test_sorted_when_read(self):
+        # A sampling written out of time order (by changing the list directly) is sorted when read.
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 0), time)), time)
+                 for time in (0, 5, 10)])
+        gpml_irregular_sampling[:] = list(reversed(gpml_irregular_sampling))
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [10, 5, 0])
+        feature = pygplates.Feature.create_total_reconstruction_sequence(0, 801, gpml_irregular_sampling)
+        filename = os.path.join(tempfile.mkdtemp(), 'sorted_when_read.gpml')
+        try:
+            pygplates.FeatureCollection([feature]).write(filename)
+            read_feature = next(iter(pygplates.FeatureCollection(filename)))
+        finally:
+            os.remove(filename)
+            os.rmdir(os.path.dirname(filename))
+        _, _, read_gpml_irregular_sampling = read_feature.get_total_reconstruction_pole()
+        self.assertEqual([time_sample.get_time() for time_sample in read_gpml_irregular_sampling], [0, 5, 10])
+
     def test_get_value_distant_times(self):
         # A time sample bounding 'time' at distant past raises InterpolationError...
         gpml_irregular_sampling = pygplates.GpmlIrregularSampling([

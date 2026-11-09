@@ -2276,6 +2276,16 @@ export_gpml_irregular_sampling()
 	gpml_irregular_sampling_class_docstring_stream <<
 			"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n"
 			"\n"
+			"The time samples are kept in order of time, from most recent (closest to present day) to least recent "
+			"(furthest in the geological past). The :meth:`constructor<__init__>` sorts them into that order "
+			"(keeping time samples with equal times in the order given). Everything that uses the time samples "
+			"relies on that order (eg, :meth:`get_value` and :class:`RotationModel`).\n"
+			"\n"
+			"**Keep the time samples in that order when changing them directly** (eg, inserting a "
+			"time sample, or changing a time sample's time with :meth:`GpmlTimeSample.set_time`). "
+			"Otherwise interpolation finds the wrong time samples, or none. For example, "
+			":meth:`sort` them afterwards, or use :meth:`set_value`, which keeps them in order.\n"
+			"\n"
 			<< gpml_irregular_sampling_class_name <<
 			" behaves like a regular python ``list`` (of :class:`GpmlTimeSample` elements) in that "
 			"the following operations are supported:\n"
@@ -2339,7 +2349,8 @@ export_gpml_irregular_sampling()
 #endif
 				"\n"
 				"\n"
-				"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
+				"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements, in any order "
+				"(they are sorted by time, from most recent to least recent).\n"
 				"  :type time_samples: Any sequence such as a list or a tuple\n"
 				// Not including interpolation function since it is not really used (yet) in GPlates and hence
 				// is just extra baggage for the python API user (we can add it later though)...
@@ -2354,7 +2365,10 @@ export_gpml_irregular_sampling()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n")
+				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Sorts the time samples by time (previously they were kept in the order given).\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.

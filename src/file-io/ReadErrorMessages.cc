@@ -188,6 +188,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PoleTakesLongRotationPathRelativeToPrevPole,
 				QT_TR_NOOP("Stage rotation takes long path"),
 				QT_TR_NOOP("Stage rotation between consecutive enabled poles takes long path.") },
+		{ GPlatesFileIO::ReadErrors::PolesNotInTimeOrder,
+				QT_TR_NOOP("Poles not in time order"),
+				QT_TR_NOOP("The poles of a sequence were not in time order (from most recent to least recent).") },
 
 		// Error descriptions for GPML format files:
 		{ GPlatesFileIO::ReadErrors::DuplicateProperty,
@@ -550,6 +553,8 @@ namespace
 				QT_TR_NOOP("The pole was discarded.") },
 		{ GPlatesFileIO::ReadErrors::PoleAdjustedToShortRotationPathRelativeToPrevPole,
 				QT_TR_NOOP("Adjusted stage rotation between consecutive enabled poles to take short path.") },
+		{ GPlatesFileIO::ReadErrors::PolesSortedByTime,
+				QT_TR_NOOP("The poles of the sequence were sorted by time (from most recent to least recent).") },
 
 		// Error results from GPML format files:
 		// GPlatesFileIO::ReadErrors::ElementIgnored FIXME: unused.

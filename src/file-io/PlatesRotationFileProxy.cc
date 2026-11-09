@@ -27,6 +27,7 @@
 #include <limits>
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
@@ -393,12 +394,21 @@ GPlatesFileIO::RotationFileReader::read_file(
 
 	file_proxy.init(file_ref);
 		
+	boost::shared_ptr<DataSource> data_source(
+			new LocalFileDataSource(
+					file_ref.get_file_info().get_qfileinfo().absoluteFilePath(),
+					DataFormats::PlatesRotation));
+
 	RotationFileSegmentContainer file_segments = file_proxy.get_segments();
-	PopulateReconstructionFeatureCollection visitor(file_ref.get_feature_collection());
+	PopulateReconstructionFeatureCollection visitor(file_ref.get_feature_collection(), data_source, read_errors);
+	// Each top-level segment is the text of one or more whole lines, so count lines as we go
+	// (to report read warnings against a line number).
+	unsigned int line_number = 1;
 	BOOST_FOREACH(boost::shared_ptr<RotationFileSegment> seg, file_segments)
 	{
+		visitor.set_current_line_number(line_number);
 		seg->accept_visitor(visitor);
-		//std::cout << seg->to_qstring().toStdString();
+		line_number += seg->to_qstring().count('\n');
 	}
 	visitor.finalize();
 
@@ -956,10 +966,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 	if(d_current_feature.is_valid())
 	{
 		//make sure the sampling for last feature is saved.
-		d_current_feature->add(
-				TopLevelPropertyInline::create(
-						PropertyName::create_gpml("totalReconstructionPole"),
-						*d_current_sampling));
+		add_current_sampling_to_current_feature();
 	}
 
 	//Create a temporary GpmlTimeSample object.
@@ -972,6 +979,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 	//The new feature will overwrite the old one in d_current_feature.
 	FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
 	d_current_feature = FeatureHandle::create(d_fc, feature_type);
+	d_current_sequence_line_number = d_current_line_number;
 
 	//Create GpmlIrregularSampling
 	GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
@@ -1041,6 +1049,37 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 }
 
 
+void
+GPlatesFileIO::PopulateReconstructionFeatureCollection::add_current_sampling_to_current_feature()
+{
+	using namespace GPlatesModel;
+	using namespace GPlatesPropertyValues;
+
+	// A '.grot' sequence only starts when the plate IDs change, so (unlike a '.rot' file) its poles
+	// need not be in time order. Sort them, as everything using a GpmlIrregularSampling expects,
+	// and say so. The file itself is unchanged: saving it writes its poles in their own order.
+	RevisionedVector<GpmlTimeSample> &time_samples = (*d_current_sampling)->time_samples();
+	std::vector<GpmlTimeSample::non_null_ptr_type> sorted_time_samples;
+	std::copy(time_samples.begin(), time_samples.end(), std::back_inserter(sorted_time_samples));
+	if (GpmlIrregularSampling::sort_time_samples(sorted_time_samples))
+	{
+		time_samples.assign(sorted_time_samples.begin(), sorted_time_samples.end());
+
+		d_read_errors.d_warnings.push_back(
+				ReadErrorOccurrence(
+						d_data_source,
+						boost::shared_ptr<LocationInDataSource>(new LineNumber(d_current_sequence_line_number)),
+						ReadErrors::PolesNotInTimeOrder,
+						ReadErrors::PolesSortedByTime));
+	}
+
+	d_current_feature->add(
+			TopLevelPropertyInline::create(
+					PropertyName::create_gpml("totalReconstructionPole"),
+					*d_current_sampling));
+}
+
+
 bool
 GPlatesFileIO::PopulateReconstructionFeatureCollection::is_new_trs(
 		const RotationPoleData& pre,
@@ -1062,10 +1101,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::finalize()
 	using namespace GPlatesModel;
 	if(d_current_feature.is_valid())
 	{
-		d_current_feature->add(
-				TopLevelPropertyInline::create(
-						PropertyName::create_gpml("totalReconstructionPole"),
-						*d_current_sampling));
+		add_current_sampling_to_current_feature();
 		
 		//reset the feature weak ref after the final clean up.
 		d_current_feature = FeatureHandle::weak_ref();

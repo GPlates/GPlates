@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <ostream>
+#include <sstream>
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
@@ -342,6 +343,60 @@ namespace
 		// And saving again writes the same file.
 		save(file);
 		EXPECT_EQ(contents(), saved);
+	}
+
+
+	TEST_F(GrotFileTest, poles_out_of_time_order_are_sorted_with_a_warning)
+	{
+		// A '.grot' sequence only starts when the plate IDs change, so its poles can be out of
+		// time order. They're sorted in the model (most recent first), with a read warning at the
+		// sequence's first pole, and an unchanged save leaves the file in its own order.
+		const char *const text =
+				"# A free-text comment.\n"
+				"\n"
+				"801    0.0000   90.0000    0.0000    0.0000  000  @C\"present day\"\n"
+				"801   20.0000   11.0000   21.0000    9.0000  000  @C\"twenty\"\n"
+				"801   10.0000   10.0000   20.0000    5.0000  000  @C\"ten\"\n"
+				"\n"
+				"701    0.0000   90.0000    0.0000    0.0000  000\n"
+				"701   40.0000   30.0000   40.0000   20.0000  000\n";
+		{
+			QFile file(d_filename);
+			ASSERT_TRUE(file.open(QIODevice::WriteOnly | QIODevice::Text));
+			file.write(text);
+		}
+
+		GPlatesFileIO::File::non_null_ptr_type file =
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(d_filename));
+		GPlatesFileIO::ReadErrorAccumulation read_errors;
+		d_registry.read_feature_collection(file->get_reference(), read_errors);
+
+		const boost::optional<irregular_sampling_type::non_null_ptr_to_const_type> sampling =
+				GPlatesModel::get_property_value<irregular_sampling_type>(
+						find_rotation_feature(file, 801), total_reconstruction_pole_name());
+		ASSERT_TRUE(sampling);
+		std::vector<double> times;
+		for (const time_sample_type::non_null_ptr_to_const_type &time_sample : sampling.get()->time_samples())
+		{
+			times.push_back(time_sample->valid_time()->get_time_position().value());
+		}
+		EXPECT_EQ(times, (std::vector<double>{ 0.0, 10.0, 20.0 }));
+
+		// One warning, for plate 801's sequence (plate 701's is in order), at its first pole.
+		ASSERT_EQ(read_errors.d_warnings.size(), 1u);
+		const GPlatesFileIO::ReadErrorOccurrence &warning = read_errors.d_warnings.front();
+		EXPECT_EQ(warning.d_description, GPlatesFileIO::ReadErrors::PolesNotInTimeOrder);
+		EXPECT_EQ(warning.d_result, GPlatesFileIO::ReadErrors::PolesSortedByTime);
+		ASSERT_TRUE(dynamic_cast<const GPlatesFileIO::LineNumber *>(warning.d_location.get()));
+		std::ostringstream line_number;
+		warning.d_location->write(line_number);
+		EXPECT_EQ(line_number.str(), "3");
+
+		// The file's own copy is written (it keeps the free-text comment), in its own order.
+		save(file);
+		const QByteArray saved = contents();
+		EXPECT_TRUE(saved.contains(FREE_TEXT_COMMENT)) << saved.constData();
+		EXPECT_LT(saved.indexOf("twenty"), saved.indexOf("ten")) << saved.constData();
 	}
 
 

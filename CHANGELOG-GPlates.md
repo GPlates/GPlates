@@ -81,6 +81,7 @@ Changes since 2.5:
     * Fixed saving a GROT file losing an edit in the Total Reconstruction Sequences dialog smaller than four significant figures (eg, 45.123 to 45.124), or a comment typed there for a pole with no comment or other attributes in the file.
     * Fixed editing a pole in the Total Reconstruction Sequences dialog, at a time where the same moving plate has a pole in another sequence (a crossover), changing that other pole when the GROT file is saved.
     * Fixed a pole line that is ignored when loading (eg, "999 0.0 0.0 0.0 0.0 999") adding the pole before it a second time.
+    * A sequence whose poles aren't in time order (a GROT sequence only ends when its plate IDs change) is now sorted by time when loaded, with a warning in the Read Errors dialog. Previously its poles were used in file order, which could give the wrong rotations, or none. Saving the file still writes its poles in their own order.
   * Velocities and net rotation:
     * Fixed the net rotation export giving a rigid plate far too large a net rotation at the oldest rotation of its plate ID (eg, about 100 times too large for a plate whose rotations end at 100 Ma). The velocity time interval now moves to start at the reconstruction time there, as it already did for the velocities of plates.
     * The net rotation export no longer skips times whose velocity time step reaches into the future. With the default "T to (T - dt)" method and a 10 My step, it skipped every time younger than 10 Ma.
@@ -98,6 +99,7 @@ Changes since 2.5:
     * Fixed exported motion paths missing the feature's name (in the GMT header and the Shapefile "NAME" attribute), which exported flowlines include. The GMT header also labels the times ("Times:"), as for flowlines.
     * A motion path whose times include a repeated time skips it, as flowlines do, rather than repeating a point of the motion path (also when exported).
   * Fixed the wrong one of two errors being reported for a property not allowed in a feature (eg, in the Create Feature dialog, or in the Read Errors dialog when loading a GPML file from an older GPlates version): a property name valid only for other feature types was reported as not recognised, and an unrecognised property name as not valid for the feature type.
+  * Time samples in a GPML file (eg, the poles of a total reconstruction sequence) that aren't in time order are now sorted by time when loaded. Previously they were used in file order, which could give the wrong rotations or values, or none.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).

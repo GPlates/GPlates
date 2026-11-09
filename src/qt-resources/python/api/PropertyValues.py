@@ -455,9 +455,10 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     # (the time sample times are 'float' and so is *time*, if not already a GeoTimeInstant).
     time = GeoTimeInstant(time)
 
-    # GpmlIrregularSampling should already be sorted most recent to least recent
-    # (ie, backwards in time from present to past times).
-    # But create a reversed list if need be.
+    # The time samples are ordered most recent to least recent (ie, backwards in time from present
+    # to past times): GpmlIrregularSampling sorts them when created, and documents that they must stay so.
+    # But a sampling reordered since then can be least recent first (eg, after 'reverse()', or unpickled from
+    # pyGPlates 1.0, which kept the order given), so accept that too (as before) rather than silently finding none.
     if time_samples[0].get_time() > time_samples[-1].get_time():
         time_samples = list(reversed(time_samples))
     
