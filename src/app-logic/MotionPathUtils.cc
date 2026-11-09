@@ -182,12 +182,19 @@ GPlatesAppLogic::MotionPathUtils::fill_times_vector(
 		times.push_back(reconstruction_time);
 	}
 
-	// Add the remaining times. 
+	// Add the remaining times.
+	//
+	// Skip a repeated time (as flowlines do), which would otherwise duplicate a vertex of the motion path.
+	// 'Feature.set_times()' in pyGPlates now rejects repeated times, but files can still have them.
 	while (samples_iter != samples_end)
 	{
-		times.push_back(*samples_iter);
+		if (times.empty() ||
+			GPlatesMaths::real_t(*samples_iter) != GPlatesMaths::real_t(times.back()))
+		{
+			times.push_back(*samples_iter);
+		}
 		++samples_iter;
-	}	
+	}
 }
 
 void

@@ -130,6 +130,8 @@ Changes since 1.0.0:
   * `Feature.get_string()`, `get_double()`, `get_integer()` and `get_boolean()` with `PropertyReturn.all` return the *default* when nothing matches, as documented (previously an empty list).
   * Fixed `GpmlKeyValueDictionary()` and `GmlDataBlock()` with a (key, value) pair that is not a tuple or list (eg, an iterator) raising a misleading error (eg, `KeyError: 0`).
   * `PickleBytes()` with something other than `bytes` raises `TypeError` (previously `SystemError`).
+  * `Feature.set_times()` raises `ValueError` for a repeated time (eg, `[0, 10, 10, 20]`), as it already did for times out of order.
+  * A motion path whose times include a repeated time (eg, from a file) skips it, as flowlines do, rather than repeating a point of the motion path.
 
 pyGPlates 1.0.0
 ===============

@@ -96,6 +96,7 @@ Changes since 2.5:
     * The times of a flowline or motion path no longer have to include present day: the 0 Ma time can be removed (and "Remove All" removes it) like any other time. New features still start with it.
     * Fixed the time list keeping a time entered more than twice, or 0 Ma entered twice, and showing a fractional time as a whole number when its cell is edited.
     * Fixed exported motion paths missing the feature's name (in the GMT header and the Shapefile "NAME" attribute), which exported flowlines include. The GMT header also labels the times ("Times:"), as for flowlines.
+    * A motion path whose times include a repeated time skips it, as flowlines do, rather than repeating a point of the motion path (also when exported).
   * Fixed the wrong one of two errors being reported for a property not allowed in a feature (eg, in the Create Feature dialog, or in the Read Errors dialog when loading a GPML file from an older GPlates version): a property name valid only for other feature types was reported as not recognised, and an unrecognised property name as not valid for the feature type.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.

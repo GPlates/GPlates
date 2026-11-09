@@ -1005,13 +1005,13 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     :rtype: Property
     :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ property.
-    :raises ValueError: if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
+    :raises ValueError: if the time values in *times* are not in strictly increasing order (including a repeated time), or there are fewer than two time values.
     
     This is a convenience method that wraps :meth:`set` for the common property
     `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ used in flowlines and motion paths.
     
-    The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past)
-    otherwise *ValueError* will be raised.
+    The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past),
+    with no time repeated, otherwise *ValueError* will be raised.
     
     Set the list of times:
     ::
@@ -1031,7 +1031,7 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     .. seealso:: :meth:`get_times`
     
     .. versionchanged:: 1.1
-       Sets the geometry import time of a flowline that has none.
+       Sets the geometry import time of a flowline that has none, and raises *ValueError* for a repeated time.
     """
     
     if len(times) < 2:
@@ -1043,8 +1043,8 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     prev_time = times[0]
     for time_index in range(1, len(times)):
         time = times[time_index]
-        if time < prev_time:
-            raise ValueError('Time sequence is not in monotonically increasing order')
+        if time <= prev_time:
+            raise ValueError('Time sequence is not in strictly increasing order')
         
         # Add the time period from current time to previous time.
         gml_time_periods.append(GmlTimePeriod(time, prev_time))

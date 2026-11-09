@@ -2366,7 +2366,7 @@ class Feature:
         :type property_query: PropertyName, or Property, or callable (accepting single Property argument), or a sequence (eg, list or tuple) of any combination of them
         :raises ValueError: if any specified :class:`Property` is not currently a property in this feature
 
-        All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property in this feature is ignored. However if any specified :class:`Property` is not currently a property in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must have previously been added (in other words the property *values* are not compared - it actually looks for the same property *instance*).
+        All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property in this feature is ignored. However if any specified :class:`Property` is not currently a property in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must have previously been added (in other words the property *values* are not compared - it actually looks for the same property *instance*). If ``ValueError`` is raised then no properties are removed.
 
         ::
 
@@ -2960,13 +2960,13 @@ class Feature:
         :returns: the property containing the list of times
         :rtype: Property
         :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ property.
-        :raises ValueError: if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
+        :raises ValueError: if the time values in *times* are not in strictly increasing order (including a repeated time), or there are fewer than two time values.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ used in flowlines and motion paths.
 
-        The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past)
-        otherwise *ValueError* will be raised.
+        The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past),
+        with no time repeated, otherwise *ValueError* will be raised.
 
         Set the list of times:
         ::
@@ -2986,7 +2986,7 @@ class Feature:
         .. seealso:: :meth:`get_times`
 
         .. versionchanged:: 1.1
-           Sets the geometry import time of a flowline that has none.
+           Sets the geometry import time of a flowline that has none, and raises *ValueError* for a repeated time.
         """
 
     def set_topological_geometry(self, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Sequence[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], property_name: PropertyName = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:

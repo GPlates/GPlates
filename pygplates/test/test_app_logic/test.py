@@ -1249,6 +1249,19 @@ class ReconstructTestCase(unittest.TestCase):
             # Last point in motion path is reconstructed seed point.
             self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
 
+        # A repeated time (which 'Feature.set_times()' rejects, but a file can have) is skipped,
+        # rather than duplicating a point in the motion path (as for flowlines).
+        motion_path_feature.set(
+                pygplates.PropertyName.gpml_times,
+                pygplates.GpmlArray([pygplates.GmlTimePeriod(begin, end) for begin, end in ((10, 0), (20, 10), (20, 20), (30, 20), (40, 30))]))
+        self.assertEqual(motion_path_feature.get_times(), [0, 10, 20, 20, 30, 40])
+        reconstructed_motion_paths = []
+        pygplates.reconstruct(
+                motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.motion_path)
+        for reconstructed_motion_path in reconstructed_motion_paths:
+            self.assertTrue(len(reconstructed_motion_path.get_motion_path()) == 4)
+
     def test_reconstruct_export_name(self):
         # Exported flowlines and motion paths both include the feature's name.
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))

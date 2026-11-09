@@ -998,6 +998,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertRaises(ValueError, self.feature.set_times, [5])
         # Raises error if time sequence is not monotonically increasing.
         self.assertRaises(ValueError, self.feature.set_times, [5, 4])
+        # A repeated time.
+        self.assertRaises(ValueError, self.feature.set_times, [5, 5])
+        self.assertRaises(ValueError, self.feature.set_times, [5, 6, 6, 7])
         self.assertRaises(ValueError, self.feature.set_times, [5, 4, 6, 7])
         self.assertRaises(ValueError, self.feature.set_times, [5, 6, 8, 7])
         self.assertRaises(ValueError, self.feature.set_times, [5, 6, 8, 7, 9])
