@@ -3119,6 +3119,26 @@ class ReconstructionTreeCase(unittest.TestCase):
 
 
 class RotationModelTestCase(unittest.TestCase):
+    def test_cache_size(self):
+        # A cache size of zero raises ValueError (previously PreconditionViolationError, with no description).
+        rotation_filename = os.path.join(FIXTURES, 'rotations.rot')
+        rotation_model = pygplates.RotationModel(rotation_filename)
+        self.assertRaises(ValueError, pygplates.RotationModel, rotation_filename, 0)
+        self.assertRaises(ValueError, pygplates.RotationModel, rotation_model, 0)
+        self.assertRaises(ValueError, pygplates.ReconstructModel,
+                          os.path.join(FIXTURES, 'volcanoes.gpml'), rotation_model, reconstruct_snapshot_cache_size=0)
+        self.assertRaises(ValueError, pygplates.TopologicalModel,
+                          os.path.join(FIXTURES, 'topologies.gpml'), rotation_model, topological_snapshot_cache_size=0)
+        # The largest size works (previously its reconstruction tree cache size wrapped to zero).
+        pygplates.ReconstructModel(
+                os.path.join(FIXTURES, 'volcanoes.gpml'), rotation_model,
+                reconstruct_snapshot_cache_size=2**32-1).reconstruct_snapshot(10)
+        pygplates.TopologicalModel(
+                os.path.join(FIXTURES, 'topologies.gpml'), rotation_model,
+                topological_snapshot_cache_size=2**32-1).topological_snapshot(10)
+        # A negative size is still an OverflowError.
+        self.assertRaises(OverflowError, pygplates.RotationModel, rotation_filename, -1)
+
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))

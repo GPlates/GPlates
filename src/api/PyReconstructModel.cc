@@ -76,6 +76,11 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
 			boost::optional<unsigned int> reconstruct_snapshot_cache_size)
 	{
+		if (reconstruct_snapshot_cache_size)
+		{
+			raise_value_error_if_zero_cache_size(reconstruct_snapshot_cache_size.get(), "reconstruct_snapshot_cache_size");
+		}
+
 		return ReconstructModel::create(
 				reconstructable_features,
 				rotation_model_argument,
@@ -196,8 +201,12 @@ GPlatesApi::ReconstructModel::initialise()
 
 	// Size of reconstruction tree cache.
 	//
-	// The +1 accounts for the extra time step used to calculate velocities.
-	const unsigned int reconstruction_tree_cache_size = reconstruct_snapshot_cache_size + 1;
+	// The +1 accounts for the extra time step used to calculate velocities
+	// (saturating, so that the largest 'unsigned int' doesn't wrap to zero).
+	const unsigned int reconstruction_tree_cache_size =
+			(reconstruct_snapshot_cache_size < (std::numeric_limits<unsigned int>::max)())
+			? reconstruct_snapshot_cache_size + 1
+			: reconstruct_snapshot_cache_size;
 	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(reconstruction_tree_cache_size);
 
 	// Extract a feature collection from each reconstructable file.
@@ -435,6 +444,7 @@ export_reconstruct_model()
 			"  :type anchor_plate_id: int\n"
 			"  :param reconstruct_snapshot_cache_size: Number of reconstruct snapshots to cache internally. Defaults to unlimited.\n"
 			"  :type reconstruct_snapshot_cache_size: int\n"
+			"  :raises ValueError: if *reconstruct_snapshot_cache_size* is zero\n"
 			"\n"
 			"  Load a reconstruct model (and its associated rotation model):\n"
 			"  ::\n"

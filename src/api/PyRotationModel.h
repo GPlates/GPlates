@@ -54,6 +54,27 @@
 namespace GPlatesApi
 {
 	/**
+	 * Raises Python 'ValueError' if @a cache_size (the argument named @a argument_name) is zero.
+	 *
+	 * A cache of zero entries can't hold the value just created (and raised the base
+	 * 'PreconditionViolationError', with no description). A negative or too large size already
+	 * raises 'OverflowError' when converted from Python.
+	 */
+	inline
+	void
+	raise_value_error_if_zero_cache_size(
+			unsigned int cache_size,
+			const char *argument_name)
+	{
+		if (cache_size == 0)
+		{
+			PyErr_Format(PyExc_ValueError, "'%s' must be at least 1", argument_name);
+			boost::python::throw_error_already_set();
+		}
+	}
+
+
+	/**
 	 * Creates reconstruction trees and provides easy way to query equivalent/relative,
 	 * total/stage rotations.
 	 */

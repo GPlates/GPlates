@@ -12762,6 +12762,7 @@ class ReconstructModel:
         :type anchor_plate_id: int
         :param reconstruct_snapshot_cache_size: Number of reconstruct snapshots to cache internally. Defaults to unlimited.
         :type reconstruct_snapshot_cache_size: int
+        :raises ValueError: if *reconstruct_snapshot_cache_size* is zero
 
         Load a reconstruct model (and its associated rotation model):
         ::
@@ -15981,6 +15982,7 @@ class RotationModel:
         :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. Defaults to 150.
         :type reconstruction_tree_cache_size: int
+        :raises ValueError: if *reconstruction_tree_cache_size* is zero
         :param extend_total_reconstruction_poles_to_distant_past: extend each moving plate sequence back infinitely far into the distant past such that reconstructed geometries will not snap back to their present day positions when the reconstruction time is older than the oldest times specified in the rotation features (defaults to ``False``)
         :type extend_total_reconstruction_poles_to_distant_past: bool
         :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. Defaults to 0.
@@ -16035,6 +16037,7 @@ class RotationModel:
         :type rotation_model: RotationModel
         :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. Defaults to 2 - this is much lower than the usual default cache size since the existing rotation model likely already has a sizeable cache anyway - and if you are leaving this at its default value then you are presumably only interested in changing the default anchor plate ID (not increasing the cache size).
         :type reconstruction_tree_cache_size: int
+        :raises ValueError: if *reconstruction_tree_cache_size* is zero
         :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. Defaults to the default anchor plate of *rotation_model*.
         :type default_anchor_plate_id: int
 
@@ -16904,6 +16907,7 @@ class TopologicalModel:
         :type default_resolve_topology_parameters: ResolveTopologyParameters
         :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.
         :type topological_snapshot_cache_size: int
+        :raises ValueError: if *topological_snapshot_cache_size* is zero
 
         .. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.
 

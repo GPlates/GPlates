@@ -161,6 +161,7 @@ Changes since 1.0.0:
   * Fixed `synchronise_crossovers()` writing an identity rotation as the synchronised crossover pole (shifting the rest of that sequence to match, and reporting it as synchronised) when there is no plate circuit from the moving plate to the synchronised crossover's fixed plate at the crossover time (eg, when the preserved crossover sequence has only one enabled pole). That crossover is now left unchanged, reported as `CrossoverResult.error`, and `synchronise_crossovers()` returns `False`.
   * A NaN time (eg, `GeoTimeInstant(float('nan'))`, or NaN as a reconstruction time) raises `ValueError` (previously `AbortError`, with a call-stack trace, wherever a time is taken).
   * Fixed `reconstruct()` raising `ArgumentError` for its documented keyword argument `reconstructed_geometries`. The keyword that worked, `reconstructed_feature_geometries`, still works (but not both together).
+  * A cache size of zero (`reconstruction_tree_cache_size` of `RotationModel`, `reconstruct_snapshot_cache_size` of `ReconstructModel`, `topological_snapshot_cache_size` of `TopologicalModel`) raises `ValueError` (previously `PreconditionViolationError`, with no description). Fixed a `ReconstructModel` or `TopologicalModel` cache size of 2**32-1 raising `PreconditionViolationError`.
 
 pyGPlates 1.0.0
 ===============

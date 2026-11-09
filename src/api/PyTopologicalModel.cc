@@ -88,6 +88,11 @@ namespace GPlatesApi
 			boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
 			boost::optional<unsigned int> topological_snapshot_cache_size)
 	{
+		if (topological_snapshot_cache_size)
+		{
+			raise_value_error_if_zero_cache_size(topological_snapshot_cache_size.get(), "topological_snapshot_cache_size");
+		}
+
 		return TopologicalModel::create(
 				topological_features,
 				rotation_model_argument,
@@ -1025,8 +1030,12 @@ GPlatesApi::TopologicalModel::initialise_topological_reconstruction()
 
 	// Size of reconstruction tree cache.
 	//
-	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
-	const unsigned int reconstruction_tree_cache_size = topological_snapshot_cache_size + 1;
+	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities)
+	// (saturating, so that the largest 'unsigned int' doesn't wrap to zero).
+	const unsigned int reconstruction_tree_cache_size =
+			(topological_snapshot_cache_size < (std::numeric_limits<unsigned int>::max)())
+			? topological_snapshot_cache_size + 1
+			: topological_snapshot_cache_size;
 	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(reconstruction_tree_cache_size);
 
 	// Extract a feature collection from each topological file.
@@ -2197,6 +2206,7 @@ export_topological_model()
 			"  :type default_resolve_topology_parameters: ResolveTopologyParameters\n"
 			"  :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.\n"
 			"  :type topological_snapshot_cache_size: int\n"
+			"  :raises ValueError: if *topological_snapshot_cache_size* is zero\n"
 			"\n"
 			"  .. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.\n"
 			"\n"
