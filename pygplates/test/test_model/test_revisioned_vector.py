@@ -273,6 +273,14 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(list(self.gpml_time_sample_list) == list(reversed(self.original_time_samples)))
 
+    def test_empty(self):
+        # Operations that replace all elements also work on an empty list (previously AssertionFailureError).
+        del self.gpml_time_sample_list[:]
+        self.gpml_time_sample_list.reverse()
+        self.gpml_time_sample_list.sort(key = lambda x: x.get_time())
+        del self.gpml_time_sample_list[:]
+        self.assertTrue(len(self.gpml_time_sample_list) == 0)
+
     def test_sort(self):
         # Change the time of one element so the sequence is no longer ordered by time.
         # Times of [0, 1, 2, 3] -> [0, 2.5, 2, 1]

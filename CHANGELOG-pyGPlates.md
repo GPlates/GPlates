@@ -134,6 +134,7 @@ Changes since 1.0.0:
   * A motion path whose times include a repeated time (eg, from a file) skips it, as flowlines do, rather than repeating a point of the motion path.
   * Fixed iterating over a temporary `GpmlKeyValueDictionary` or `GmlDataBlock` (eg, `[key for key in GpmlKeyValueDictionary({...})]`) reading freed memory (which could crash, raise `RuntimeError`, or return another object's keys).
   * `iter()` on an iterator over a list-like class (eg, `GpmlIrregularSampling`), `GpmlKeyValueDictionary`, `GmlDataBlock` or the edges of a `ReconstructionTree` returns that iterator, as for Python's own iterators (previously a copy, so eg `zip(*[iter(sequence)] * 2)` paired each item with itself).
+  * Fixed `reverse()` and `sort()` on an empty list-like object (eg, `GpmlIrregularSampling`, or the list returned by `GpmlIrregularSampling.get_time_samples()`) raising `AssertionFailureError`.
 
 pyGPlates 1.0.0
 ===============

@@ -1117,12 +1117,13 @@ namespace GPlatesModel
 		BubbleUpRevisionHandler revision_handler(this);
 		Revision &revision = revision_handler.get_revision<Revision>();
 
+		// NOTE: An empty range (first == last) is allowed anywhere, including at the end
+		// (eg, erasing all elements of an empty vector, as 'clear()' and 'assign()' do).
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				first.d_revisioned_vector == this &&
 					last.d_revisioned_vector == this &&
-					first.d_index < revision.elements.size() &&
-					last.d_index <= revision.elements.size() &&
-					first.d_index <= last.d_index,
+					first.d_index <= last.d_index &&
+					last.d_index <= revision.elements.size(),
 				GPLATES_ASSERTION_SOURCE);
 
 		// Detach the elements before erasing them.
