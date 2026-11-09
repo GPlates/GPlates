@@ -7,6 +7,7 @@ import numpy
 import os
 import sys
 import pickle
+import subprocess
 import tempfile
 import unittest
 import pygplates
@@ -948,6 +949,27 @@ class FeatureCollectionCase(unittest.TestCase):
                 pygplates.FeatureCollection([feature]).write(filename)
                 read_feature = next(iter(pygplates.FeatureCollection(filename)))
                 self.assertEqual(read_feature.get_enumeration(pygplates.PropertyName.gpml_reconstruction_method), 'ByPlateId', extension)
+
+    def test_gpml_write_prints_nothing(self):
+        # Writing GPML once printed "Popping namespace stack." (a leftover debug line) to stdout whenever an
+        # element declared a namespace (eg, a feature type that keeps the GPML namespace prefix of the file it
+        # was read from). Check in a separate process, since it's printed by C++ (not to Python's 'sys.stdout').
+        script = (
+                'import os, sys, tempfile, pygplates\n'
+                'feature = pygplates.Feature.create_reconstructable_feature(\n'
+                '        pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)\n'
+                'with tempfile.TemporaryDirectory() as tmp_dir:\n'
+                '    filename = os.path.join(tmp_dir, "feature.gpml")\n'
+                '    pygplates.FeatureCollection([feature]).write(filename)\n'
+                '    with open(filename, encoding="utf-8") as gpml_file:\n'
+                '        gpml_text = gpml_file.read()\n'
+                '    with open(filename, "w", encoding="utf-8") as gpml_file:\n'
+                '        gpml_file.write(gpml_text.replace("xmlns:gpml=", "xmlns:gx=").replace("gpml:", "gx:"))\n'
+                '    pygplates.FeatureCollection(filename).write(os.path.join(tmp_dir, "rewritten.gpml"))\n')
+        environment = dict(os.environ, PYTHONPATH=os.pathsep.join(path for path in sys.path if path))
+        result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, env=environment)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, '')
 
     def test_grot_crossover_round_trip(self):
         # Two sequences of one moving plate (a crossover) share an 'MPRS:pid'. Writing the second one

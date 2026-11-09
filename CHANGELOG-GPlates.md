@@ -103,6 +103,7 @@ Changes since 2.5:
   * Time samples in a GPML file (eg, the poles of a total reconstruction sequence) that aren't in time order are now sorted by time when loaded. Previously they were used in file order, which could give the wrong rotations or values, or none.
   * Fixed a feature with the reconstruction method "ByPlateId" losing it (with a warning in the Read Errors dialog) when saved to a Shapefile, GeoJSON or GeoPackage file and loaded again.
   * Fixed a crash (stack overflow) resolving a rifting topological network whose rift edge length threshold, in its feature, is zero. Rift parameters out of range in a network feature (eg, a negative or zero exponential stretching constant, which silently gave wrong rift velocities, or one above 100, the most the layer options allow) are now ignored, with a warning in the log, and the defaults used, and a rift edge length threshold is always at least 0.001 degrees.
+  * Saving a GPML file no longer prints "Popping namespace stack." (a leftover debug message) to the console.
 * Compile fixes for recent Boost (1.89) and GDAL (3.13) versions.
 * Installers on Windows and macOS now install into a location named after the minor version (eg, "2.6") rather than the full version.
   * So installing a newer build replaces the previous one instead of adding another program directory (and another "Apps & features" entry on Windows).
