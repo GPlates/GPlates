@@ -3463,6 +3463,23 @@ class RotationModelTestCase(unittest.TestCase):
 
 
 class StrainTestCase(unittest.TestCase):
+    def test_non_positive_deformation_gradient_determinant(self):
+        # det(F) is the ratio of deformed to original area, so a Strain can't be created with det(F) <= 0.
+        for deformation_gradient in ((-1, 0, 0, 1), (0, 0, 0, 0), (1, 0, 0, float('nan'))):
+            self.assertRaises(ValueError, pygplates.Strain, *deformation_gradient)
+        self.assertAlmostEqual(pygplates.Strain(2, 0, 0, 1).get_dilatation(), 1.0)
+        # But accumulating with too large a strain rate times time increment can give det(F) <= 0.
+        # Then the dilatation is |det(F)| - 1 and the principal strains are zero (as documented).
+        time_increment_5myr_in_seconds = 5e6 * 365.25 * 24 * 60 * 60
+        strain = pygplates.Strain.accumulate(
+                pygplates.Strain.identity, pygplates.StrainRate.zero, pygplates.StrainRate(0, 0, 0, 1e-12),
+                time_increment_5myr_in_seconds)
+        theta_theta, theta_phi, phi_theta, phi_phi = strain.get_deformation_gradient()
+        deformation_gradient_determinant = theta_theta * phi_phi - theta_phi * phi_theta
+        self.assertTrue(deformation_gradient_determinant < 0)
+        self.assertAlmostEqual(strain.get_dilatation(), abs(deformation_gradient_determinant) - 1)
+        self.assertEqual(strain.get_principal_strain(), (0, 0, 0))
+
 
     def test_create(self):
         self.assertTrue(pygplates.StrainRate().get_velocity_spatial_gradient() == (0, 0, 0, 0))

@@ -16487,10 +16487,14 @@ class Strain:
         :type deformation_gradient_phi_theta: float
         :param deformation_gradient_phi_phi: :math:`F_{\phi\phi}`
         :type deformation_gradient_phi_phi: float
+        :raises ValueError: if :math:`\det \boldsymbol F` is not positive (it is the ratio of deformed to original area, so it is always positive physically)
 
         .. seealso:: :meth:`get_deformation_gradient`
 
         .. note:: Typically you wouldn't need this since you can start with no deformation (``pygplates.Strain.identity``) at the initial time and use :meth:`accumulate` to incrementally update strain over time using your own calculations of :class:`strain rate <StrainRate>`.
+
+        .. versionchanged:: 1.1
+           Raises ``ValueError`` if :math:`\det \boldsymbol F` is not positive.
         """
 
     def __le__(self, other: Any) -> bool: ...
@@ -16552,6 +16556,8 @@ class Strain:
            \boldsymbol{F}_{t + \Delta t} = (\boldsymbol I - \boldsymbol{L}_{t + \Delta t} \frac{\Delta t}{2})^{-1} (\boldsymbol I + \boldsymbol{L}_{t} \frac{\Delta t}{2}) \boldsymbol{F}_{t}
 
         ...where :math:`\Delta t` is *time_increment*, :math:`\boldsymbol{L}_{t}` is *previous_strain_rate*, :math:`\boldsymbol{L}_{t + \Delta t}` is *current_strain_rate*, :math:`\boldsymbol{F}_{t}` is *previous_strain* and :math:`\boldsymbol{F}_{t + \Delta t}` is returned by this function.
+
+        .. note:: The strain rates multiplied by *time_increment* must stay small (well below one). This scheme multiplies :math:`\det \boldsymbol F` by :math:`\det(\boldsymbol I + \boldsymbol{L}_{t} \frac{\Delta t}{2}) / \det(\boldsymbol I - \boldsymbol{L}_{t + \Delta t} \frac{\Delta t}{2})`, which changes sign once a strain rate times :math:`\frac{\Delta t}{2}` passes about one, giving a non-physical strain (with :math:`\det \boldsymbol F` not positive).
         """
 
     def get_deformation_gradient(self) -> tuple[float, float, float, float]:
@@ -16579,6 +16585,8 @@ class Strain:
         .. math::
 
            \frac{\Delta A}{A} = \det \boldsymbol F - 1
+
+        .. note:: This actually returns :math:`|\det \boldsymbol F| - 1`, which is the same since :math:`\det \boldsymbol F` is positive physically (and always is for a strain :meth:`created <__init__>`, or :meth:`accumulated <accumulate>` with a small enough strain rate and time increment).
 
         .. seealso::
 
@@ -16618,6 +16626,8 @@ class Strain:
            e_{(2)} &= \Lambda_{(2)} - 1 &= \frac{1}{\sqrt{\hat{\boldsymbol n}_{(2)} \cdot \boldsymbol c \cdot \hat{\boldsymbol n}_{(2)}}} - 1
 
         .. note:: This function returns principal *strains*. To get the principal *stretches* simply add one since :math:`\Lambda_{(i)} = 1 + e_{(i)}` (see :class:`Strain`).
+
+        .. note:: If :math:`\det \boldsymbol F` is not positive (which can only happen if strain was :meth:`accumulated <accumulate>` with too large a strain rate and time increment) then ``(0, 0, 0)`` is returned.
 
         To get the principal *stretches* (ie, *strains* plus one) with the angle (in degrees) of the major principal axis clockwise relative to North (ie, azimuth):
         ::

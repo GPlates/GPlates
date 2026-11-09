@@ -175,6 +175,7 @@ Changes since 1.0.0:
   * `create_gpml()`, `create_gml()`, `create_xsi()` (of `PropertyName`, `FeatureType`, `EnumerationType`, `ScalarType` and `StructuralType`) raise `ValueError` for an empty name, and `create_from_qualified_string()` returns `None` for one (eg, `''` or `'gpml:'`).
   * A `point_distribution` of zero or less (of `NetRotationModel`, `NetRotationSnapshot`) raises `ValueError`, as documented (previously a negative one raised `OverflowError`).
   * `NetRotation.create_sample_from_finite_rotation()`, `convert_finite_rotation_to_rotation_rate_vector()` and `convert_rotation_rate_vector_to_finite_rotation()` raise `ValueError` for a `time_interval` that is zero, negative, infinite or NaN. Previously zero, infinity or NaN gave a sample with an area but no rotation (which halved a summed net rotation), a negative interval reversed the rotation, and converting with zero raised `PreconditionViolationError`.
+  * `Strain()` raises `ValueError` for a deformation gradient whose determinant (the ratio of deformed to original area) is not positive. The docs of `Strain.accumulate()`, `get_dilatation()` and `get_principal_strain()` say what happens when accumulating with too large a strain rate and time increment gives such a strain (previously the principal strains were `(0, 0, 0)` and the dilatation disagreed with its documented formula, without explanation).
 
 pyGPlates 1.0.0
 ===============
