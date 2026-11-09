@@ -361,12 +361,6 @@ namespace GPlatesApi
 					d_index(0)
 				{  }
 
-				Iterator &
-				self()
-				{
-					return *this;
-				}
-
 				element_type
 				next()
 				{
@@ -586,7 +580,7 @@ namespace GPlatesApi
 
 			// Note: We don't docstring this - it's not an interface the python user needs to know about.
 			bp::class_<Iterator>(iterator_class_name.c_str(), bp::no_init)
-				.def("__iter__", &Iterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+				.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 				.def(
 						"__next__",
 						&Iterator::next)
@@ -1370,7 +1364,7 @@ namespace GPlatesApi
 
 				// Note: We don't docstring this - it's not an interface the python user needs to know about.
 				bp::class_<iterator_type>(iterator_class_name.c_str(), bp::no_init)
-					.def("__iter__", &iterator_type::self, bp::return_value_policy<bp::copy_non_const_reference>())
+					.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 					.def(
 							"__next__",
 							&iterator_type::next)

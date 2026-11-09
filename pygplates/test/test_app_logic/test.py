@@ -2984,6 +2984,16 @@ class ReconstructionTreeCase(unittest.TestCase):
             edge_count += 1
         self.assertEqual(edge_count, len(edges))
 
+        # An iterator returns itself from 'iter()' (for both kinds of edge view)...
+        for edge_view in (edges, self.reconstruction_tree.get_anchor_plate_edges()):
+            edges_iter = iter(edge_view)
+            self.assertIs(iter(edges_iter), edges_iter)
+        # ...so 'zip' over the same iterator groups consecutive edges (rather than pairing each edge with itself).
+        edge_pairs = list(zip(*[iter(edges)] * 2))
+        self.assertEqual(len(edge_pairs), len(edges) // 2)
+        for edge1, edge2 in edge_pairs:
+            self.assertNotEqual(edge1.get_moving_plate_id(), edge2.get_moving_plate_id())
+
     def test_get_parent_traversal(self):
         edge = self.reconstruction_tree.get_edge(907)
         edge = edge.get_parent_edge()

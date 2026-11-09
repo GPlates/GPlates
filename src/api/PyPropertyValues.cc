@@ -470,26 +470,20 @@ namespace GPlatesApi
 
 		explicit
 		GmlDataBlockCoordinateListIterator(
-				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &coordinate_lists) :
-			d_coordinate_lists(coordinate_lists),
+				GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block) :
+			d_gml_data_block(gml_data_block),
 			d_index(0)
 		{  }
-
-		GmlDataBlockCoordinateListIterator &
-		self()
-		{
-			return *this;
-		}
 
 		const GPlatesPropertyValues::ValueObjectType &
 		next()
 		{
-			if (d_index >= d_coordinate_lists.size())
+			if (d_index >= d_gml_data_block->tuple_list().size())
 			{
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_coordinate_lists[d_index++]->get_value_object_type();
+			return d_gml_data_block->tuple_list()[d_index++]->get_value_object_type();
 		}
 
 	private:
@@ -497,7 +491,8 @@ namespace GPlatesApi
 		typedef GPlatesModel::RevisionedVector<
 				GPlatesPropertyValues::GmlDataBlockCoordinateList>::size_type size_type;
 
-		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &d_coordinate_lists;
+		// Keep the data block alive (eg, iterating over a temporary 'GmlDataBlock').
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type d_gml_data_block;
 		size_type d_index;
 	};
 
@@ -627,9 +622,9 @@ namespace GPlatesApi
 
 	GmlDataBlockCoordinateListIterator
 	gml_data_block_get_iter(
-			GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block)
 	{
-		return GmlDataBlockCoordinateListIterator(gml_data_block.tuple_list());
+		return GmlDataBlockCoordinateListIterator(gml_data_block);
 	}
 
 	unsigned int
@@ -798,7 +793,7 @@ export_gml_data_block()
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_GmlDataBlockCoordinateListIterator",
 			bp::no_init)
-		.def("__iter__", &GPlatesApi::GmlDataBlockCoordinateListIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::GmlDataBlockCoordinateListIterator::next,
@@ -2574,26 +2569,20 @@ namespace GPlatesApi
 
 		explicit
 		GpmlKeyValueDictionaryIterator(
-				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements) :
-			d_elements(elements),
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type gpml_key_value_dictionary) :
+			d_gpml_key_value_dictionary(gpml_key_value_dictionary),
 			d_index(0)
 		{  }
-
-		GpmlKeyValueDictionaryIterator &
-		self()
-		{
-			return *this;
-		}
 
 		const GPlatesPropertyValues::TextContent &
 		next()
 		{
-			if (d_index >= d_elements.size())
+			if (d_index >= d_gpml_key_value_dictionary->elements().size())
 			{
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_elements[d_index++]->key()->get_value();
+			return d_gpml_key_value_dictionary->elements()[d_index++]->key()->get_value();
 		}
 
 	private:
@@ -2601,7 +2590,8 @@ namespace GPlatesApi
 		typedef GPlatesModel::RevisionedVector<
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::size_type size_type;
 
-		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &d_elements;
+		// Keep the dictionary alive (eg, iterating over a temporary 'GpmlKeyValueDictionary').
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type d_gpml_key_value_dictionary;
 		size_type d_index;
 	};
 
@@ -2684,9 +2674,9 @@ namespace GPlatesApi
 
 	GpmlKeyValueDictionaryIterator
 	gpml_key_value_dictionary_get_iter(
-			GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type gpml_key_value_dictionary)
 	{
-		return GpmlKeyValueDictionaryIterator(gpml_key_value_dictionary.elements());
+		return GpmlKeyValueDictionaryIterator(gpml_key_value_dictionary);
 	}
 
 	unsigned int
@@ -2853,7 +2843,7 @@ export_gpml_key_value_dictionary()
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_GpmlKeyValueDictionaryIterator",
 			bp::no_init)
-		.def("__iter__", &GPlatesApi::GpmlKeyValueDictionaryIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::GpmlKeyValueDictionaryIterator::next,

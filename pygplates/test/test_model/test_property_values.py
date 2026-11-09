@@ -269,6 +269,32 @@ class GmlDataBlockCase(unittest.TestCase):
         self.assertTrue(self.gml_data_block == pickle.loads(pickle.dumps(self.gml_data_block)))
 
 
+class IteratorCase(unittest.TestCase):
+    def test_iterate_temporary(self):
+        # Iterating over a temporary keeps it alive (previously its iterator could read freed memory).
+        scalar_type = pygplates.ScalarType.create_gpml('VelocityColat')
+        for _ in range(20):
+            self.assertEqual(sorted(key for key in pygplates.GpmlKeyValueDictionary({'a': 1, 'b': 2})), ['a', 'b'])
+            self.assertEqual([st for st in pygplates.GmlDataBlock([(scalar_type, [1, 2])])], [scalar_type])
+
+    def test_iter_returns_self(self):
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(pygplates.XsDouble(n), n) for n in range(4)])
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary({'a': 1, 'b': 2, 'c': 3, 'd': 4})
+        gml_data_block = pygplates.GmlDataBlock([
+                (pygplates.ScalarType.create_gpml('VelocityColat'), [1, 2]),
+                (pygplates.ScalarType.create_gpml('VelocityLon'), [1, 2])])
+        for iterable in (gpml_irregular_sampling, gpml_irregular_sampling.get_time_samples(),
+                         gpml_key_value_dictionary, gml_data_block):
+            iterator = iter(iterable)
+            self.assertIs(iter(iterator), iterator)
+            # So 'zip' over the same iterator groups consecutive items (rather than pairing each item with itself).
+            pairs = list(zip(*[iter(iterable)] * 2))
+            self.assertEqual(len(pairs), len(iterable) // 2)
+            for item1, item2 in pairs:
+                self.assertFalse(item1 is item2 or item1 == item2)
+
+
 class GmlLineStringCase(unittest.TestCase):
     def setUp(self):
         self.polyline = pygplates.PolylineOnSphere(
@@ -1417,6 +1443,7 @@ def suite():
             PropertyValueCase,
             EnumerationCase,
             GeoTimeInstantCase,
+            IteratorCase,
             GmlDataBlockCase,
             GmlLineStringCase,
             GmlMultiPointCase,

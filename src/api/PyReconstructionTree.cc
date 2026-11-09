@@ -173,12 +173,6 @@ namespace GPlatesApi
 				d_edges_end(edges_end)
 			{  }
 
-			Iterator &
-			self()
-			{
-				return *this;
-			}
-
 			ReconstructionTreeEdge
 			next()
 			{
@@ -686,9 +680,7 @@ export_reconstruction_tree()
 			GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator>(
 					"ReconstructionTreeEdgesViewIterator",
 					bp::no_init)
-		.def("__iter__",
-				&GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator::self,
-				bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator::next)
@@ -715,9 +707,7 @@ export_reconstruction_tree()
 			GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator>(
 					"AllReconstructionTreeEdgesViewIterator",
 					bp::no_init)
-		.def("__iter__",
-				&GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator::self,
-				bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator::next)
