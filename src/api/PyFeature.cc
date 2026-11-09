@@ -27,6 +27,7 @@
 #include <cmath>
 #include <iterator>
 #include <ostream>
+#include <sstream>
 #include <set>
 #include <utility>
 #include <vector>
@@ -55,6 +56,7 @@
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyInternalUtils.h"
+#include "app-logic/TopologyNetworkParams.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -782,10 +784,23 @@ namespace GPlatesApi
 						bp::throw_error_already_set();
 					}
 
+					// Rift exponential stretching constant must be in range (see TopologyNetworkParams::RiftParams).
+					typedef GPlatesAppLogic::TopologyNetworkParams::RiftParams RiftParams;
+					const double rift_exponential_stretching_constant = extract_rift_exponential_stretching_constant();
+					if (!RiftParams::is_valid_exponential_stretching_constant(rift_exponential_stretching_constant))
+					{
+						std::ostringstream error_message;
+						error_message
+								<< "rift exponential stretching constant, in 'rift_parameters', must be positive, and at most "
+								<< RiftParams::MAX_EXPONENTIAL_STRETCHING_CONSTANT;
+						PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
+						bp::throw_error_already_set();
+					}
+
 					feature_handle_set_property(
 							network_feature_handle,
 							GPlatesModel::PropertyName::create_gpml("riftExponentialStretchingConstant"),
-							bp::object(GPlatesPropertyValues::XsDouble::create(extract_rift_exponential_stretching_constant())),
+							bp::object(GPlatesPropertyValues::XsDouble::create(rift_exponential_stretching_constant)),
 							verify_information_model);
 				}
 			}
@@ -803,11 +818,13 @@ namespace GPlatesApi
 						bp::throw_error_already_set();
 					}
 
-					// Rift strain rate resolution must be positive.
+					// Rift strain rate resolution must be in range (see TopologyNetworkParams::RiftParams).
 					const double rift_strain_rate_resolution = extract_rift_strain_rate_resolution();
-					if (rift_strain_rate_resolution <= 0)
+					if (!GPlatesAppLogic::TopologyNetworkParams::RiftParams::is_valid_strain_rate_resolution(
+							rift_strain_rate_resolution))
 					{
-						PyErr_SetString(PyExc_ValueError, "rift strain rate resolution, in 'rift_parameters', must be positive");
+						PyErr_SetString(PyExc_ValueError,
+								"rift strain rate resolution, in 'rift_parameters', must be positive (and finite)");
 						bp::throw_error_already_set();
 					}
 
@@ -835,11 +852,16 @@ namespace GPlatesApi
 						bp::throw_error_already_set();
 					}
 
-					// Rift edge length threshold degrees must be positive.
+					// Rift edge length threshold degrees must be in range (see TopologyNetworkParams::RiftParams).
+					typedef GPlatesAppLogic::TopologyNetworkParams::RiftParams RiftParams;
 					const double rift_edge_length_threshold_degrees = extract_rift_edge_length_threshold_degrees();
-					if (rift_edge_length_threshold_degrees <= 0)
+					if (!RiftParams::is_valid_edge_length_threshold_degrees(rift_edge_length_threshold_degrees))
 					{
-						PyErr_SetString(PyExc_ValueError, "rift rift edge length threshold, in 'rift_parameters', must be positive");
+						std::ostringstream error_message;
+						error_message << "rift edge length threshold, in 'rift_parameters', must be in the range ["
+								<< RiftParams::MIN_EDGE_LENGTH_THRESHOLD_DEGREES << ", "
+								<< RiftParams::MAX_EDGE_LENGTH_THRESHOLD_DEGREES << "] degrees";
+						PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
 						bp::throw_error_already_set();
 					}
 

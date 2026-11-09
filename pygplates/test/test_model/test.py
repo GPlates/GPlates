@@ -209,6 +209,14 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
         self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
         
+        # Values out of range raise ValueError.
+        for rift_parameters in (
+                (201, 701, 0), (201, 701, -1), (201, 701, float('nan')), (201, 701, 100.1),
+                (201, 701, None, 0), (201, 701, None, float('nan')), (201, 701, None, float('inf')),
+                (201, 701, None, None, 0), (201, 701, None, None, float('nan')), (201, 701, None, None, 181)):
+            self.assertRaises(ValueError, pygplates.Feature.create_topological_network_feature,
+                    topological_network, rift_parameters=rift_parameters)
+
         network_feature = pygplates.Feature.create_topological_network_feature(
                 topological_network,
                 rift_parameters=(201, 701, None, None, 0.3))  # params 3-5 can be optional

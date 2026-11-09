@@ -1697,7 +1697,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::refine_rift_delaunay_edge(
 					interpolation_within_subdivided_edge *
 						std::exp(rift_params.exponential_stretching_constant * second_subdivided_edge_vertex_twist_interpolation_from_unstretched_side.dval())) -
 					std::exp(rift_params.exponential_stretching_constant * subdivided_edge_mid_point_twist_interpolation_from_unstretched_side.dval())) /
-				(std::exp(rift_params.exponential_stretching_constant) - 1.0);
+				// Note: 'expm1(c)' is 'exp(c) - 1', but more accurate for small 'c'.
+				std::expm1(rift_params.exponential_stretching_constant);
 		if (abs(delta_twist_velocity_gradient).dval() < rift_params.strain_rate_resolution)
 		{
 			return;
@@ -1838,8 +1839,11 @@ GPlatesAppLogic::ResolvedTriangulation::Network::refine_rift_delaunay_edge(
 		// Use exponential interpolation for twist angle to simulate non-uniform strain rate across rift profile
 		// since the twist component is around the rift stage rotation axis.
 		const GPlatesMaths::real_t subdivided_edge_mid_point_twist_angle_interpolation_from_unstretched_side =
-				(std::exp(rift_params.exponential_stretching_constant * subdivided_edge_mid_point_twist_interpolation_from_unstretched_side.dval()) - 1.0) /
-				(std::exp(rift_params.exponential_stretching_constant) - 1.0);
+				// Note: 'expm1(x)' is 'exp(x) - 1', but more accurate for small 'x'.
+				std::expm1(
+						rift_params.exponential_stretching_constant *
+						subdivided_edge_mid_point_twist_interpolation_from_unstretched_side.dval()) /
+				std::expm1(rift_params.exponential_stretching_constant);
 
 		// Interpolate from second edge vertex (instead of first edge vertex) if second edge vertex
 		// is on un-stretched crust (and not first edge vertex).

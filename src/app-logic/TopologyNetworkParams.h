@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_TOPOLOGYNETWORKPARAMS_H
 #define GPLATES_APP_LOGIC_TOPOLOGYNETWORKPARAMS_H
 
+#include <cmath>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
@@ -109,7 +110,64 @@ namespace GPlatesAppLogic
 			operator<(
 					const RiftParams &rhs) const;
 
-			//! Default stretching profile is exp(exponential_stretching_constant * x).
+			/**
+			 * The range of @a edge_length_threshold_degrees.
+			 *
+			 * The threshold bounds the recursive subdivision of rift edges (its depth is about
+			 * log2(edge length / threshold)), so zero would never stop and a tiny threshold is bounded
+			 * but huge. The minimum (about 110 metres, 100 times finer than the default 0.1 degrees)
+			 * limits the depth to about 18 levels.
+			 */
+			static constexpr double MIN_EDGE_LENGTH_THRESHOLD_DEGREES = 0.001;
+			static constexpr double MAX_EDGE_LENGTH_THRESHOLD_DEGREES = 180.0;
+
+			/**
+			 * The largest @a exponential_stretching_constant (the smallest is any positive value).
+			 *
+			 * The same as GPlates' layer options allow. Beyond about 709, exp() overflows in the rift
+			 * maths, which then gives NaN vertices.
+			 */
+			static constexpr double MAX_EXPONENTIAL_STRETCHING_CONSTANT = 100.0;
+
+			/**
+			 * Whether each parameter is in range, wherever it comes from (the pyGPlates API, or a
+			 * network feature's own properties). Each test also rejects NaN.
+			 */
+			static
+			bool
+			is_valid_exponential_stretching_constant(
+					const double &exponential_stretching_constant)
+			{
+				return exponential_stretching_constant > 0 &&
+						exponential_stretching_constant <= MAX_EXPONENTIAL_STRETCHING_CONSTANT;
+			}
+
+			static
+			bool
+			is_valid_strain_rate_resolution(
+					const double &strain_rate_resolution)
+			{
+				return strain_rate_resolution > 0 && std::isfinite(strain_rate_resolution);
+			}
+
+			static
+			bool
+			is_valid_edge_length_threshold_degrees(
+					const double &edge_length_threshold_degrees)
+			{
+				return edge_length_threshold_degrees >= MIN_EDGE_LENGTH_THRESHOLD_DEGREES &&
+						edge_length_threshold_degrees <= MAX_EDGE_LENGTH_THRESHOLD_DEGREES;
+			}
+
+			/**
+			 * Default stretching profile is exp(exponential_stretching_constant * x).
+			 *
+			 * Must be positive (and at most MAX_EXPONENTIAL_STRETCHING_CONSTANT): the profile is
+			 * (exp(c*t) - 1) / (exp(c) - 1), with t = 0 on the unstretched
+			 * side and t = 1 at the rift axis, so its strain rate increases towards the axis for c > 0
+			 * (as intended). As c approaches zero the strain rate becomes constant across the rift
+			 * (which the profile exists to avoid), and c < 0 concentrates the strain away from the axis.
+			 */
 			double exponential_stretching_constant;
 			//! Adjacent strain rates samples should resolved within this tolerance (in units 1/sec).
 			double strain_rate_resolution;

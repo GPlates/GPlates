@@ -4340,6 +4340,22 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertAlmostEqual(resolve_topology_parameters.rift_strain_rate_resolution, 1e-16, 19)
         self.assertAlmostEqual(resolve_topology_parameters.rift_edge_length_threshold_degrees, 0.2)
 
+        # Values out of range raise ValueError (some previously crashed, or gave wrong strain rates).
+        nan = float('nan')
+        for keyword, values in (
+                # Checked even when clamping is disabled (it's stored).
+                ('max_clamped_strain_rate', (-1, 0, nan)),
+                ('rift_exponential_stretching_constant', (-1, 0, nan, 100.1, float('inf'))),
+                ('rift_strain_rate_resolution', (-1, 0, nan, float('inf'))),
+                ('rift_edge_length_threshold_degrees', (-1, 0, nan, 0.0009, 180.1))):
+            for value in values:
+                self.assertRaises(ValueError, pygplates.ResolveTopologyParameters, **{keyword: value})
+        # The ends of the edge length threshold's range are fine.
+        pygplates.ResolveTopologyParameters(rift_edge_length_threshold_degrees=0.001)
+        pygplates.ResolveTopologyParameters(rift_edge_length_threshold_degrees=180)
+        # As is the largest exponential stretching constant (above about 709, exp() overflows in the rift maths).
+        pygplates.ResolveTopologyParameters(rift_exponential_stretching_constant=100)
+
     def test_resolved_export_files(self):
         resolve_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml')) 
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))

@@ -795,11 +795,14 @@ namespace GPlatesAppLogic
 							const TopologyNetworkParams &topology_network_params) :
 						left_plate_id(rift.left_plate_id),
 						right_plate_id(rift.right_plate_id),
-						edge_length_threshold(rift.edge_length_threshold
-								? rift.edge_length_threshold.get()
-								: GPlatesMaths::AngularExtent::create_from_angle(
-										GPlatesMaths::convert_deg_to_rad(
-												topology_network_params.get_rift_params().edge_length_threshold_degrees))),
+						// Clamped to the minimum threshold, whatever its source, since the threshold
+						// bounds the recursive subdivision of rift edges (see TopologyNetworkParams::RiftParams).
+						edge_length_threshold(
+								clamp_edge_length_threshold(
+										rift.edge_length_threshold
+										? rift.edge_length_threshold.get()
+										: GPlatesMaths::AngularExtent::create_from_angle(GPlatesMaths::convert_deg_to_rad(
+												topology_network_params.get_rift_params().edge_length_threshold_degrees)))),
 						strain_rate_resolution(rift.strain_rate_resolution
 								? rift.strain_rate_resolution.get()
 								: topology_network_params.get_rift_params().strain_rate_resolution),
@@ -807,6 +810,23 @@ namespace GPlatesAppLogic
 								? rift.exponential_stretching_constant.get()
 								: topology_network_params.get_rift_params().exponential_stretching_constant)
 					{  }
+
+					/**
+					 * Returns @a edge_length_threshold, clamped up to the minimum threshold.
+					 */
+					static
+					GPlatesMaths::AngularExtent
+					clamp_edge_length_threshold(
+							const GPlatesMaths::AngularExtent &edge_length_threshold)
+					{
+						const GPlatesMaths::AngularExtent minimum_edge_length_threshold =
+								GPlatesMaths::AngularExtent::create_from_angle(
+										GPlatesMaths::convert_deg_to_rad(
+												TopologyNetworkParams::RiftParams::MIN_EDGE_LENGTH_THRESHOLD_DEGREES));
+						return edge_length_threshold.is_precisely_less_than(minimum_edge_length_threshold)
+								? minimum_edge_length_threshold
+								: edge_length_threshold;
+					}
 
 					GPlatesModel::integer_plate_id_type left_plate_id;
 					GPlatesModel::integer_plate_id_type right_plate_id;

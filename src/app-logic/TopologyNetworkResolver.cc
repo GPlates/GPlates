@@ -379,19 +379,54 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_xs_double(
 	static const GPlatesModel::PropertyName RIFT_STRAIN_RATE_RESOLUTION_LOG_10_PROPERTY_NAME =
 			GPlatesModel::PropertyName::create_gpml("riftStrainRateResolutionLog10");
 
+	// A value out of range (eg, read from a file) is ignored, with a warning, so the default is used.
+	// (A zero threshold and resolution recursed until the stack overflowed, crashing the program.)
+	// Note: The range tests also reject NaN.
+	typedef TopologyNetworkParams::RiftParams RiftParams;
 	if (current_top_level_propname() == RIFT_EXPONENTIAL_STRETCHING_CONSTANT_PROPERTY_NAME)
 	{
-		d_current_rift_params.exponential_stretching_constant = xs_double.get_value();
+		const double exponential_stretching_constant = xs_double.get_value();
+		if (RiftParams::is_valid_exponential_stretching_constant(exponential_stretching_constant))
+		{
+			d_current_rift_params.exponential_stretching_constant = exponential_stretching_constant;
+		}
+		else
+		{
+			qWarning() << "Ignoring a rift exponential stretching constant outside the range (0,"
+					<< RiftParams::MAX_EXPONENTIAL_STRETCHING_CONSTANT << "]:"
+					<< exponential_stretching_constant;
+		}
 	}
 	else if (current_top_level_propname() == RIFT_EDGE_LENGTH_THRESHOLD_DEGREES_PROPERTY_NAME)
 	{
-		d_current_rift_params.edge_length_threshold =
-				GPlatesMaths::AngularExtent::create_from_angle(
-						GPlatesMaths::convert_deg_to_rad(xs_double.get_value()));
+		const double edge_length_threshold_degrees = xs_double.get_value();
+		if (RiftParams::is_valid_edge_length_threshold_degrees(edge_length_threshold_degrees))
+		{
+			d_current_rift_params.edge_length_threshold =
+					GPlatesMaths::AngularExtent::create_from_angle(
+							GPlatesMaths::convert_deg_to_rad(edge_length_threshold_degrees));
+		}
+		else
+		{
+			qWarning() << "Ignoring a rift edge length threshold outside the range ["
+					<< RiftParams::MIN_EDGE_LENGTH_THRESHOLD_DEGREES << ","
+					<< RiftParams::MAX_EDGE_LENGTH_THRESHOLD_DEGREES << "] degrees:"
+					<< edge_length_threshold_degrees;
+		}
 	}
 	else if (current_top_level_propname() == RIFT_STRAIN_RATE_RESOLUTION_LOG_10_PROPERTY_NAME)
 	{
-		d_current_rift_params.strain_rate_resolution = std::pow(10.0, xs_double.get_value());
+		// A log10 that is NaN, or so large or small that 10 to its power is infinite or zero, is out of range.
+		const double strain_rate_resolution = std::pow(10.0, xs_double.get_value());
+		if (RiftParams::is_valid_strain_rate_resolution(strain_rate_resolution))
+		{
+			d_current_rift_params.strain_rate_resolution = strain_rate_resolution;
+		}
+		else
+		{
+			qWarning() << "Ignoring a rift strain rate resolution (log10) out of range:"
+					<< xs_double.get_value();
+		}
 	}
 }
 

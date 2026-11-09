@@ -14176,16 +14176,17 @@ class ResolveTopologyParameters:
 
         :param enable_strain_rate_clamping: Whether to enable clamping of strain rate. Defaults to ``False``. See :attr:`enable_strain_rate_clamping`.
         :type enable_strain_rate_clamping: bool
-        :param max_clamped_strain_rate: Maximum :meth:`total strain rate <StrainRate.get_total_strain_rate>` (in units of :math:`second^{-1}`). This is only used if *enable_strain_rate_clamping* is true. Default value is ``5e-15`` :math:`second^{-1}`. See :attr:`max_clamped_strain_rate`.
+        :param max_clamped_strain_rate: Maximum :meth:`total strain rate <StrainRate.get_total_strain_rate>` (in units of :math:`second^{-1}`). This is only used if *enable_strain_rate_clamping* is true. Default value is ``5e-15`` :math:`second^{-1}`. Must be positive (even if clamping is disabled). See :attr:`max_clamped_strain_rate`.
         :type max_clamped_strain_rate: float
         :param strain_rate_smoothing: How deformation strain rates are smoothed (if at all). This can be no smoothing, barycentric smoothing or natural neighbour smoothing. Default value is ``pygplates.StrainRateSmoothing.natural_neighbour``. See :attr:`strain_rate_smoothing`.
         :type strain_rate_smoothing: StrainRateSmoothing
-        :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. Default value is ``1``. See :attr:`rift_exponential_stretching_constant`.
+        :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. Default value is ``1``. Must be positive, and at most ``100``: larger values concentrate the stretching towards the rift axis, and values approaching zero approach a uniform strain rate across the rift. See :attr:`rift_exponential_stretching_constant`.
         :type rift_exponential_stretching_constant: float
-        :param rift_strain_rate_resolution: Controls how accurately the strain rate curve (across rift profile) matches exponential curve (in units of :math:`second^{-1}`). Default value is ``5e-17``. See :attr:`rift_strain_rate_resolution`.
+        :param rift_strain_rate_resolution: Controls how accurately the strain rate curve (across rift profile) matches exponential curve (in units of :math:`second^{-1}`). Default value is ``5e-17``. Must be positive (and finite). See :attr:`rift_strain_rate_resolution`.
         :type rift_strain_rate_resolution: float
-        :param rift_edge_length_threshold_degrees: Rift edges in network triangulation shorter than this length (in degrees) will not be further sub-divided. Default value is ``0.1``. See :attr:`rift_edge_length_threshold_degrees`.
+        :param rift_edge_length_threshold_degrees: Rift edges in network triangulation shorter than this length (in degrees) will not be further sub-divided. Default value is ``0.1``. Must be in the range [0.001, 180]. Smaller values give finer rift profiles but take longer: each halving can subdivide rift edges one level deeper (doubling their vertices). See :attr:`rift_edge_length_threshold_degrees`.
         :type rift_edge_length_threshold_degrees: float
+        :raises ValueError: if *max_clamped_strain_rate* is not positive (including NaN), or *rift_exponential_stretching_constant*, *rift_strain_rate_resolution* or *rift_edge_length_threshold_degrees* is outside its range (including NaN)
 
         .. seealso:: :ref:`pygplates_primer_strain_rate_clamping`, :ref:`pygplates_primer_strain_rate_smoothing` and :ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation.
 
