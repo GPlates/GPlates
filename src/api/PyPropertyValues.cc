@@ -4037,7 +4037,7 @@ export_gpml_time_sample()
 				"are considered when interpolating rotations at some arbitrary time.\n")
 		.def("set_enabled",
 				&GPlatesApi::gpml_time_sample_set_enabled,
-				(bp::arg("set_enabled")=true),
+				(bp::arg("is_enabled")=true),
 				"set_enabled([is_enabled=True])\n"
 				"  Sets whether this time sample is enabled.\n"
 				"\n"

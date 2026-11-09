@@ -5758,7 +5758,7 @@ class GpmlIrregularSampling(PropertyValue):
         :type time: float or GeoTimeInstant
         :param description: description of the time sample
         :type description: str or None
-        :param is_enabled: whether time sample is enabled
+        :param is_enabled: whether time sample is enabled (defaults to ``True``, as does ``None``)
         :type is_enabled: bool or None
         :returns: the time sample that is modified, or inserted into the time sequence
         :rtype: GpmlTimeSample
@@ -5772,6 +5772,13 @@ class GpmlIrregularSampling(PropertyValue):
         ordered by time from most recent to least recent.
 
         Note that *time* can be outside the time range of existing :meth:`time samples<get_time_samples>`.
+
+        .. note:: *is_enabled* set to ``None`` means enabled (the default), not disabled.
+           A disabled time sample is ignored when interpolating (eg, a disabled sample of a total reconstruction pole
+           is ignored when calculating rotations).
+
+        .. versionchanged:: 1.1
+           *is_enabled* set to ``None`` means enabled (previously it disabled the time sample).
         """
 
     def sort(self, key: Callable[[GpmlTimeSample], Any], reverse: bool = ...) -> None:

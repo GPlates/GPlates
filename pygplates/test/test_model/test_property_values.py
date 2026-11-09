@@ -604,6 +604,16 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         self.assertTrue(list(self.gpml_irregular_sampling) == self.original_time_samples)
         self.assertTrue([time_sample for time_sample in self.gpml_irregular_sampling] == self.original_time_samples)
 
+    def test_set_value_is_enabled(self):
+        # 'is_enabled=None' means enabled (the default), both for a new and an existing time sample.
+        self.gpml_irregular_sampling.set_value(pygplates.XsInteger(10), 10, is_enabled=None)
+        self.assertTrue(self.gpml_irregular_sampling[-1].is_enabled())
+        self.gpml_irregular_sampling[0].set_disabled()
+        self.gpml_irregular_sampling.set_value(pygplates.XsInteger(10), 0, None, None)
+        self.assertTrue(self.gpml_irregular_sampling[0].is_enabled())
+        self.gpml_irregular_sampling.set_value(pygplates.XsInteger(10), 0, is_enabled=False)
+        self.assertTrue(self.gpml_irregular_sampling[0].is_disabled())
+
     def test_set(self):
         gpml_time_sample_list = self.gpml_irregular_sampling.get_time_samples()
         reversed_time_samples = list(reversed(self.original_time_samples))
@@ -976,6 +986,11 @@ class GpmlTimeSampleCase(unittest.TestCase):
         self.gpml_time_sample1.set_enabled()
         self.assertTrue(self.gpml_time_sample1.is_enabled())
         self.assertTrue(not self.gpml_time_sample1.is_disabled())
+        # The documented keyword works.
+        self.gpml_time_sample1.set_enabled(is_enabled=False)
+        self.assertTrue(self.gpml_time_sample1.is_disabled())
+        self.gpml_time_sample1.set_enabled(is_enabled=True)
+        self.assertTrue(self.gpml_time_sample1.is_enabled())
         
         self.gpml_time_sample1.set_description()
         self.assertTrue(self.gpml_time_sample1.get_description() is None)
