@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <sstream>
 #include <utility>
 #include <vector>
 #include <boost/cast.hpp>
@@ -2129,6 +2130,13 @@ namespace GPlatesApi
 			const double interpolate_resolution_radians =
 					extract_interpolate_resolution_radians();
 
+			// Note: '!(x > 0)' also catches NaN.
+			if (!(interpolate_resolution_radians > 0))
+			{
+				PyErr_SetString(PyExc_ValueError, "Interpolate resolution must be positive");
+				bp::throw_error_already_set();
+			}
+
 			if (!GPlatesMaths::interpolate(
 					interpolated_polylines,
 					from_polyline_on_sphere.get(),
@@ -2152,6 +2160,18 @@ namespace GPlatesApi
 					interpolate_object,
 					"Expected an interpolate resolution (float) or "
 					"a sequence of interpolate ratios (eg, list or tuple of float)");
+
+			// Each ratio must be in the range [0, 1] (which also rejects NaN).
+			for (const double &interpolate_ratio : interpolate_ratios)
+			{
+				if (!(interpolate_ratio >= 0 && interpolate_ratio <= 1))
+				{
+					std::ostringstream error_message;
+					error_message << "Interpolate ratio " << interpolate_ratio << " is not in the range [0, 1]";
+					PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
+					bp::throw_error_already_set();
+				}
+			}
 
 			if (!GPlatesMaths::interpolate(
 					interpolated_polylines,
@@ -2540,6 +2560,9 @@ export_polyline_on_sphere()
 				"  :rtype: list of PolylineOnSphere or None\n"
 				"  :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type "
 				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)\n"
+				"  :raises ValueError: if *interpolate* is a single number that is not positive (or is so small that "
+				"the number of interpolated polylines doesn't fit a 32-bit unsigned integer), or is a sequence "
+				"containing a ratio outside the range [0,1]\n"
 				"\n"
 				"  If *interpolate* is a single number then it is the distance interval spacing, in radians, "
 				"between *from_polyline* and *to_polyline* at which to generate interpolated polylines. "

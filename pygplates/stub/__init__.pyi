@@ -11677,6 +11677,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping latitude ranges or if maximum distance threshold exceeded or if either polyline is not a :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.ignore_non_polyline*)
         :rtype: list of PolylineOnSphere or None
         :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)
+        :raises ValueError: if *interpolate* is a single number that is not positive (or is so small that the number of interpolated polylines doesn't fit a 32-bit unsigned integer), or is a sequence containing a ratio outside the range [0,1]
 
         If *interpolate* is a single number then it is the distance interval spacing, in radians, between *from_polyline* and *to_polyline* at which to generate interpolated polylines. Also modified versions of *from_polyline* and *to_polyline* are returned along with the interpolated polylines.
 

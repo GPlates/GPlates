@@ -149,6 +149,7 @@ Changes since 1.0.0:
   * `GpmlIrregularSampling()` sorts its time samples by time, from most recent to least recent (keeping time samples with equal times in the order given), as do reading a GPML file and reading a `.grot` rotation file. Everything using a sampling (eg, `get_value()` and `RotationModel`) relies on that order, and a sampling out of order silently gave `None` or the wrong value.
     * A sampling built least recent first (which `get_value()` and `get_time_samples_bounding_time()` accepted) now has its most recent time sample first.
     * Changing the time samples directly (eg, a time sample's time) must keep them in that order, as `GpmlIrregularSampling` now documents.
+  * `PolylineOnSphere.rotation_interpolate()` raises `ValueError` for an interpolate interval that is zero, negative or NaN, or so small that the number of interpolated polylines doesn't fit a 32-bit integer (previously a small negative interval tried to allocate billions of polylines, and zero or NaN silently returned just the two polylines), and for an interpolate ratio outside [0, 1] or NaN (previously `PreconditionViolationError`).
 
 pyGPlates 1.0.0
 ===============

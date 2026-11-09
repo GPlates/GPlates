@@ -26,7 +26,11 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <cmath>
+#include <limits>
 #include <list>
+#include <sstream>
+#include <stdexcept>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
@@ -1162,9 +1166,22 @@ namespace GPlatesMaths
 			const AngularDistance percentile_from_to_point_angular_distance =
 					from_to_point_angular_distances[percentile_index];
 
-			const unsigned int num_interpolate_intervals = 1 + static_cast<unsigned int>(
+			// Compute the number of intervals as a double first, since casting a value that doesn't
+			// fit an 'unsigned int' is undefined behaviour (eg, a tiny positive resolution).
+			const double num_interpolate_intervals_double = 1 + std::floor(
 					percentile_from_to_point_angular_distance.calculate_angle().dval() /
 							interpolate_resolution_radians);
+			if (!(num_interpolate_intervals_double <= (std::numeric_limits<unsigned int>::max)()))
+			{
+				std::ostringstream error_message;
+				error_message << "Interpolate resolution " << interpolate_resolution_radians
+						<< " radians is too small (it gives " << num_interpolate_intervals_double
+						<< " interpolation intervals)";
+				// Boost.Python raises this as Python 'ValueError'.
+				throw std::invalid_argument(error_message.str());
+			}
+			const unsigned int num_interpolate_intervals =
+					static_cast<unsigned int>(num_interpolate_intervals_double);
 			const double inv_num_interpolate_intervals = 1.0 / num_interpolate_intervals;
 
 			interpolate_ratios.push_back(0); // 'from' polyline

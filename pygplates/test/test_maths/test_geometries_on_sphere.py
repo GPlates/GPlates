@@ -1090,6 +1090,13 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PolylineOnSphere([(5,10), (15,10)]),
                 pygplates.PointOnSphere(90,0),
                 [0])) == 1)
+        # An interval that is not positive (or NaN), too small an interval, or a ratio outside [0,1], raises ValueError.
+        for interpolate in (0, -0.05, float('nan'), False, 1e-12, [0, 1.5], [-0.1], [float('nan')]):
+            self.assertRaises(ValueError, pygplates.PolylineOnSphere.rotation_interpolate,
+                    pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+                    pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                    pygplates.PointOnSphere(90,0),
+                    interpolate)
         # An empty list means just test if interpolation is possible.
         self.assertTrue(len(pygplates.PolylineOnSphere.rotation_interpolate(
                 pygplates.PolylineOnSphere([(10,0), (20,0)]),
