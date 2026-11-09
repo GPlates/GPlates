@@ -135,6 +135,10 @@ Changes since 1.0.0:
   * Fixed iterating over a temporary `GpmlKeyValueDictionary` or `GmlDataBlock` (eg, `[key for key in GpmlKeyValueDictionary({...})]`) reading freed memory (which could crash, raise `RuntimeError`, or return another object's keys).
   * `iter()` on an iterator over a list-like class (eg, `GpmlIrregularSampling`), `GpmlKeyValueDictionary`, `GmlDataBlock` or the edges of a `ReconstructionTree` returns that iterator, as for Python's own iterators (previously a copy, so eg `zip(*[iter(sequence)] * 2)` paired each item with itself).
   * Fixed `reverse()` and `sort()` on an empty list-like object (eg, `GpmlIrregularSampling`, or the list returned by `GpmlIrregularSampling.get_time_samples()`) raising `AssertionFailureError`.
+  * The list-like classes (eg, `GpmlIrregularSampling`, `GpmlArray`) behave like a Python list in more cases:
+    * `index(x, i, j)` interprets *i* and *j* like slice indices, and raises only `ValueError` (eg, `index(x, 2)` searched the whole list after an index of 0 was treated as the end, an index out of range raised `IndexError`, and so did an empty list).
+    * `remove(x)` on an empty list raises `ValueError` (previously `IndexError`).
+    * Assigning an empty sequence to an empty extended slice (eg, `a[2:2:2] = []`) does nothing (previously raised `ValueError`), and a slice step of zero raises `ValueError` (previously `IndexError`).
 
 pyGPlates 1.0.0
 ===============
