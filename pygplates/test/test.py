@@ -186,6 +186,12 @@ class VersionCase(unittest.TestCase):
             self.assertTrue(version == pickle.loads(pickle.dumps(version)))
 
 
+class PickleCase(unittest.TestCase):
+    def test_pickle_bytes(self):
+        # Only a 'bytes' object is accepted (previously a 'str' left an error pending, raising 'SystemError').
+        self.assertRaises(TypeError, pygplates.PickleBytes, 'abc')
+
+
 class IterableArgumentCase(unittest.TestCase):
     """
     Tests of how arguments taking an iterable, or a sequence, are iterated
@@ -285,6 +291,7 @@ def suite():
             HashableCase,
             IterableArgumentCase,
             PackageCase,
+            PickleCase,
             VersionCase
         ]
 

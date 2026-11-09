@@ -75,8 +75,10 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 			bp::throw_error_already_set();
 		}
 
+		// NOTE: Use the extracted pair rather than indexing the original object, which might not be
+		// indexable (eg, an iterator), or might index differently (eg, a 'dict' is indexed by key).
 		key_value_map.push_back(
-				std::make_pair(key_value_object[0], key_value_object[1]));
+				std::make_pair(key_value_pair[0], key_value_pair[1]));
 	}
 }
 

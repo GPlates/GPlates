@@ -3338,8 +3338,10 @@ namespace GPlatesApi
 					xs_property_value_contents.append(xs_property_value->get_value());
 				}
 
-				// If any property values were wrong type then drop through and return default.
-				if (n == num_xs_property_values)
+				// If any property values were wrong type, or there were none, then drop through and
+				// return default (as documented, and as for a single property value).
+				if (num_xs_property_values > 0 &&
+					n == num_xs_property_values)
 				{
 					return xs_property_value_contents;
 				}

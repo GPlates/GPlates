@@ -643,6 +643,15 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
         self.assertTrue(gpml_key_value_dictionary.get('id') == 23)
 
+        # Each (key, value) pair can be any 2-element iterable (eg, an iterator).
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(
+                [iter(('name', 'Test')), (x for x in ('id', 23))])
+        self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
+        self.assertTrue(gpml_key_value_dictionary.get('id') == 23)
+        # Even a 'dict' with two keys (iterating a 'dict' gives its keys).
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary([{'name' : 1, 'Test' : 2}])
+        self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
+
     def test_len(self):
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
         self.assertTrue(len(pygplates.GpmlKeyValueDictionary()) == 0)

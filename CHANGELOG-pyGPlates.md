@@ -127,6 +127,9 @@ Changes since 1.0.0:
     * When `ValueError` is raised (an instance not found), nothing is removed (previously some of the others could already have been removed).
     * A feature added to a collection more than once (`FeatureCollection.add()` doesn't check for duplicates) has every copy removed (previously only one copy, so it was still in the collection, and was written to files).
   * `Feature.add()` and `Feature.set()` with several property values (or `Feature.add()` with several property name/value pairs) leave the feature unchanged when one of them raises `InformationModelError` (eg, a value of the wrong type, or two values of a property that can occur only once). Previously the values before it had already been added or set.
+  * `Feature.get_string()`, `get_double()`, `get_integer()` and `get_boolean()` with `PropertyReturn.all` return the *default* when nothing matches, as documented (previously an empty list).
+  * Fixed `GpmlKeyValueDictionary()` and `GmlDataBlock()` with a (key, value) pair that is not a tuple or list (eg, an iterator) raising a misleading error (eg, `KeyError: 0`).
+  * `PickleBytes()` with something other than `bytes` raises `TypeError` (previously `SystemError`).
 
 pyGPlates 1.0.0
 ===============
