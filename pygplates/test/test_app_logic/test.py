@@ -96,6 +96,30 @@ class CrossoverTestCase(unittest.TestCase):
         
         # TODO: Add more tests.
 
+    def test_synchronise_crossovers_without_plate_circuit(self):
+        # The preserved (young) crossover sequence has only one enabled time sample, which the rotation model
+        # ignores, so there's no plate circuit from the moving plate to the synchronised crossover's fixed plate
+        # at the crossover time. That's an error (previously an identity rotation was written as the crossover).
+        rotation_text = (
+            '701   0.0   90.0    0.0    0.0  501 !\n'
+            '701 100.0   10.0   20.0   30.0  501 !\n'
+            '802  50.0   20.0   30.0   10.0  701 ! young crossover sequence with one enabled sample\n'
+            '802  50.0   30.0   40.0   20.0  501 ! old crossover sequence\n'
+            '802 100.0   35.0   45.0   25.0  501 !\n')
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            filename = os.path.join(tmp_dir, 'rotations.rot')
+            with open(filename, 'w') as rotation_file:
+                rotation_file.write(rotation_text)
+            crossover_results = []
+            self.assertFalse(pygplates.synchronise_crossovers(
+                    filename,
+                    crossover_type_function=pygplates.CrossoverType.synch_old_crossover_and_stages,
+                    crossover_results=crossover_results))
+            self.assertEqual([result for _, result in crossover_results], [pygplates.CrossoverResult.error])
+            # The file is unchanged.
+            with open(filename) as rotation_file:
+                self.assertEqual(rotation_file.read(), rotation_text)
+
     def test_synchronise_crossovers_writes_only_if_synchronised(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_rot_filename = os.path.join(tmp_dir, 'rotations.rot')

@@ -19068,10 +19068,10 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     :param crossover_type_function: A function that determines a crossover's type, or one of the         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* -         can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
     :type crossover_type_function: a callable, or a CrossoverType enumerated value, or None
 
-    :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or         *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of         *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
+    :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or         *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of         *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate         at the crossover time) - the list is sorted by crossover time - default is None
     :type crossover_results: list[tuple[Crossover, int]], or None
 
-    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown* (which         generates a *CrossoverResult.error* in *crossover_results*, if specified, due to inability to         process crossover). Also returns False if unable to synchronise all crossovers due to an infinite         cycle between crossovers. In all cases (success or failure) as many crossovers as possible will be         processed and results saved to rotation features (and rotation files, if any).
+    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown*, or if there is         no plate circuit from the moving plate of any crossover to its synchronised crossover's fixed plate at the         crossover time (either of which generates a *CrossoverResult.error* in *crossover_results*, if specified,         due to inability to process crossover, whose time samples are then left unchanged).         Also returns False if unable to synchronise all crossovers due to an infinite         cycle between crossovers. In all cases (success or failure) as many crossovers as possible will be         processed and results saved to rotation features (and rotation files, if any).
     :rtype: bool
 
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
@@ -19220,7 +19220,8 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or
     *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or
     *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of
-    *CrossoverType.unknown*). The appended list elements are sorted by crossover time.
+    *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate
+    at the crossover time). The appended list elements are sorted by crossover time.
 
     Synchronise all crossovers found in a rotation file (and save modifications back to the same rotation file)
     where crossover types are determined by '\@xo_' tags in the young crossover description/comment:
