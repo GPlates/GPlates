@@ -122,6 +122,10 @@ Changes since 1.0.0:
   * `FeaturesFunctionArgument.contains_features()` returns `False` for an iterator, including one nested in a sequence (previously raised `TypeError`).
   * A predicate passed to `Feature.get()`, `Feature.get_value()`, `Feature.get_geometry()` (and the other query methods of `Feature` and `FeatureCollection`), `Feature.remove()`, `FeatureCollection.remove()`, or as the `boundary_section_filter` of `TopologicalSnapshot.calculate_plate_boundary_statistics()`, can return any value, which is tested for truth as by `if` (previously only a `bool` or `int` worked: a `str`, `list` or `numpy.bool_` raised `TypeError`).
   * `FeatureCollection.get()`, and `Feature.get()`, `get_value()`, `get_geometry()`, `get_geometries()` and `get_topological_geometry()`, raise `TypeError` for a query of the wrong type (eg, the string `'gml:name'` instead of a `PropertyName`), as `remove()` already did. Previously they raised "'str' object is not callable", or returned `None` (or `[]`) when there was nothing to query.
+  * `FeatureCollection.remove()` and `Feature.remove()`:
+    * Fixed a list naming the same feature (or property) instance more than once, not next to each other (eg, `[f1, f2, f1]`), raising `ValueError` after removing the others.
+    * When `ValueError` is raised (an instance not found), nothing is removed (previously some of the others could already have been removed).
+    * A feature added to a collection more than once (`FeatureCollection.add()` doesn't check for duplicates) has every copy removed (previously only one copy, so it was still in the collection, and was written to files).
 
 pyGPlates 1.0.0
 ===============

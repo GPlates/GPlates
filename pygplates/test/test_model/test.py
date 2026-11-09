@@ -637,6 +637,19 @@ class FeatureCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('reconstructionPlateId')])
         self.assertTrue(len(self.feature) == self.property_count - 3)
 
+    def test_remove_instances(self):
+        properties = list(self.feature)
+        # The same instance more than once in the list (not adjacent).
+        self.feature.remove([properties[0], properties[1], properties[0]])
+        self.assertEqual(len(self.feature), self.property_count - 2)
+        # A property instance not found raises ValueError and removes nothing.
+        other_property = next(iter(pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature, pygplates.PointOnSphere(0, 0))))
+        self.assertRaises(ValueError, self.feature.remove, [properties[2], other_property])
+        self.assertRaises(ValueError, self.feature.remove, [properties[2], pygplates.PropertyName.gml_name, other_property])
+        self.assertRaises(ValueError, self.feature.remove, other_property)
+        self.assertEqual(len(self.feature), self.property_count - 2)
+
     def test_predicate_truth_value(self):
         # A predicate's result is tested for truth, so it need not be a 'bool'.
         self.assertEqual(len(self.feature.get(lambda property: 'yes', pygplates.PropertyReturn.all)), len(self.feature))
@@ -1269,6 +1282,36 @@ class FeatureCollectionCase(unittest.TestCase):
         self.feature_collection.remove([feature_to_remove1.get_feature_id(), feature_to_remove2.get_feature_id()])
         self.assertTrue(len(self.feature_collection) == self.feature_count - 2)
     
+    def test_remove_instances(self):
+        feature_iter = iter(self.feature_collection)
+        feature1 = next(feature_iter)
+        feature2 = next(feature_iter)
+        feature3 = next(feature_iter)
+
+        # The same instance more than once in the list (not adjacent).
+        feature_collection = pygplates.FeatureCollection(list(self.feature_collection))
+        feature_collection.remove([feature1, feature2, feature1])
+        self.assertEqual(len(feature_collection), self.feature_count - 2)
+
+        # A feature instance not found raises ValueError and removes nothing.
+        feature_collection = pygplates.FeatureCollection([feature1, feature2, feature3])
+        self.assertRaises(ValueError, feature_collection.remove, [feature1, pygplates.Feature()])
+        self.assertRaises(ValueError, feature_collection.remove,
+                          [feature1, feature2, pygplates.FeatureType.gpml_unclassified_feature, pygplates.Feature()])
+        self.assertEqual(len(feature_collection), 3)
+        self.assertRaises(ValueError, feature_collection.remove, pygplates.Feature())
+        self.assertEqual(len(feature_collection), 3)
+
+        # A feature added twice is in the collection twice, and removing it removes both copies.
+        feature_collection = pygplates.FeatureCollection([feature1, feature2])
+        feature_collection.add(feature1)
+        self.assertEqual(len(feature_collection), 3)
+        feature_collection.remove(feature1)
+        self.assertEqual(list(feature_collection), [feature2])
+        feature_collection.add([feature2, feature1, feature1])
+        feature_collection.remove([feature1, feature2])
+        self.assertEqual(len(feature_collection), 0)
+
     def test_remove_by_predicate(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)

@@ -1804,6 +1804,7 @@ namespace GPlatesApi
 			// Search for the property.
 			// Note: This searches for the same property *instance* - it does not compare values of
 			// two different property instances.
+			bool found_property = false;
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
 			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
 			for ( ; properties_iter != properties_end; ++properties_iter)
@@ -1811,16 +1812,24 @@ namespace GPlatesApi
 				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
 
 				// Compare pointers not pointed-to-objects.
+				//
+				// Remove every copy (a property added more than once is in the feature more than once).
+				// Note that removing a property does not prevent us from incrementing to the next property.
 				if (property == feature_property)
 				{
 					feature_handle.remove(properties_iter);
-					return;
+					found_property = true;
 				}
 			}
 
 			// Raise the 'ValueError' python exception if the property was not found.
-			PyErr_SetString(PyExc_ValueError, "Property instance not found");
-			bp::throw_error_already_set();
+			if (!found_property)
+			{
+				PyErr_SetString(PyExc_ValueError, "Property instance not found");
+				bp::throw_error_already_set();
+			}
+
+			return;
 		}
 
 		// See if a single predicate callable.
@@ -1903,38 +1912,47 @@ namespace GPlatesApi
 		// Process properties first to avoid unnecessarily throwing ValueError exception.
 		//
 
-		// Remove duplicate property pointers.
-		properties_seq.erase(
-				std::unique(properties_seq.begin(), properties_seq.end()),
-				properties_seq.end());
-
+		// NOTE: We don't remove duplicate property pointers with 'std::unique', which only removes
+		// *adjacent* duplicates (and the list isn't sorted).
+		// Each property instance in the list just needs to be found at least once.
 		if (!properties_seq.empty())
 		{
-			// Search for the properties.
+			// First check that every property instance is in this feature, before removing anything,
+			// so that a 'ValueError' leaves this feature unchanged.
+			std::vector<bool> properties_found(properties_seq.size(), false);
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
 			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
 			for ( ; properties_iter != properties_end; ++properties_iter)
 			{
-				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
 				// Compare pointers not pointed-to-objects.
-				properties_seq_type::iterator properties_seq_iter =
-						std::find(properties_seq.begin(), properties_seq.end(), feature_property);
-				if (properties_seq_iter != properties_seq.end())
+				for (unsigned int n = 0; n < properties_seq.size(); ++n)
 				{
-					// Remove the property from the feature.
-					// Note that removing a property does not prevent us from incrementing to the next property.
-					feature_handle.remove(properties_iter);
-					// Record that we have removed this property.
-					properties_seq.erase(properties_seq_iter);
+					if (properties_seq[n] == *properties_iter)
+					{
+						properties_found[n] = true;
+					}
 				}
 			}
 
 			// Raise the 'ValueError' python exception if not all properties were found.
-			if (!properties_seq.empty())
+			if (std::find(properties_found.begin(), properties_found.end(), false) != properties_found.end())
 			{
 				PyErr_SetString(PyExc_ValueError, "Not all property instances were found");
 				bp::throw_error_already_set();
+			}
+
+			// Then remove every copy of each
+			// (a property added more than once is in the feature more than once).
+			properties_iter = feature_handle.begin();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				// Compare pointers not pointed-to-objects.
+				if (std::find(properties_seq.begin(), properties_seq.end(), *properties_iter) !=
+					properties_seq.end())
+				{
+					// Note that removing a property does not prevent us from incrementing to the next property.
+					feature_handle.remove(properties_iter);
+				}
 			}
 		}
 
@@ -1942,10 +1960,9 @@ namespace GPlatesApi
 		// Process property names next.
 		//
 
-		// Remove duplicate property names.
-		property_names_seq.erase(
-				std::unique(property_names_seq.begin(), property_names_seq.end()),
-				property_names_seq.end());
+		// NOTE: Entries are never erased from this list when they match (unlike the instances above),
+		// since one property name can match many properties. So a future "not found" check
+		// would need a per-entry flag (like the instances above).
 
 		if (!property_names_seq.empty())
 		{
@@ -5106,7 +5123,8 @@ export_feature()
 				"in this feature is ignored. However if any specified :class:`Property` is not currently a property "
 				"in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must "
 				"have previously been added (in other words the property *values* are not compared - "
-				"it actually looks for the same property *instance*).\n"
+				"it actually looks for the same property *instance*). If ``ValueError`` is raised then "
+				"no properties are removed.\n"
 				"\n"
 				"  ::\n"
 				"\n"

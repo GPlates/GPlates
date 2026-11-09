@@ -3232,6 +3232,8 @@ class FeatureCollection:
 
         A feature collection is an *unordered* collection of features so there is no concept of where a feature is inserted in the sequence of features.
 
+        This does not check for duplicates: a feature added twice is in this collection twice (and is written twice to a file). :meth:`remove` removes every copy.
+
         ::
 
           feature_collection.add(feature)
@@ -3321,7 +3323,7 @@ class FeatureCollection:
         :type feature_query: FeatureType, or FeatureId, or Feature, or callable (accepting single Feature argument), or a sequence (eg, list or tuple) of any combination of them
         :raises ValueError: if any specified :class:`Feature` is not currently a feature in this collection
 
-        All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable (if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` or predicate callable that does not match a feature in this collection is ignored. However if any specified :class:`Feature` is not currently a feature in this collection then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* must have previously been added (in other words the feature *values* are not compared - it actually looks for the same feature *instance*).
+        All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable (if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` or predicate callable that does not match a feature in this collection is ignored. However if any specified :class:`Feature` is not currently a feature in this collection then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* must have previously been added (in other words the feature *values* are not compared - it actually looks for the same feature *instance*). If ``ValueError`` is raised then no features are removed. A :class:`Feature` added to this collection more than once (see :meth:`add`) has every copy removed.
 
         ::
 
