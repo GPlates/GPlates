@@ -221,6 +221,7 @@ export_qualified_xml_name(
 	// Static-member from-QString conversion function.
 	qualified_xml_name_class.def("create_from_qualified_string",
 			&GPlatesModel::convert_qstring_to_qualified_xml_name<qualified_xml_name_type>,
+			(bp::arg("name")),
 			from_qualified_string_docstring_stream.str().c_str());
 	qualified_xml_name_class.staticmethod("create_from_qualified_string");
 
@@ -251,6 +252,7 @@ export_enumeration_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	enumeration_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::EnumerationType>,
+			(bp::arg("name")),
 			"create_gpml(name)\n"
 			"  Create an enumeration type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
@@ -462,6 +464,7 @@ export_feature_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	feature_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::FeatureType>,
+			(bp::arg("name")),
 			"create_gpml(name)\n"
 			"  Create a feature type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
@@ -716,6 +719,7 @@ export_property_name()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	property_name_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::PropertyName>,
+			(bp::arg("name")),
 				"create_gpml(name)\n"
 				"  Create a property name qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
@@ -729,6 +733,7 @@ export_property_name()
 	property_name_class.staticmethod("create_gpml");
 	property_name_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesModel::PropertyName>,
+			(bp::arg("name")),
 				"create_gml(name)\n"
 				"  Create a property name qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
@@ -742,6 +747,7 @@ export_property_name()
 	property_name_class.staticmethod("create_gml");
 	property_name_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesModel::PropertyName>,
+			(bp::arg("name")),
 				"create_xsi(name)\n"
 				"  Create a property name qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
@@ -815,6 +821,7 @@ export_scalar_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	scalar_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::ValueObjectType>,
+			(bp::arg("name")),
 				"create_gpml(name)\n"
 				"  Create a scalar type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
@@ -828,6 +835,7 @@ export_scalar_type()
 	scalar_type_class.staticmethod("create_gpml");
 	scalar_type_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::ValueObjectType>,
+			(bp::arg("name")),
 				"create_gml(name)\n"
 				"  Create a scalar type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
@@ -837,6 +845,7 @@ export_scalar_type()
 	scalar_type_class.staticmethod("create_gml");
 	scalar_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::ValueObjectType>,
+			(bp::arg("name")),
 				"create_xsi(name)\n"
 				"  Create a scalar type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
@@ -1050,6 +1059,7 @@ export_structural_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	structural_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::StructuralType>,
+			(bp::arg("name")),
 				"create_gpml(name)\n"
 				"  Create a structural type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
@@ -1063,6 +1073,7 @@ export_structural_type()
 	structural_type_class.staticmethod("create_gpml");
 	structural_type_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::StructuralType>,
+			(bp::arg("name")),
 				"create_gml(name)\n"
 				"  Create a structural type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
@@ -1076,6 +1087,7 @@ export_structural_type()
 	structural_type_class.staticmethod("create_gml");
 	structural_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::StructuralType>,
+			(bp::arg("name")),
 				"create_xsi(name)\n"
 				"  Create a structural type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"

@@ -411,6 +411,7 @@ export_great_circle_arc()
 				"then *IndeterminateArcRotationAxisError* is raised.\n")
 		.def("get_arc_point",
 				&GPlatesApi::great_circle_arc_get_arc_point,
+				(bp::arg("normalised_distance_from_start_point")),
 				"get_arc_point(normalised_distance_from_start_point)\n"
 				"  Return a point on this arc.\n"
 				"\n"
@@ -434,6 +435,7 @@ export_great_circle_arc()
 				"then *ValueError* is raised.\n")
 		.def("get_arc_direction",
 				&GPlatesApi::great_circle_arc_get_arc_direction,
+				(bp::arg("normalised_distance_from_start_point")),
 				"get_arc_direction(normalised_distance_from_start_point)\n"
 				"  Return the direction along the arc at a point on the arc.\n"
 				"\n"

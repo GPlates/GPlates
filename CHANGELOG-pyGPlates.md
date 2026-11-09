@@ -153,6 +153,8 @@ Changes since 1.0.0:
   * `to_tessellated()` on `PolylineOnSphere`, `PolygonOnSphere` and `GreatCircleArc` raises `ValueError` for a NaN threshold (previously accepted), and for a threshold less than about 1.5e-9 radians, where the number of points no longer fits a 32-bit integer (previously undefined behaviour). `DateLineWrapper.wrap()` treats a NaN `tessellate_degrees` as no tessellation, like zero or a negative value, and raises a tiny positive one to the minimum at which the number of points fits a 32-bit integer (previously undefined behaviour).
   * Fixed `FiniteRotation.get_rotation_distance()` returning a negative distance for a rotation with a negative angle (including some returned by `get_inverse()`, `interpolate()` and `*`).
   * Fixed `FiniteRotation.are_equal()` with a threshold comparing pole longitudes without wrapping, so poles either side of the dateline (eg, longitudes 180 and -180) were unequal.
+  * Documented argument names now work as keyword arguments (previously raised `ArgumentError`): `GreatCircleArc.get_arc_point()` and `get_arc_direction()`, `FiniteRotation.create_great_circle_point_rotation()`, `create_small_circle_point_rotation()` and `create_segment_rotation()`, the `visit_...()` methods of `PropertyValueVisitor`, and the `create_gpml()`, `create_gml()`, `create_xsi()` and `create_from_qualified_string()` methods of `PropertyName`, `FeatureType`, `EnumerationType`, `ScalarType` and `StructuralType`.
+  * `PropertyValueVisitor.visit_gpml_finite_rotation()` names its argument `gpml_finite_rotation` (previously documented as `ppml_finite_rotation`).
 
 pyGPlates 1.0.0
 ===============

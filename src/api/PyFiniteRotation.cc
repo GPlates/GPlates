@@ -576,6 +576,7 @@ export_finite_rotation()
 		.staticmethod("create_identity_rotation")
 		.def("create_great_circle_point_rotation",
 				&GPlatesApi::finite_rotation_create_great_circle_point_rotation,
+				(bp::arg("from_point"), bp::arg("to_point")),
 				"create_great_circle_point_rotation(from_point, to_point)\n"
 				"  Create a finite rotation that rotates one point to another along the "
 				"great circle arc connecting them.\n"
@@ -602,6 +603,7 @@ export_finite_rotation()
 		.staticmethod("create_great_circle_point_rotation")
 		.def("create_small_circle_point_rotation",
 				&GPlatesApi::finite_rotation_create_small_circle_point_rotation,
+				(bp::arg("rotation_pole"), bp::arg("from_point"), bp::arg("to_point")),
 				"create_small_circle_point_rotation(rotation_pole, from_point, to_point)\n"
 				"  Create a finite rotation, using the specified rotation pole, that rotates "
 				"*from_point* to *to_point*.\n"
@@ -633,6 +635,8 @@ export_finite_rotation()
 		.staticmethod("create_small_circle_point_rotation")
 		.def("create_segment_rotation",
 				&GPlatesApi::finite_rotation_create_segment_rotation,
+				(bp::arg("from_segment_start"), bp::arg("from_segment_end"),
+						bp::arg("to_segment_start"), bp::arg("to_segment_end")),
 				"create_segment_rotation(from_segment_start, from_segment_end, to_segment_start, to_segment_end)\n"
 				"  Create a finite rotation that rotates the *from* line segment to the *to* line segment.\n"
 				"\n"

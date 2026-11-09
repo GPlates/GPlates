@@ -12611,11 +12611,11 @@ class PropertyValueVisitor:
         :type gpml_constant_value: GpmlConstantValue
         """
 
-    def visit_gpml_finite_rotation(self, ppml_finite_rotation: GpmlFiniteRotation) -> None:
+    def visit_gpml_finite_rotation(self, gpml_finite_rotation: GpmlFiniteRotation) -> None:
         """Visits a :class:`GpmlFiniteRotation` property value.
 
-        :param ppml_finite_rotation: the property value being visited
-        :type ppml_finite_rotation: GpmlFiniteRotation
+        :param gpml_finite_rotation: the property value being visited
+        :type gpml_finite_rotation: GpmlFiniteRotation
         """
 
     def visit_gpml_irregular_sampling(self, gpml_irregular_sampling: GpmlIrregularSampling) -> None:

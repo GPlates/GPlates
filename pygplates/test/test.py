@@ -186,6 +186,48 @@ class VersionCase(unittest.TestCase):
             self.assertTrue(version == pickle.loads(pickle.dumps(version)))
 
 
+class KeywordArgumentCase(unittest.TestCase):
+    """
+    Documented argument names work as keyword arguments (they once raised 'ArgumentError').
+    """
+
+    def test_geometry(self):
+        arc = pygplates.GreatCircleArc((0, 0), (0, 10))
+        self.assertEqual(arc.get_arc_point(normalised_distance_from_start_point=0.5), arc.get_arc_point(0.5))
+        self.assertEqual(arc.get_arc_direction(normalised_distance_from_start_point=0.5), arc.get_arc_direction(0.5))
+        self.assertEqual(
+                pygplates.FiniteRotation.create_great_circle_point_rotation(from_point=(0, 0), to_point=(0, 10)),
+                pygplates.FiniteRotation.create_great_circle_point_rotation((0, 0), (0, 10)))
+        self.assertEqual(
+                pygplates.FiniteRotation.create_small_circle_point_rotation(rotation_pole=(90, 0), from_point=(0, 0), to_point=(0, 10)),
+                pygplates.FiniteRotation.create_small_circle_point_rotation((90, 0), (0, 0), (0, 10)))
+        self.assertEqual(
+                pygplates.FiniteRotation.create_segment_rotation(
+                        from_segment_start=(0, 0), from_segment_end=(0, 10), to_segment_start=(10, 0), to_segment_end=(10, 10)),
+                pygplates.FiniteRotation.create_segment_rotation((0, 0), (0, 10), (10, 0), (10, 10)))
+
+    def test_qualified_names(self):
+        self.assertEqual(pygplates.PropertyName.create_gpml(name='x'), pygplates.PropertyName.create_gpml('x'))
+        self.assertEqual(pygplates.PropertyName.create_gml(name='x'), pygplates.PropertyName.create_gml('x'))
+        self.assertEqual(pygplates.FeatureType.create_gpml(name='Isochron'), pygplates.FeatureType.gpml_isochron)
+        self.assertEqual(pygplates.ScalarType.create_xsi(name='double'), pygplates.ScalarType.create_xsi('double'))
+        self.assertEqual(pygplates.PropertyName.create_from_qualified_string(name='gml:name'), pygplates.PropertyName.gml_name)
+
+    def test_property_value_visitor(self):
+        class Visitor(pygplates.PropertyValueVisitor):
+            def __init__(self):
+                super(Visitor, self).__init__()
+                self.visited = []
+            def visit_xs_double(self, xs_double):
+                self.visited.append(xs_double)
+        visitor = Visitor()
+        # The overridden method and the default implementation both accept the keyword.
+        visitor.visit_xs_double(xs_double=pygplates.XsDouble(1))
+        visitor.visit_gpml_finite_rotation(gpml_finite_rotation=pygplates.GpmlFiniteRotation(pygplates.FiniteRotation()))
+        pygplates.PropertyValueVisitor().visit_xs_double(xs_double=pygplates.XsDouble(1))
+        self.assertEqual(len(visitor.visited), 1)
+
+
 class PickleCase(unittest.TestCase):
     def test_pickle_bytes(self):
         # Only a 'bytes' object is accepted (previously a 'str' left an error pending, raising 'SystemError').
@@ -290,6 +332,7 @@ def suite():
     test_cases = [
             HashableCase,
             IterableArgumentCase,
+            KeywordArgumentCase,
             PackageCase,
             PickleCase,
             VersionCase
