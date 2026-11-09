@@ -4518,6 +4518,17 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         # There is only one resolved topological line, but it has multiple shared sub-segments.
         topological_sections = set(shared_sub_segment.get_topological_section() for shared_sub_segment in plate_boundary_stats_filtered.keys())
         self.assertTrue(len(topological_sections) == 1)
+        # The filter's result is tested for truth, so it need not be a 'bool'.
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 include_network_boundaries=True,
+                                                                                 boundary_section_filter=lambda rts: 'yes',
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 26)
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 include_network_boundaries=True,
+                                                                                 boundary_section_filter=lambda rts: [],
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 0)
     
     def test_pickle(self):
         snapshot = pygplates.TopologicalSnapshot(

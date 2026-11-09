@@ -327,7 +327,7 @@ namespace GPlatesApi
 				for (const auto &resolved_topological_section : resolved_topological_sections)
 				{
 					// Pass the resolved topological section to the callable predicate.
-					if (bp::extract<bool>(boundary_section_filter_object(resolved_topological_section)))
+					if (PythonExtractUtils::is_true(boundary_section_filter_object(resolved_topological_section)))
 					{
 						filtered_resolved_topological_sections.push_back(resolved_topological_section);
 					}

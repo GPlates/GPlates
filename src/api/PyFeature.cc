@@ -1835,7 +1835,7 @@ namespace GPlatesApi
 
 				// See if current property matches the query.
 				// Property query is a callable predicate...
-				if (bp::extract<bool>(property_query_object(feature_property)))
+				if (PythonExtractUtils::is_true(property_query_object(feature_property)))
 				{
 					// Note that removing a property does not prevent us from incrementing to the next property.
 					feature_handle.remove(properties_iter);
@@ -1991,7 +1991,7 @@ namespace GPlatesApi
 
 					// See if current property matches the query.
 					// Property query is a callable predicate...
-					if (bp::extract<bool>(predicate(feature_property)))
+					if (PythonExtractUtils::is_true(predicate(feature_property)))
 					{
 						// Note that removing a property does not prevent us from incrementing to the next property.
 						feature_handle.remove(properties_iter);
@@ -2201,7 +2201,7 @@ namespace GPlatesApi
 			// Property query is a callable predicate.
 			property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 			{
-				return static_cast<bool>(bp::extract<bool>(property_query_object(feature_property)));
+				return PythonExtractUtils::is_true(property_query_object(feature_property));
 			};
 		}
 		else  // 'property_query_object' is None ...
@@ -2618,7 +2618,7 @@ namespace GPlatesApi
 			{
 				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 				{
-					return static_cast<bool>(bp::extract<bool>(property_query_object(feature_property)));
+					return PythonExtractUtils::is_true(property_query_object(feature_property));
 				};
 			}
 
@@ -2962,7 +2962,7 @@ namespace GPlatesApi
 			{
 				property_query = [=](GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property)
 				{
-					return static_cast<bool>(bp::extract<bool>(property_query_object(feature_property)));
+					return PythonExtractUtils::is_true(property_query_object(feature_property));
 				};
 			}
 

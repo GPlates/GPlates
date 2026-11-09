@@ -75,6 +75,20 @@ namespace GPlatesApi
 
 
 		/**
+		 * Returns the truth value of @a object, as Python's 'bool(object)' does.
+		 *
+		 * Use this for the result of a user's callable (eg, a predicate), which can return anything
+		 * (such as a 'str', 'list' or 'numpy.bool_'), rather than 'boost::python::extract<bool>',
+		 * which accepts only a 'bool' or 'int'.
+		 *
+		 * Raises the Python exception that '__bool__' (or '__len__') raised, if any.
+		 */
+		bool
+		is_true(
+				const boost::python::object &object);
+
+
+		/**
 		 * What @a check_sequence does when given an iterator (which cannot be iterated over twice).
 		 */
 		enum IfIterator

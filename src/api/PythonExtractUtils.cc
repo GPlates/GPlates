@@ -97,6 +97,20 @@ GPlatesApi::PythonExtractUtils::Implementation::raise_type_error_if_iterator(
 }
 
 
+bool
+GPlatesApi::PythonExtractUtils::is_true(
+		const bp::object &object)
+{
+	const int is_true_result = PyObject_IsTrue(object.ptr());
+	if (is_true_result < 0)
+	{
+		bp::throw_error_already_set();
+	}
+
+	return is_true_result != 0;
+}
+
+
 bp::handle<>
 GPlatesApi::PythonExtractUtils::Implementation::get_next_item(
 		const bp::handle<> &iterator)

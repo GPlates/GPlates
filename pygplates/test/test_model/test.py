@@ -3,6 +3,7 @@ Unit tests for the pygplates model API.
 """
 
 import math
+import numpy
 import os
 import sys
 import pickle
@@ -635,6 +636,18 @@ class FeatureCase(unittest.TestCase):
                 lambda property: property.get_name() == pygplates.PropertyName.create_gml('validTime'),
                 pygplates.PropertyName.create_gpml('reconstructionPlateId')])
         self.assertTrue(len(self.feature) == self.property_count - 3)
+
+    def test_predicate_truth_value(self):
+        # A predicate's result is tested for truth, so it need not be a 'bool'.
+        self.assertEqual(len(self.feature.get(lambda property: 'yes', pygplates.PropertyReturn.all)), len(self.feature))
+        self.assertFalse(self.feature.get(lambda property: [], pygplates.PropertyReturn.all))
+        self.assertTrue(self.feature.get_value(lambda property: numpy.bool_(property.get_name() == pygplates.PropertyName.gpml_reconstruction_plate_id)))
+        self.assertTrue(self.feature.get_geometry(lambda property: 'yes'))
+        self.assertTrue(self.feature.get_geometries(lambda property: [1]))
+        self.feature.remove(lambda property: [])
+        self.assertEqual(len(self.feature), self.property_count)
+        self.feature.remove(lambda property: numpy.bool_(True))
+        self.assertEqual(len(self.feature), 0)
 
     def test_set(self):
         # Should not be able to set two 'gpml:reconstructionPlateId' properties.
@@ -1324,6 +1337,22 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertFalse(self.feature_collection.get(
                 lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron'),
                 pygplates.FeatureReturn.all))
+        # A predicate's result is tested for truth, so it need not be a 'bool'.
+        num_features = len(self.feature_collection)
+        self.assertEqual(len(self.feature_collection.get(lambda feature: 'yes', pygplates.FeatureReturn.all)), num_features)
+        self.assertFalse(self.feature_collection.get(lambda feature: [], pygplates.FeatureReturn.all))
+        self.assertEqual(len(self.feature_collection.get(lambda feature: numpy.bool_(True), pygplates.FeatureReturn.all)), num_features)
+        # An exception raised by the truth test propagates.
+        class NoTruth(object):
+            def __bool__(self):
+                raise ValueError('no truth value')
+        self.assertRaises(ValueError, self.feature_collection.get, lambda feature: NoTruth())
+        # The same for 'remove()'.
+        feature_collection = self.feature_collection.clone()
+        feature_collection.remove(lambda feature: [])
+        self.assertEqual(len(feature_collection), num_features)
+        feature_collection.remove(lambda feature: numpy.bool_(True))
+        self.assertEqual(len(feature_collection), 0)
     
     def test_pickle(self):
         pickled_feature_collection = pickle.loads(pickle.dumps(self.feature_collection))

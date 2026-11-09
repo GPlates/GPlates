@@ -385,7 +385,7 @@ namespace GPlatesApi
 
 				// See if current feature matches the query.
 				// Feature query is a callable predicate...
-				if (bp::extract<bool>(feature_query_object(collection_feature)))
+				if (PythonExtractUtils::is_true(feature_query_object(collection_feature)))
 				{
 					// Note that removing a feature does not prevent us from incrementing to the next feature.
 					feature_collection_handle.remove(features_iter);
@@ -584,7 +584,7 @@ namespace GPlatesApi
 
 					// See if current feature matches the query.
 					// Feature query is a callable predicate...
-					if (bp::extract<bool>(predicate(collection_feature)))
+					if (PythonExtractUtils::is_true(predicate(collection_feature)))
 					{
 						// Note that removing a feature does not prevent us from incrementing to the next feature.
 						feature_collection_handle.remove(features_iter);
@@ -644,7 +644,7 @@ namespace GPlatesApi
 				else
 				{
 					// Property query is a callable predicate...
-					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+					feature_query_result = PythonExtractUtils::is_true(feature_query_object(collection_feature));
 				}
 
 				if (feature_query_result)
@@ -687,7 +687,7 @@ namespace GPlatesApi
 				else
 				{
 					// Property query is a callable predicate...
-					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+					feature_query_result = PythonExtractUtils::is_true(feature_query_object(collection_feature));
 				}
 
 				if (feature_query_result)
@@ -725,7 +725,7 @@ namespace GPlatesApi
 				else
 				{
 					// Property query is a callable predicate...
-					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+					feature_query_result = PythonExtractUtils::is_true(feature_query_object(collection_feature));
 				}
 
 				if (feature_query_result)

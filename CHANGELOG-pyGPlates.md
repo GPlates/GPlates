@@ -120,6 +120,7 @@ Changes since 1.0.0:
   * Fixed the pip wheels loading the GDAL plugins named by a `GDAL_DRIVER_PATH` environment variable (eg, set by an active conda environment with GDAL, or by OSGeo4W or QGIS). Those plugins are built for another GDAL, and reading a file could crash (eg, a Shapefile after `import pygmt`).
   * Functions that take an iterable (eg, `PolylineOnSphere(points)`) no longer replace an exception raised while iterating it (eg, a `ValueError` raised by a generator, or `KeyboardInterrupt`) with their own `TypeError`: it now propagates unchanged. Likewise, an exception raised while iterating a sequence (eg, the features given to `FeatureCollection()`) now propagates, instead of being left pending (which surfaced as `SystemError`, possibly in unrelated later code).
   * `FeaturesFunctionArgument.contains_features()` returns `False` for an iterator, including one nested in a sequence (previously raised `TypeError`).
+  * A predicate passed to `Feature.get()`, `Feature.get_value()`, `Feature.get_geometry()` (and the other query methods of `Feature` and `FeatureCollection`), `Feature.remove()`, `FeatureCollection.remove()`, or as the `boundary_section_filter` of `TopologicalSnapshot.calculate_plate_boundary_statistics()`, can return any value, which is tested for truth as by `if` (previously only a `bool` or `int` worked: a `str`, `list` or `numpy.bool_` raised `TypeError`).
 
 pyGPlates 1.0.0
 ===============
