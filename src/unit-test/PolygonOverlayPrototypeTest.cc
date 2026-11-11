@@ -414,8 +414,12 @@ namespace
 	//! Cases whose prototype rings depend on the tie order, whose rings are not compared.
 	unsigned int num_tie_dependent_ring_sets = 0;
 
-	//! Cases whose input rings cross, not checked as polygons (PolygonOverlayOracle::rings_cross).
+	//! Cases whose input rings cross (PolygonOverlayOracle::rings_cross): checked as polygons,
+	//! but not for orientation.
 	unsigned int num_crossing_inputs = 0;
+
+	//! Of those, the cases whose output read as polygons is wrong (polygons overlapping, say).
+	unsigned int num_crossing_polygon_failures = 0;
 
 
 	std::string
@@ -1095,6 +1099,7 @@ namespace
 					++num_crossing_inputs;
 				}
 				std::stringstream oracle_report;
+				bool crossing_polygon_failure = false;
 				for (Overlay::Operation operation : {
 						Overlay::INTERSECTION, Overlay::DIFFERENCE, Overlay::REVERSE_DIFFERENCE,
 						Overlay::UNION, Overlay::SYMMETRIC_DIFFERENCE })
@@ -1134,9 +1139,12 @@ namespace
 					}
 
 					// Grouped into polygons, with the output on the left of every ring. (Where
-					// input rings cross, only that no hemisphere failure is found: the output rings
-					// cross where the input's do, and their grouping into polygons means nothing.)
+					// input rings cross, the output rings cross where the input's do, and have no
+					// orientation with the output on their left all round: the grouping only,
+					// whose rings that cross must share a polygon, or the polygons overlap.)
 					std::vector<Overlay::OutputPolygon> polygons;
+					const unsigned int crossing_ring_groups_before =
+							overlay.get_diagnostics().crossing_ring_groups;
 					try
 					{
 						overlay.extract(operation, polygons);
@@ -1146,20 +1154,37 @@ namespace
 						oracle_report << "operation " << operation << ": over a hemisphere; ";
 						continue;
 					}
-					if (input_rings_cross)
+					// Output rings cross only where an input's rings cross, but for the symmetric
+					// difference's, which can cross at a vertex whose four kept ends pair crosswise
+					// (section 5.2; PR C): otherwise a touch was taken for a crossing.
+					const unsigned int crossing_ring_groups =
+							overlay.get_diagnostics().crossing_ring_groups -
+								crossing_ring_groups_before;
+					if (!input_rings_cross && crossing_ring_groups != 0 &&
+						operation != Overlay::SYMMETRIC_DIFFERENCE)
 					{
-						continue;
+						oracle_report << "operation " << operation << ": " << crossing_ring_groups
+								<< " crossing ring groups from inputs whose rings do not cross; ";
 					}
 					const unsigned int polygon_failures = PolygonOverlayOracle::count_failures(
 							*P, *Q, operation, polygons, samples);
-					const unsigned int misoriented =
-							PolygonOverlayOracle::count_misoriented_rings(polygons);
+					const unsigned int misoriented = input_rings_cross
+							? 0
+							: PolygonOverlayOracle::count_misoriented_rings(polygons);
+					if (input_rings_cross && polygon_failures != 0)
+					{
+						crossing_polygon_failure = true;
+					}
 					if (polygon_failures != 0 || misoriented != 0)
 					{
 						oracle_report << "operation " << operation << ": " << polygon_failures
 								<< " samples wrong as polygons, " << misoriented
 								<< " rings misoriented; ";
 					}
+				}
+				if (crossing_polygon_failure)
+				{
+					++num_crossing_polygon_failures;
 				}
 				if (PolygonOverlayOracle::is_area_sum_applicable(*P, *Q))
 				{
@@ -1312,6 +1337,8 @@ namespace
 					oracle_report << diagnostics.pairing_failures << " pairing failures, "
 							<< diagnostics.keep_mismatches << " keep mismatches; ";
 				}
+				// (Where input rings cross, a grouping failure is a crossing thinner than the
+				// margin, which the oracle checks as polygons above.)
 				if (diagnostics.hemisphere_check_failures != 0 ||
 					diagnostics.hemisphere_check_skipped != 0 ||
 					(!input_rings_cross &&
@@ -1412,6 +1439,7 @@ namespace
 		unsigned int num_oracle_failures = 0;
 		num_ambiguous_ring_sets = 0;
 		num_crossing_inputs = 0;
+		num_crossing_polygon_failures = 0;
 		num_tie_dependent_ring_sets = 0;
 		for (PrototypeCase &prototype_case : cases)
 		{
@@ -1455,8 +1483,8 @@ namespace
 				<< " ring sets not compared, touching at two vertices; "
 				<< num_tie_dependent_ring_sets
 				<< " cases whose prototype rings depend on the tie order; "
-				<< num_crossing_inputs
-				<< " with crossing input rings not checked as polygons); "
+				<< num_crossing_inputs << " with crossing input rings, "
+				<< num_crossing_polygon_failures << " of them wrong as polygons); "
 				<< num_band_differences << " band pieces have the other class; "
 				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
 	}

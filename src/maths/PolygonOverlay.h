@@ -169,7 +169,7 @@ namespace GPlatesMaths
 
 		/**
 		 * Whether a ring (its points) lies inside another ring (a polygon of that ring alone),
-		 * for the grouping of section 5.2.
+		 * for the grouping of section 5.2. Asked only of rings that do not cross (do_rings_cross).
 		 *
 		 * The rings do not cross but within an overlay vertex: a vertex's output position can
 		 * be up to its record cluster's width off its records, so two output rings can cross
@@ -186,6 +186,27 @@ namespace GPlatesMaths
 		boost::optional<bool>
 		is_ring_inside_ring(
 				const std::vector<PointOnSphere> &ring_points,
+				const PolygonOnSphere &other_ring,
+				const AngularExtent &margin);
+
+
+		/**
+		 * Whether two rings (each the exterior ring of a polygon of that ring alone) cross, for the
+		 * grouping of section 5.2: two output rings cross where an input's rings cross each other
+		 * (or a ring crosses itself), at points the overlay never computes, since it intersects
+		 * each input only with the other. Either ring must have a vertex inside the other and a
+		 * vertex outside it, each farther than @a margin from its outline (where the rings swap
+		 * sides along a stretch within the margin of each other, a dense shared edge, say); or an
+		 * edge of each must cross an edge of the other, the ends of both edges farther than the
+		 * margin from the other's great circle (two rings crossing like a plus sign, no vertex of
+		 * either inside the other; by the rings' bounding trees). So the rings' touches at an
+		 * overlay vertex (whose output positions can cross by up to its record cluster's width,
+		 * is_ring_inside_ring) and their stretches within the thickness of each other are not taken
+		 * for crossings, and an overlap thinner than the margin is missed.
+		 */
+		bool
+		do_rings_cross(
+				const PolygonOnSphere &ring,
 				const PolygonOnSphere &other_ring,
 				const AngularExtent &margin);
 
@@ -565,7 +586,8 @@ namespace GPlatesMaths
 
 			// Grouping and the hemisphere check, accumulated over every extract.
 			unsigned int coincident_rings = 0;        // ring pairs with no vertex off the other
-			unsigned int grouping_failures = 0;       // a hole whose parent is not an exterior
+			unsigned int crossing_ring_groups = 0;    // crossing rings put in one polygon
+			unsigned int grouping_failures = 0;       // a hole group not nested in its parent
 			unsigned int hemisphere_check_failures = 0;  // the output read as its complement
 			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
 			unsigned int whole_check_skipped = 0;        // a whole answer, none inside the subject
@@ -950,7 +972,11 @@ namespace GPlatesMaths
 			 * @a extract_rings grouped by containment with parity depth (an even depth is an
 			 * exterior, an odd depth a hole of the ring containing it, and an island in a hole an
 			 * exterior of its own), each oriented with the output on its left, and slivers dropped
-			 * if Options::sliver_min_width is set. Appended to @a polygons.
+			 * if Options::sliver_min_width is set. Rings that cross each other (where an input's
+			 * rings cross, do_rings_cross; also the symmetric difference's, at a vertex whose four
+			 * kept ends pair crosswise) go into one polygon, read by parity, so that no two
+			 * polygons overlap (Diagnostics::crossing_ring_groups); their orientation is arbitrary
+			 * (no orientation has the output on the left all round). Appended to @a polygons.
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if the rings would be
 			 * read as the output's complement (section 5.2): a union or a symmetric difference
@@ -958,9 +984,10 @@ namespace GPlatesMaths
 			 * only cause for the intersection and the differences, each of whose rings' inside lies
 			 * within one input ring's smaller side). Unless Options::throw_if_inconsistent is
 			 * false: then counted (Diagnostics::hemisphere_check_failures) and the rings returned
-			 * as read, which a caller must not take for the output. Counted only: a hole with no
-			 * exterior containing it, kept as an exterior (Diagnostics::grouping_failures; the
-			 * output of an input whose rings cross), and coincident rings
+			 * as read, which a caller must not take for the output. Counted only: a hole not
+			 * nested in its parent's polygon, kept as a polygon of its own
+			 * (Diagnostics::grouping_failures; rings crossing within the margin of an edge's end,
+			 * which do_rings_cross misses), and coincident rings
 			 * (Diagnostics::coincident_rings, rings of no area that clean-up missed). Also throws
 			 * as @a extract_rings does.
 			 */

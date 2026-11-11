@@ -41,6 +41,7 @@
 #include "LatLonPoint.h"
 #include "MathsUtils.h"
 #include "PointInPolygon.h"
+#include "PolyGreatCircleArcBoundingTree.h"
 #include "PolygonOrientation.h"
 #include "SmallCircleBounds.h"
 #include "UnitVector3D.h"
@@ -185,6 +186,130 @@ namespace GPlatesMaths
 			 * margin.
 			 */
 			const double HEMISPHERE_CHECK_MARGIN = 10.0;
+
+
+			/**
+			 * Whether two arcs cross (do_rings_cross): each arc's ends lie on opposite sides of
+			 * the other's great circle, every end farther from it than @a threshold (a sine), and
+			 * the arcs meet at the same one of their great circles' two crossings.
+			 */
+			bool
+			do_arcs_cross(
+					const GreatCircleArc &a,
+					const GreatCircleArc &b,
+					double threshold)
+			{
+				const Vector3D a_start(a.start_point().position_vector());
+				const Vector3D a_end(a.end_point().position_vector());
+				const Vector3D b_start(b.start_point().position_vector());
+				const Vector3D b_end(b.end_point().position_vector());
+
+				// Each arc's own plane, normalised in doubles (GreatCircleArc has no rotation axis
+				// for an arc under about 1e-6 radians, and a cut makes such arcs).
+				const Vector3D a_normal = cross(a_start, a_end);
+				const Vector3D b_normal = cross(b_start, b_end);
+				const double a_length = std::sqrt(a_normal.magSqrd().dval());
+				const double b_length = std::sqrt(b_normal.magSqrd().dval());
+				if (a_length == 0 || b_length == 0)
+				{
+					return false;
+				}
+				const auto straddles = [threshold](double start_side, double end_side)
+				{
+					return (start_side > threshold && end_side < -threshold) ||
+							(start_side < -threshold && end_side > threshold);
+				};
+				if (!straddles(
+						dot(a_normal, b_start).dval() / a_length,
+						dot(a_normal, b_end).dval() / a_length) ||
+					!straddles(
+						dot(b_normal, a_start).dval() / b_length,
+						dot(b_normal, a_end).dval() / b_length))
+				{
+					return false;
+				}
+
+				// Each arc (under half a circle) meets the other's great circle once, at whichever
+				// of the great circles' two crossings lies within 90 degrees of its midpoint.
+				const Vector3D crossing = cross(a_normal, b_normal);
+				const double a_crossing = dot(crossing, a_start + a_end).dval();
+				const double b_crossing = dot(crossing, b_start + b_end).dval();
+				return (a_crossing > 0 && b_crossing > 0) || (a_crossing < 0 && b_crossing < 0);
+			}
+
+
+			/**
+			 * Whether an arc under @a node crosses an arc under @a other_node (do_rings_cross),
+			 * descending both rings' bounding trees, the larger node first, and skipping every pair
+			 * of nodes whose bounding circles do not meet.
+			 */
+			bool
+			do_ring_nodes_cross(
+					const PolygonOnSphere::ring_bounding_tree_type &tree,
+					const PolygonOnSphere::ring_bounding_tree_type::node_type &node,
+					const PolygonOnSphere::ring_bounding_tree_type &other_tree,
+					const PolygonOnSphere::ring_bounding_tree_type::node_type &other_node,
+					double threshold)
+			{
+				const BoundingSmallCircle &circle = node.get_bounding_small_circle();
+				const BoundingSmallCircle &other_circle = other_node.get_bounding_small_circle();
+				if (!intersect(circle, other_circle))
+				{
+					return false;
+				}
+				if (node.is_leaf_node() && other_node.is_leaf_node())
+				{
+					const auto arcs_begin = node.get_bounded_great_circle_arcs_begin();
+					const auto arcs_end = node.get_bounded_great_circle_arcs_end();
+					const auto other_arcs_begin = other_node.get_bounded_great_circle_arcs_begin();
+					const auto other_arcs_end = other_node.get_bounded_great_circle_arcs_end();
+					for (auto arc = arcs_begin; arc != arcs_end; ++arc)
+					{
+						for (auto other_arc = other_arcs_begin;
+							other_arc != other_arcs_end;
+							++other_arc)
+						{
+							if (do_arcs_cross(*arc, *other_arc, threshold))
+							{
+								return true;
+							}
+						}
+					}
+					return false;
+				}
+				if (other_node.is_leaf_node() ||
+					(node.is_internal_node() &&
+						circle.get_angular_extent().is_precisely_greater_than(
+								other_circle.get_angular_extent())))
+				{
+					for (unsigned int child = 0; child < 2; ++child)
+					{
+						if (do_ring_nodes_cross(
+								tree,
+								tree.get_child_node(node, child),
+								other_tree,
+								other_node,
+								threshold))
+						{
+							return true;
+						}
+					}
+					return false;
+				}
+				for (unsigned int child = 0; child < 2; ++child)
+				{
+					if (do_ring_nodes_cross(
+							tree,
+							node,
+							other_tree,
+							other_tree.get_child_node(other_node, child),
+							threshold))
+					{
+						return true;
+					}
+				}
+				return false;
+			}
 		}
 	}
 }
@@ -235,6 +360,74 @@ GPlatesMaths::PolygonOverlay::is_ring_inside_ring(
 		return boost::none;
 	}
 	return other_ring.is_point_in_polygon(*farthest, PolygonOnSphere::ADAPTIVE, false);
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::do_rings_cross(
+		const PolygonOnSphere &ring,
+		const PolygonOnSphere &other_ring,
+		const AngularExtent &margin)
+{
+	// The rings' own bounding circles first, before any bounding tree is built.
+	if (!intersect(ring.get_bounding_small_circle(), other_ring.get_bounding_small_circle()))
+	{
+		return false;
+	}
+
+	// A vertex farther than the margin inside the other ring and one farther than it outside (where
+	// the rings swap sides along a stretch within the margin of each other: a dense shared edge,
+	// whose every edge end is within the margin of the other ring's edges).
+	const auto has_vertices_on_both_sides = [&margin](
+			const PolygonOnSphere &a,
+			const PolygonOnSphere &b)
+	{
+		bool inside = false;
+		bool outside = false;
+		const auto vertices_end = a.exterior_ring_vertex_end();
+		for (auto vertex = a.exterior_ring_vertex_begin(); vertex != vertices_end; ++vertex)
+		{
+			const AngularDistance distance_to_bounds =
+					minimum_distance(*vertex, b.get_bounding_small_circle());
+			if (distance_to_bounds.is_precisely_greater_than(margin))
+			{
+				outside = true;  // outside its bounding circle by more than the margin
+			}
+			else if (!minimum_distance(*vertex, b, false, margin))
+			{
+				if (b.is_point_in_polygon(*vertex, PolygonOnSphere::ADAPTIVE, false))
+				{
+					inside = true;
+				}
+				else
+				{
+					outside = true;
+				}
+			}
+			if (inside && outside)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	if (has_vertices_on_both_sides(ring, other_ring) ||
+		has_vertices_on_both_sides(other_ring, ring))
+	{
+		return true;
+	}
+
+	// An edge crossing an edge (two rings crossing like a plus sign, no vertex of either inside the
+	// other).
+	const PolygonOnSphere::ring_bounding_tree_type &tree = ring.get_exterior_ring_bounding_tree();
+	const PolygonOnSphere::ring_bounding_tree_type &other_tree =
+			other_ring.get_exterior_ring_bounding_tree();
+	return do_ring_nodes_cross(
+			tree,
+			tree.get_root_node(),
+			other_tree,
+			other_tree.get_root_node(),
+			margin.get_sine().dval());
 }
 
 
@@ -4113,11 +4306,18 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	}
 
 	//
-	// Grouping (section 5.2): by containment with parity depth, as the output is read. A ring's
-	// depth is the number of rings containing it, and its parent the containing ring of greatest
-	// depth. (The rings do not cross but within an overlay vertex, and the number of rings is
-	// small: every pair is tested.) The containment test's margin, as the oracle's: ten
-	// thicknesses, or twice the widest record cluster if wider (is_ring_inside_ring).
+	// Grouping (section 5.2): by containment with parity depth, as the output is read. Rings that
+	// cross (where an input's rings cross each other, do_rings_cross; also the symmetric
+	// difference's, at a vertex whose four kept ends pair crosswise) are first joined into groups,
+	// and all of a group's rings go into one polygon: two polygons are read as their union, so
+	// crossing rings in separate polygons would overlap, while one polygon reads by parity as the
+	// output does. Groups do not cross each other, so a group lies wholly inside or wholly outside
+	// each ring of another (a ring crossing one inside a ring R reaches inside R, so lies inside
+	// it), and the number of rings containing it is the same all over it. That number is its
+	// depth, and its parent the containing group of greatest depth. A ring crossing no other is a
+	// group of its own, as for any input whose rings do not cross. (The number of rings is small:
+	// every pair is tested.) The margin of both tests, as the oracle's: ten thicknesses, or twice
+	// the widest record cluster if wider (is_ring_inside_ring).
 	//
 	double cluster_width = 0.0;
 	for (const Vertex &vertex : d_vertices)
@@ -4135,35 +4335,80 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	}
 	const AngularExtent grouping_margin = AngularExtent::create_from_angle(
 			(std::max)(HEMISPHERE_CHECK_MARGIN * h, 2 * cluster_width));
-	std::vector<std::vector<unsigned int>> containers(num_rings);
+
+	// The groups, numbered in the order of their first rings, which represent them.
+	std::vector<unsigned int> group_root(num_rings);
 	for (unsigned int r = 0; r < num_rings; ++r)
+	{
+		group_root[r] = r;
+	}
+	for (unsigned int r = 0; r < num_rings; ++r)
+	{
+		for (unsigned int other = r + 1; other < num_rings; ++other)
+		{
+			if (find_root(group_root, r) != find_root(group_root, other) &&
+				do_rings_cross(*ring_polygons[r], *ring_polygons[other], grouping_margin))
+			{
+				group_root[find_root(group_root, other)] = find_root(group_root, r);
+			}
+		}
+	}
+	std::vector<unsigned int> group_of(num_rings);
+	std::vector<std::vector<unsigned int>> groups;
+	{
+		std::vector<int> group_of_root(num_rings, -1);
+		for (unsigned int r = 0; r < num_rings; ++r)
+		{
+			const unsigned int root = find_root(group_root, r);
+			if (group_of_root[root] < 0)
+			{
+				group_of_root[root] = groups.size();
+				groups.emplace_back();
+			}
+			group_of[r] = group_of_root[root];
+			groups[group_of[r]].push_back(r);
+		}
+	}
+	const unsigned int num_groups = groups.size();
+	for (const std::vector<unsigned int> &group : groups)
+	{
+		if (group.size() > 1)
+		{
+			++d_diagnostics.crossing_ring_groups;
+		}
+	}
+
+	// The rings containing each group (its first ring), and its parent.
+	std::vector<std::vector<unsigned int>> containers(num_groups);
+	for (unsigned int g = 0; g < num_groups; ++g)
 	{
 		for (unsigned int other = 0; other < num_rings; ++other)
 		{
-			if (other == r)
+			if (group_of[other] == g)
 			{
 				continue;
 			}
-			const boost::optional<bool> inside =
-					is_ring_inside_ring(rings[r].points, *ring_polygons[other], grouping_margin);
+			const boost::optional<bool> inside = is_ring_inside_ring(
+					rings[groups[g].front()].points, *ring_polygons[other], grouping_margin);
 			if (!inside)
 			{
 				++d_diagnostics.coincident_rings;  // a degenerate output clean-up did not catch
 			}
 			else if (*inside)
 			{
-				containers[r].push_back(other);
+				containers[g].push_back(other);
 			}
 		}
 	}
-	std::vector<boost::optional<unsigned int>> parent(num_rings);
-	for (unsigned int r = 0; r < num_rings; ++r)
+	std::vector<boost::optional<unsigned int>> parent(num_groups);
+	for (unsigned int g = 0; g < num_groups; ++g)
 	{
-		for (unsigned int other : containers[r])
+		for (unsigned int other : containers[g])
 		{
-			if (!parent[r] || containers[other].size() > containers[*parent[r]].size())
+			const unsigned int other_group = group_of[other];
+			if (!parent[g] || containers[other_group].size() > containers[*parent[g]].size())
 			{
-				parent[r] = other;
+				parent[g] = other_group;
 			}
 		}
 	}
@@ -4200,15 +4445,16 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 				get_mean_width(rings[r].points, &ring_areas[r]) < *d_options.sliver_min_width;
 	};
 
-	// Even depth is an exterior; odd depth a hole of its parent, which has even depth (an island
+	// Even depth is an exterior group; odd depth a hole group, in its parent's polygon (an island
 	// inside a hole is an exterior of its own, filtered on its own). Decided outermost first: a
-	// ring inside a dropped ring is dropped with it, uncounted, since a dropped exterior's region
+	// group inside a dropped group is dropped with it, uncounted, since a dropped exterior's region
 	// goes to the other output and a dropped hole is filled, with all that lies inside either (an
-	// island of a filled hole, kept, would overlap its polygon).
-	std::vector<unsigned int> outermost_first(num_rings);
-	for (unsigned int r = 0; r < num_rings; ++r)
+	// island of a filled hole, kept, would overlap its polygon). A group of crossing rings is not
+	// filtered itself: its region is no one ring's.
+	std::vector<unsigned int> outermost_first(num_groups);
+	for (unsigned int g = 0; g < num_groups; ++g)
 	{
-		outermost_first[r] = r;
+		outermost_first[g] = g;
 	}
 	std::stable_sort(
 			outermost_first.begin(),
@@ -4217,61 +4463,104 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 			{
 				return containers[a].size() < containers[b].size();
 			});
-	std::vector<bool> dropped(num_rings, false);
-	for (unsigned int r : outermost_first)
+	std::vector<bool> dropped(num_groups, false);
+	for (unsigned int g : outermost_first)
 	{
-		if (parent[r] && dropped[*parent[r]])
+		if (parent[g] && dropped[*parent[g]])
 		{
-			dropped[r] = true;
+			dropped[g] = true;
 		}
-		else if (containers[r].size() % 2 == 0)
+		else if (groups[g].size() > 1)
 		{
-			if (is_sliver(r))
+			continue;
+		}
+		else if (containers[g].size() % 2 == 0)
+		{
+			if (is_sliver(groups[g].front()))
 			{
-				dropped[r] = true;
+				dropped[g] = true;
 				++d_diagnostics.sliver_exteriors_dropped;
-				d_diagnostics.sliver_area_dropped += ring_areas[r];
+				d_diagnostics.sliver_area_dropped += ring_areas[groups[g].front()];
 			}
 		}
-		else if (parent[r] && containers[*parent[r]].size() % 2 == 0 && is_sliver(r))
+		else if (parent[g] && containers[*parent[g]].size() % 2 == 0 &&
+			is_sliver(groups[g].front()))
 		{
-			dropped[r] = true;
+			dropped[g] = true;
 			++d_diagnostics.sliver_holes_dropped;
 		}
 	}
 
-	std::vector<boost::optional<unsigned int>> polygon_of_ring(num_rings);
-	for (unsigned int r = 0; r < num_rings; ++r)
+	// A new polygon of a group's rings: its ring of largest area the exterior (any would read the
+	// same by parity), the others holes.
+	std::vector<boost::optional<unsigned int>> polygon_of_group(num_groups);
+	const auto add_polygon = [&](unsigned int g)
 	{
-		if (containers[r].size() % 2 == 0)
+		unsigned int exterior = groups[g].front();
+		for (unsigned int r : groups[g])
 		{
-			if (dropped[r])
+			if (ring_polygons[r]->get_area().dval() > ring_polygons[exterior]->get_area().dval())
 			{
-				continue;
+				exterior = r;
 			}
-			polygon_of_ring[r] = polygons.size();
-			polygons.push_back(OutputPolygon{ oriented(r, true), std::vector<OutputRing>() });
+		}
+		polygon_of_group[g] = polygons.size();
+		polygons.push_back(OutputPolygon{ oriented(exterior, true), std::vector<OutputRing>() });
+		for (unsigned int r : groups[g])
+		{
+			if (r != exterior)
+			{
+				polygons.back().interiors.push_back(oriented(r, false));
+			}
+		}
+	};
+	for (unsigned int g = 0; g < num_groups; ++g)
+	{
+		if (containers[g].size() % 2 == 0 && !dropped[g])
+		{
+			add_polygon(g);
 		}
 	}
-	for (unsigned int r = 0; r < num_rings; ++r)
+	// A hole group goes into its parent's polygon (a hole parent's own polygon, outermost first)
+	// if the containment is a nesting: its depth is its parent's plus the number of its parent's
+	// rings containing it (even, for a hole in a hole group: in a stretch the group covers twice).
+	std::vector<bool> is_hole_group(num_groups, false);
+	for (unsigned int g : outermost_first)
 	{
-		if (containers[r].size() % 2 == 0 || dropped[r])
+		if (containers[g].size() % 2 == 0 || dropped[g])
 		{
 			continue;
 		}
-		if (!parent[r] || !polygon_of_ring[*parent[r]])
+		if (parent[g] && polygon_of_group[*parent[g]])
 		{
-			// The containment is not a nesting (it is, for rings that do not cross): kept as an
-			// exterior, and counted. Not thrown: an input whose rings cross (a self-intersecting
-			// polygon, common in real data) gives output rings that cross, which nest arbitrarily,
-			// and the hunt's 255 grouping failures in 119,198 generated cases were all of that
-			// kind; throwing would refuse such inputs, which partitioning has always accepted.
-			++d_diagnostics.grouping_failures;
-			polygon_of_ring[r] = polygons.size();
-			polygons.push_back(OutputPolygon{ oriented(r, true), std::vector<OutputRing>() });
-			continue;
+			const unsigned int parent_rings_containing = std::count_if(
+					containers[g].begin(),
+					containers[g].end(),
+					[&](unsigned int other) { return group_of[other] == *parent[g]; });
+			if (containers[g].size() == containers[*parent[g]].size() + parent_rings_containing)
+			{
+				polygon_of_group[g] = polygon_of_group[*parent[g]];
+				is_hole_group[g] = true;
+				continue;
+			}
 		}
-		polygons[*polygon_of_ring[*parent[r]]].interiors.push_back(oriented(r, false));
+		// The containment is not a nesting (it is, once crossing rings are grouped, but a crossing
+		// within the margin of an edge's end is missed: do_rings_cross): kept as a polygon of its
+		// own, and counted. Not thrown: partitioning has always accepted inputs whose rings cross
+		// (self-intersecting polygons, common in real data).
+		++d_diagnostics.grouping_failures;
+		add_polygon(g);
+	}
+	// The holes, in the order of their rings.
+	for (unsigned int g = 0; g < num_groups; ++g)
+	{
+		if (is_hole_group[g])
+		{
+			for (unsigned int r : groups[g])
+			{
+				polygons[*polygon_of_group[g]].interiors.push_back(oriented(r, false));
+			}
+		}
 	}
 }
 

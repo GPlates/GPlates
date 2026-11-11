@@ -1609,12 +1609,14 @@ namespace
 	}
 
 	//! Every operation's output passes the oracle, as rings and as polygons, and its polygons'
-	//! rings have the output on their left.
+	//! rings have the output on their left (unless @a input_rings_cross: rings that cross where an
+	//! input's do have no such orientation).
 	void
 	check_oracle(
 			const PolygonOnSphere &P,
 			const PolygonOnSphere &Q,
-			const Overlay::Overlay &overlay)
+			const Overlay::Overlay &overlay,
+			bool input_rings_cross = false)
 	{
 		const std::vector<PointOnSphere> samples = PolygonOverlayOracle::get_samples(P, Q, overlay);
 		EXPECT_GT(samples.size(), 100u);
@@ -1625,11 +1627,24 @@ namespace
 			overlay.extract_rings(operation, rings);
 			EXPECT_EQ(PolygonOverlayOracle::count_failures(P, Q, operation, rings, samples), 0u);
 
-			// Grouped into polygons, and oriented with the output on the left.
+			// Grouped into polygons, and oriented with the output on the left. Output rings cross
+			// only where an input's do (but for the symmetric difference's, at a vertex whose four
+			// kept ends pair crosswise).
 			std::vector<Overlay::OutputPolygon> polygons;
+			const unsigned int crossing_ring_groups_before =
+					overlay.get_diagnostics().crossing_ring_groups;
 			overlay.extract(operation, polygons);
 			EXPECT_EQ(PolygonOverlayOracle::count_failures(P, Q, operation, polygons, samples), 0u);
-			EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
+			if (!input_rings_cross)
+			{
+				EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
+				if (operation != Overlay::SYMMETRIC_DIFFERENCE)
+				{
+					EXPECT_EQ(
+							overlay.get_diagnostics().crossing_ring_groups,
+							crossing_ring_groups_before);
+				}
+			}
 		}
 		if (PolygonOverlayOracle::is_area_sum_applicable(P, Q))
 		{
@@ -1976,6 +1991,102 @@ TEST(PolygonOverlayTest, GroupRingInsideRing)
 				F.at(-0.005, 0.01 + side * 0.3 * H), F.at(0.005, 0.01 + side * 0.3 * H),
 				F.at(0.005, 0.01 + side * 0.7 * H), F.at(-0.005, 0.01 + side * 0.7 * H) };
 		EXPECT_EQ(Overlay::is_ring_inside_ring(thin, *E, margin), boost::optional<bool>(side < 0));
+	}
+}
+
+
+// The grouping's crossing test (section 5.2), directly: a hole crossing its exterior, and two
+// rings crossing like a plus sign (no vertex of either inside the other) cross; rings that touch
+// at a corner, overlap by 1.6 h there (as output rings can within an overlay vertex), nest, or
+// cross along a stretch thinner than the margin do not.
+TEST(PolygonOverlayTest, GroupRingsCross)
+{
+	const GPlatesMaths::AngularExtent margin =
+			GPlatesMaths::AngularExtent::create_from_angle(10 * H);
+	const auto E = polygon(square(-0.01, -0.01, 0.01, 0.01));
+	const auto cross_both_ways = [&margin](const PolygonOnSphere &a, const PolygonOnSphere &b)
+	{
+		const bool ab = Overlay::do_rings_cross(a, b, margin);
+		EXPECT_EQ(ab, Overlay::do_rings_cross(b, a, margin));
+		return ab;
+	};
+
+	EXPECT_TRUE(cross_both_ways(*E, *polygon(square(0.005, -0.003, 0.015, 0.003))));
+	EXPECT_TRUE(cross_both_ways(
+			*polygon(square(-0.02, -0.003, 0.02, 0.003)),
+			*polygon(square(-0.003, -0.02, 0.003, 0.02))));
+
+	EXPECT_FALSE(cross_both_ways(*E, *polygon(square(0.01, 0.01, 0.02, 0.02))));
+	EXPECT_FALSE(cross_both_ways(
+			*E,
+			*polygon(square(0.01 - 1.6 * H, 0.01 - 1.6 * H, 0.02, 0.02))));
+	EXPECT_FALSE(cross_both_ways(*E, *polygon(square(-0.005, -0.005, 0.005, 0.005))));
+	EXPECT_FALSE(cross_both_ways(*E, *polygon(square(0.02, -0.01, 0.03, 0.01))));
+	// An edge crossing E's northern edge at a tiny angle, its ends 0.3 h either side of it.
+	EXPECT_FALSE(cross_both_ways(
+			*E,
+			*polygon(ring_type{
+					F.at(-0.005, 0.01 - 0.3 * H), F.at(0.005, 0.01 + 0.3 * H),
+					F.at(0.005, 0.02), F.at(-0.005, 0.02) })));
+}
+
+
+// Inputs whose rings cross (section 5.2): output rings that cross where an input's do share a
+// polygon, read by parity, so that no two polygons overlap. The clip's hole crosses its exterior
+// (the visual check's case: its corner outside the exterior is inside the clip, by parity); the
+// subject cuts both. Both the inside and the outside are then one polygon with one hole, the
+// clip's hole, which crosses the exterior. Then a clip whose two rings cross like a plus sign, no
+// vertex of either inside the other, cut by the subject's western edge. A group's exterior is its
+// ring of largest area.
+TEST(PolygonOverlayTest, GroupCrossingRings)
+{
+	const auto check_exteriors_largest = [](const Overlay::Overlay &overlay)
+	{
+		for (Overlay::Operation operation : { Overlay::INTERSECTION, Overlay::DIFFERENCE })
+		{
+			std::vector<Overlay::OutputPolygon> polygons;
+			overlay.extract(operation, polygons);
+			for (const Overlay::OutputPolygon &output_polygon : polygons)
+			{
+				const double exterior_area =
+						PolygonOnSphere::create(output_polygon.exterior.points)->get_area().dval();
+				for (const Overlay::OutputRing &interior : output_polygon.interiors)
+				{
+					EXPECT_GT(
+							exterior_area,
+							PolygonOnSphere::create(interior.points)->get_area().dval());
+				}
+			}
+		}
+	};
+	{
+		SCOPED_TRACE("a hole crossing its exterior");
+		const auto P = polygon(square(0.0, -0.015, 0.02, 0.015));
+		const auto Q = polygon(
+				square(-0.01, -0.01, 0.01, 0.01),
+				{ square(0.005, -0.003, 0.015, 0.003) });
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay, true/*input_rings_cross*/);
+
+		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 1 }));
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 1 }));
+		EXPECT_GT(overlay.get_diagnostics().crossing_ring_groups, 0u);
+		check_exteriors_largest(overlay);
+	}
+	{
+		SCOPED_TRACE("rings crossing like a plus sign");
+		const auto P = polygon(square(-0.01, -0.03, 0.03, 0.03));
+		const auto Q = polygon(
+				square(-0.02, -0.003, 0.02, 0.003),
+				{ square(-0.003, -0.02, 0.003, 0.02) });
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay, true/*input_rings_cross*/);
+
+		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 1 }));
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 1 }));
+		check_exteriors_largest(overlay);
 	}
 }
 
