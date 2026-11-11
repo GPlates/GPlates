@@ -946,7 +946,41 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     correct. Script: scratchpad `redundant_test_check.py`. The page no longer lists it as a caller
     of point-in-polygon.
 
-- **Resume here** (updated 2026-11-08):
+- 2026-11-12: **Crossing output rings grouped into one polygon** (developer's decision, after the
+  visual check showed a plate-5 piece of two polygons overlapping the plate-100 piece). Where an
+  input's rings cross, output rings cross at points the overlay never computes, and in separate
+  polygons, read as a union, they overlap. Parity over all a side's rings was always right (the
+  hunt's oracle), but as polygons it was never checked for crossing inputs.
+  - **Measured first**: with the polygon check switched on for crossing inputs and the old
+    grouping, 11,212 of the hunt's 70,291 crossing-input cases were wrong as polygons (against 255
+    counted grouping failures). After: 3, all in the reverse or symmetric difference, crossings
+    thinner than the 10 h margin (now in the page's section 7). The hunt otherwise unchanged:
+    the known 13 polygon differences and the polyline hairpin cases (`r5o`).
+  - **The test** (`do_rings_cross`): first the edge test alone, by the rings' bounding trees (the
+    developer's pointer to `GeometryDistance.cc`); it missed the dense shared-edge crossings
+    (every edge end within 10 h of the other ring: `shared#31 seed 1` crosses only at a 0.1 h
+    margin), so a vertex test came first: a vertex beyond the margin inside, another outside. Both
+    are needed (mutations: without either, committed tests fail).
+  - **The symmetric difference's rings can cross at a vertex** whose four kept ends pair crosswise
+    (13 catalogue cases, `d4 ... hole-between`): grouped too, which reads right; the tests'
+    false-positive check (a crossing group from inputs whose rings do not cross) excludes that
+    operation. PR C's pairing item.
+  - **Decision (6) of 2026-11-08 resolved**: a grouping failure now means a hole group whose
+    nesting fails (a crossing thinner than the margin), kept as its own polygon and counted;
+    unpinned (the mutation always placing it in its parent survives; no committed input reaches
+    it).
+  - **Timing**: A/B against `a58eb0ddb`, alternating, partition_features 0.331/0.338 s before and
+    0.342/0.340 s after at 0 Ma, the same at 100 and 200 Ma. So the cheaper option (check each
+    input once) is not needed; its notes are in the planning repository's inbox (`777b9c3`, under
+    "Notes: split a self-crossing polygon into simple polygons").
+  - The visual check's box now gives one plate-5 polygon with the plate-100 piece's hole ring as
+    its interior ring. GPlates 211 of 211, pyGPlates 7 of 7.
+
+- **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
+  rings is in (Status, 2026-11-12). Next: a Fable High review of the grouping fix, a Linux run of
+  the tip, then PR B (the branch history, its description, the roadmap). Open as before: the
+  prototype's polyline rule (`r5p`); the margin order's hand-built test.
+- *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
     and 4b (run 4's rule) 5 (anchorless chains) and 6 (repair, `InconsistentOverlayException`) are done (Status,
