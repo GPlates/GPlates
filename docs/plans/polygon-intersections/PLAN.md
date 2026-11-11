@@ -925,6 +925,27 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     **Open**: mirror the polyline rule in the prototype (`r5p`) so the hunt is clean
     again; the margin order still has no hand-built test (the prototype comparison pins it).
 
+- 2026-11-12: **The developer's visual check of Phase 6 is done** (data and checklist outside the repository,
+  in `C:/gplates/visual-check-prB`: synthetic plates, the inconsistent case, the Merdith static
+  polygons, and a reconstructed raster). Everything looked right. Two observations, both explained:
+  - **The inconsistent case's inputs are invalid.** In the skipped-features check, the plate-5 piece
+    of a box cut by `Q` was two polygons, not one with a hole. Both `P` and `Q` of `shared#2288 seed
+    2` have a hole crossing their exterior ring, and the overlay's output is right by parity, as
+    designed for crossing rings. With either hole removed, the cut succeeds, so the only known
+    inconsistent input needs crossing rings on both sides. The page (5.6 and section 7), the test
+    comment, the data README and both changelogs now say so; the changelogs had described it as
+    nearby outlines alone.
+  - **Piece counts** matched pyGPlates exactly (the feature files the developer saved). Adjacent
+    pieces with one plate ID are separate static polygons: Merdith's North America is age strips, all
+    plate 101. A geometry with a coverage gets its own feature when its feature already has a
+    geometry of that property name, so the ranges cannot be mismatched. That predates PR B.
+  - **`GLReconstructedStaticPolygonMeshes`' containment test removed** (decision 4 of 2026-11-04). The
+    raster looked right with it, and over 2,389 static polygons and about 55,000 boxes standing in for
+    quad-tree nodes (those surrounding each polygon among them), the overlay never answered outside
+    where the test would have overridden it. Three answers of outside were exact touches, which is
+    correct. Script: scratchpad `redundant_test_check.py`. The page no longer lists it as a caller
+    of point-in-polygon.
+
 - **Resume here** (updated 2026-11-08):
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
