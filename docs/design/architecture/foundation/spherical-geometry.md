@@ -1747,10 +1747,11 @@ operation would lose the work on every other feature for a case no real data has
 costs rendering work on a node the polygon may not reach and nothing else.
 
 One generated case is known to fail, and is the failure tests' input
-(`src/unit-test/data/polygon-overlay/inconsistent.txt`): along a dense shared edge whose long
-stretches are not paired as common and lie within `0.15 h` to `0.35 h` of each other throughout,
-midpoint tests on band pieces `1 h` to `1.7 h` long fix a chain's class wrongly, and repair cannot
-find the flip of several pieces it would take within 20 rounds. Consistent labellings exist, so the
+(`src/unit-test/data/polygon-overlay/inconsistent.txt`). Both its inputs are invalid: each has a
+hole crossing its own exterior ring, and with either hole removed the cut succeeds. Along a dense
+shared edge whose long stretches are not paired as common and lie within `0.15 h` to `0.35 h` of
+each other throughout, midpoint tests on band pieces `1 h` to `1.7 h` long fix a chain's class
+wrongly, and repair cannot find the flip of several pieces it would take within 20 rounds. Consistent labellings exist, so the
 vertex orders are not at fault. Untried remedies: a rule for pieces running along the other outline,
 or a repair candidate flipping a chain of band pieces. It was one of 67,639 dense shared-edge cases
 among 119,198 generated, and no other generator and no real data produced one.
@@ -2300,7 +2301,8 @@ takes about 30% longer than before (0.28 s against 0.20 s at 0 Ma, resolving the
   are paired across), and an output ring that crosses itself where an input ring does has no
   orientation with the output on its left all round (section 5.2).
 - **The inconsistent cut along a dense shared edge** (section 5.6): band classes that repair cannot
-  make consistent in 20 rounds. Untried: a rule for pieces running along the other outline, or a
+  make consistent in 20 rounds, in the one known case, whose inputs both have a hole crossing
+  their exterior ring. Untried: a rule for pieces running along the other outline, or a
   repair candidate that flips a chain of band pieces. Also open from the hunt: 4 generated cases
   whose second cascade step loses a subject location (no point's provenance wrong), and 4 with
   coincident rings of no area.

@@ -854,7 +854,8 @@ namespace
 // this input (a dense shared-edge case, 'shared#2288 seed 2', the one case of the hunt the bundle
 // rule's wider cones did not resolve: band classes along a shared edge that no 20 rounds of repair
 // make consistent), with or without lists; Assign Plate IDs leaves the feature as it was and
-// reports it.
+// reports it. Both P and Q are invalid (each has a hole crossing its exterior ring); with either
+// hole removed the cut succeeds.
 TEST(PartitionFeatureUtilsTest, AssignPlateIdsSkipsInconsistentFeature)
 {
 	const std::vector<std::vector<ring_type>> rings =

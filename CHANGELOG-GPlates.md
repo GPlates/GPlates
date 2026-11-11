@@ -51,7 +51,7 @@ Changes since 2.5:
   * A geometry stored in a single time window that contains the reconstruction time (as some early files store an ordinary geometry) is now assigned like an ordinary geometry, and written back as one (with its scalar coverage, if it has one in a single time window too). Other time-dependent geometries are left unchanged, as before.
   * A scalar coverage that matches no geometry of a cut feature (its number of values is no geometry's) is removed, with a warning, rather than copied to every piece, where it could be read back as the coverage of a piece that happened to have its number of points.
   * "Most overlapping plate" compares the area of polygons inside each plate (previously the length of their outlines, which the cuts inflate), then the length of polylines, then the number of points.
-  * A feature that cannot be cut consistently by a plate (rare: where its outline runs within about 9 m of the plate's along many closely spaced vertices) is left as it was, and such features are listed at the end.
+  * A feature that cannot be cut consistently by a plate (rare: the only case found is a feature and a plate whose polygons each have a hole crossing their outer boundary, with outlines running within about 9 m of each other along many closely spaced vertices) is left as it was, and such features are listed at the end.
 * Reconstructing a polygon with holes using topologies now deforms the points of its holes too (previously they were left out).
 * Bug fixes:
   * Fixed gaps in boundary sections in the Resolved Topologies (General) export (since GPlates 2.2).
