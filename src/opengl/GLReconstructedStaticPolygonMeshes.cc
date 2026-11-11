@@ -975,30 +975,15 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 	catch (const GPlatesMaths::PolygonOverlay::InconsistentOverlayException &)
 	{
 	}
+	//
+	// A node surrounding the test polygon is intersecting, not outside: the test polygon is then a
+	// clip ring inside the subject, which the overlay reports as intersecting. (An extra test that
+	// a vertex of the test polygon was outside the node was dropped as redundant, after a visual
+	// check and a check of 55,000 boxes against the Merdith et al. static polygons found none
+	// that it changed.)
 	if (GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE == partition_result)
 	{
-		// If the cube quad tree node's polygon boundary is outside our test polygon then it's
-		// still possible for the cube quad tree node to completely surround the test polygon in which
-		// case it's actually intersecting the test polygon's interior region.
-		// We test this by seeing if a vertex on the test polygon is inside the node's bounding polygon.
-		//
-		// This test is redundant with the polygon overlay: a test polygon wholly inside the node's
-		// polygon is a clip ring inside the subject, which the partitioner reports as intersecting,
-		// and the bounding-circle shortcut answers outside only when the polygons' interiors lie
-		// within their disjoint circles. Kept, harmless, until a visual check of the rendering
-		// (there is no rendering test coverage) retires it.
-		if (!quad_tree_node_bounding_polygon->is_point_in_polygon(
-			polygon_partitioner.get_partitioning_polygon()->first_exterior_ring_vertex(),
-			GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
-			// Note we turn off point-on-polygon outline threshold testing.
-			// We don't want test to return true if point is outside polygon but *very* close to it...
-			false/*use_point_on_polygon_threshold*/))
-		{
-			// The current cube quad tree node does *not* surround the test polygon (and is also outside
-			// the test polygon) therefore the test polygon interior region does not intersect
-			// the current cube quad tree node's interior region.
-			return;
-		}
+		return;
 	}
 
 	// Record that the current polygon mesh possibly intersects the current quad tree node.

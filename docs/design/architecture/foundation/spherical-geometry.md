@@ -379,8 +379,7 @@ meaning its interior:
 whether a pole is inside a polygon with `is_point_in_polygon`
 (`generate_entry_exit_flags_for_dateline_polygon`); the map view fills the wrapped, projected
 polygons by stencil parity (`GLFilledPolygonsMapView`, `GL_INVERT`), so it agrees with the globe;
-`PolygonMesh` keeps a triangle only if `is_point_in_polygon` accepts its centroid; and
-`GLReconstructedStaticPolygonMeshes` tests its quad-tree node polygons the same way.
+and `PolygonMesh` keeps a triangle only if `is_point_in_polygon` accepts its centroid.
 `get_boundary_centroid` keeps its meaning, and its other callers use it as a bounding-circle centre
 or a projection's tangent point (`PolygonMesh`, `PolygonOrientation`), which is valid whatever the
 interior is.
@@ -488,11 +487,10 @@ The threshold is turned off where a point near a polygon but outside it must sta
 the overlay's tests of a piece's vertices and midpoints (`PolygonOverlay::Overlay::is_inside_other`,
 section 5.2: a vertex in no intersection record is already more than the threshold from the
 outline, and the pieces must divide the sphere exactly), its anchorless parities and its grouping
-and hemisphere check, the solid-interior tests of the distance code (section 2), and
-`GLReconstructedStaticPolygonMeshes.cc`. It is also off where the point is known to be far from
-the outline and only parity is wanted: the status queries for `-R` and `R2` (sections 3.7 and
-3.8) and the query at the antipode of a circle's centre in
-`is_outside_bounding_small_circle_outside_polygon` (section 3.3).
+and hemisphere check, and the solid-interior tests of the distance code (section 2). It is also
+off where the point is known to be far from the outline and only parity is wanted: the status
+queries for `-R` and `R2` (sections 3.7 and 3.8) and the query at the antipode of a circle's centre
+in `is_outside_bounding_small_circle_outside_polygon` (section 3.3).
 
 ### 3.6 Rejected alternatives
 
