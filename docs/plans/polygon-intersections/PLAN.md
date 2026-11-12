@@ -1125,7 +1125,11 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   directory, then deletes it. The branch has not merged `main` since #110 (`main` is this branch
   plus the merge commit, so it can fast-forward). After PR C: the `partition_features` rework (its
   own PR; it should also make pyGPlates' most overlapping plate match Assign Plate IDs, review 9's
-  1.2), then `DateLineWrapper` onto the overlay.
+  1.2), then `DateLineWrapper` onto the overlay. **Tools**: the PR B session's scripts for the
+  C++ (the hunt at scale and run comparison, mutation testing, `partition_features` timing, the
+  Linux Docker builds including clang with FMA and UBSan) are in the planning repository's
+  `plans/polygon-intersection-tools/cpp/` (README there, section `cpp/`); earlier entries here that
+  cite "scratchpad" scripts mean that session's copies.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
