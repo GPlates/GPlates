@@ -1018,7 +1018,7 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - **The margin order needs no hand-built test**: both orderings' mutations (smallest first, and
     first found, in both loops) fail `BundleRule`, `OnePassageRule` and
     `AssignPlateIdsSkipsInconsistentFeature`. Dropped from the open items.
-  - **The branch history stays as it is** (recommended, not yet confirmed by the developer): two
+  - **The branch history stays as it is** (confirmed by the developer, 2026-11-12): two
     merges of `main` inside it, code commits that each record a step or a review's fixes, plan
     commits that touch only this directory, and commit hashes cited throughout this plan and the
     reports.
@@ -1031,12 +1031,40 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     two differed. **Decided**: route pyGPlates' assembly through the C++ tasks in a PR of its own,
     after PR C (likely for 1.1, not required for it).
 
+- 2026-11-12: **Review 8 (Fable High) of review 7's fixes, and its fixes** (`prB-review-8-crossing-fixes.md`;
+  the developer approved the recommendations, 1.2 as the local test). The commits did what they
+  said (the tree walk equal to the loop on 5.3 million ring pairs; the hunt clean; no false crossing).
+  - **Fixed, `401859aa9`**: the pinwheel (1.1: rings each with vertices on the other's edges,
+    missed at any size): the point test now looks three margins along, and at the midpoints of,
+    both edges of every vertex near the other ring. A bow-tie with a vertex at its crossing (1.2):
+    a ring also crosses itself where, at a vertex near a non-adjacent part, its path passes
+    decisively from one side of the path there to the other (each probe clear of the other path
+    by the margin, and that path's arms at least two margins long; else undecided, not crossing).
+    The cost (1.4): rings whose outlines are farther apart than the margin do not cross, settled by
+    one distance query first: 100 long pieces side by side 2.7 times the old grouping (was 25),
+    50 pieces 1.4, an annulus 1.1, review 7's probe 1.1. `NEAR` renamed (1.7). The point test is
+    the public `has_points_on_both_sides`, compared with plain loops (each way round, and the whole
+    test) over 400 generated pairs; mutations of the walk's descent, of looking along both edges,
+    of the filter, of the self-crossing test's sides and of its undecided rule each fail a test.
+    Not pinnable: the far-node shortcut's count (an inside point implies an exit, where a near node
+    gives an outside point).
+  - **Measured**: pyGPlates, the pinwheel 0 samples wrong (1,687 before) and the bow-tie with a
+    vertex at its crossing cut at every width; the hunt identical (9 known); review 7's random
+    probe 0 wrong with a missed pair generic, with the filter and on the 0.002 grid, 2 operations
+    on the 0.004 grid (5 before); no output ring of an intersection or difference from the hunt's
+    valid inputs taken as crossing itself (every ring asked, a temporary switch); coastline
+    `partition_features` unchanged (0.334/0.343 s against 0.332/0.327 s at 0 Ma).
+  - **Documented, `05620ce97`**: the limit (an overlap, or a self-crossing, within a few margins of
+    where the rings meet) in the page, the changelogs and the docstring, and as deferred work in
+    section 7 with the self-intersection mode as the cure; "not dropped itself"; a bow-tie's area
+    (1.3) in section 5.4 and the changelogs. GPlates 214 of 214, pyGPlates 7 of 7, docs from
+    scratch clean.
+
 - **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
   rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d`; the prototype is at
-  `r5p` and the hunt clean but for the 9 known polygon cases (Status, 2026-11-12). Next: a short
-  focused Fable review of `52bb6f4cd` onwards (the code review 7's fixes became, the tree walk, the
-  whole-answer counter), then PR B (its description, the roadmap). After PR B: PR C, then the
-  `partition_features` rework (its own PR). Open as before: the
+  `r5p` and the hunt clean but for the 9 known polygon cases; review 8 and its fixes done (Status,
+  2026-11-12). Next: a Linux run of the tip, then PR B (its description, the roadmap). After PR B:
+  PR C, then the `partition_features` rework (its own PR). Open as before: the
   prototype's polyline rule (`r5p`); the margin order's hand-built test.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
