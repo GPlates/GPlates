@@ -25,7 +25,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <ostream>
@@ -420,30 +419,51 @@ GPlatesMaths::PolygonOverlay::do_rings_cross(
 					Vector3D(edge.end_point().position_vector());
 			return sum.magSqrd().dval() > 0 && add(side_of(PointOnSphere(sum.get_normalisation())));
 		};
-		boost::optional<PointSide> first_side;
-		boost::optional<PointSide> previous_side;
-		const auto edges_end = a.exterior_ring_end();
-		for (auto edge = a.exterior_ring_begin(); edge != edges_end; ++edge)
+		// The edges of a, by its bounding tree: a node farther than the margin from b's bounding
+		// circle has all its vertices outside b by more than the margin, so it counts as outside at
+		// once, and only the nodes near b are visited edge by edge (otherwise a large ring against
+		// each of many small rings inside it costs its every vertex for each: twelve times the
+		// grouping's old cost at 1,481 rings and 100,000 points, review 7). An edge's end is the
+		// next edge's start, classified again where its start is near.
+		typedef PolygonOnSphere::ring_bounding_tree_type tree_type;
+		const tree_type &tree = a.get_exterior_ring_bounding_tree();
+		std::vector<tree_type::node_type> nodes(1, tree.get_root_node());
+		while (!nodes.empty())
 		{
-			const PointSide side = side_of(edge->start_point());
-			if (add(side))
+			const tree_type::node_type node = nodes.back();
+			nodes.pop_back();
+			const AngularDistance distance_to_bounds = minimum_distance(
+					node.get_bounding_small_circle(),
+					b.get_bounding_small_circle());
+			if (distance_to_bounds.is_precisely_greater_than(margin))
 			{
-				return true;
+				if (add(OUTSIDE))
+				{
+					return true;
+				}
+				continue;
 			}
-			if (previous_side && *previous_side == NEAR && side == NEAR &&
-				add_midpoint(*std::prev(edge)))
+			if (node.is_internal_node())
 			{
-				return true;
+				nodes.push_back(tree.get_child_node(node, 0));
+				nodes.push_back(tree.get_child_node(node, 1));
+				continue;
 			}
-			if (!first_side)
+			const auto edges_end = node.get_bounded_great_circle_arcs_end();
+			for (auto edge = node.get_bounded_great_circle_arcs_begin(); edge != edges_end; ++edge)
 			{
-				first_side = side;
+				const PointSide side = side_of(edge->start_point());
+				if (add(side))
+				{
+					return true;
+				}
+				if (side == NEAR && side_of(edge->end_point()) == NEAR && add_midpoint(*edge))
+				{
+					return true;
+				}
 			}
-			previous_side = side;
 		}
-		// The closing edge, from the last vertex to the first.
-		return previous_side && *previous_side == NEAR && *first_side == NEAR &&
-				add_midpoint(*std::prev(edges_end));
+		return false;
 	};
 	if (has_points_on_both_sides(ring, other_ring) ||
 		has_points_on_both_sides(other_ring, ring))
