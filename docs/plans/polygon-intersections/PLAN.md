@@ -1058,13 +1058,13 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     where the rings meet) in the page, the changelogs and the docstring, and as deferred work in
     section 7 with the self-intersection mode as the cure; "not dropped itself"; a bow-tie's area
     (1.3) in section 5.4 and the changelogs. GPlates 214 of 214, pyGPlates 7 of 7, docs from
-    scratch clean.
+    scratch clean; Linux (Ubuntu 22.04, `555a2f2b0`): pyGPlates 7 of 7, GPlates 214 of 214.
 
 - **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
   rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d`; the prototype is at
   `r5p` and the hunt clean but for the 9 known polygon cases; review 8 and its fixes done (Status,
-  2026-11-12). Next: a Linux run of the tip, then PR B (its description, the roadmap). After PR B:
-  PR C, then the `partition_features` rework (its own PR). Open as before: the
+  2026-11-12), and Linux passes at `555a2f2b0`. Next: PR B (its description, the roadmap). After
+  PR B: PR C, then the `partition_features` rework (its own PR). Open as before: the
   prototype's polyline rule (`r5p`); the margin order's hand-built test.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
