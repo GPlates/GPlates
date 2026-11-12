@@ -59,6 +59,12 @@ namespace GPlatesAppLogic
 	{
 	public:
 		/**
+		 * A partitioned geometry, with where each of its points came from when that was asked for
+		 * (see @a partition_geometry).
+		 */
+		typedef GPlatesMaths::PolygonPartitioner::PartitionedGeometry PartitionedGeometry;
+
+		/**
 		 * Typedef for a sequence of geometries resulting from partitioning a single geometry.
 		 */
 		typedef GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type partitioned_geometry_seq_type;
@@ -101,6 +107,9 @@ namespace GPlatesAppLogic
 		 * partitioning, then topological boundaries and then regular static polygons.
 		 * The static interior polygons of any topological networks are higher priority than the
 		 * networks themselves (it's required since the network boundaries contain the interior polygons).
+		 * The cut (the polygon overlay) intersects interior rings too, and a network's partitioning
+		 * polygon has its rigid blocks as holes, so the network never claims a block's area, even
+		 * where sorting moves the block after its network.
 		 *
 		 * The partitioning polygons, in each group (ie, static, topological boundary, topological network),
 		 * are optionally sorted either sorted by plate ID (from highest plate id to lowest) or
@@ -133,7 +142,13 @@ namespace GPlatesAppLogic
 		 * found directly through the networks in @a resolved_topological_networks.
 		 *
 		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
-		 * point-in-polygon tests for partitioned *point* geometries.
+		 * point-in-polygon tests against the partitioning polygons: for partitioned point
+		 * geometries, and the polygon overlay's tests against them (its clip speed) when cutting
+		 * polylines and polygons.
+		 *
+		 * @a sliver_min_width is the width of the sliver filter of every partitioning polygon's cuts
+		 * (GPlatesMaths::PolygonPartitioner::create): @a get_default_sliver_min_width by default,
+		 * and none turns the filter off.
 		 */
 		GeometryCookieCutter(
 				const double &reconstruction_time,
@@ -141,7 +156,9 @@ namespace GPlatesAppLogic
 				boost::optional<const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
 				boost::optional<const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
-				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
+						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				boost::optional<double> sliver_min_width = get_default_sliver_min_width());
 
 
 		/**
@@ -158,7 +175,9 @@ namespace GPlatesAppLogic
 				const std::vector<ReconstructionGeometry::non_null_ptr_type> &reconstruction_geometries,
 				bool group_networks_then_boundaries_then_static_polygons = true,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
-				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
+						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				boost::optional<double> sliver_min_width = get_default_sliver_min_width());
 
 
 		/**
@@ -175,7 +194,9 @@ namespace GPlatesAppLogic
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				bool group_networks_then_boundaries_then_static_polygons = true,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
-				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory =
+						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				boost::optional<double> sliver_min_width = get_default_sliver_min_width());
 
 
 		/**
@@ -183,6 +204,26 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		has_partitioning_polygons() const;
+
+
+		/**
+		 * The sliver filter's default width (spherical-geometry.md section 5.5): ten times the
+		 * overlay's thickness, in radians (about 90 metres on the Earth). A cut leaves pieces this
+		 * thin where a feature's outline was digitised along a plate boundary; they are below the
+		 * resolution of global plate and coastline data, and would otherwise take the neighbouring
+		 * plate's ID. Pieces under the thickness itself are below what the overlay can resolve.
+		 */
+		static
+		double
+		get_default_sliver_min_width();
+
+
+		/**
+		 * The partitioning polygons in the order @a partition_geometry cuts by (the order its
+		 * provenance's clip indices refer to), for diagnostics and tests.
+		 */
+		std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_partitioning_polygons() const;
 
 
 		/**
@@ -199,12 +240,22 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns true if @a geometry is inside any partitioning polygons (even partially)
 		 * in which case elements were appended to @a partitioned_inside_geometries.
+		 *
+		 * With @a want_provenance, every partitioned geometry carries a table of where each of its
+		 * points lies on @a geometry (section 5.4): the pieces outside one
+		 * partitioning polygon are cut by the next with their tables, and a clip location's index
+		 * is its partitioning polygon's position in the order described above.
+		 *
+		 * @throws GPlatesMaths::PolygonOverlay::InconsistentOverlayException if a cut's classes
+		 * are inconsistent (section 5.6: every plate must get an answer, and a
+		 * wrong one is worse than none).
 		 */
 		bool
 		partition_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				boost::optional<partition_seq_type &> partitioned_inside_geometries = boost::none,
-				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries = boost::none) const;
+				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries = boost::none,
+				bool want_provenance = false) const;
 
 
 		/**
@@ -212,6 +263,12 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns true if any geometry in @a geometries is inside any partitioning polygons (even partially)
 		 * in which case elements were appended to @a partitioned_inside_geometries.
+		 *
+		 * Provenance is offered by @a partition_geometry alone: the pieces of several geometries
+		 * are mixed in the lists, and a table does not say which geometry it refers to.
+		 *
+		 * @throws GPlatesMaths::PolygonOverlay::InconsistentOverlayException as
+		 * @a partition_geometry does.
 		 */
 		bool
 		partition_geometries(
@@ -256,7 +313,8 @@ namespace GPlatesAppLogic
 			PartitioningGeometry(
 					const ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry,
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-					GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
+					GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+					boost::optional<double> sliver_min_width);
 
 
 			ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry;
@@ -329,6 +387,21 @@ namespace GPlatesAppLogic
 		double d_reconstruction_time;
 
 		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
+
+		boost::optional<double> d_sliver_min_width;
+
+
+		/**
+		 * Partitions @a geometries through the cascade of partitioning polygons; with provenance
+		 * relative to @a original_geometry if it is given (then @a geometries is that geometry,
+		 * alone, with no table).
+		 */
+		bool
+		partition(
+				const partitioned_geometry_seq_type &geometries,
+				boost::optional<partition_seq_type &> partitioned_inside_geometries,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries,
+				const GPlatesMaths::GeometryOnSphere *original_geometry) const;
 
 
 		/**

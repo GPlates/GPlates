@@ -96,6 +96,11 @@ namespace GPlatesAppLogic
 		 * NOTE: Currently @a feature_ref can be modified to hold one of geometries
 		 * resulting from partitioning while clones of it can hold the other
 		 * partitioned geometries.
+		 *
+		 * An implementation must partition every geometry of the feature before it modifies
+		 * the feature: AssignPlateIds catches
+		 * GPlatesMaths::PolygonOverlay::InconsistentOverlayException around this call and reports
+		 * the feature as left as it was.
 		 */
 		virtual
 		void

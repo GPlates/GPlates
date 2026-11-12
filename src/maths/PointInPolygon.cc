@@ -2284,3 +2284,62 @@ GPlatesMaths::PointInPolygon::get_point_on_polygon_threshold_sine()
 
 	return POINT_ON_POLYGON_OUTLINE_SINE_;
 }
+
+
+bool
+GPlatesMaths::PointInPolygon::get_crossing_parity_excluding_segment(
+		const PolygonOnSphere &polygon,
+		const UnitVector3D &from_point,
+		const UnitVector3D &to_point,
+		unsigned int excluded_segment_index)
+{
+	const UnitVector3D crossings_arc_plane_normal =
+			get_crossings_arc_plane_normal(from_point, to_point);
+	const double dot_crossings_arc_end_points = dot(from_point, to_point).dval();
+
+	// Each edge's crossing is counted from its own two end points' sides of the crossing arc's
+	// plane, so a ring's count is the sum of the counts of the ranges either side of the excluded
+	// segment.
+	unsigned int num_edges_crossed = 0;
+	unsigned int first_segment_index = 0;
+	const auto count_ring = [&](
+			const PolygonOnSphere::ring_const_iterator &begin,
+			const PolygonOnSphere::ring_const_iterator &end)
+	{
+		const unsigned int num_segments = end - begin;
+		if (excluded_segment_index >= first_segment_index &&
+			excluded_segment_index < first_segment_index + num_segments)
+		{
+			const PolygonOnSphere::ring_const_iterator excluded =
+					begin + (excluded_segment_index - first_segment_index);
+			num_edges_crossed += get_num_polygon_edges_crossed(
+					begin, excluded,
+					from_point, to_point,
+					crossings_arc_plane_normal, dot_crossings_arc_end_points);
+			num_edges_crossed += get_num_polygon_edges_crossed(
+					excluded + 1, end,
+					from_point, to_point,
+					crossings_arc_plane_normal, dot_crossings_arc_end_points);
+		}
+		else
+		{
+			num_edges_crossed += get_num_polygon_edges_crossed(
+					begin, end,
+					from_point, to_point,
+					crossings_arc_plane_normal, dot_crossings_arc_end_points);
+		}
+		first_segment_index += num_segments;
+	};
+
+	count_ring(polygon.exterior_ring_begin(), polygon.exterior_ring_end());
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon.number_of_interior_rings();
+		++interior_ring_index)
+	{
+		count_ring(
+				polygon.interior_ring_begin(interior_ring_index),
+				polygon.interior_ring_end(interior_ring_index));
+	}
+
+	return (num_edges_crossed & 1) == 1;
+}

@@ -529,5 +529,6 @@ Errors from mathematical operations (all inherit from ``MathematicalError``):
 
    pygplates.MathematicalError
    pygplates.IndeterminateResultError
+   pygplates.PartitionError
    pygplates.UnableToNormaliseZeroVectorError
    pygplates.ViolatedUnitVectorInvariantError

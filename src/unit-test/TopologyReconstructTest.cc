@@ -176,7 +176,7 @@ namespace
 
 			EXPECT_GE(interpolate_original_point.interpolate_ratio, 0.0);
 			EXPECT_LT(interpolate_original_point.interpolate_ratio, 1.0);
-			if (interpolate_original_point.interpolate_ratio == 0.0)
+			if (GPlatesMaths::are_exactly_equal(interpolate_original_point.interpolate_ratio, 0.0))
 			{
 				++num_exact_samples[first];
 			}

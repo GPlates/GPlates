@@ -39,13 +39,13 @@ flowchart TD
   end
   subgraph L3 ["Shared core"]
     file_io["file-io<br/>module: 173 of 235 files"]:::module
-    app_logic["app-logic<br/>module: 151 of 285 files"]:::module
+    app_logic["app-logic<br/>module: 153 of 287 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
     api["api<br/>module: 77 of 110 files"]:::module
   end
   subgraph L5 ["GPlates engine"]
-    app_logic_gp["app-logic<br/>GPlates-only: 134 of 285 files"]:::gplates
+    app_logic_gp["app-logic<br/>GPlates-only: 134 of 287 files"]:::gplates
     file_io_gp["file-io<br/>GPlates-only: 62 of 235 files"]:::gplates
     scribe_gp["scribe<br/>GPlates-only: 8 of 64 files"]:::gplates
     data_mining["data-mining<br/>42 files"]:::gplates
@@ -155,7 +155,7 @@ flowchart TD
   end
   subgraph L3 ["Shared core"]
     file_io["file-io<br/>module: 173 of 235 files"]:::module
-    app_logic["app-logic<br/>module: 151 of 285 files"]:::module
+    app_logic["app-logic<br/>module: 153 of 287 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
     api["api<br/>module: 77 of 110 files"]:::module
@@ -232,22 +232,22 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 126 |  |  | 8 | 36 | 156 | 15 | 86 | 78 | 2 | 3 | 114 | 5 | 29 |  | 44 |  |
-| app-logic |  |  | 944 |  |  | 7 | 21 | 161 |  | 281 | 294 | 12 |  | 309 |  | 25 |  | 122 |  |
+| api |  | 275 | 128 |  |  | 8 | 36 | 156 | 15 | 88 | 79 | 2 | 3 | 115 | 5 | 29 |  | 44 |  |
+| app-logic |  |  | 949 |  |  | 7 | 21 | 163 |  | 285 | 302 | 12 |  | 314 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
 | data-mining |  |  | 18 |  |  | 81 | 4 | 6 | 1 | 8 | 9 | 1 |  | 72 |  | 11 |  | 6 |  |
 | file-io |  |  | 84 |  |  |  | 540 | 117 | 19 | 116 | 244 |  |  | 417 |  |  |  | 78 |  |
 | global |  |  |  |  |  |  |  | 25 |  |  |  |  |  |  |  |  |  | 5 |  |
 | gui |  | 18 | 169 | 53 |  | 3 | 53 | 95 | 480 | 117 | 81 | 113 | 79 | 98 | 163 | 14 |  | 89 | 108 |
-| maths |  |  |  |  |  |  |  | 75 |  | 419 | 1 |  |  |  |  | 24 |  | 41 |  |
+| maths |  |  |  |  |  |  |  | 75 |  | 433 | 1 |  |  |  |  | 24 |  | 40 |  |
 | model |  |  | 7 |  |  |  | 2 | 30 |  | 1 | 218 |  |  | 58 |  | 23 |  | 48 |  |
-| opengl |  |  | 16 |  |  |  | 10 | 189 | 32 | 100 |  | 614 |  | 24 |  |  |  | 125 | 3 |
+| opengl |  |  | 16 |  |  |  | 10 | 189 | 32 | 101 |  | 614 |  | 24 |  |  |  | 125 | 3 |
 | presentation |  | 1 | 100 |  |  | 1 | 24 | 23 | 76 | 12 | 9 | 3 | 93 | 6 | 26 | 25 |  | 11 | 19 |
 | property-values |  |  |  |  |  |  | 11 | 64 | 5 | 26 | 292 |  |  | 176 |  | 103 |  | 35 |  |
 | qt-widgets |  | 17 | 277 | 7 |  | 8 | 79 | 133 | 223 | 116 | 268 | 35 | 116 | 212 | 834 |  |  | 55 | 26 |
 | scribe |  |  |  |  |  |  |  | 31 |  | 8 |  |  |  |  |  | 172 |  | 23 |  |
-| unit-test |  |  | 14 |  |  | 2 | 19 | 2 | 5 | 46 | 22 |  |  | 19 |  | 16 | 2 | 7 |  |
+| unit-test |  |  | 31 |  |  | 2 | 23 | 2 | 5 | 103 | 36 |  |  | 27 |  | 16 | 6 | 8 |  |
 | utils |  | 1 |  |  |  |  | 1 | 34 |  | 13 | 1 |  |  | 54 |  | 3 |  | 50 |  |
 | view-operations |  |  | 45 | 6 |  |  | 5 | 27 | 56 | 92 | 27 |  | 6 | 9 | 1 | 3 |  | 13 | 232 |
 
@@ -265,7 +265,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | --- | ---: |
 | (src root) | 1 / 7 |
 | api | 77 / 110 |
-| app-logic | 151 / 285 |
+| app-logic | 153 / 287 |
 | canvas-tools | 0 / 51 |
 | cli | 0 / 20 |
 | data-mining | 0 / 42 |
@@ -279,7 +279,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | property-values | 127 / 128 |
 | qt-widgets | 0 / 441 |
 | scribe | 56 / 64 |
-| unit-test | 0 / 22 |
+| unit-test | 0 / 28 |
 | utils | 45 / 75 |
 | view-operations | 0 / 82 |
 
@@ -369,7 +369,7 @@ What the module takes from each partially-included directory:
 - `api/PythonVariableFunctionArguments.cc`
 - `api/PythonVariableFunctionArguments.h`
 
-## app-logic (151 of 285)
+## app-logic (153 of 287)
 
 - `app-logic/AppLogicUtils.cc`
 - `app-logic/AppLogicUtils.h`
@@ -403,6 +403,8 @@ What the module takes from each partially-included directory:
 - `app-logic/MultiPointVectorField.h`
 - `app-logic/NetRotationUtils.cc`
 - `app-logic/NetRotationUtils.h`
+- `app-logic/PartitionFeatureGeometries.cc`
+- `app-logic/PartitionFeatureGeometries.h`
 - `app-logic/PlateBoundaryStats.cc`
 - `app-logic/PlateBoundaryStats.h`
 - `app-logic/PlateVelocityUtils.cc`
@@ -806,11 +808,11 @@ What the module takes from each partially-included directory:
 - `maths/PolygonOnSphere.h`
 - `maths/PolygonOrientation.cc`
 - `maths/PolygonOrientation.h`
+- `maths/PolygonOverlay.cc`
+- `maths/PolygonOverlay.h`
 - `maths/PolygonPartitioner.cc`
 - `maths/PolygonPartitioner.h`
 - `maths/PolygonProximityHitDetail.h`
-- `maths/PolylineIntersections.cc`
-- `maths/PolylineIntersections.h`
 - `maths/PolylineOnSphere.cc`
 - `maths/PolylineOnSphere.h`
 - `maths/PolylineProximityHitDetail.h`

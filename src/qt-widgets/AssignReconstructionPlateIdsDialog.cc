@@ -32,6 +32,7 @@
 #include <QMessageBox>
 #include <QRadioButton>
 #include <QString>
+#include <QStringList>
 
 #include "AssignReconstructionPlateIdsDialog.h"
 
@@ -303,12 +304,18 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features()
 		return false;
 	}
 
-	if (!partition_features(*plate_id_assigner.get()))
+	const bool completed = partition_features(*plate_id_assigner.get());
+
+	// Report, once, any features left unpartitioned because a cut was inconsistent (also when the
+	// user cancelled part-way: those already met were left as they were).
+	const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features_not_partitioned =
+			plate_id_assigner.get()->get_features_not_partitioned();
+	if (!features_not_partitioned.empty())
 	{
-		return false;
+		pop_up_features_not_partitioned_message_box(features_not_partitioned);
 	}
 
-	return true;
+	return completed;
 }
 
 
@@ -527,6 +534,38 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 
 	// Let the caller know it can close this dialog since files were selected.
 	return true;
+}
+
+
+void
+GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::pop_up_features_not_partitioned_message_box(
+		const std::vector<GPlatesModel::FeatureHandle::weak_ref> &features_not_partitioned)
+{
+	// List the first few; the rest by count.
+	const unsigned int max_features_listed = 10;
+	QStringList features_listed;
+	for (unsigned int n = 0; n < features_not_partitioned.size() && n < max_features_listed; ++n)
+	{
+		features_listed.append(
+				GPlatesAppLogic::AssignPlateIds::get_feature_description(features_not_partitioned[n]));
+	}
+	QString message = (features_not_partitioned.size() == 1)
+			? tr("1 feature could not be partitioned and was left as it was: cutting its geometry "
+					"by a partitioning polygon gave an inconsistent result.\n\n")
+			: tr("%1 features could not be partitioned and were left as they were: cutting their "
+					"geometry by a partitioning polygon gave an inconsistent result.\n\n")
+					.arg(features_not_partitioned.size());
+	message += features_listed.join("\n");
+	if (features_not_partitioned.size() > max_features_listed)
+	{
+		message += tr("\n... and %n more.", nullptr, features_not_partitioned.size() - max_features_listed);
+	}
+	QMessageBox::warning(
+			this,
+			tr("Features not partitioned"),
+			message,
+			QMessageBox::Ok,
+			QMessageBox::Ok);
 }
 
 

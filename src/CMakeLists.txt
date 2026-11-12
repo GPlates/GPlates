@@ -870,6 +870,16 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU OR
 		target_compile_options(${SOURCE_TARGET} PUBLIC ${_DISABLE_WARNINGS})
 		unset(_DISABLE_WARNINGS)
 	endif()
+
+	#
+	# No floating-point contraction (fusing 'a * b + c' into one FMA instruction, rounded once).
+	# Clang contracts by default wherever the target has FMA, which is every arm64 target (Apple
+	# Silicon, Linux aarch64), and GCC does too when the target has it. The geometry code's exact
+	# sign tests and tie orders assume each operation is rounded on its own, as on x86-64 and with
+	# MSVC (whose default /fp:precise does not contract), so the results would differ by platform:
+	# on arm64 the polygon overlay's comparisons against its prototype fail.
+	#
+	target_compile_options(${SOURCE_TARGET} PUBLIC -ffp-contract=off)
 endif()
 
 #

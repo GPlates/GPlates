@@ -87,13 +87,13 @@ set(srcs
     PolygonOnSphere.h
     PolygonOrientation.cc
     PolygonOrientation.h
+    PolygonOverlay.cc
+    PolygonOverlay.h
     PolygonPartitioner.cc
     PolygonPartitioner.h
     PolygonProximityHitDetail.h
     PolyGreatCircleArcBoundingTree.h
     PolylineEquivalencePredicates.h
-    PolylineIntersections.cc
-    PolylineIntersections.h
     PolylineOnSphere.cc
     PolylineOnSphere.h
     PolylineProximityHitDetail.h

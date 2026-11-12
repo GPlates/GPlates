@@ -34,16 +34,22 @@
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
+#include "app-logic/PartitionFeatureGeometries.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ScalarCoverageFeatureProperties.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
 
 #include "maths/MathsUtils.h"
+
+#include "model/FeatureHandle.h"
+
+#include "property-values/GmlDataBlockCoordinateList.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -53,14 +59,45 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	namespace
+	{
+		/**
+		 * The cookie cutter's sliver filter width from *sliver_width_threshold_radians*: None means
+		 * the default width, and zero turns the filter off.
+		 */
+		boost::optional<double>
+		get_sliver_min_width(
+				boost::optional<double> sliver_width_threshold_radians)
+		{
+			if (!sliver_width_threshold_radians)
+			{
+				return GPlatesAppLogic::GeometryCookieCutter::get_default_sliver_min_width();
+			}
+			if (!(*sliver_width_threshold_radians >= 0))  // negative, or NaN
+			{
+				PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative or NaN.");
+				bp::throw_error_already_set();
+			}
+			if (*sliver_width_threshold_radians <= 0)  // zero, after the test above
+			{
+				return boost::none;
+			}
+			return sliver_width_threshold_radians;
+		}
+	}
+
+
 	PlatePartitionerWrapper
 	plate_partitioner_create_from_features(
 			FeatureCollectionSequenceFunctionArgument partitioning_features_argument,
 			RotationModelFunctionArgument rotation_model_argument,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
-			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
+			boost::optional<double> sliver_width_threshold_radians)
 	{
+		const boost::optional<double> sliver_min_width = get_sliver_min_width(sliver_width_threshold_radians);
+
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
 		{
@@ -137,7 +174,9 @@ namespace GPlatesApi
 								partitioning_feature_collection_refs,
 								rotation_model->get_reconstruction_tree_creator(),
 								group_networks_then_boundaries_then_static_polygons,
-								sort_plates)),
+								sort_plates,
+								GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+								sliver_min_width)),
 				rotation_model,
 				partitioning_features_argument);
 	}
@@ -148,8 +187,11 @@ namespace GPlatesApi
 			bp::object partitioning_plates, // Any python sequence (eg, list, tuple).
 			RotationModelFunctionArgument rotation_model_argument,
 			boost::optional<GPlatesApi::SortPartitioningPlates::Value> sort_partitioning_plates,
-			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
+			boost::optional<double> sliver_width_threshold_radians)
 	{
+		const boost::optional<double> sliver_min_width = get_sliver_min_width(sliver_width_threshold_radians);
+
 		const char *partitioning_plates_type_error_string = "Expected a sequence of ReconstructionGeometry";
 
 		// Copy partitioning plate objects into a vector.
@@ -242,7 +284,9 @@ namespace GPlatesApi
 								reconstruction_time,
 								partitioning_plates_vector,
 								group_networks_then_boundaries_then_static_polygons,
-								sort_plates)),
+								sort_plates,
+								GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+								sliver_min_width)),
 				rotation_model,
 				boost::none,
 				partitioning_plate_objects_vector);
@@ -343,7 +387,8 @@ namespace GPlatesApi
 						partitioned_inside_geometry.partitioned_geometries.end();
 				for ( ; partitioned_geoms_iter != partitioned_geoms_end; ++partitioned_geoms_iter)
 				{
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geom = *partitioned_geoms_iter;
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type partitioned_geom =
+							partitioned_geoms_iter->geometry;
 
 					partitioned_geometries_list.append(partitioned_geom);
 				}
@@ -360,10 +405,10 @@ namespace GPlatesApi
 		{
 			// Append the outside geometries to the caller's list.
 			BOOST_FOREACH(
-					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &partitioned_outside_geometry,
+					const GPlatesAppLogic::GeometryCookieCutter::PartitionedGeometry &partitioned_outside_geometry,
 					partitioned_outside_geometries.get())
 			{
-				partitioned_outside_geometries_list->append(partitioned_outside_geometry);
+				partitioned_outside_geometries_list->append(partitioned_outside_geometry.geometry);
 			}
 		}
 
@@ -399,6 +444,118 @@ namespace GPlatesApi
 	}
 
 	/**
+	 * Partitions every geometry property of @a feature, each with its scalar coverage if it has one
+	 * (spherical-geometry.md section 5.4, by the same code as GPlates' Assign Plate IDs), for the
+	 * pure Python API code of 'partition_features'.
+	 *
+	 * Returns a 2-tuple. Its first element is a list with, for each geometry property name, a
+	 * 4-tuple: the property name, the name of its coverage's range property (or None), the pieces
+	 * inside the partitioning plates as a list of (partitioning ReconstructionGeometry, list of
+	 * pieces), and the pieces outside them all as a list; a piece is a geometry, or a (geometry,
+	 * {ScalarType: list of float}) 2-tuple for a geometry with a coverage. A piece of an
+	 * exterior-ring-only coverage (an older file's) has scalars for its exterior ring only, as Assign
+	 * Plate IDs writes it. Its second element is the list of the positions of the properties
+	 * partitioned, in the feature's order (a time-dependent geometry is partitioned only with a
+	 * single time window containing the reconstruction time; any other is not among them).
+	 */
+	bp::tuple
+	plate_partitioner_partition_feature_geometries(
+			const PlatePartitionerWrapper &plate_partitioner,
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature)
+	{
+		std::vector<GPlatesModel::FeatureHandle::iterator> partitioned_properties;
+		const boost::shared_ptr<const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature> partitioned =
+				GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
+						feature->reference(),
+						*plate_partitioner.get_geometry_cookie_cutter(),
+						false/*respect_feature_time_period*/,
+						partitioned_properties);
+
+		// The positions, in the feature's order of properties, of the properties partitioned (the
+		// geometries and their coverages' ranges), for the caller to remove: as GPlates' Assign Plate
+		// IDs removes them, so that the two agree on which are partitioned and which kept.
+		bp::list partitioned_property_indices;
+		unsigned int property_index = 0;
+		for (GPlatesModel::FeatureHandle::iterator property_iter = feature->begin();
+			property_iter != feature->end();
+			++property_iter, ++property_index)
+		{
+			if (std::find(partitioned_properties.begin(), partitioned_properties.end(), property_iter) !=
+					partitioned_properties.end())
+			{
+				partitioned_property_indices.append(property_index);
+			}
+		}
+
+		// A piece: its geometry, with its coverage's scalars if it has a coverage.
+		const auto to_python = [](
+				const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::PartitionedGeometry &piece)
+		{
+			const bp::object geometry(piece.geometry_domain);
+			if (!piece.geometry_range)
+			{
+				return geometry;
+			}
+			bp::dict scalars;
+			for (const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type &element :
+					*piece.geometry_range)
+			{
+				bp::list values;
+				for (double value : element->get_coordinates())
+				{
+					values.append(value);
+				}
+				scalars[bp::object(element->get_value_object_type())] = values;
+			}
+			return bp::object(bp::make_tuple(geometry, scalars));
+		};
+
+		bp::list properties;
+		if (!partitioned)
+		{
+			return bp::make_tuple(properties, partitioned_property_indices);
+		}
+		for (const auto &entry : partitioned->partitioned_geometry_properties)
+		{
+			const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::GeometryProperty &property =
+					entry.second;
+
+			bp::list inside;
+			for (const GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeature::Partition &partition :
+					property.partitioned_inside_geometries)
+			{
+				bp::list pieces;
+				for (const auto &piece : partition.partitioned_geometries)
+				{
+					pieces.append(to_python(piece));
+				}
+				inside.append(bp::make_tuple(partition.reconstruction_geometry, pieces));
+			}
+			bp::list outside;
+			for (const auto &piece : property.partitioned_outside_geometries)
+			{
+				outside.append(to_python(piece));
+			}
+
+			// The range property name: the coverage's, or (with no coverage) the name a coverage of
+			// the geometry would have, which 'Feature.set_geometry()' also replaces.
+			namespace ScalarCoverage = GPlatesAppLogic::ScalarCoverageFeatureProperties;
+			const boost::optional<GPlatesModel::PropertyName> range_property_name =
+					property.range_property_name
+							? property.range_property_name
+							: ScalarCoverage::get_range_property_name_from_domain(
+									property.domain_property_name);
+			properties.append(
+					bp::make_tuple(
+							property.domain_property_name,
+							range_property_name ? bp::object(range_property_name.get()) : bp::object(),
+							inside,
+							outside));
+		}
+		return bp::make_tuple(properties, partitioned_property_indices);
+	}
+
+	/**
 	 * Returns the rotation model passed into constructor (used by pure Python API code).
 	 */
 	RotationModel::non_null_ptr_type
@@ -424,7 +581,7 @@ export_plate_partitioner()
 			"  Value                                  Description\n"
 			"  ====================================== ==============\n"
 			"  PartitionMethod.split_into_plates      Split each feature into the partitioning plates, and into unpartitioned parts that are outside all partitioning plates (if the plates do not have global coverage). For example, a feature that overlaps two plates is cloned twice, each clone getting the part of the original geometry inside its plate, and any part outside all plates becomes a third clone containing the unpartitioned geometry. The partitioned clones have properties copied from their partitioning plate features (as determined by *properties_to_copy*); the unpartitioned clone has none copied.\n"
-			"  PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the length of polyline or polygon geometry inside each plate (or the number of points for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.\n"
+			"  PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the area of polygon geometry inside each plate, then by the length of polyline geometry, then by the number of points (for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. (Before pyGPlates 1.1 a polygon was measured by its outline's length.) The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.\n"
 			"  ====================================== ==============\n")
 			.value("split_into_plates", GPlatesApi::PartitionMethod::SPLIT_INTO_PLATES)
 			.value("most_overlapping_plate", GPlatesApi::PartitionMethod::MOST_OVERLAPPING_PLATE);
@@ -528,7 +685,8 @@ export_plate_partitioner()
 								bp::arg("sort_partitioning_plates") =
 										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
 								bp::arg("anchor_plate_id") =
-										boost::optional<GPlatesModel::integer_plate_id_type>())),
+										boost::optional<GPlatesModel::integer_plate_id_type>(),
+								bp::arg("sliver_width_threshold_radians") = boost::optional<double>())),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
 				"__init__(...)\n"
 				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
@@ -548,6 +706,16 @@ export_plate_partitioner()
 				"    plate_partitioner = pygplates.PlatePartitioner(..., "
 				"sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)\n"
 				"\n"
+				"  A cut can leave slivers: pieces of a polygon only metres wide, where its outline was "
+				"digitised along a plate boundary. A piece narrower than *sliver_width_threshold_radians* "
+				"(twice its area over its perimeter, on a sphere of unit radius) is dropped, so that it "
+				"is not assigned the neighbouring plate. The default, ten times the distance within which "
+				"two outlines count as touching, is ``1.4142e-5`` radians (about 90 metres on the Earth); "
+				"zero turns this off, so that the pieces cover the polygon exactly:\n"
+				"  ::\n"
+				"\n"
+				"    plate_partitioner = pygplates.PlatePartitioner(..., sliver_width_threshold_radians=0)\n"
+				"\n"
 				"  .. note:: Only those reconstructed/resolved geometries that contain a *polygon* boundary are actually used for partitioning. "
 				"For :func:`resolved topologies<resolve_topologies>` this includes :class:`ResolvedTopologicalBoundary` and "
 				":class:`ResolvedTopologicalNetwork`. For :func:`reconstructed geometries<reconstruct>`, a :class:`ReconstructedFeatureGeometry` "
@@ -559,7 +727,7 @@ export_plate_partitioner()
 				// Specific overload signature...
 				"__init__(partitioning_plates, rotation_model, "
 				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
-				"[anchor_plate_id])\n"
+				"[anchor_plate_id], [sliver_width_threshold_radians])\n"
 				"  Create a partitioner from a sequence of reconstructed/resolved plates.\n"
 				"\n"
 				"  :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.\n"
@@ -576,8 +744,13 @@ export_plate_partitioner()
 				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
 				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
 				"  :type anchor_plate_id: int\n"
+				"  :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this "
+				"are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps "
+				"every piece\n"
+				"  :type sliver_width_threshold_radians: float, or None\n"
 				"  :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same "
 				":meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN\n"
 				"\n"
 				"  The *partitioning_plates* sequence can be generated by "
 				":func:`reconstructing regular geological features<reconstruct>` and/or "
@@ -606,7 +779,7 @@ export_plate_partitioner()
 				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
 				"\n"
 				"  .. versionchanged:: 1.1\n"
-				"     Added the *anchor_plate_id* argument.\n")
+				"     Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.\n")
 		//
 		// NOTE: We define this *after* the '__init__' associated with 'plate_partitioner_create_from_reconstruction_geometries()'
 		// because boost-python matches most recently defined functions first and this function has a tighter
@@ -622,11 +795,12 @@ export_plate_partitioner()
 								bp::arg("sort_partitioning_plates") =
 										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID,
 								bp::arg("anchor_plate_id") =
-										boost::optional<GPlatesModel::integer_plate_id_type>())),
+										boost::optional<GPlatesModel::integer_plate_id_type>(),
+								bp::arg("sliver_width_threshold_radians") = boost::optional<double>())),
 				// Specific overload signature...
 				"__init__(partitioning_features, rotation_model, [reconstruction_time=0], "
 				"[sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], "
-				"[anchor_plate_id])\n"
+				"[anchor_plate_id], [sliver_width_threshold_radians])\n"
 				"  Create a partitioner by reconstructing/resolving plates from a sequence of plate features.\n"
 				"\n"
 				"  :param partitioning_features: A sequence of plate features to partition with.\n"
@@ -647,9 +821,14 @@ export_plate_partitioner()
 				":meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* "
 				"(or zero if *rotation_model* is not a :class:`RotationModel`).\n"
 				"  :type anchor_plate_id: int\n"
+				"  :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this "
+				"are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps "
+				"every piece\n"
+				"  :type sliver_width_threshold_radians: float, or None\n"
 				"  :raises ValueError: if *reconstruction_time* is "
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`, or "
+				"*sliver_width_threshold_radians* is negative or NaN\n"
 				"\n"
 				"  The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>` "
 				"and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and "
@@ -665,7 +844,7 @@ export_plate_partitioner()
 				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
 				"\n"
 				"  .. versionchanged:: 1.1\n"
-				"     Added the *anchor_plate_id* argument.\n")
+				"     Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.\n")
 		.def("partition_geometry",
 				&GPlatesApi::plate_partitioner_partition_geometry,
 				(bp::arg("geometry"),
@@ -685,6 +864,8 @@ export_plate_partitioner()
 				"all partitioning plates (note that the list is *not* cleared first)\n"
 				"  :type partitioned_outside_geometries: list of GeometryOnSphere, or None\n"
 				"  :rtype: bool\n"
+				"  :raises PartitionError: if cutting *geometry* by a partitioning plate finds no consistent "
+				"result\n"
 				"\n"
 				"  If *geometry* is inside any partitioning plates (even partially) "
 				"then ``True`` is returned and the inside parts of *geometry* are appended to "
@@ -704,8 +885,13 @@ export_plate_partitioner()
 				"*partitioned_outside_geometries* is simply a list of :class:`geometries<GeometryOnSphere>` "
 				"outside all partitioning plates.\n"
 				"\n"
-				"  .. warning:: Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry "
-				"is partial. See :meth:`PolygonOnSphere.partition` for more details.\n"
+				"  A polygon geometry that intersects a partitioning plate is cut into polygons (with "
+				"interior rings where needed), and the pieces outside one plate are cut by the next. A geometry that "
+				"only touches a plate is not cut there. See :meth:`PolygonOnSphere.partition` for more details.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     A polygon geometry is partitioned into polygons (previously polylines), and a geometry that "
+				"only touches a plate is no longer split there.\n"
 				"\n"
 				"  To find the length of a polyline partitioned inside all reconstructed static polygons:\n"
 				"  ::\n"
@@ -758,6 +944,10 @@ export_plate_partitioner()
 		// This method is accessed by pure python API code.
 		.def("_get_rotation_model",
 				&GPlatesApi::plate_partitioner_get_rotation_model)
+		// This is a private method (has leading '_'), and we don't provide a docstring.
+		// This method is accessed by pure python API code ('partition_features').
+		.def("_partition_feature_geometries",
+				&GPlatesApi::plate_partitioner_partition_feature_geometries)
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

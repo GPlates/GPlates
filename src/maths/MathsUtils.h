@@ -28,8 +28,9 @@
 #ifndef GPLATES_MATHS_MATHUTILS_H
 #define GPLATES_MATHS_MATHUTILS_H
 
-#include <limits>
 #include <cmath>
+#include <functional>
+#include <limits>
 #include <boost/mpl/if.hpp>
 #include <boost/type_traits/is_integral.hpp>
 
@@ -106,6 +107,23 @@ namespace GPlatesMaths
 	{
 		double d = value1 - value2;
 		return -GPlatesMaths::TIGHTER_EPSILON <= d && d <= GPlatesMaths::TIGHTER_EPSILON;
+	}
+
+	/**
+	 * Whether @a value1 and @a value2 are exactly equal, on purpose: for values copied rather than
+	 * computed (a stored coordinate against another copy of it), or a test for exactly zero.
+	 *
+	 * This is '==', but says the exact comparison is meant; '==' itself raises -Wfloat-equal,
+	 * which is for accidental exact comparisons ('std::equal_to' is in a system header, so the
+	 * compilers do not warn there).
+	 */
+	inline
+	bool
+	are_exactly_equal(
+			double value1,
+			double value2)
+	{
+		return std::equal_to<double>()(value1, value2);
 	}
 
 	/**

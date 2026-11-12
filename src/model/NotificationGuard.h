@@ -74,6 +74,17 @@ namespace GPlatesModel
 		NotificationGuard(
 				boost::optional<Model &> model);
 
+		/**
+		 * Constructor for a handle's 'model_ptr()', which is NULL when the handle is not in a model
+		 * (a feature collection created on its own, as pyGPlates and the unit tests do).
+		 *
+		 * If @a model is NULL then this notification guard does nothing. (Dereferencing it for the
+		 * 'Model &' constructor is undefined behaviour, which crashes on arm64.)
+		 */
+		explicit
+		NotificationGuard(
+				Model *model);
+
 		~NotificationGuard();
 
 

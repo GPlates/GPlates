@@ -42,6 +42,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/PolygonOverlay.h"
 #include "maths/PolygonPartitioner.h"
 #include "maths/SmallCircleBounds.h"
 
@@ -961,25 +962,28 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 
 	// If the polygon is outside the current quad tree node then we are finished and can return.
 	// TODO: Implement a more optimal path that tests intersection without partitioning.
-	if (GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE ==
-		polygon_partitioner.partition_polygon(quad_tree_node_bounding_polygon))
+	//
+	// The node only needs to know whether the polygon might reach it, so a cut the overlay finds
+	// inconsistent (spherical-geometry.md section 5.6) is taken as intersecting: it costs rendering
+	// work on a node the polygon may not reach, and nothing else.
+	GPlatesMaths::PolygonPartitioner::Result partition_result =
+			GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING;
+	try
 	{
-		// If the cube quad tree node's polygon boundary is outside our test polygon then it's
-		// still possible for the cube quad tree node to completely surround the test polygon in which
-		// case it's actually intersecting the test polygon's interior region.
-		// We test this by seeing if a vertex on the test polygon is inside the node's bounding polygon.
-		if (!quad_tree_node_bounding_polygon->is_point_in_polygon(
-			polygon_partitioner.get_partitioning_polygon()->first_exterior_ring_vertex(),
-			GPlatesMaths::PolygonOnSphere::ADAPTIVE/*default*/,
-			// Note we turn off point-on-polygon outline threshold testing.
-			// We don't want test to return true if point is outside polygon but *very* close to it...
-			false/*use_point_on_polygon_threshold*/))
-		{
-			// The current cube quad tree node does *not* surround the test polygon (and is also outside
-			// the test polygon) therefore the test polygon interior region does not intersect
-			// the current cube quad tree node's interior region.
-			return;
-		}
+		partition_result = polygon_partitioner.partition_polygon(quad_tree_node_bounding_polygon);
+	}
+	catch (const GPlatesMaths::PolygonOverlay::InconsistentOverlayException &)
+	{
+	}
+	//
+	// A node surrounding the test polygon is intersecting, not outside: the test polygon is then a
+	// clip ring inside the subject, which the overlay reports as intersecting. So no test of the
+	// polygon's vertices against the node is needed. (This overload serves a polygon drawn as a fan,
+	// which create_polygon_mesh_drawables compiles out: nothing calls it today, and no rendering
+	// shows what it answers.)
+	if (GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE == partition_result)
+	{
+		return;
 	}
 
 	// Record that the current polygon mesh possibly intersects the current quad tree node.
