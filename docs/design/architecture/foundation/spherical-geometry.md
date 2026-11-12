@@ -2280,7 +2280,9 @@ inputs whose rings do not cross also by orientation and by having no crossing gr
 the symmetric difference (a touch taken for a crossing). Any repair of generated
 data fails the case, and the one-passage rule's and the result contract's cases are pinned
 (`OnePassageRule`, `PartitionerCollapsedRegion`). The prototype, its generators and its exporter
-live in the planning repository (its configuration name is `r5o`); a larger export is run through
+live in the planning repository (its configuration name is `r5p`, which mirrors for polylines the
+spike rule's restriction to polygon rings and the along rule for a hairpin along the clip's edge,
+section 5.2); a larger export is run through
 `GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES`. The hunt at scale ran 119,198 generated cases, about
 fourteen times the earlier sets, and found the grouping margin and the cone's offsets (section
 5.2); after them 9 polygon cases differ, none in a partition's geometry: 4 coincident rings of no

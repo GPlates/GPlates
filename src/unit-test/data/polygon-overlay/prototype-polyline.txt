@@ -3893,7 +3893,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -3908,9 +3908,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -3920,7 +3918,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -3935,9 +3933,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -3947,7 +3943,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -3962,9 +3958,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -3974,7 +3968,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -3989,9 +3983,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4001,7 +3993,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4016,9 +4008,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4028,7 +4018,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4043,9 +4033,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4055,7 +4043,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4070,9 +4058,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4082,7 +4068,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4097,9 +4083,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4109,7 +4093,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4124,9 +4108,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4136,7 +4118,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4151,9 +4133,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4163,7 +4143,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4178,9 +4158,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4190,7 +4168,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4205,9 +4183,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4217,7 +4193,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4232,9 +4208,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4244,7 +4218,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4259,9 +4233,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4271,7 +4243,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4286,9 +4258,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4298,7 +4268,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4313,9 +4283,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4325,7 +4293,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4340,9 +4308,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4352,7 +4318,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4367,9 +4333,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4379,7 +4343,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4394,9 +4358,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4406,7 +4368,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4421,9 +4383,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4433,7 +4393,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4448,9 +4408,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4460,7 +4418,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4475,9 +4433,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4487,7 +4443,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4502,9 +4458,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex - 0
@@ -4514,7 +4468,7 @@ piece P 0 0 0 1 in along 2 3
 piece P 0 0 0 0 out vertex 3 4
 piece P 0 0 1 0 out absorbed 4 5
 piece P 0 0 0 1 in along 5 6,7,8
-piece P 0 0 0 0 out midpoint 6,7,8 9,10
+piece P 0 0 0 0 in along 6,7,8 9,10
 piece P 0 0 0 0 in vertex 9,10 -
 piece Q 0 0 0 1 none none 1 2
 piece Q 0 0 0 1 none none 2 3
@@ -4529,9 +4483,7 @@ piece Q 1 0 0 0 none none 8 0
 run out P0.0 0
 run in 0 P0.1 1 2 3
 run out 3 P0.4 4
-run in 4 6
-run out 6 9
-run in 9 P0.9
+run in 4 6 9 P0.9
 endorder
 endcase
 case polyline along#15 seed 1
@@ -12762,8 +12714,8 @@ piece P 0 0 0 1 in along 0 1
 piece P 0 0 0 1 in along 1 2
 piece P 0 0 0 0 out vertex 2 5
 piece P 0 0 0 1 in along 5 4
-piece P 0 0 0 0 in midpoint 4 7
-piece P 0 0 0 0 out deduced 7 6
+piece P 0 0 0 0 in along 4 7
+piece P 0 0 0 0 out midpoint 7 6
 piece P 0 0 0 0 out midpoint 6 3
 piece Q 0 0 0 1 none none 2 1
 piece Q 0 0 0 1 none none 1 0

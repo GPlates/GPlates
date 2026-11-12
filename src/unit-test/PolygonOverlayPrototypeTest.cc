@@ -60,10 +60,12 @@
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
 // Python implementation in exact rational arithmetic, kept outside this repository) on its
 // catalogue of configurations with several records at or near one point. The prototype ran the
-// chosen configuration ('r5o': identity vertices with the loop rule and the spike rule where the
+// chosen configuration ('r5p': identity vertices with the loop rule and the spike rule where the
 // other input passes the tip at most once, self-touch cuts, the LL rule, the one-passage rule,
 // midpoint tests in order of margin, the bundle rule where both inputs pass more than once with
-// cones that count a ray's offsets off its segment, option 3 for anchorless chains), and the file
+// cones that count a ray's offsets off its segment, option 3 for anchorless chains; for a polyline
+// subject, the spike rule on the clip's rings only, and a polyline single arc that a clip single
+// arc also joins along; 'r5o' for a polygon subject differs in nothing), and the file
 // holds every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect
 // orders records along a segment by a cosine in
 // doubles, so records whose cosines agree within a few ulps come out in either order. Format, per
