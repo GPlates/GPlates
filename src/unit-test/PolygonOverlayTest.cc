@@ -1405,7 +1405,8 @@ TEST(PolygonOverlayTest, ClassifyLLRule)
 
 // A whole answer extracts nothing, so it has its own hemisphere check (section 5.6): a point of
 // the subject clear of both outlines must be on the side the answer says. A subject inside the
-// clip, and one outside it, each given the other answer.
+// clip, and one outside it, each given the other answer; and classify() checks its own whole
+// answer (once, counted).
 TEST(PolygonOverlayTest, CheckWholeResult)
 {
 	const auto Q_plain = polygon(square(-0.03, -0.03, 0.03, 0.03));
@@ -1432,6 +1433,8 @@ TEST(PolygonOverlayTest, CheckWholeResult)
 
 		Overlay::Overlay overlay(*P, *Q);
 		EXPECT_EQ(overlay.classify(), right);
+		EXPECT_EQ(overlay.get_diagnostics().whole_checks, 1u);
+		EXPECT_EQ(overlay.get_diagnostics().whole_check_skipped, 0u);
 		EXPECT_EQ(overlay.get_diagnostics().hemisphere_check_failures, 0u);
 		EXPECT_NO_THROW(overlay.check_whole_result(right));
 		EXPECT_THROW(overlay.check_whole_result(wrong), Overlay::InconsistentOverlayException);

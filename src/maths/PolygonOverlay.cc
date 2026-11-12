@@ -2460,6 +2460,7 @@ GPlatesMaths::PolygonOverlay::Overlay::check_whole_result(
 		++d_diagnostics.whole_check_skipped;
 		return;
 	}
+	++d_diagnostics.whole_checks;
 	const bool in_clip = d_clip.is_point_in_polygon(*point, d_options.clip_speed, false);
 	if (in_clip != (result == RESULT_INSIDE))
 	{

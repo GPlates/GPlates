@@ -607,6 +607,7 @@ namespace GPlatesMaths
 			unsigned int grouping_failures = 0;       // a hole group not nested in its parent
 			unsigned int hemisphere_check_failures = 0;  // the output read as its complement
 			unsigned int hemisphere_check_skipped = 0;   // no reference point clear of both
+			unsigned int whole_checks = 0;               // a whole answer checked at a point
 			unsigned int whole_check_skipped = 0;        // a whole answer, none inside the subject
 
 			// The sliver filter (Options::sliver_min_width), accumulated over every extract.
@@ -954,8 +955,8 @@ namespace GPlatesMaths
 			 * The hemisphere check for a polygon subject found whole on one side (@a result inside
 			 * or outside), which extracts nothing to check (section 5.6): the reference point, if
 			 * inside the subject, must be inside the clip exactly when the result is inside.
-			 * Counted (Diagnostics::hemisphere_check_failures, whole_check_skipped). Called by
-			 * @a classify; public so that a test can give it a wrong result.
+			 * Counted (Diagnostics::whole_checks, hemisphere_check_failures, whole_check_skipped).
+			 * Called by @a classify; public so that a test can give it a wrong result.
 			 *
 			 * @throws InconsistentOverlayException on a failure if Options::throw_if_inconsistent.
 			 */
