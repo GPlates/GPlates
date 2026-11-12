@@ -1005,9 +1005,38 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     same-crossing sign test, hole order. GPlates 213 of 213, pyGPlates 7 of 7; Linux (Ubuntu
     22.04, `b60b21e2d`): pyGPlates 7 of 7, GPlates 213 of 213.
 
+- 2026-11-12: **Before PR B: the prototype at `r5p`, the whole answer's check pinned, and the
+  `partition_features` question measured** (the developer's decisions).
+  - **`r5p`** (planning repository `8333d35`; `e5b756b30`): the prototype mirrors the C++'s two
+    polyline rules (the spike rule on polygon rings only; a hairpin along the clip's edge along).
+    `r5p` is `r5o` for polygons (the catalogue's records, tie orders and classes identical; output
+    rings vary between any two runs, hash randomisation). The hunt: 9 cases differ, the known
+    polygon ones, none in a partition's pieces; the 35 polyline cases are gone. The committed
+    `prototype-polyline.txt`, re-exported, agrees to the band piece.
+  - **`whole_checks`** (`b14bf9bb8`): classify()'s call of check_whole_result was unpinned (no
+    counter of checks made); now counted and expected, and the mutation dropping the call fails.
+  - **The margin order needs no hand-built test**: both orderings' mutations (smallest first, and
+    first found, in both loops) fail `BundleRule`, `OnePassageRule` and
+    `AssignPlateIdsSkipsInconsistentFeature`. Dropped from the open items.
+  - **The branch history stays as it is** (recommended, not yet confirmed by the developer): two
+    merges of `main` inside it, code commits that each record a step or a review's fixes, plan
+    commits that touch only this directory, and commit hashes cited throughout this plan and the
+    reports.
+  - **`PlatePartitioning.py`** (the release checklist's "Audit the plate partitioning"): its
+    correctness review is PR B's (area reviews 3 to 5, then 6 and 7, and the visual check).
+    Measured on the Muller 2022 coastlines at 0 Ma: `partition_features` 0.49 s, of which the C++
+    partitioning (`_partition_feature_geometries`) is 0.15 s and reverse reconstruction 0.03 s, so
+    about 0.31 s is the Python feature assembly; GPlates' Assign Plate IDs does the same assembly in
+    C++ (`PartitionFeatureTask` and its two tasks), and PR B's reviews found three places where the
+    two differed. **Decided**: route pyGPlates' assembly through the C++ tasks in a PR of its own,
+    after PR C (likely for 1.1, not required for it).
+
 - **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
-  rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d` (Status, 2026-11-12).
-  Next: PR B (the branch history, its description, the roadmap). Open as before: the
+  rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d`; the prototype is at
+  `r5p` and the hunt clean but for the 9 known polygon cases (Status, 2026-11-12). Next: a short
+  focused Fable review of `52bb6f4cd` onwards (the code review 7's fixes became, the tree walk, the
+  whole-answer counter), then PR B (its description, the roadmap). After PR B: PR C, then the
+  `partition_features` rework (its own PR). Open as before: the
   prototype's polyline rule (`r5p`); the margin order's hand-built test.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
