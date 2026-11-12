@@ -976,9 +976,37 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   - The visual check's box now gives one plate-5 polygon with the plate-100 piece's hole ring as
     its interior ring. GPlates 211 of 211, pyGPlates 7 of 7.
 
+- 2026-11-12: **Review 7 (Fable High) of the grouping, and its fixes** (`prB-review-7-crossing-groups.md`;
+  the developer approved every recommendation). The grouping argument holds as coded (60,000
+  random crossing-input cases read right); inputs whose rings do not cross are unchanged.
+  - **Fixed, `52bb6f4cd`**: rings meeting only at vertices on each other's outline can overlap by
+    any amount with no vertex inside (1.1): the crossing test also classifies an edge's midpoint
+    when both its ends are within the margin. The hunt's crossing-input cases wrong as polygons 3 to
+    0, and the 4 "symmetric difference's pairing" cases were this too: 44 cases differ (35 polyline
+    `r5o`, 9 polygon: 4 coincident, 4 second-step, 1 tie order). A ring crossing itself measured
+    as a sliver by its signed area (a bow-tie three quarters inside a plate came back wholly
+    outside, 1.2, older than the grouping): a sliver candidate that crosses itself is kept
+    (`does_ring_cross_itself`). Tests: the chord case (overlay, both ways round, and its closing
+    edge), groups three deep (a hole group in a hole parent, depth by rings), the partition layer
+    with crossing rings either way round, the bow-tie; each of those mutations now fails a test.
+  - **Fixed, `a7fef5779`**: the cost (1.4): the vertex test walks the ring's bounding tree, a node
+    clear of the other ring's bounding circle counting as outside at once. Review 7's probe:
+    extract(INTERSECTION) 115 to 22 ms (341 rings) and 2,280 to 215 ms (1,481 rings), against 17
+    and 171 ms with the test off. Hunt identical; coastline partition_features within a few
+    percent of `a58eb0ddb` (0.345/0.333 s against 0.332/0.332 s at 0 Ma).
+  - **Documented, `84780ca77`**: 1.3 (a crossing piece's area is exterior less interiors, for most
+    overlapping), 1.7 (exterior-ring-only coverages), 1.8 (the page, comments, changelogs, the
+    `partition` docstring; stub regenerated, docs from scratch clean with the links resolved).
+    Deferred to section 7: 1.6 (coincident rings with area become two polygons) and the review's
+    section 2 (grid-snapped inputs with rings in common and crossing give wrong ring parity
+    without throwing, 5 to 52 in about 6,000).
+  - **Still unpinned**: the vertex test in one argument order (every pair built is found both
+    ways), the nesting check's fallback, the sliver exemption for groups, `do_arcs_cross`'s
+    same-crossing sign test, hole order. GPlates 213 of 213, pyGPlates 7 of 7.
+
 - **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
-  rings is in (Status, 2026-11-12). Next: a Fable High review of the grouping fix, a Linux run of
-  the tip, then PR B (the branch history, its description, the roadmap). Open as before: the
+  rings is in, with review 7 and its fixes (Status, 2026-11-12). Next: a Linux run of the tip,
+  then PR B (the branch history, its description, the roadmap). Open as before: the
   prototype's polyline rule (`r5p`); the margin order's hand-built test.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
