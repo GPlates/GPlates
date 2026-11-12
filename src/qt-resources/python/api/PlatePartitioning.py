@@ -23,8 +23,11 @@ def _plate_partitioning_set_keeping_unpartitioned(feature, set_function, propert
     # the properties that were not partitioned (the partitioned ones were removed), and one of those can share the
     # name of a partitioned one (a time-dependent geometry beside a constant one, say), so it is put back afterwards,
     # unchanged, as GPlates' Assign Plate IDs keeps it.
-    kept = [(property.get_name(), property.get_time_dependent_value())
-            for property in feature if property.get_name() in property_names]
+    # (Looked up by name: scanning every property of every feature returned took about an eighth of the time
+    # 'partition_features()' takes on a global coastline file.)
+    kept = [(property_name, property.get_time_dependent_value())
+            for property_name in property_names
+            for property in feature.get(property_name, PropertyReturn.all)]
     set_function()
     for property_name, property_value in kept:
         feature.add(property_name, property_value, VerifyInformationModel.no)
