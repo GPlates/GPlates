@@ -1446,22 +1446,33 @@ symmetric difference's where a vertex's four kept ends pair crosswise. Two polyg
 their union, so crossing rings in separate polygons overlap (the hunt found 11,212 of its 70,291
 cases with crossing inputs wrong read as polygons, against 255 counted as grouping failures). So
 rings that cross (`do_rings_cross`) are first joined into **groups**, and a group's rings all go
-into one polygon, which reads by parity as the output does. Two rings cross if either has a point
-inside the other and a point outside it, each farther than the margin below from its outline, the
-points being its vertices and the midpoints of its edges whose two ends are both within the margin
-of the other ring (where the rings swap sides along a stretch within the margin of each other, a
-dense shared edge, say; or where an edge between two points on the other's outline is a chord
-through it: rings that meet only at vertices on each other's outline can overlap by any amount with
-no vertex of either inside the other, review 7's square with an interior ring through three of its
-corners); or if an edge of each crosses an edge of the other with the ends of both farther than the
-margin from the other's great circle (two rings crossing like a plus sign, no vertex of either
-inside the other). Both tests descend the rings' bounding trees: a node of one ring farther than
-the margin from the other's bounding circle is outside it at once, so a large exterior is not
-walked vertex by vertex for each of its many holes (that cost twelve times the old grouping at
-1,481 rings and 100,000 points; now about 1.3 times). So a touch at a vertex, a crossing within a
-vertex's cluster, and stretches within the thickness of each other are not taken for crossings, and
-an overlap reached only within the margin of the outlines (thinner than it, or behind a chord
-shorter than about twice it) is missed. Groups do not cross each other, so a group lies
+into one polygon, which reads by parity as the output does. Rings whose outlines are farther apart
+than the margin below do not cross (one lies inside the other, or they are apart), which a
+distance query over both rings' bounding trees settles for almost every pair from a valid input.
+Otherwise two rings cross if either has a point inside the other and a point outside it, each
+farther than the margin from its outline (`has_points_on_both_sides`), the points being its
+vertices and, at a vertex within the margin of the other ring, the midpoints of its two edges and
+the points three margins along them (`PROBE_DISTANCE_IN_MARGINS`). That sees rings that swap sides
+along a stretch within the margin of each other (a dense shared edge); an edge between two points
+on the other's outline, a chord through it (rings that meet only at vertices on each other's
+outline, review 7's square with an interior ring through three of its corners); and an edge that
+leaves the other's outline at a vertex and leaves the other ring again through one of the other's
+vertices (two rings each with vertices on the other's edges, review 8's pinwheel): overlaps of any
+size with no vertex of either inside the other. Or two rings cross if an edge of each crosses an
+edge of the other with the ends of both farther than the margin from the other's great circle (two
+rings crossing like a plus sign, no vertex of either inside the other), by both rings' bounding
+trees. The point test walks one ring's bounding tree against the other ring's bounding circle: a
+node farther than the margin from that circle is outside it at once, so a large exterior is not
+walked vertex by vertex for each of its many holes. The cost, against the old grouping's (one
+point a pair): about 1.1 times for an exterior with 1,481 holes and 100,000 points, 1.2 times for an
+annulus of two 100,000-point rings, 1.4 times for a cut leaving 50 long pieces side by side, and
+2.7 times for 100 of them, whose 4,950 pairs each need the distance query (without it, 25 times,
+since such rings lie in each other's bounding circles and the walk can prune nothing). So a touch at
+a vertex, a crossing within a vertex's cluster, and stretches within the thickness of each other
+are not taken for crossings, and an overlap reached only within a few margins of the outlines is
+missed: review 8's random probe, snapped to a grid of 0.004 radians so that rings share vertices
+and stretches, finds 2 such operations in 11,668 cases, and none generic or on a grid of 0.002.
+Groups do not cross each other, so a group lies
 wholly inside or wholly outside each ring of another (a ring crossing one inside a ring `R` reaches
 inside `R`, so lies inside it), and the number of rings containing it is the same all over it. The
 groups are then nested by **containment with parity depth**, tested on each group's first ring
@@ -1472,7 +1483,9 @@ if every one of those is on `r'` the rings coincide (counted). The margin is `ma
 widest record cluster)`, the oracle's sampling margin: a margin of `s` alone let a vertex `1.6 h`
 across a gap under `2 h` between two facing holes decide that a hole lay outside its exterior, in 5
 of 119,198 generated cases, the intersection's area wrong by about a quarter. Every pair of rings
-whose bounding circles meet is tested, by containment one point each. A group's depth is the
+not already in one group is given to the crossing test (which returns at once if their bounding
+circles do not meet); containment is asked of each group's first ring against every ring of the
+other groups, one point each. A group's depth is the
 number of rings containing it and its parent the containing group of greatest depth. An even depth
 starts a polygon, whose exterior is the group's ring of largest area (any would read the same by
 parity) and whose holes are its other rings; an odd depth puts all of the group's rings, as holes,
@@ -1518,10 +1531,20 @@ passes every other check. A point outside the subject tells nothing, so with no 
 outermost first, and a group inside a dropped group is dropped with it, since a dropped exterior's
 region goes to the other output and a dropped hole is filled, with everything inside either (an
 island of a filled hole, kept, would overlap its polygon). A group of crossing rings is not filtered
-itself: its region is no one ring's. Nor is a ring that crosses itself (`does_ring_cross_itself`,
-asked only of a ring that measures as a sliver): its mean width uses the fan's signed area, which
-weights each lobe by its winding number, so lobes wound opposite ways cancel, and a bow-tie three
-quarters inside a plate measured as a sliver and came back wholly outside (review 7).
+itself (though it is dropped with a dropped ring it lies in): its region is no one ring's. Nor is a
+ring that crosses itself (`does_ring_cross_itself`, asked only of a ring that measures as a
+sliver): its mean width uses the fan's signed area, which weights each lobe by its winding number,
+so lobes wound opposite ways cancel, and a bow-tie three quarters inside a plate measured as a
+sliver and came back wholly outside (review 7). A ring crosses itself if two of its edges cross
+clear of their ends (the edge test, its bounding tree against itself), or if at a vertex within the
+margin of a part of the ring not adjacent to it the ring's path through the vertex passes from one
+side of the path there to the other, judged at points three margins along both paths, each farther
+than the margin from the other path (a bow-tie with a vertex at its crossing, review 8). A touch
+(lobes wound alike) is not a crossing, nor is anything decided only within a few margins of the
+crossing point, nor a side judged against a path whose arms are under two margins long (past the end
+of a short arm the ring can pass round it without crossing): so a ring of a valid input is not taken
+as crossing itself (none of the intersections' and differences' output rings in the hunt's 39,320
+cases with valid inputs, asked of every ring), and a self-crossing within a few margins is missed.
 
 **Polylines** (`classify_polyline_pieces`, `extract_polylines`). A polyline subject shares the
 structures above (the loop rule skips a piece with a dangling end; the self-touch cuts apply); the
@@ -1681,7 +1704,9 @@ geometry that is not partitioned decides no plate. A piece whose rings cross (se
 measured as `PolygonOnSphere::get_area` measures it, its exterior's area less its interiors', which
 is not its parity area (section 3.3): a plate whose hole pokes half out of its exterior measured
 0.0121 steradians against 0.0304 sampled (review 7), and before such rings were grouped, as
-separate polygons, they summed too large instead.
+separate polygons, they summed too large instead. A ring that crosses itself is measured by its
+signed area, in which lobes wound opposite ways cancel: a bow-tie's piece has an area near zero,
+so a bow-tie three quarters inside one plate goes to the plate holding the other quarter (review 8).
 
 **Time-dependent geometry.** A geometry property whose value is a `GpmlPiecewiseAggregation` with
 exactly one time window containing the reconstruction time is partitioned as a constant geometry,
@@ -1730,7 +1755,8 @@ reported the hemisphere wholly inside a 10-degree box. The apex is now the ring'
 any other; where that is rounding (`magSqrd()` under `1e-18`, a ring of no area whichever apex is
 used) the mean direction, and if that cancels too the first vertex. The sum is signed by winding
 number, so for a ring that crosses itself it is not its parity area, and lobes wound opposite ways
-cancel: such a ring, and a group of rings that cross each other, are never dropped (section 5.2).
+cancel: such a ring, and a group of rings that cross each other, are not dropped themselves
+(section 5.2, which says which self-crossings are seen).
 
 **The widths.** `GeometryCookieCutter`'s default is `10 h` (`get_default_sliver_min_width`, about
 90 metres), so it covers Assign Plate IDs and pyGPlates' `PlatePartitioner` and
@@ -2240,12 +2266,15 @@ vertices at one subject vertex, a shared edge, a polyline; the loop and spike ru
 and a far end's offsets in the cones; the classification of the apex on an edge, the neck, the
 T-intersection, the touch rule, touches returned whole, a short segment's self-touch, anchorless
 chains and a near-copy's anchorless chain past a short clip segment, the LL rule (an octagram), and
-a whole answer's hemisphere check; repair by a single flip and by a whole chain, and the throw
+a whole answer's hemisphere check (and its skip for a subject too thin for it); repair by a
+single flip and by a whole chain, and the throw
 without repair; linking (two squares, a clip inside, a pinch, and the catalogue families under every
 operation against the oracle); grouping (holes in both inputs, crossing holes, islands in holes, the
 containment test directly, inputs whose rings cross, a hole across its exterior, two rings like a
 plus sign, rings meeting only at shared vertices both ways round, groups three deep, and the
-crossing tests directly, between rings and of a ring with itself), orientation independent of the
+crossing tests directly, between rings (a pinwheel among them) and of a ring with itself (a bow-tie
+with a vertex at its crossing, and a touch that is not a crossing), and against the same rules
+written as plain loops over 400 generated pairs of rings), orientation independent of the
 inputs' and a union
 over a hemisphere throwing; self-touching inputs and the pairings only a rare vertex shows; polylines (across, no
 record, along under both settings, a touch and an end on the edge, a pinch, a hairpin across the
@@ -2302,10 +2331,11 @@ shortcut for an interior past its circle (the helix band of section 3.3, both wa
 through the cookie cutter (a multi-point, two holes, a two-plate cascade with a hole across the
 shared edge and the input's closing segments across both plates, and the other geometry types); and
 the sliver filter (an exterior with its hole, a hole alone, a hole with an island, both sides
-emptied, the cookie cutter's default, the mean width, a ring on one great circle, and a bow-tie);
-inputs whose rings cross (a plate whose hole crosses its exterior, and rings meeting only at shared
-vertices, each as the partitioning polygon and as the subject, sampled as the union of the pieces
-as a feature's polygons are read); and the
+emptied, the cookie cutter's default, the mean width, a ring on one great circle, and a bow-tie,
+with a vertex at its crossing on one diagonal or both, and as the plate); inputs whose rings cross
+(a plate whose hole crosses its exterior, rings meeting only at shared vertices, and a pinwheel,
+each as the partitioning polygon and as the subject, sampled as the union of the pieces as a
+feature's polygons are read); and the
 cookie cutter's options (grouped or not, sorted by plate ID or area, every speed) on a plate with a
 hole and the plate filling it. `PartitionFeatureUtilsTest.cc` covers the coverages (across a cut, an
 exterior-ring-only coverage whose hole the cut opens, a ring with no valued point, a run across a
@@ -2367,6 +2397,13 @@ takes about 30% longer than before (0.28 s against 0.20 s at 0 Ma, resolving the
   grouped, so they come out as two polygons over the same area; and inputs snapped to a grid, with
   whole rings in common and rings crossing at once, gave a wrong parity over the output rings
   without throwing in 5 of 5,985 cases at 0.002 radians and 52 of 5,832 at 0.004.
+- **Crossings the grouping and the sliver filter miss** (section 5.2): an overlap of two output
+  rings reached only within a few margins of their outlines (2 operations in 11,668 random cases
+  snapped to a grid of 0.004 radians, none generic, review 8), whose polygons then overlap there;
+  and a ring that crosses itself only within a few margins of the crossing point, which a sliver
+  filter can still drop whole where its lobes cancel. Both tests decide at sampled points clear of
+  the outlines; the cure is the self-intersection mode below, after which every output ring is
+  simple.
 - **Clipping by an open arc**, which would put `DateLineWrapper` (section 5.8) onto the overlay. The
   prototype showed three additions suffice: pieces of an open clip whose first and last pieces
   dangle (the structures for a polyline subject, `RingView::closed` and `Stop::DANGLING_END`,
