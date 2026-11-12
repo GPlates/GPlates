@@ -1094,6 +1094,11 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     cuts' key; speed only: the outline-distance shortcut. Pinned since review 8's list: classify()'s
     call of the whole answer's check and a skipped check's count, the filter's self-crossing test
     for a hole, the probe distance, the largest ring as exterior.
+  - Commits `3acb8ff41` (the lookup), `9ff8e530a` (documents), `2836b4b58` (plan). GPlates 214 of 214,
+    pyGPlates 7 of 7, stub regenerated, docs from scratch clean; `partition_features` 0.29/0.30 s
+    against 0.20 s on `main` at 0 Ma (alternated); Linux (Ubuntu 22.04, `2836b4b58`): pyGPlates 7 of
+    7, GPlates 214 of 214. The PR description is drafted in the session's scratchpad
+    (`prB-description.md`), for the developer.
 
 - **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
   rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d`; the prototype is at
