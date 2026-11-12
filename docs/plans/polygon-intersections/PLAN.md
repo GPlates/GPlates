@@ -1100,13 +1100,32 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     7, GPlates 214 of 214. The PR description is drafted in the session's scratchpad
     (`prB-description.md`), for the developer.
 
-- **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
-  rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d`; the prototype is at
-  `r5p` and the hunt clean but for the 9 known polygon cases; review 8 and its fixes done (Status,
-  2026-11-12), and Linux passes at `555a2f2b0`; review 9 (the final check of what the PR says)
-  and its fixes done (Status, 2026-11-12). Next: PR B (its description, the roadmap). After
-  PR B: PR C, then the `partition_features` rework (its own PR; it should also make pyGPlates'
-  most overlapping plate match Assign Plate IDs, review 9's 1.2).
+- 2026-11-13: **PR B merged as #110** (`aeb027de7`, a merge commit; the developer approves their own
+  PRs). Opened 2026-11-12 with the description approved by the developer. CI's first run: macOS
+  GPlates failed six tests, and Linux and macOS showed compile warnings (some from this PR, some
+  from recent PRs). Fixed in two commits:
+  - `79c4ed951`: `-Wfloat-equal` and one `-Wshadow`; deliberate exact comparisons go through the new
+    `GPlatesMaths::are_exactly_equal` (`==` via `std::equal_to`, which neither GCC nor Clang warns
+    about in a system header).
+  - `e69656d17`: three Assign Plate IDs tests segfaulted on arm64, from `NotificationGuard` built
+    from `*model_ptr()`, NULL for a feature collection outside a `Model` (UBSan; old code, first
+    reached by PR B's tests); the guard gains a `Model *` constructor. The other three (`Hunt`,
+    `OnePassageRule`, `PolylinePinch`) were FMA contraction on arm64, reproduced on x86 with clang
+    `-march=haswell`; `-ffp-contract=off` for GCC and Clang (**decided, developer**: kept, no
+    changelog line).
+  - Second CI run green on all six jobs. The planning repository's roadmap has the *Done* row, and
+    `DateLineWrapper` onto the overlay is a roadmap entry and a 1.1 checklist item after the
+    `partition_features` rework (1.1 if time allows).
+
+- **Resume here** (updated 2026-11-13): **PR B is merged (#110).** Next: **PR C**, the Boolean
+  operations on `PolygonOnSphere` (section *PR C* below, and section 7 of the page: the names
+  decided 2026-10-25, the Python error for a union or symmetric difference exceeding a hemisphere,
+  whether any entry point gains a coverage form, and the symmetric difference's pairing, which the
+  prototype comparison does not guard). PR C ends with the final Fable distillation of this
+  directory, then deletes it. The branch has not merged `main` since #110 (`main` is this branch
+  plus the merge commit, so it can fast-forward). After PR C: the `partition_features` rework (its
+  own PR; it should also make pyGPlates' most overlapping plate match Assign Plate IDs, review 9's
+  1.2), then `DateLineWrapper` onto the overlay.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
