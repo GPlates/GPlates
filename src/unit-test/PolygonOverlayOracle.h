@@ -134,9 +134,12 @@ namespace PolygonOverlayOracle
 			const GPlatesMaths::PointOnSphere &a,
 			const GPlatesMaths::PointOnSphere &b)
 	{
-		return a.position_vector().x().dval() == b.position_vector().x().dval() &&
-				a.position_vector().y().dval() == b.position_vector().y().dval() &&
-				a.position_vector().z().dval() == b.position_vector().z().dval();
+		return GPlatesMaths::are_exactly_equal(
+					a.position_vector().x().dval(), b.position_vector().x().dval()) &&
+				GPlatesMaths::are_exactly_equal(
+					a.position_vector().y().dval(), b.position_vector().y().dval()) &&
+				GPlatesMaths::are_exactly_equal(
+					a.position_vector().z().dval(), b.position_vector().z().dval());
 	}
 
 

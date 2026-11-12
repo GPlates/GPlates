@@ -124,9 +124,12 @@ namespace
 			const PointOnSphere &a,
 			const PointOnSphere &b)
 	{
-		return a.position_vector().x().dval() == b.position_vector().x().dval() &&
-				a.position_vector().y().dval() == b.position_vector().y().dval() &&
-				a.position_vector().z().dval() == b.position_vector().z().dval();
+		return GPlatesMaths::are_exactly_equal(
+					a.position_vector().x().dval(), b.position_vector().x().dval()) &&
+				GPlatesMaths::are_exactly_equal(
+					a.position_vector().y().dval(), b.position_vector().y().dval()) &&
+				GPlatesMaths::are_exactly_equal(
+					a.position_vector().z().dval(), b.position_vector().z().dval());
 	}
 
 
@@ -898,7 +901,7 @@ TEST(PolygonOverlayTest, RaysFarEndOffset)
 		unsigned int offset_rays = 0;
 		for (const Overlay::Ray &ray : vertex.rays)
 		{
-			if (ray.delta == 0.0)
+			if (GPlatesMaths::are_exactly_equal(ray.delta, 0.0))
 			{
 				EXPECT_EQ(ray.cone, 0.0);
 				continue;
@@ -939,7 +942,7 @@ TEST(PolygonOverlayTest, CommonPairSharedEdge)
 			for (const Overlay::Ray &ray : vertex.rays)
 			{
 				ASSERT_TRUE(ray.direction);
-				if (d == 0.0 || (ray.subject_end && !ray.clip_end))
+				if (GPlatesMaths::are_exactly_equal(d, 0.0) || (ray.subject_end && !ray.clip_end))
 				{
 					EXPECT_EQ(ray.cone, 0.0);
 				}
@@ -2208,7 +2211,7 @@ namespace
 				const Vector3D nb = cross(b0, b1);
 				const double la = std::sqrt(na.magSqrd().dval());
 				const double lb = std::sqrt(nb.magSqrd().dval());
-				if (la == 0 || lb == 0)
+				if (!(la > 0) || !(lb > 0))
 				{
 					continue;
 				}

@@ -78,7 +78,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative or NaN.");
 				bp::throw_error_already_set();
 			}
-			if (*sliver_width_threshold_radians == 0)
+			if (*sliver_width_threshold_radians <= 0)  // zero, after the test above
 			{
 				return boost::none;
 			}

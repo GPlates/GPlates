@@ -319,11 +319,11 @@ TEST(PointInPolygonTest, speeds_agree)
 					moved_away_from(on_outline, centroid, (rng() % 2 == 0) ? distance : -distance));
 		}
 		// At, and near, the antipodal centroid and the centroid.
-		for (const GPlatesMaths::UnitVector3D &centre : { -centroid, centroid })
+		for (const GPlatesMaths::UnitVector3D &at : { -centroid, centroid })
 		{
-			points.push_back(GPlatesMaths::PointOnSphere(centre));
-			points.push_back(moved_away_from(centre, generate_perpendicular(centre), 1e-7));
-			points.push_back(moved_away_from(centre, generate_perpendicular(centre), 1e-5));
+			points.push_back(GPlatesMaths::PointOnSphere(at));
+			points.push_back(moved_away_from(at, generate_perpendicular(at), 1e-7));
+			points.push_back(moved_away_from(at, generate_perpendicular(at), 1e-5));
 		}
 
 		for (const GPlatesMaths::PointOnSphere &point : points)
@@ -449,7 +449,9 @@ TEST(PointInPolygonTest, edges_through_centroid)
 		{
 			// The second lobe in reverse, so that the ring crosses itself at the centre.
 			const double azimuth = lobe_azimuth +
-					((lobe_azimuth == 0.0) ? -0.25 + 0.5 * k / 9 : 0.25 - 0.5 * k / 9);
+					(GPlatesMaths::are_exactly_equal(lobe_azimuth, 0.0)
+						? -0.25 + 0.5 * k / 9
+						: 0.25 - 0.5 * k / 9);
 			points.push_back(GPlatesMaths::PointOnSphere((
 					std::cos(0.3) * GPlatesMaths::Vector3D(centre) +
 					std::sin(0.3) *

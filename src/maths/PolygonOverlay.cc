@@ -157,9 +157,9 @@ namespace GPlatesMaths
 			{
 				const UnitVector3D &u = a.position_vector();
 				const UnitVector3D &v = b.position_vector();
-				return u.x().dval() == v.x().dval() &&
-						u.y().dval() == v.y().dval() &&
-						u.z().dval() == v.z().dval();
+				return are_exactly_equal(u.x().dval(), v.x().dval()) &&
+						are_exactly_equal(u.y().dval(), v.y().dval()) &&
+						are_exactly_equal(u.z().dval(), v.z().dval());
 			}
 
 
@@ -248,7 +248,7 @@ namespace GPlatesMaths
 				const Vector3D b_normal = cross(b_start, b_end);
 				const double a_length = std::sqrt(a_normal.magSqrd().dval());
 				const double b_length = std::sqrt(b_normal.magSqrd().dval());
-				if (a_length == 0 || b_length == 0)
+				if (!(a_length > 0) || !(b_length > 0))
 				{
 					return false;
 				}
@@ -1783,7 +1783,7 @@ GPlatesMaths::PolygonOverlay::Overlay::measure_ray(
 		ray.delta = from_output_position + offset_from_segment(from) + offset_from_segment(to);
 		ray.first_arc_length = angle_between(start, far);
 		ray.reach = angle_between(centre, far);
-		if (ray.delta == 0.0)
+		if (!(ray.delta > 0.0))  // a sum of angles, so zero
 		{
 			ray.cone = 0.0;
 		}
@@ -3338,9 +3338,13 @@ GPlatesMaths::PolygonOverlay::Overlay::build_bundle(
 			certainty.end(),
 			[&rays](unsigned int a, unsigned int b)
 			{
-				if (rays[a].cone != rays[b].cone)
+				if (rays[a].cone < rays[b].cone)
 				{
-					return rays[a].cone < rays[b].cone;
+					return true;
+				}
+				if (rays[b].cone < rays[a].cone)
+				{
+					return false;
 				}
 				return rays[a].reach > rays[b].reach;
 			});
