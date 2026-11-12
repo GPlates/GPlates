@@ -944,7 +944,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     quad-tree nodes (those surrounding each polygon among them), the overlay never answered outside
     where the test would have overridden it. Three answers of outside were exact touches, which is
     correct. Script: scratchpad `redundant_test_check.py`. The page no longer lists it as a caller
-    of point-in-polygon.
+    of point-in-polygon. **Corrected by review 9**: the function is unreachable (it serves polygons
+    drawn as fans, whose creation is under `#if 0` since 2012), so the raster could not show it
+    either way; a replay of the real quad tree (197,984 partitions) found 147 touches at a polygon's
+    first vertex (on longitude 180) and no overlap missed, so the removal stands.
 
 - 2026-11-12: **Crossing output rings grouped into one polygon** (developer's decision, after the
   visual check showed a plate-5 piece of two polygons overlapping the plate-100 piece). Where an
@@ -1045,7 +1048,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     50 pieces 1.4, an annulus 1.1, review 7's probe 1.1. `NEAR` renamed (1.7). The point test is
     the public `has_points_on_both_sides`, compared with plain loops (each way round, and the whole
     test) over 400 generated pairs; mutations of the walk's descent, of looking along both edges,
-    of the filter, of the self-crossing test's sides and of its undecided rule each fail a test.
+    of the filter, of the self-crossing test's sides and of its undecided rule (a probe within the
+    margin of the path) each fail a test; the rule's two-margin arms are unpinned (review 9).
     Not pinnable: the far-node shortcut's count (an inside point implies an exit, where a near node
     gives an outside point).
   - **Measured**: pyGPlates, the pinwheel 0 samples wrong (1,687 before) and the bow-tie with a
@@ -1060,12 +1064,44 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     (1.3) in section 5.4 and the changelogs. GPlates 214 of 214, pyGPlates 7 of 7, docs from
     scratch clean; Linux (Ubuntu 22.04, `555a2f2b0`): pyGPlates 7 of 7, GPlates 214 of 214.
 
+- 2026-11-12: **Review 9 (Fable High): the final check of what PR B says** (`prB-review-9-final.md`;
+  the developer approved the recommendations). Nothing changes what the code does for a user, and no
+  changelog bullet was false; `e7b66c3e8` is right.
+  - **`b84512ef6` changed unreachable code** (1.1): see the visual-check entry above. Comment, page
+    (four places) and this plan corrected; the code stays.
+  - **Timing** (1.4): `partition_features` was about 70% slower than `main` (0.33 s against 0.20 s
+    at 0 Ma, both builds alternated), not the 30% recorded on 2026-11-07; the records had drifted,
+    each A/B against the commit before. Profiled: about 0.04 s was `56952f9b5`'s Python scanning
+    every property of every returned feature for the names `set_geometry` replaces. **Fixed**: looked
+    up by name (`Feature.get` per name), identical output on all 2,306 features; now about 45%. The
+    rest is the overlay and the Python assembly, for the rework.
+  - **Decided (developer)**: the documents only for 1.2 (pyGPlates' most overlapping plate returns
+    the feature unchanged where Assign Plate IDs rewrites it; for the rework, and section 7 now lists
+    the rework), 1.3 (an unmatched time-dependent range with a value at the reconstruction time is
+    kept and can be read back by a piece of that point count; removing it could take a kept
+    time-dependent geometry's coverage) and 1.5 (`get_mean_width`'s apex tests are `real_t`
+    comparisons, so `1e-12`; load-bearing, seven tests throw as doubles).
+  - **Documents**: section 5.3 and section 1's table now list the overlay's margins (1.6); about
+    thirty stale sentences in sections 5 to 7 (1.8 to 1.10, each checked against the code where
+    the reviewer's evidence was a subagent's reading); citations of reviews, runs, "PR C" and "the
+    visual check" removed from the page, code comments and tests (1.11); `PartitionError`'s
+    docstring as `e7b66c3e8` worded it elsewhere, and a `versionchanged:: 1.1` on
+    `partition_features` and `partition_into_plates` (1.12); this plan's lists (1.13).
+  - **Still unpinned** (review 9 section 3, by mutation at the tip): the point test in one argument
+    order, the nesting check's fallback, the sliver exemption for groups, the filter's
+    hole-of-an-exterior condition (new), `do_arcs_cross`'s same-crossing test, hole order, the
+    far-node count (not pinnable), the self-crossing test's two-margin arms (new), the self-touch
+    cuts' key; speed only: the outline-distance shortcut. Pinned since review 8's list: classify()'s
+    call of the whole answer's check and a skipped check's count, the filter's self-crossing test
+    for a hole, the probe distance, the largest ring as exterior.
+
 - **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
   rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d`; the prototype is at
   `r5p` and the hunt clean but for the 9 known polygon cases; review 8 and its fixes done (Status,
-  2026-11-12), and Linux passes at `555a2f2b0`. Next: PR B (its description, the roadmap). After
-  PR B: PR C, then the `partition_features` rework (its own PR). Open as before: the
-  prototype's polyline rule (`r5p`); the margin order's hand-built test.
+  2026-11-12), and Linux passes at `555a2f2b0`; review 9 (the final check of what the PR says)
+  and its fixes done (Status, 2026-11-12). Next: PR B (its description, the roadmap). After
+  PR B: PR C, then the `partition_features` rework (its own PR; it should also make pyGPlates'
+  most overlapping plate match Assign Plate IDs, review 9's 1.2).
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
