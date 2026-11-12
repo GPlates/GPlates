@@ -1117,19 +1117,22 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     `DateLineWrapper` onto the overlay is a roadmap entry and a 1.1 checklist item after the
     `partition_features` rework (1.1 if time allows).
 
-- **Resume here** (updated 2026-11-13): **PR B is merged (#110).** Next: **PR C**, the Boolean
-  operations on `PolygonOnSphere` (section *PR C* below, and section 7 of the page: the names
-  decided 2026-10-25, the Python error for a union or symmetric difference exceeding a hemisphere,
-  whether any entry point gains a coverage form, and the symmetric difference's pairing, which the
-  prototype comparison does not guard). PR C ends with the final Fable distillation of this
-  directory, then deletes it. The branch has not merged `main` since #110 (`main` is this branch
-  plus the merge commit, so it can fast-forward). After PR C: the `partition_features` rework (its
-  own PR; it should also make pyGPlates' most overlapping plate match Assign Plate IDs, review 9's
-  1.2), then `DateLineWrapper` onto the overlay. **Tools**: the PR B session's scripts for the
-  C++ (the hunt at scale and run comparison, mutation testing, `partition_features` timing, the
-  Linux Docker builds including clang with FMA and UBSan) are in the planning repository's
-  `plans/polygon-intersection-tools/cpp/` (README there, section `cpp/`); earlier entries here that
-  cite "scratchpad" scripts mean that session's copies.
+- 2026-11-13: **PR C planned** (developer): four methods (`intersection`, `union`, `difference`,
+  `symmetric_difference`), each returning a list of polygons; `PartitionError` for every failure,
+  including a union or symmetric difference over a hemisphere; no coverage form at the geometry
+  level; the sliver argument as `partition`'s; intersection and difference through the partitioner,
+  so that they equal `partition`'s lists. The symmetric difference's pairing is fixed first. Section
+  *PR C* below.
+
+- **Resume here** (updated 2026-11-13): **PR C under way**, in the steps of section *PR C* below
+  (step 0 done). PR C ends with the final Fable distillation of this directory, then deletes it.
+  After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
+  overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
+  overlay. **Tools**: the PR B session's scripts for the C++ (the hunt at scale and run comparison,
+  mutation testing, `partition_features` timing, the Linux Docker builds including clang with FMA
+  and UBSan) are in the planning repository's `plans/polygon-intersection-tools/cpp/` (README
+  there, section `cpp/`); earlier entries here that cite "scratchpad" scripts mean that session's
+  copies.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
   - **PR B**: Phase 5 under way, in the fifteen steps of `phase4b-design.md` section 12; steps 1 to 4
@@ -1548,12 +1551,127 @@ The design covers:
   every statement checked against the code).
 
 ### PR C: Boolean operations in pyGPlates (Opus)
-- `PolygonOnSphere` methods for intersection, union and difference (names in *Decisions*, 2026-10-25),
-  on PR B's overlay. Docstrings via the `api-docstring` skill; regenerate the stub; changelog.
-- The oracle for every operation (Phase 5), and the error for a union over a hemisphere.
-- The final Fable distillation of `docs/plans/polygon-intersections/`, then delete the plan.
-- The next checklist item, *Audit the plate partitioning*, follows. Also the roadmap's "revisit
-  the exact parity area", which this PR's ring-intersection code unblocks.
+
+PR B (#110) built the overlay. It computes all five operations (`PolygonOverlay::Operation`), and
+the C++ oracle already checks each one: `check_oracle` in `PolygonOverlayTest.cc`, and
+`UnionOverHemisphereThrows` for the union and the symmetric difference over a hemisphere. Only
+partitioning (the intersection and the difference) is exposed. PR C exposes the four set
+operations in pyGPlates, closes the symmetric difference's open pairing item (design page section
+7), and ends the branch's plan with the final distillation. The next checklist item, *Audit the
+plate partitioning*, follows; so does the roadmap's "revisit the exact parity area".
+
+#### Decisions (developer, 2026-11-13)
+
+1. There are four methods: `intersection`, `union`, `difference` and `symmetric_difference`. Each
+   is `(other_polygon, sliver_width_threshold_radians=None)` and returns a `list` of
+   `PolygonOnSphere`, which is empty when the result has no area. There are no `& | - ^`
+   operators, since the result is a list.
+2. Every failure raises **`PartitionError`**, including a union or symmetric difference that would
+   exceed a hemisphere. Its docstring is broadened to say so.
+3. **No coverage form** for any geometry-level entry point. Coverages stay with
+   `partition_features` and Assign Plate IDs. This goes in the design page with its reason.
+4. **`sliver_width_threshold_radians`** behaves as in `partition`: it defaults to `h` (about 9 m),
+   zero keeps every piece, and a negative value or NaN raises `ValueError`.
+5. (Proposed in the plan, approved with it.) `p.intersection(q)` and `p.difference(q)` **are**
+   partitioning's inside and outside: `PolygonPartitioner::create(q, ADAPTIVE, sliver)` and then
+   `partition_polygon(p, ...)`. So they return exactly the lists that `q.partition(p, inside,
+   outside)` fills, including `p` itself when it only touches `q`, and the whole of `p` on one side
+   when the sliver filter empties the other. A plain `extract` would leave `p` with a notch where
+   the intersection had been dropped as a sliver, and the two methods would then disagree.
+   `union` and `symmetric_difference` use `PolygonOverlay::Overlay` directly (`classify`, then
+   `extract`).
+
+#### Steps
+
+0. This plan into PLAN.md (done, with this section). Then fast-forward the branch:
+   `git merge --ff-only public/main` (`main` is this branch plus the #110 merge commit).
+1. **The symmetric difference's pairing** (`PolygonOverlay.cc`, `extract_rings`, the four-ray
+   free-rule block at about `:4114-4150`).
+   - Diagnose with `dump()` on the 13 `d4 ... hole-between` catalogue cases. My working
+     hypothesis: the symmetric difference is the only operation that keeps all four ends at a
+     crossing; in these cases the classes say "crossing" while the order used places each input's
+     two rays next to each other; so the class-based pairing crosses in that order.
+   - Likely fix: where all four ends are kept, pair consecutive kept rays in the order used (with
+     `solve_vertex`, as the all-common branch already does). Of the three pairings at a vertex,
+     both non-crossing ones give the same rings after the split (section 5.2).
+   - Then drop the symmetric difference's exemption from the no-crossing-group checks
+     (`PolygonOverlayTest.cc` `check_oracle`, about `:1660`; `PolygonOverlayPrototypeTest.cc`,
+     about `:1166`), and the "can cross at a vertex" wording: `PolygonOverlay.cc` about `:4608`,
+     and the design page section 5.2 (about lines 1441 and 1458).
+   - Add a hand test that pins it. A mutation check: reverting the fix must fail a committed test.
+     A hunt run (planning repo `plans/polygon-intersection-tools/cpp/`) must find 0 symmetric
+     difference crossing groups from inputs whose rings don't cross.
+   - If the diagnosis shows that the order itself is unreliable there, stop and bring the
+     findings to the developer. The grouping already reads these cases correctly, so leaving them
+     documented is a valid fallback.
+2. **C++ entry point.** Move `create_polygon(const OutputPolygon &)` out of
+   `PolygonPartitioner.cc`'s anonymous namespace into `PolygonOverlay.{h,cc}` as a public
+   function, and use it in both places. Add `PolygonOverlay::extract_polygons(subject, clip,
+   operation, options)`, which builds the overlay, classifies it, extracts the polygons and
+   returns `std::vector<PolygonOnSphere::non_null_ptr_to_const_type>`. Add a short GoogleTest in
+   `PolygonOverlayTest.cc` for each operation, including disjoint and nested inputs.
+3. **pyGPlates methods** (`src/api/PyGeometriesOnSphere.cc`).
+   - Factor the sliver-argument validation out of `polygon_on_sphere_partition` and share it.
+   - Write one binding function per operation (or one parameterised by operation) and four
+     `.def`s with `bp::arg("other_polygon")`.
+   - Write the docstrings with the `api-docstring` skill. They cover: holes in the output, an
+     empty list, touching inputs, the parity reading for inputs whose rings cross (as
+     `partition`'s does), the hemisphere limit for union and symmetric difference (each ring means
+     its smaller side), slivers, `.. versionadded:: 1.1`, and an example.
+   - Broaden `PartitionError`'s docstring (`PyExceptions.cc:482`). In `partition`'s docstring, add
+     one sentence pointing to `intersection` and `difference`.
+4. **Stub.** Regenerate it with `generate_stub.py --output ... --check ...`, and confirm that
+   `pygplates-stub-test` passes.
+5. **Python tests** in `PolygonOnSphereCase` (`pygplates/test/test_maths/test_geometries_on_sphere.py`):
+   - a point oracle for each method, on boxes with holes (grid samples away from the outlines,
+     `is_point_in_polygon` of the outputs against `f(in p, in q)`);
+   - disjoint, nested, identical, and sharing an edge (the union is one polygon, the intersection
+     `[]`);
+   - intersection and difference equal `partition`'s lists;
+   - `PartitionError` for the union of the two 80-degree caps, and for the symmetric difference of
+     the shared-edge pair (both from `UnionOverHemisphereThrows`);
+   - the sliver argument (`ValueError`, zero keeps every piece);
+   - `TypeError` for an argument that isn't a polygon.
+6. **Changelog.** One pyGPlates bullet. There is no GPlates entry: Assign Plate IDs uses only
+   the intersection and the difference, and the pairing fix affects only the symmetric
+   difference.
+7. **Design page** (`spherical-geometry.md`).
+   - Section 5.1: the Boolean methods as a consumer layer, and decision 5.
+   - Section 5.2: the pairing.
+   - Section 5.6: `PartitionError` for the hemisphere case.
+   - Section 5.7: no coverage form, with its reason.
+   - Section 7: remove "The Boolean operations in pyGPlates". The self-crossing output ring's
+     orientation stays deferred, under the self-intersection mode item.
+   - If any include changes, regenerate the dependency matrix (`pygplates-source-closure-test`
+     says so).
+8. **Verify.**
+   - Build both trees and run `ctest` on both.
+   - Build `docs-pygplates` from scratch (`-W`), to check that the new docstrings render.
+   - Do a Linux Docker run (the `gplates-local.md` recipe).
+   - Push to `private`.
+9. **Final distillation** of `docs/plans/polygon-intersections/`.
+   - Run a fresh Fable agent (`model: "fable"`) with a self-contained prompt: what PR A and PR B
+     already distilled (`prA-distillation.md`, `prB-distillation.md`), where each kind of content
+     goes, and the rule that every statement must be checked against the code.
+   - I review its output. Then a Fable claim check of the new text runs, serially, with a pause
+     for the 5-hour limit between Fable agents.
+   - Delete the directory in its own commit.
+   - Update the roadmap row in the planning repository. Also note, against the docs E PR
+     (primer, partitioning section), that it should mention the Boolean methods.
+10. **The PR** when the developer asks. Then comes the `partition_features` rework.
+
+Commits: the pairing fix with its tests; the entry point; the Python methods (docstrings, stub,
+tests, changelog); the design page; the distillation; the plan's deletion.
+
+#### Verification
+
+- GPlates `gplates-unit-test`: `PolygonOverlayTest` (all operations, now with no exemption for
+  the symmetric difference), `PolygonOverlayPrototypeTest` and the new entry-point test.
+- pyGPlates: `pygplates-test` (the new cases), `pygplates-stub-test`,
+  `pygplates-source-closure-test` and `pygplates-linkage-test`.
+- The hunt: 0 symmetric difference crossing groups from non-crossing inputs, and no new
+  differences elsewhere.
+- Linux Docker: both suites green. The docs build cleanly from scratch.
 
 ## Who does what
 
