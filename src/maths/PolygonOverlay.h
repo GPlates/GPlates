@@ -191,22 +191,49 @@ namespace GPlatesMaths
 
 
 		/**
+		 * The point test of do_rings_cross, one way round: whether ring @a a (the exterior ring of
+		 * a polygon of that ring alone) has a point farther than @a margin inside ring @a b and
+		 * one farther than it outside. The points: every vertex of @a a; and, at a vertex within
+		 * the margin of @a b, the midpoints of its two edges and the points a few margins along
+		 * them. So it sees rings that swap sides along a stretch within the margin of each other
+		 * (a dense shared edge, whose every edge end is within the margin of the other ring's
+		 * edges); an edge between two points on the other ring's outline, a chord through it
+		 * (rings meeting only at vertices on each other's outline, review 7: an overlap of any
+		 * size with no vertex inside it); and an edge that leaves the other ring's outline at its
+		 * vertex, crosses the other ring, and leaves it through one of its vertices (two rings each
+		 * with vertices on the other's edges, a pinwheel, review 8). Missed: an overlap reached
+		 * only within a few margins of the outlines. By @a a's bounding tree: a node farther than
+		 * the margin from @a b's bounding circle counts as outside at once, and only the nodes near
+		 * it are visited edge by edge (otherwise a large ring against each of many small rings
+		 * inside it would cost its every vertex for each: twelve times the grouping's old cost at
+		 * 1,481 rings and 100,000 points, review 7). Public for the tests.
+		 */
+		bool
+		has_points_on_both_sides(
+				const PolygonOnSphere &a,
+				const PolygonOnSphere &b,
+				const AngularExtent &margin);
+
+
+		/**
 		 * Whether two rings (each the exterior ring of a polygon of that ring alone) cross, for the
 		 * grouping of section 5.2: two output rings cross where an input's rings cross each other
 		 * (or a ring crosses itself), at points the overlay never computes, since it intersects
-		 * each input only with the other. Either ring must have a point inside the other and a
-		 * point outside it, each farther than @a margin from its outline, the points being its
-		 * vertices and the midpoints of its edges whose two ends are both within the margin of the
-		 * other ring (where the rings swap sides along a stretch within the margin of each other, a
-		 * dense shared edge, say; or where an edge between two points on the other's outline is a
-		 * chord through it, rings meeting only at vertices on each other's outline, which can
-		 * overlap by any amount); or an edge of each must cross an edge of the other, the ends of
-		 * both edges farther than the margin from the other's great circle (two rings crossing like
-		 * a plus sign, no vertex of either inside the other; by the rings' bounding trees). So the
-		 * rings' touches at an overlay vertex (whose output positions can cross by up to its record
-		 * cluster's width, is_ring_inside_ring) and their stretches within the thickness of each
-		 * other are not taken for crossings. Missed: an overlap reached only within the margin of
-		 * the outlines (thinner than the margin, or a chord shorter than about twice the margin).
+		 * each input only with the other. Rings whose outlines are farther apart than @a margin do
+		 * not cross. Otherwise either ring must have a point inside the other and a point outside
+		 * it, each farther than the margin from its outline, the points being its vertices and, at
+		 * a vertex within the margin of the other ring, the midpoints of its two edges and points
+		 * a few margins along them (where the rings swap sides along a stretch within the margin of
+		 * each other, a dense shared edge, say; where an edge between two points on the other's
+		 * outline is a chord through it; or where an edge leaves the other's outline at a vertex
+		 * and leaves the other ring again through one of the other's vertices, two rings each with
+		 * vertices on the other's edges: overlaps of any size with no vertex of either inside the
+		 * other); or an edge of each must cross an edge of the other, the ends of both edges
+		 * farther than the margin from the other's great circle (two rings crossing like a plus
+		 * sign). By the rings' bounding trees. So the rings' touches at an overlay vertex (whose
+		 * output positions can cross by up to its record cluster's width, is_ring_inside_ring) and
+		 * their stretches within the thickness of each other are not taken for crossings. Missed:
+		 * an overlap reached only within a few margins of the outlines.
 		 */
 		bool
 		do_rings_cross(
@@ -218,9 +245,15 @@ namespace GPlatesMaths
 		/**
 		 * Whether a ring (the exterior ring of a polygon of that ring alone) crosses itself, for
 		 * the sliver filter of section 5.5: a ring that does is measured by a signed area in which
-		 * its lobes wound opposite ways cancel (a bow-tie's is zero), so it is never dropped as a
-		 * sliver. By do_rings_cross's edge test, the ring's bounding tree against itself: so a
-		 * crossing at one of its own vertices, or within the margin of an edge's end, is missed.
+		 * its lobes wound opposite ways cancel (a bow-tie's is zero), so it is not dropped as a
+		 * sliver itself. Two edges crossing clear of their ends (do_rings_cross's edge test, the
+		 * ring's bounding tree against itself); or, at a vertex within @a margin of a part of the
+		 * ring not adjacent to it, the ring's path through the vertex passing from one side of the
+		 * path there to the other, judged at points a few margins along both paths, each farther
+		 * than the margin from the other path (a bow-tie with a vertex at its crossing). A touch
+		 * (lobes wound alike) is not a crossing, and nor is anything within a few margins of the
+		 * crossing point, where edges are short or the paths run along each other: so a ring that
+		 * does not cross itself is never taken as crossing.
 		 */
 		bool
 		does_ring_cross_itself(
@@ -1005,7 +1038,7 @@ namespace GPlatesMaths
 			 * as read, which a caller must not take for the output. Counted only: a hole not
 			 * nested in its parent's polygon, kept as a polygon of its own
 			 * (Diagnostics::grouping_failures; rings whose overlap do_rings_cross misses, reached
-			 * only within the margin of the outlines), and coincident rings
+			 * only within a few margins of the outlines), and coincident rings
 			 * (Diagnostics::coincident_rings, rings of no area that clean-up missed). Also throws
 			 * as @a extract_rings does.
 			 */

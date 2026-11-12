@@ -1498,6 +1498,17 @@ TEST(PolygonPartitionerTest, CrossingRings)
 			polygon(box(-0.5, 2, -1, 2)),
 			-1.5, 2.5, -1.5, 2.5
 		},
+		{
+			// Review 8's pinwheel: each ring has vertices on the other's edges, and they overlap
+			// in the unit square with no vertex of either inside the other. The box takes the tip
+			// off one blade.
+			"a pinwheel",
+			polygon(
+					ring_type{ at(0, 0), at(0, 1.5), at(1, 1), at(1, -0.5) },
+					{ ring_type{ at(0, 1), at(1.5, 1), at(1, 0), at(-0.5, 0) } }),
+			polygon(box(-1, 2, -1, 1.25)),
+			-1, 2, -1, 2
+		},
 	};
 	for (const Case &c : cases)
 	{
@@ -1552,5 +1563,37 @@ TEST(PolygonPartitionerTest, SliverFilterSelfCrossingRing)
 		EXPECT_EQ(inside.size(), 1u);
 		EXPECT_EQ(outside.size(), 2u);
 		check_pieces_sample_right(*bow_tie, *plate, inside, outside, -0.5, 2.5, -0.5, 2.5);
+	}
+
+	// With a vertex at its crossing, on one diagonal and on both (review 8: the edge test alone
+	// missed them, and the filter dropped the bow-tie whole); and the bow-tie as the plate, whose
+	// outside piece has it for a hole that measures as a sliver.
+	const auto vertex_on_one =
+			polygon(ring_type{ at(0, 0), at(1, 1), at(2, 2), at(0, 2), at(2, 0) });
+	const auto vertex_on_both =
+			polygon(ring_type{ at(0, 0), at(1, 1), at(2, 2), at(0, 2), at(1, 1), at(2, 0) });
+	for (const auto &subject : { vertex_on_one, vertex_on_both })
+	{
+		SCOPED_TRACE(subject == vertex_on_one ? "a vertex on one diagonal" : "on both");
+		for (const boost::optional<double> &width : widths)
+		{
+			SCOPED_TRACE(width);
+			PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+			EXPECT_EQ(
+					partition(*filtering(plate, width), subject, inside, outside),
+					PolygonPartitioner::GEOMETRY_INTERSECTING);
+			check_pieces_sample_right(*subject, *plate, inside, outside, -0.5, 2.5, -0.5, 2.5);
+		}
+	}
+	const auto box_around = polygon(box(-1, 3, -1, 3));
+	for (const boost::optional<double> &width : widths)
+	{
+		SCOPED_TRACE(width);
+		SCOPED_TRACE("the bow-tie as the plate");
+		PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+		EXPECT_EQ(
+				partition(*filtering(bow_tie, width), box_around, inside, outside),
+				PolygonPartitioner::GEOMETRY_INTERSECTING);
+		check_pieces_sample_right(*box_around, *bow_tie, inside, outside, -1.5, 3.5, -1.5, 3.5);
 	}
 }

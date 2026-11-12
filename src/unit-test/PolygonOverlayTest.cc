@@ -25,11 +25,13 @@
 
 #include <algorithm>
 #include <cmath>
+#include <random>
 #include <string>
 #include <vector>
 #include <boost/optional/optional_io.hpp>
 #include <gtest/gtest.h>
 
+#include "maths/GeometryDistance.h"
 #include "maths/GeometryIntersect.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/MathsUtils.h"
@@ -1447,6 +1449,17 @@ TEST(PolygonOverlayTest, CheckWholeResult)
 		EXPECT_EQ(counted.get_diagnostics().hemisphere_check_failures, 1u);
 		EXPECT_EQ(counted.get_diagnostics().whole_check_skipped, 0u);
 	}
+
+	// A subject thinner than the check's margin everywhere has no point to check at: skipped, and
+	// not counted as a check.
+	{
+		SCOPED_TRACE("too thin to check");
+		const auto thin = polygon(square(-0.005, -2 * H, 0.005, 2 * H));
+		Overlay::Overlay overlay(*thin, *Q_plain);
+		EXPECT_EQ(overlay.classify(), Overlay::RESULT_INSIDE);
+		EXPECT_EQ(overlay.get_diagnostics().whole_checks, 0u);
+		EXPECT_EQ(overlay.get_diagnostics().whole_check_skipped, 1u);
+	}
 }
 
 
@@ -2032,8 +2045,7 @@ TEST(PolygonOverlayTest, GroupRingsCross)
 					F.at(-0.005, 0.01 - 0.3 * H), F.at(0.005, 0.01 + 0.3 * H),
 					F.at(0.005, 0.02), F.at(-0.005, 0.02) })));
 	// Rings meeting only at vertices on each other's outline, one edge a chord through the other;
-	// and the same rings started elsewhere, so that the edges whose midpoints decide (in both
-	// directions) are their closing edges.
+	// and the same rings started elsewhere (their closing edges then the chords).
 	EXPECT_TRUE(cross_both_ways(
 			*polygon(square(0.0, 0.0, 0.01, 0.01)),
 			*polygon(ring_type{
@@ -2044,11 +2056,45 @@ TEST(PolygonOverlayTest, GroupRingsCross)
 			*polygon(ring_type{
 					F.at(0.0, 0.01), F.at(0.0, 0.0), F.at(0.01, -0.01), F.at(0.01, 0.0) })));
 
-	// A ring crossing itself (the sliver filter's test): a bow-tie does; a square and a triangle do
-	// not, nor (within the margin) a ring whose notch dips 0.3 h across its own long edge.
+	// A pinwheel (review 8): each ring has two vertices on the other's edges, and each long edge
+	// runs from the other ring's outline through one of its vertices to far outside, so no vertex
+	// of either is inside the other and no edge has both ends near the other; they overlap in the
+	// unit square. With short blades and with long ones.
+	for (const double blade : { 1.5, 5.0 })
+	{
+		SCOPED_TRACE(blade);
+		const double s = 0.01;
+		EXPECT_TRUE(cross_both_ways(
+				*polygon(ring_type{
+						F.at(0.0, 0.0), F.at(blade * s, 0.0), F.at(s, s),
+						F.at((1 - blade) * s, s) }),
+				*polygon(ring_type{
+						F.at(s, 0.0), F.at(s, blade * s), F.at(0.0, s),
+						F.at(0.0, (1 - blade) * s) })));
+	}
+
+	// A ring crossing itself (the sliver filter's test): a bow-tie does, and so does one with a
+	// vertex at its crossing, on one diagonal or on both (review 8); a square, a triangle and a
+	// figure of eight whose lobes are wound alike (touching at a vertex) do not, nor (within the
+	// margin) a ring whose notch dips 0.3 h across its own long edge.
 	EXPECT_TRUE(Overlay::does_ring_cross_itself(
 			*polygon(ring_type{
 					F.at(0.0, 0.0), F.at(0.01, 0.01), F.at(0.01, 0.0), F.at(0.0, 0.01) }),
+			margin));
+	EXPECT_TRUE(Overlay::does_ring_cross_itself(
+			*polygon(ring_type{
+					F.at(0.0, 0.0), F.at(0.005, 0.005), F.at(0.01, 0.01), F.at(0.01, 0.0),
+					F.at(0.0, 0.01) }),
+			margin));
+	EXPECT_TRUE(Overlay::does_ring_cross_itself(
+			*polygon(ring_type{
+					F.at(0.0, 0.0), F.at(0.005, 0.005), F.at(0.01, 0.01), F.at(0.01, 0.0),
+					F.at(0.005, 0.005), F.at(0.0, 0.01) }),
+			margin));
+	EXPECT_FALSE(Overlay::does_ring_cross_itself(
+			*polygon(ring_type{
+					F.at(0.005, 0.005), F.at(0.0, 0.01), F.at(0.0, 0.0), F.at(0.005, 0.005),
+					F.at(0.01, 0.0), F.at(0.01, 0.01) }),
 			margin));
 	EXPECT_FALSE(Overlay::does_ring_cross_itself(*E, margin));
 	EXPECT_FALSE(Overlay::does_ring_cross_itself(
@@ -2059,6 +2105,201 @@ TEST(PolygonOverlayTest, GroupRingsCross)
 	EXPECT_FALSE(Overlay::does_ring_cross_itself(
 			*polygon(ring_type{ F.at(0.0, 0.0), F.at(0.01, 0.0), F.at(0.0, 0.01) }),
 			margin));
+}
+
+
+namespace
+{
+	/**
+	 * has_points_on_both_sides written as a plain loop over every edge (no bounding tree, no
+	 * shortcut by the other ring's bounding circle), for the comparison below.
+	 */
+	bool
+	reference_points_on_both_sides(
+			const PolygonOnSphere &a,
+			const PolygonOnSphere &b,
+			const GPlatesMaths::AngularExtent &margin)
+	{
+		using GPlatesMaths::GreatCircleArc;
+
+		// -1 within the margin, 0 outside, 1 inside.
+		const double probe_distance = 3 * margin.get_angle().dval();
+		{
+			const auto side_of = [&](const PointOnSphere &p)
+			{
+				if (GPlatesMaths::minimum_distance(p, b, false, margin))
+				{
+					return -1;
+				}
+				return b.is_point_in_polygon(p, PolygonOnSphere::ADAPTIVE, false) ? 1 : 0;
+			};
+			bool inside = false;
+			bool outside = false;
+			const auto add = [&](int side)
+			{
+				inside = inside || side == 1;
+				outside = outside || side == 0;
+			};
+			const auto add_along = [&](const PointOnSphere &from, const PointOnSphere &to)
+			{
+				const Vector3D f(from.position_vector());
+				const Vector3D t(to.position_vector());
+				const Vector3D tangent = t - dot(f, t).dval() * f;
+				const double tangent_length = std::sqrt(tangent.magSqrd().dval());
+				if (!(tangent_length > 0))
+				{
+					return;
+				}
+				const double length = PolygonOverlayOracle::angle_between(
+						from.position_vector(), to.position_vector());
+				for (const double along : { (std::min)(probe_distance, length / 2), length / 2 })
+				{
+					add(side_of(PointOnSphere(
+							(std::cos(along) * f + (std::sin(along) / tangent_length) * tangent)
+									.get_normalisation())));
+				}
+			};
+			const std::vector<GreatCircleArc> edges(a.exterior_ring_begin(), a.exterior_ring_end());
+			const unsigned int n = edges.size();
+			for (unsigned int e = 0; e < n; ++e)
+			{
+				const int side = side_of(edges[e].start_point());
+				add(side);
+				if (side == -1)
+				{
+					add_along(edges[e].start_point(), edges[e].end_point());
+					add_along(edges[e].start_point(), edges[(e + n - 1) % n].start_point());
+				}
+			}
+			return inside && outside;
+		}
+	}
+
+
+	/**
+	 * do_rings_cross written as plain loops over every edge (no bounding trees, no outline-distance
+	 * filter), for the comparison below.
+	 */
+	bool
+	reference_rings_cross(
+			const PolygonOnSphere &ring,
+			const PolygonOnSphere &other_ring,
+			const GPlatesMaths::AngularExtent &margin)
+	{
+		if (reference_points_on_both_sides(ring, other_ring, margin) ||
+			reference_points_on_both_sides(other_ring, ring, margin))
+		{
+			return true;
+		}
+
+		// The edge test: every pair of edges.
+		const double threshold = margin.get_sine().dval();
+		for (auto a = ring.exterior_ring_begin(); a != ring.exterior_ring_end(); ++a)
+		{
+			for (auto b = other_ring.exterior_ring_begin();
+				b != other_ring.exterior_ring_end();
+				++b)
+			{
+				const Vector3D a0(a->start_point().position_vector());
+				const Vector3D a1(a->end_point().position_vector());
+				const Vector3D b0(b->start_point().position_vector());
+				const Vector3D b1(b->end_point().position_vector());
+				const Vector3D na = cross(a0, a1);
+				const Vector3D nb = cross(b0, b1);
+				const double la = std::sqrt(na.magSqrd().dval());
+				const double lb = std::sqrt(nb.magSqrd().dval());
+				if (la == 0 || lb == 0)
+				{
+					continue;
+				}
+				const auto straddles = [threshold](double s, double t)
+				{
+					return (s > threshold && t < -threshold) || (s < -threshold && t > threshold);
+				};
+				if (straddles(dot(na, b0).dval() / la, dot(na, b1).dval() / la) &&
+					straddles(dot(nb, a0).dval() / lb, dot(nb, a1).dval() / lb))
+				{
+					const Vector3D x = cross(na, nb);
+					const double xa = dot(x, a0 + a1).dval();
+					const double xb = dot(x, b0 + b1).dval();
+					if ((xa > 0 && xb > 0) || (xa < 0 && xb < 0))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+}
+
+
+// The crossing test (section 5.2) against the same rules as plain loops (reference_rings_cross),
+// over generated pairs of rings of more than one leaf of a bounding tree (eight edges): rings
+// placed at random, overlapping, nesting or apart, and in some a vertex of one moved onto an edge
+// or a vertex of the other, so that the rings touch, run along, cross at vertices or form chords
+// and pinwheels. This holds the bounding-tree walk, its shortcut by the other ring's bounding
+// circle and the outline-distance filter to the plain form.
+TEST(PolygonOverlayTest, GroupRingsCrossAgainstLoops)
+{
+	const GPlatesMaths::AngularExtent margin =
+			GPlatesMaths::AngularExtent::create_from_angle(10 * H);
+	std::mt19937 random(1);
+	std::uniform_real_distribution<double> unit(0.0, 1.0);
+	const auto star = [&](double cx, double cy, double radius, unsigned int n)
+	{
+		ring_type points;
+		const double start = 2 * GPlatesMaths::PI * unit(random);
+		for (unsigned int i = 0; i < n; ++i)
+		{
+			const double angle = start + 2 * GPlatesMaths::PI * (i + 0.5 * unit(random)) / n;
+			const double r = radius * (0.4 + 0.6 * unit(random));
+			points.push_back(F.at(cx + r * std::cos(angle), cy + r * std::sin(angle)));
+		}
+		return points;
+	};
+	unsigned int num_crossing = 0;
+	unsigned int num_not_crossing = 0;
+	for (unsigned int k = 0; k < 400; ++k)
+	{
+		SCOPED_TRACE(k);
+		// a's vertices are 0.4 to 1 of the radius from its centre; a third of the b's lie inside
+		// it (but for the vertices moved onto a), the rest anywhere near it.
+		const double radius = 0.01;
+		const ring_type a = star(0.0, 0.0, radius, 10 + random() % 20);
+		const bool nested = (k % 3 == 0);
+		ring_type b = nested
+				? star(0.0, 0.0, 0.35 * radius, 10 + random() % 20)
+				: star(
+						4 * radius * (unit(random) - 0.5),
+						4 * radius * (unit(random) - 0.5),
+						radius * (0.3 + unit(random)),
+						10 + random() % 20);
+		// Move up to three of b's vertices onto a: onto one of its edges, or onto a vertex.
+		for (unsigned int moves = random() % 4; moves > 0; --moves)
+		{
+			const unsigned int i = random() % b.size();
+			const unsigned int j = random() % a.size();
+			const Vector3D start(a[j].position_vector());
+			const Vector3D end(a[(j + 1) % a.size()].position_vector());
+			const double t = (random() % 2) ? 0.0 : unit(random);
+			b[i] = PointOnSphere(((1 - t) * start + t * end).get_normalisation());
+		}
+		const auto A = polygon(a);
+		const auto B = polygon(b);
+		EXPECT_EQ(
+				Overlay::has_points_on_both_sides(*A, *B, margin),
+				reference_points_on_both_sides(*A, *B, margin));
+		EXPECT_EQ(
+				Overlay::has_points_on_both_sides(*B, *A, margin),
+				reference_points_on_both_sides(*B, *A, margin));
+		const bool reference = reference_rings_cross(*A, *B, margin);
+		EXPECT_EQ(Overlay::do_rings_cross(*A, *B, margin), reference);
+		EXPECT_EQ(Overlay::do_rings_cross(*B, *A, margin), reference);
+		(reference ? num_crossing : num_not_crossing) += 1;
+	}
+	EXPECT_GT(num_crossing, 50u);
+	EXPECT_GT(num_not_crossing, 50u);
 }
 
 

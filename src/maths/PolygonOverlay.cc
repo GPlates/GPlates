@@ -189,6 +189,44 @@ namespace GPlatesMaths
 
 
 			/**
+			 * How far along a ring's edges, in margins, the crossing tests look from a vertex
+			 * within the margin of the other ring (do_rings_cross, does_ring_cross_itself): far
+			 * enough that a point there is clear of the outline it was near unless the edge leaves
+			 * it at under about twenty degrees, near enough to stay within an overlap a few margins
+			 * long.
+			 */
+			const double PROBE_DISTANCE_IN_MARGINS = 3.0;
+
+
+			/**
+			 * The point @a angle radians from @a from towards @a to along their great circle (the
+			 * arc's other end if that is nearer); none if the two coincide.
+			 */
+			boost::optional<PointOnSphere>
+			get_point_along(
+					const PointOnSphere &from,
+					const PointOnSphere &to,
+					double angle)
+			{
+				// In doubles: Vector3D::get_normalisation takes a vector shorter than about 1e-6
+				// for zero (real_t's comparison), and an edge here can be far shorter than that.
+				const Vector3D f(from.position_vector());
+				const Vector3D t(to.position_vector());
+				const Vector3D tangent = t - dot(f, t).dval() * f;
+				const double tangent_length = std::sqrt(tangent.magSqrd().dval());
+				if (!(tangent_length > 0))
+				{
+					return boost::none;
+				}
+				const double length = angle_between(from.position_vector(), to.position_vector());
+				const double along = (std::min)(angle, length);
+				return PointOnSphere(
+						(std::cos(along) * f + (std::sin(along) / tangent_length) * tangent)
+								.get_normalisation());
+			}
+
+
+			/**
 			 * Whether two arcs cross (do_rings_cross): each arc's ends lie on opposite sides of
 			 * the other's great circle, every end farther from it than @a threshold (a sine), and
 			 * the arcs meet at the same one of their great circles' two crossings.
@@ -364,6 +402,114 @@ GPlatesMaths::PolygonOverlay::is_ring_inside_ring(
 
 
 bool
+GPlatesMaths::PolygonOverlay::has_points_on_both_sides(
+		const PolygonOnSphere &a,
+		const PolygonOnSphere &b,
+		const AngularExtent &margin)
+{
+	enum PointSide { SIDE_NEAR, SIDE_INSIDE, SIDE_OUTSIDE };
+	const double probe_distance = PROBE_DISTANCE_IN_MARGINS * margin.get_angle().dval();
+	const auto side_of = [&](const PointOnSphere &point)
+	{
+		const AngularDistance distance_to_bounds =
+				minimum_distance(point, b.get_bounding_small_circle());
+		if (distance_to_bounds.is_precisely_greater_than(margin))
+		{
+			return SIDE_OUTSIDE;  // outside its bounding circle by more than the margin
+		}
+		if (minimum_distance(point, b, false, margin))
+		{
+			return SIDE_NEAR;
+		}
+		return b.is_point_in_polygon(point, PolygonOnSphere::ADAPTIVE, false)
+				? SIDE_INSIDE
+				: SIDE_OUTSIDE;
+	};
+	bool inside = false;
+	bool outside = false;
+	const auto add = [&](PointSide side)
+	{
+		inside = inside || side == SIDE_INSIDE;
+		outside = outside || side == SIDE_OUTSIDE;
+		return inside && outside;
+	};
+	// The points along an edge from its end at a near vertex: PROBE_DISTANCE_IN_MARGINS margins
+	// along, and the midpoint.
+	const auto add_points_along = [&](
+			const PointOnSphere &near_vertex,
+			const PointOnSphere &other_end)
+	{
+		const double length =
+				angle_between(near_vertex.position_vector(), other_end.position_vector());
+		for (const double along : { (std::min)(probe_distance, length / 2), length / 2 })
+		{
+			const boost::optional<PointOnSphere> point =
+					get_point_along(near_vertex, other_end, along);
+			if (point && add(side_of(*point)))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	// The vertices of a, by its bounding tree: a node farther than the margin from b's bounding
+	// circle has all its vertices outside b by more than the margin, so it counts as outside at
+	// once, and only the nodes near b are visited edge by edge (otherwise a large ring against
+	// each of many small rings inside it costs its every vertex for each: twelve times the
+	// grouping's old cost at 1,481 rings and 100,000 points, review 7). An edge's start is its
+	// vertex; at a near vertex, its edge and the one before it are looked along.
+	typedef PolygonOnSphere::ring_bounding_tree_type tree_type;
+	const tree_type &tree = a.get_exterior_ring_bounding_tree();
+	const unsigned int num_edges = a.number_of_segments_in_exterior_ring();
+	std::vector<tree_type::node_type> nodes(1, tree.get_root_node());
+	while (!nodes.empty())
+	{
+		const tree_type::node_type node = nodes.back();
+		nodes.pop_back();
+		const AngularDistance distance_to_bounds = minimum_distance(
+				node.get_bounding_small_circle(),
+				b.get_bounding_small_circle());
+		if (distance_to_bounds.is_precisely_greater_than(margin))
+		{
+			if (add(SIDE_OUTSIDE))
+			{
+				return true;
+			}
+			continue;
+		}
+		if (node.is_internal_node())
+		{
+			nodes.push_back(tree.get_child_node(node, 0));
+			nodes.push_back(tree.get_child_node(node, 1));
+			continue;
+		}
+		const unsigned int edges_begin = node.get_bounded_great_circle_arcs_begin_index();
+		const unsigned int edges_end = edges_begin + node.get_num_bounded_great_circle_arcs();
+		for (unsigned int e = edges_begin; e < edges_end; ++e)
+		{
+			const GreatCircleArc &edge = *(a.exterior_ring_begin() + e);
+			const PointSide side = side_of(edge.start_point());
+			if (add(side))
+			{
+				return true;
+			}
+			if (side == SIDE_NEAR)
+			{
+				const GreatCircleArc &previous_edge =
+						*(a.exterior_ring_begin() + (e + num_edges - 1) % num_edges);
+				if (add_points_along(edge.start_point(), edge.end_point()) ||
+					add_points_along(edge.start_point(), previous_edge.start_point()))
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+
+bool
 GPlatesMaths::PolygonOverlay::do_rings_cross(
 		const PolygonOnSphere &ring,
 		const PolygonOnSphere &other_ring,
@@ -375,98 +521,20 @@ GPlatesMaths::PolygonOverlay::do_rings_cross(
 		return false;
 	}
 
-	// A point of one ring farther than the margin inside the other ring and one farther than it
-	// outside: where the rings swap sides along a stretch within the margin of each other (a
-	// dense shared edge, whose every edge end is within the margin of the other ring's edges), or
-	// where an edge between two points on the other ring's outline is a chord through it (rings
-	// meeting only at vertices on each other's outline, an overlap of any size with no vertex
-	// inside it). The points: every vertex, and the midpoint of every edge whose two ends are both
-	// within the margin of the other ring (a chord's ends are; its midpoint is not, unless it is
-	// short).
-	enum PointSide { NEAR, INSIDE, OUTSIDE };
-	const auto has_points_on_both_sides = [&margin](
-			const PolygonOnSphere &a,
-			const PolygonOnSphere &b)
+	// Then the outlines' distance: rings whose outlines are farther apart than the margin
+	// everywhere do not cross (one is inside the other or they are apart), and every point test
+	// below would agree. This settles almost every pair of rings of a valid input at the cost of a
+	// descent of both bounding trees, where the point test would classify every vertex of two
+	// rings that lie in each other's bounding circles (an annulus; a cut leaving many long pieces
+	// side by side, 25 times the old grouping's cost at 100 such pieces, review 8).
+	if (!minimum_distance(ring, other_ring, false, false, margin))
 	{
-		const auto side_of = [&](const PointOnSphere &point)
-		{
-			const AngularDistance distance_to_bounds =
-					minimum_distance(point, b.get_bounding_small_circle());
-			if (distance_to_bounds.is_precisely_greater_than(margin))
-			{
-				return OUTSIDE;  // outside its bounding circle by more than the margin
-			}
-			if (minimum_distance(point, b, false, margin))
-			{
-				return NEAR;
-			}
-			return b.is_point_in_polygon(point, PolygonOnSphere::ADAPTIVE, false)
-					? INSIDE
-					: OUTSIDE;
-		};
-		bool inside = false;
-		bool outside = false;
-		const auto add = [&](PointSide side)
-		{
-			inside = inside || side == INSIDE;
-			outside = outside || side == OUTSIDE;
-			return inside && outside;
-		};
-		const auto add_midpoint = [&](const GreatCircleArc &edge)
-		{
-			const Vector3D sum =
-					Vector3D(edge.start_point().position_vector()) +
-					Vector3D(edge.end_point().position_vector());
-			return sum.magSqrd().dval() > 0 && add(side_of(PointOnSphere(sum.get_normalisation())));
-		};
-		// The edges of a, by its bounding tree: a node farther than the margin from b's bounding
-		// circle has all its vertices outside b by more than the margin, so it counts as outside at
-		// once, and only the nodes near b are visited edge by edge (otherwise a large ring against
-		// each of many small rings inside it costs its every vertex for each: twelve times the
-		// grouping's old cost at 1,481 rings and 100,000 points, review 7). An edge's end is the
-		// next edge's start, classified again where its start is near.
-		typedef PolygonOnSphere::ring_bounding_tree_type tree_type;
-		const tree_type &tree = a.get_exterior_ring_bounding_tree();
-		std::vector<tree_type::node_type> nodes(1, tree.get_root_node());
-		while (!nodes.empty())
-		{
-			const tree_type::node_type node = nodes.back();
-			nodes.pop_back();
-			const AngularDistance distance_to_bounds = minimum_distance(
-					node.get_bounding_small_circle(),
-					b.get_bounding_small_circle());
-			if (distance_to_bounds.is_precisely_greater_than(margin))
-			{
-				if (add(OUTSIDE))
-				{
-					return true;
-				}
-				continue;
-			}
-			if (node.is_internal_node())
-			{
-				nodes.push_back(tree.get_child_node(node, 0));
-				nodes.push_back(tree.get_child_node(node, 1));
-				continue;
-			}
-			const auto edges_end = node.get_bounded_great_circle_arcs_end();
-			for (auto edge = node.get_bounded_great_circle_arcs_begin(); edge != edges_end; ++edge)
-			{
-				const PointSide side = side_of(edge->start_point());
-				if (add(side))
-				{
-					return true;
-				}
-				if (side == NEAR && side_of(edge->end_point()) == NEAR && add_midpoint(*edge))
-				{
-					return true;
-				}
-			}
-		}
 		return false;
-	};
-	if (has_points_on_both_sides(ring, other_ring) ||
-		has_points_on_both_sides(other_ring, ring))
+	}
+
+	// The point test, either way round, then the edge test.
+	if (has_points_on_both_sides(ring, other_ring, margin) ||
+		has_points_on_both_sides(other_ring, ring, margin))
 	{
 		return true;
 	}
@@ -490,15 +558,163 @@ GPlatesMaths::PolygonOverlay::does_ring_cross_itself(
 		const PolygonOnSphere &ring,
 		const AngularExtent &margin)
 {
-	// The edge test of do_rings_cross, the ring's bounding tree against itself. An edge and its
-	// neighbours share an end, which lies on the other's great circle, so they never count.
-	const PolygonOnSphere::ring_bounding_tree_type &tree = ring.get_exterior_ring_bounding_tree();
-	return do_ring_nodes_cross(
+	// (1) The edge test of do_rings_cross, the ring's bounding tree against itself: two edges
+	// crossing clear of their ends. An edge and its neighbours share an end, which lies on the
+	// other's great circle, so they never count.
+	typedef PolygonOnSphere::ring_bounding_tree_type tree_type;
+	const tree_type &tree = ring.get_exterior_ring_bounding_tree();
+	if (do_ring_nodes_cross(
 			tree,
 			tree.get_root_node(),
 			tree,
 			tree.get_root_node(),
-			margin.get_sine().dval());
+			margin.get_sine().dval()))
+	{
+		return true;
+	}
+
+	// (2) A crossing at or near one of the ring's own vertices (a bow-tie with a vertex at its
+	// crossing, review 8), which the edge test does not see. At a vertex v within the margin of a
+	// part of the ring not adjacent to it (a point x of another edge, or that edge's end, another
+	// vertex), the ring's path through v crosses its path through x if the points
+	// PROBE_DISTANCE_IN_MARGINS margins along v's two edges lie on opposite sides of the path
+	// through x, both farther than the margin from it. Otherwise (a touch, its lobes wound alike;
+	// or points within the margin, where edges are short or the paths run along each other) not:
+	// so a ring of a valid input, which does not cross itself, is never taken as crossing, and a
+	// sliver is still dropped.
+	const unsigned int num_edges = ring.number_of_segments_in_exterior_ring();
+	if (num_edges < 4)
+	{
+		return false;
+	}
+	const double probe_distance = PROBE_DISTANCE_IN_MARGINS * margin.get_angle().dval();
+	const auto edge_at = [&ring, num_edges](unsigned int e) -> const GreatCircleArc &
+	{
+		return *(ring.exterior_ring_begin() + (e % num_edges));
+	};
+	// The points along the path through a point x (on an edge, or at a vertex) on either side of
+	// it; none where it has no length.
+	const auto probe = [probe_distance](const PointOnSphere &x, const PointOnSphere &towards)
+	{
+		return get_point_along(x, towards, probe_distance);
+	};
+	// Which side of the path a -> x -> b a point p lies on (+1 left, -1 right), if it is farther
+	// than the margin from both of the path's arcs; else none.
+	const auto side_of_path = [&margin](
+			const PointOnSphere &a,
+			const PointOnSphere &x,
+			const PointOnSphere &b,
+			const PointOnSphere &p) -> boost::optional<int>
+	{
+		const GreatCircleArc first = GreatCircleArc::create(a, x);
+		const GreatCircleArc second = GreatCircleArc::create(x, b);
+		if (minimum_distance(p, first, margin) || minimum_distance(p, second, margin))
+		{
+			return boost::none;
+		}
+		const Vector3D pv(p.position_vector());
+		const double left_of_first =
+				dot(cross(Vector3D(a.position_vector()), Vector3D(x.position_vector())), pv).dval();
+		const double left_of_second =
+				dot(cross(Vector3D(x.position_vector()), Vector3D(b.position_vector())), pv).dval();
+		const double turn = dot(
+				cross(Vector3D(a.position_vector()), Vector3D(x.position_vector())),
+				Vector3D(b.position_vector())).dval();
+		// Turning left, the left side is left of both arcs; turning right, left of either.
+		const bool left = (turn >= 0)
+				? (left_of_first > 0 && left_of_second > 0)
+				: (left_of_first > 0 || left_of_second > 0);
+		return left ? 1 : -1;
+	};
+	const AngularExtent near_threshold = margin;
+	for (unsigned int v = 0; v < num_edges; ++v)
+	{
+		const PointOnSphere &vertex = edge_at(v).start_point();
+		const boost::optional<PointOnSphere> before =
+				probe(vertex, edge_at(v + num_edges - 1).start_point());
+		const boost::optional<PointOnSphere> after = probe(vertex, edge_at(v).end_point());
+		if (!before || !after)
+		{
+			continue;
+		}
+		// The edges near the vertex, by the bounding tree, but for its own two.
+		std::vector<tree_type::node_type> nodes(1, tree.get_root_node());
+		while (!nodes.empty())
+		{
+			const tree_type::node_type node = nodes.back();
+			nodes.pop_back();
+			if (minimum_distance(vertex, node.get_bounding_small_circle())
+					.is_precisely_greater_than(near_threshold))
+			{
+				continue;
+			}
+			if (node.is_internal_node())
+			{
+				nodes.push_back(tree.get_child_node(node, 0));
+				nodes.push_back(tree.get_child_node(node, 1));
+				continue;
+			}
+			const unsigned int edges_begin = node.get_bounded_great_circle_arcs_begin_index();
+			const unsigned int edges_end = edges_begin + node.get_num_bounded_great_circle_arcs();
+			for (unsigned int e = edges_begin; e < edges_end; ++e)
+			{
+				if (e == v || e == (v + num_edges - 1) % num_edges)
+				{
+					continue;
+				}
+				const GreatCircleArc &edge = edge_at(e);
+				UnitVector3D closest = edge.start_point().position_vector();
+				if (!minimum_distance(vertex.position_vector(), edge, near_threshold, closest))
+				{
+					continue;
+				}
+				// The path through the nearest point: along the edge, or through its end vertex
+				// (the vertex then the path's middle).
+				PointOnSphere middle(closest);
+				boost::optional<PointOnSphere> path_before;
+				boost::optional<PointOnSphere> path_after;
+				if (!minimum_distance(middle, edge.start_point(), near_threshold) &&
+					!minimum_distance(middle, edge.end_point(), near_threshold))
+				{
+					path_before = probe(middle, edge.start_point());
+					path_after = probe(middle, edge.end_point());
+				}
+				else
+				{
+					const unsigned int w =
+							minimum_distance(middle, edge.start_point(), near_threshold)
+									? e
+									: e + 1;
+					if (w % num_edges == v)
+					{
+						continue;
+					}
+					middle = edge_at(w).start_point();
+					path_before = probe(middle, edge_at(w + num_edges - 1).start_point());
+					path_after = probe(middle, edge_at(w).end_point());
+				}
+				// The path's arms at least two margins long, or the sides mean nothing: past the
+				// end of a short arm the ring can go round it without crossing.
+				if (!path_before || !path_after ||
+					angle_between(middle.position_vector(), path_before->position_vector()) <
+							2 * margin.get_angle().dval() ||
+					angle_between(middle.position_vector(), path_after->position_vector()) <
+							2 * margin.get_angle().dval())
+				{
+					continue;
+				}
+				const boost::optional<int> before_side =
+						side_of_path(*path_before, middle, *path_after, *before);
+				const boost::optional<int> after_side =
+						side_of_path(*path_before, middle, *path_after, *after);
+				if (before_side && after_side && *before_side != *after_side)
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }
 
 
@@ -4622,7 +4838,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 			}
 		}
 		// The containment is not a nesting (it is, once crossing rings are grouped, but an overlap
-		// reached only within the margin of the outlines is missed: do_rings_cross): kept as a
+		// reached only within a few margins of the outlines is missed: do_rings_cross): kept as a
 		// polygon of its own, and counted. Not thrown: partitioning has always accepted inputs
 		// whose rings cross (self-intersecting polygons, common in real data).
 		++d_diagnostics.grouping_failures;
