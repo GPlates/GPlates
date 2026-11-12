@@ -11236,6 +11236,8 @@ class PolygonOnSphere(GeometryOnSphere):
 
         A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, with interior rings where the pieces need them. The interior rings of both polygons take part in the cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region *inside* and, *outside*, the polygon geometry with a hole where this polygon is.
 
+        Where either polygon's rings cross each other or themselves (an invalid polygon, which :meth:`is_point_in_polygon` reads by parity), the pieces follow that reading: rings of a piece that cross each other are kept in one polygon, so no two pieces overlap. An interior ring of such a piece can then lie partly or wholly outside its exterior ring, its :meth:`get_area` is its exterior ring's area less its interior rings' (not the area :meth:`is_point_in_polygon` covers), and it is never dropped as a sliver (below).
+
         A cut polygon's pieces narrower than *sliver_width_threshold_radians* are dropped, as a :meth:`PlatePartitioner<PlatePartitioner.__init__>` drops them: a piece's width is twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely on the other (and *geometry* itself is added to that list). The default is ``1.4142e-6`` radians (about 9 metres on the Earth), the distance within which two outlines count as touching, so that only pieces thinner than the cut can resolve are dropped; :class:`PlatePartitioner`'s default is ten times that. Zero keeps every piece, so that the pieces cover the polygon exactly however thin some are:
         ::
 

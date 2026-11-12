@@ -1446,14 +1446,22 @@ symmetric difference's where a vertex's four kept ends pair crosswise. Two polyg
 their union, so crossing rings in separate polygons overlap (the hunt found 11,212 of its 70,291
 cases with crossing inputs wrong read as polygons, against 255 counted as grouping failures). So
 rings that cross (`do_rings_cross`) are first joined into **groups**, and a group's rings all go
-into one polygon, which reads by parity as the output does. Two rings cross if either has a vertex
-inside the other and a vertex outside it, each farther than the margin below from its outline
-(where the rings swap sides along a stretch within the margin of each other, a dense shared edge,
-say), or if an edge of each crosses an edge of the other with the ends of both farther than the
+into one polygon, which reads by parity as the output does. Two rings cross if either has a point
+inside the other and a point outside it, each farther than the margin below from its outline, the
+points being its vertices and the midpoints of its edges whose two ends are both within the margin
+of the other ring (where the rings swap sides along a stretch within the margin of each other, a
+dense shared edge, say; or where an edge between two points on the other's outline is a chord
+through it: rings that meet only at vertices on each other's outline can overlap by any amount with
+no vertex of either inside the other, review 7's square with an interior ring through three of its
+corners); or if an edge of each crosses an edge of the other with the ends of both farther than the
 margin from the other's great circle (two rings crossing like a plus sign, no vertex of either
-inside the other; by the rings' bounding trees). So a touch at a vertex, a crossing within a
+inside the other). Both tests descend the rings' bounding trees: a node of one ring farther than
+the margin from the other's bounding circle is outside it at once, so a large exterior is not
+walked vertex by vertex for each of its many holes (that cost twelve times the old grouping at
+1,481 rings and 100,000 points; now about 1.3 times). So a touch at a vertex, a crossing within a
 vertex's cluster, and stretches within the thickness of each other are not taken for crossings, and
-an overlap thinner than the margin is missed. Groups do not cross each other, so a group lies
+an overlap reached only within the margin of the outlines (thinner than it, or behind a chord
+shorter than about twice it) is missed. Groups do not cross each other, so a group lies
 wholly inside or wholly outside each ring of another (a ring crossing one inside a ring `R` reaches
 inside `R`, so lies inside it), and the number of rings containing it is the same all over it. The
 groups are then nested by **containment with parity depth**, tested on each group's first ring
@@ -1463,16 +1471,16 @@ than a margin from `r'`'s outline, else the farthest of `r`'s vertices and its e
 if every one of those is on `r'` the rings coincide (counted). The margin is `max(10 h, twice the
 widest record cluster)`, the oracle's sampling margin: a margin of `s` alone let a vertex `1.6 h`
 across a gap under `2 h` between two facing holes decide that a hole lay outside its exterior, in 5
-of 119,198 generated cases, the intersection's area wrong by about a quarter. Every pair is tested
-(the number of rings is small). A group's depth is the number of rings containing it and its parent
-the containing group of greatest depth. An even depth starts a polygon, whose exterior is the
-group's ring of largest area (any would read the same by parity) and whose holes are its other
-rings; an odd depth puts all of the group's rings, as holes, into its parent's polygon (a hole
-group's parent's own polygon, in a stretch the parent group covers twice); an island inside a hole
-is a polygon of its own. That is a nesting only if the group's depth is its parent's plus the
-number of its parent's rings containing it; a hole group for which it is not (rings crossing within
-the margin, which the test misses) is kept as a polygon of its own and counted
-(`grouping_failures`), not thrown, since partitioning has always accepted inputs whose rings cross
+of 119,198 generated cases, the intersection's area wrong by about a quarter. Every pair of rings
+whose bounding circles meet is tested, by containment one point each. A group's depth is the
+number of rings containing it and its parent the containing group of greatest depth. An even depth
+starts a polygon, whose exterior is the group's ring of largest area (any would read the same by
+parity) and whose holes are its other rings; an odd depth puts all of the group's rings, as holes,
+into its parent's polygon (a hole group's parent's own polygon, in a stretch the parent group
+covers twice); an island inside a hole is a polygon of its own. That is a nesting only if the
+group's depth is its parent's plus the number of its parent's rings containing it; a hole group
+for which it is not (rings whose overlap the crossing test misses, reached only within the margin)
+is kept as a polygon of its own and counted (`grouping_failures`), not thrown, since partitioning has always accepted inputs whose rings cross
 (self-intersecting polygons, common in real data). For inputs whose rings do not cross, every group
 is one ring and this is plain containment with parity depth. Each exterior is oriented anticlockwise
 seen from outside the sphere and each hole clockwise, so that the output is on every ring's left
@@ -1510,7 +1518,10 @@ passes every other check. A point outside the subject tells nothing, so with no 
 outermost first, and a group inside a dropped group is dropped with it, since a dropped exterior's
 region goes to the other output and a dropped hole is filled, with everything inside either (an
 island of a filled hole, kept, would overlap its polygon). A group of crossing rings is not filtered
-itself: its region is no one ring's.
+itself: its region is no one ring's. Nor is a ring that crosses itself (`does_ring_cross_itself`,
+asked only of a ring that measures as a sliver): its mean width uses the fan's signed area, which
+weights each lobe by its winding number, so lobes wound opposite ways cancel, and a bow-tie three
+quarters inside a plate measured as a sliver and came back wholly outside (review 7).
 
 **Polylines** (`classify_polyline_pieces`, `extract_polylines`). A polyline subject shares the
 structures above (the loop rule skips a piece with a dangling end; the self-touch cuts apply); the
@@ -1648,9 +1659,11 @@ the segment). Per-tuple scalars are interpolated independently; a point or multi
 takes its own index's scalars. A coverage that an older file gives for the exterior ring only
 (`Coverage::exterior_ring_only`, section 3.3's note) is partitioned as the exterior ring alone, so
 its pieces keep that form: a hole the cut opens into an exterior ring gets values by step 2, and a
-hole left whole gets none. The previous mapping, an epsilon map of the original points and a search
-for the nearest original segment within 0.5 degrees, relied on every point of a piece lying on the
-input's outline, which a cut across the interior defeats. Step 2's loop once ran its polyline end
+hole left whole gets none. So, where the input's rings cross, does a ring of the input's exterior
+that its group (section 5.2) puts in as a hole, beside a larger ring. The previous mapping, an
+epsilon map of the original points and a search for the nearest original segment within 0.5
+degrees, relied on every point of a piece lying on the input's outline, which a cut across the
+interior defeats. Step 2's loop once ran its polyline end
 rule for closed rings too, so on a ring whose first point had no value the points before its first
 valued point all took that value; a ring starts so whenever a piece is cut a second time (the
 second overlay's first stop is on the first plate's cut edge), that is for every feature spanning
@@ -1664,7 +1677,11 @@ them: arc length, the old measure, is inflated by a polygon's cuts. The first pl
 is taken whatever its size, so that a geometry of no measure (a polygon whose edges are all too
 short for an area, a polyline at one position) still gets a plate, in both products. pyGPlates
 measures what splitting would partition (`_partition_feature_geometries`), so a time-dependent
-geometry that is not partitioned decides no plate.
+geometry that is not partitioned decides no plate. A piece whose rings cross (section 5.2) is
+measured as `PolygonOnSphere::get_area` measures it, its exterior's area less its interiors', which
+is not its parity area (section 3.3): a plate whose hole pokes half out of its exterior measured
+0.0121 steradians against 0.0304 sampled (review 7), and before such rings were grouped, as
+separate polygons, they summed too large instead.
 
 **Time-dependent geometry.** A geometry property whose value is a `GpmlPiecewiseAggregation` with
 exactly one time window containing the reconstruction time is partitioned as a constant geometry,
@@ -1711,7 +1728,9 @@ denominator). Built first with the vertices' mean direction as the apex, which l
 reported the hemisphere wholly inside a 10-degree box. The apex is now the ring's vector area,
 `sum(a_i x a_(i+1))`, normalised: the plane's normal for a great-circle ring, near the centre for
 any other; where that is rounding (`magSqrd()` under `1e-18`, a ring of no area whichever apex is
-used) the mean direction, and if that cancels too the first vertex.
+used) the mean direction, and if that cancels too the first vertex. The sum is signed by winding
+number, so for a ring that crosses itself it is not its parity area, and lobes wound opposite ways
+cancel: such a ring, and a group of rings that cross each other, are never dropped (section 5.2).
 
 **The widths.** `GeometryCookieCutter`'s default is `10 h` (`get_default_sliver_min_width`, about
 90 metres), so it covers Assign Plate IDs and pyGPlates' `PlatePartitioner` and
@@ -1742,9 +1761,9 @@ arrangement after repair, or a piece left unclassified, throw
 `PolygonOverlay::InconsistentOverlayException` from `classify()` (a `MathematicalException` carrying
 the `Diagnostics` and the first failing vertex's position, with the vertex's latitude, longitude and
 record kinds in its message), and on a whole answer's hemisphere check; `extract` throws it on a
-hemisphere failure and a pairing failure. A grouping failure (above, rings crossing within the
-margin, which the crossing test misses) and coincident rings (rings of no area that clean-up
-missed, `coincident_rings`) are counted only.
+hemisphere failure and a pairing failure. A grouping failure (above, rings whose overlap the
+crossing test misses) and coincident rings (rings of no area that clean-up missed,
+`coincident_rings`) are counted only.
 `Options::throw_if_inconsistent` (false for hunts and tests) counts instead, and the rings are then
 returned as read, which a caller must not take for the output. The causes a check failure can have:
 a missed or spurious intersection, a band piece's midpoint test propagated where the margin order
@@ -2224,8 +2243,10 @@ chains and a near-copy's anchorless chain past a short clip segment, the LL rule
 a whole answer's hemisphere check; repair by a single flip and by a whole chain, and the throw
 without repair; linking (two squares, a clip inside, a pinch, and the catalogue families under every
 operation against the oracle); grouping (holes in both inputs, crossing holes, islands in holes, the
-containment test directly, inputs whose rings cross, a hole across its exterior and two rings like
-a plus sign, and the crossing test directly), orientation independent of the inputs' and a union
+containment test directly, inputs whose rings cross, a hole across its exterior, two rings like a
+plus sign, rings meeting only at shared vertices both ways round, groups three deep, and the
+crossing tests directly, between rings and of a ring with itself), orientation independent of the
+inputs' and a union
 over a hemisphere throwing; self-touching inputs and the pairings only a rare vertex shows; polylines (across, no
 record, along under both settings, a touch and an end on the edge, a pinch, a hairpin across the
 clip and along its edge); and provenance (each kind of point, a two-plate cascade, a polyline, a
@@ -2262,12 +2283,14 @@ data fails the case, and the one-passage rule's and the result contract's cases 
 live in the planning repository (its configuration name is `r5o`); a larger export is run through
 `GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES`. The hunt at scale ran 119,198 generated cases, about
 fourteen times the earlier sets, and found the grouping margin and the cone's offsets (section
-5.2); after them 13 cases differ, none in a partition's geometry: 4 at the symmetric difference's
-crossing pairing, 4 coincident rings of no area, 4 second-step provenance losses with no point's
-provenance wrong, and one where two crossings `1e-16` radians apart are two vertices in the C++
-and one in the prototype (section 7). Checking the 70,291 cases whose input rings cross as polygons
-too found 11,212 wrong (polygons overlapping) before crossing rings were grouped and 3 after, all in
-the reverse or symmetric difference, where two output rings cross by less than the margin.
+5.2); after them 9 polygon cases differ, none in a partition's geometry: 4 coincident rings of no
+area, 4 second-step provenance losses with no point's provenance wrong, and one where two crossings
+`1e-16` radians apart are two vertices in the C++ and one in the prototype (section 7). Checking
+the 70,291 cases whose input rings cross as polygons too found 11,212 wrong (polygons overlapping)
+before crossing rings were grouped, 3 with the first crossing test (a vertex each side, or edges
+crossing clear of their ends), and none once edges' midpoints were tested (rings meeting only at
+shared vertices, which were also the 4 cases first put down to the symmetric difference's
+pairing).
 
 The partition layer's tests (`PolygonPartitionerTest.cc`) cover the three old no-intersection bugs
 (a partitioner inside the subject, a subject across a partitioner's hole, a partitioner across the
@@ -2277,7 +2300,10 @@ shortcut for an interior past its circle (the helix band of section 3.3, both wa
 through the cookie cutter (a multi-point, two holes, a two-plate cascade with a hole across the
 shared edge and the input's closing segments across both plates, and the other geometry types); and
 the sliver filter (an exterior with its hole, a hole alone, a hole with an island, both sides
-emptied, the cookie cutter's default, the mean width, and a ring on one great circle); and the
+emptied, the cookie cutter's default, the mean width, a ring on one great circle, and a bow-tie);
+inputs whose rings cross (a plate whose hole crosses its exterior, and rings meeting only at shared
+vertices, each as the partitioning polygon and as the subject, sampled as the union of the pieces
+as a feature's polygons are read); and the
 cookie cutter's options (grouped or not, sorted by plate ID or area, every speed) on a plate with a
 hole and the plate filling it. `PartitionFeatureUtilsTest.cc` covers the coverages (across a cut, an
 exterior-ring-only coverage whose hole the cut opens, a ring with no valued point, a run across a
@@ -2325,17 +2351,20 @@ takes about 30% longer than before (0.28 s against 0.20 s at 0 Ma, resolving the
   exceeding a hemisphere raises in Python (`InconsistentOverlayException` in C++, section 5.6) and
   whether any geometry-level entry point gains a coverage form (section 5.7). Known unfinished for
   them: the pairing across the symmetric difference's output sectors is unguarded by the prototype
-  comparison (4 of 119,198 generated cases differ there, with rings overlapping where a vertex's ends
-  are paired across), and an output ring that crosses itself where an input ring does has no
-  orientation with the output on its left all round (section 5.2).
+  comparison (its rings can cross at a vertex where four kept ends pair crosswise, which the
+  grouping of crossing rings reads right; the 4 generated cases once put down to it were rings
+  meeting at shared vertices, section 5.2), and an output ring that crosses itself where an input
+  ring does has no orientation with the output on its left all round (section 5.2).
 - **The inconsistent cut along a dense shared edge** (section 5.6): band classes that repair cannot
   make consistent in 20 rounds, in the one known case, whose inputs both have a hole crossing
   their exterior ring. Untried: a rule for pieces running along the other outline, or a
   repair candidate that flips a chain of band pieces. Also open from the hunt: 4 generated cases
-  whose second cascade step loses a subject location (no point's provenance wrong), 4 with
-  coincident rings of no area, and 3 with crossing inputs whose reverse or symmetric difference
-  has output rings crossing by less than the grouping margin, which the crossing test misses, so
-  that their polygons overlap there.
+  whose second cascade step loses a subject location (no point's provenance wrong), and 4 with
+  coincident rings of no area. From review 7's random probes, for invalid inputs only: two
+  coincident rings with area (an interior ring repeating its exterior, empty by parity) are not
+  grouped, so they come out as two polygons over the same area; and inputs snapped to a grid, with
+  whole rings in common and rings crossing at once, gave a wrong parity over the output rings
+  without throwing in 5 of 5,985 cases at 0.002 radians and 52 of 5,832 at 0.004.
 - **Clipping by an open arc**, which would put `DateLineWrapper` (section 5.8) onto the overlay. The
   prototype showed three additions suffice: pieces of an open clip whose first and last pieces
   dangle (the structures for a polyline subject, `RingView::closed` and `Stop::DANGLING_END`,
