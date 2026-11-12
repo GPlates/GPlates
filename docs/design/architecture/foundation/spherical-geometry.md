@@ -73,10 +73,10 @@ The one table of every tolerance in this code. "Exact" means a plain `double` co
 | Midpoint margin order | `Overlay::classify_pieces` step 3: `minimum_distance(midpoint, other polygon)` as an angle, largest first | The order in which stalled single arcs are tested | Rounded (a cosine, resolving about `1.5e-8` radians) but it only orders: a piece with a margin is tested before a band piece, and two band pieces' margins tying is harmless (section 5.2) |
 | Self-touch cut, `h` and `1e-12` radians | `Overlay::find_self_touch_cuts`: the other input's chain vertices within the thickness sine of the piece's own plane (in doubles, even for a segment `GreatCircleArc` calls zero length), each further along than the last by more than `ALONG_ROUNDING = 1e-12` radians; at most `MAX_CHAIN = 16` pieces | Where a stretch the two inputs share is cut on one side only (an input touching itself there, section 5.2) | `h` is the thickness the chain's records were decided with; the rounding margin keeps a vertex at the segment's end from counting as inside it one way in doubles and the other in the prototype's exact arithmetic |
 | Bundle cone | `Overlay::measure_ray`: `0` when the arc starts at the vertex's output position on its segment's great circle, `pi` when the arc is no longer than its offset, else `atan2(delta, L - delta)`; the offset counts the start's and far end's distances off the great circle only for a stop at a touch record inside a segment or a self-touch cut (decided by the stop's type, not a threshold) | Which rays are anchored and which float at a vertex of six or more ends where both inputs pass more than once, and the admissible orders (section 5.2) | Threshold-free: the bound on how far the arc's direction seen from the output position can differ from its tangent; `h` enters only through the data. A threshold of `1e-12` for the offsets was wrong at crossings, whose stored position lies up to about `2.4e-11` radians off its planes in a dense shared edge |
-| Anchorless reference point, `1e-6` | `Overlay::classify_anchorless_chain`: the polygon's outside point is replaced by its second reference point when within that of the chain arc's great circle (as a sine) or of the test point or its antipode | Which reference point the crossing parities are counted from (section 5.2) | The crossing arc must meet the chain's great circle only at the test point, and must have a defined plane: the degenerate crossing arc bound of section 3.8 |
-| Hemisphere check and grouping margins, `10 h` and `max(10 h, 2 x the widest record cluster)` | `HEMISPHERE_CHECK_MARGIN` in `PolygonOverlay.cc` (`Overlay::extract`): the reference point must be farther than `10 h` from both inputs' outlines; `is_ring_inside_ring`'s margin for the point that decides containment, and `do_rings_cross`'s for a crossing | Whether an output's rings read as the output or its complement; which ring contains which, and which cross (section 5.2) | The point tests are exact with the threshold off, so they need a margin above the band; output rings can cross within an overlay vertex by up to its record cluster's width (a margin of `s` alone misgrouped a hole in 5 of 119,198 generated cases) |
+| Anchorless reference point, `1e-6` | `Overlay::classify_anchorless_chain`: each input's outside point is replaced by its second reference point when within that of the great circle of the input's own segment along the chain (as a sine), or of the input's test point on it or its antipode | Which reference point the crossing parities are counted from (section 5.2) | The crossing arc must meet that great circle only at the test point, and must have a defined plane: the degenerate crossing arc bound of section 3.8 |
+| Hemisphere check and grouping margins, `10 h` and `max(10 h, 2 x the widest record cluster)` | `HEMISPHERE_CHECK_MARGIN` in `PolygonOverlay.cc`. `Overlay::find_reference_point`: the reference point of the hemisphere check (`extract`) and of a whole answer's check (`check_whole_result`) must be farther than `10 h` from both inputs' outlines; the whole answer's candidates beside the subject's edges are `20 h` off them. `Overlay::extract`: the grouping margin, for `is_ring_inside_ring`'s point that decides containment, for `do_rings_cross` (outlines farther apart than it do not cross; a point within it decides nothing) and for `does_ring_cross_itself`. `PROBE_DISTANCE_IN_MARGINS = 3`: both crossing tests look three margins along the edges of a vertex within the margin, and `does_ring_cross_itself` asks for arms two margins long | Whether an output's rings, or a whole answer, read as the output or its complement; which ring contains which, which rings cross, and which ring crosses itself (section 5.2) | The point tests are exact with the threshold off, so they need a margin above the band; output rings can cross within an overlay vertex by up to its record cluster's width (a margin of `s` alone misgrouped a hole in 5 of 119,198 generated cases) |
 | Sliver widths, `10 h`, `h` and none | `GeometryCookieCutter::get_default_sliver_min_width()` (`10 h`, about 90 metres; pyGPlates' `sliver_width_threshold_radians`, `None` for the default and zero for off); `polygon_on_sphere_partition` (`h`); `PolygonPartitioner::create` (none) | Which output rings, by mean width `2 * area / perimeter`, the filter drops (section 5.5) | Measured on a global coastline file cut by a topology model: below `h` the overlay cannot tell the outlines apart, up to `10 h` the rings are artefacts of an outline digitised along a plate boundary, and at `100 h` real geography begins |
-| `get_mean_width` apex, `magSqrd()` under `1e-18` and `1e-12` | `PolygonOverlay::get_mean_width`: the fan's apex is the ring's vector area, normalised; below `1e-18` (rounding of about `1e-16` an edge) the vertices' mean direction, and below `1e-12` of that the first vertex | Which apex the Van Oosterom and Strackee fan is summed from (section 5.5) | The vertices' mean lies in the plane of a ring on one great circle, where every triangle is degenerate and the sum is not the area (a 36-point equator ring measured `0`); the vector area is that plane's normal |
+| `get_mean_width` apex, `magSqrd()` within `real_t`'s tolerance of zero (about `1e-12`) | `PolygonOverlay::get_mean_width`: the fan's apex is the ring's vector area, normalised, unless its `magSqrd()` is within `real_t`'s tolerance of zero (a vector area shorter than about `1e-6`, a ring under about `5e-7` steradians, which is also where `get_normalisation` refuses it); then the vertices' mean direction, and if that cancels too the first vertex | Which apex the Van Oosterom and Strackee fan is summed from (section 5.5) | The vertices' mean lies in the plane of a ring on one great circle, where every triangle is degenerate and the sum is not the area (a 36-point equator ring measured `0`); the vector area is that plane's normal |
 | `DateLineWrapper` thick plane and pole caps, cosine `1 - 1e-9`, about `4.5e-5` radians | `EPSILON_THICK_PLANE_COSINE` and its sine `EPSILON_THICK_PLANE_SINE` in `DateLineWrapper.cc`. `classify_vertex`: a vertex within the sine of the dateline's plane is on it, and within the cosine of a pole is on the pole. `intersect_line_segment`: the south pole within the sine of a segment's plane means the segment's great circle passes the poles, and two exact sign tests per pole then decide whether the segment does | Which vertices are on the dateline or at a pole, and so which segments are intersected at all (section 5.8) | The comment says the epsilon is based on a cosine because that has the least accuracy for small angles, and that `1 - 1e-9` is a displacement of about `4.5e-5`. It is about 32 times `s` (and `GeometryIntersect`'s thickness, which is `s`), and is not derived from `EPSILON`. The code gives no reason for the size |
 | `DateLineWrapper`'s other epsilons: `1e-4`, and `real_t` zero tests | `does_line_segment_on_dateline_plane_cross_north_pole`: for a segment on the thick plane running between the arc and longitude zero, the dot product of the cross product of its end points (not normalised, so small for a short segment) with the dateline plane's normal, compared with `1e-4`; the sign, together with which end is on the arc, picks the pole, and below `1e-4` (the comment says the ends are then too close together) the sign of the end point's `z` decides. `calculate_intersection`: the chord interpolation's denominator and the interpolated vector's `magSqrd()` compared with zero as `real_t`; `intersect_line_segment` and the pole cases of `add_line_segment`: `is_zero_length()`. `output_non_intersecting_polygon_rings`: `minimum_distance()` of two solid polygons compared with `AngularDistance::ZERO`, an epsilon comparison of cosines (`boost::equivalent` over `real_t`) | Which pole such a segment passes; no intersection for a segment whose ends are both too near the plane or nearly antipodal; a zero-length segment straddling the plane intersects at its start point, and one at a pole gets the ratio `0`; a non-intersecting ring within about `1.4e-6` radians of an output exterior ring becomes its interior ring (section 5.8) | The first is called lenient because both paths are covered; the comments say the next two cannot happen given the thick-plane precondition; the last is the epsilon in `AngularDistance::operator==`, not a choice made here |
 
@@ -373,7 +373,10 @@ meaning its interior:
   unpartitioned, at the root, so that its fill is not culled from the tiles outside the circle;
 - `BoundingSmallCircle::test_filled_polygon` and
   `InnerOuterBoundingSmallCircle::test_filled_polygon`, which report an outline inside the circle
-  as `INTERSECTING_BOUNDS` when the fill reaches past it.
+  as `INTERSECTING_BOUNDS` when the fill reaches past it;
+- `is_outside_by_bounds` in `PolygonPartitioner.cc` (section 5.1), which answers *outside* without
+  an overlay when the two bounding circles are disjoint, only if each polygon's interior lies within
+  its own circle.
 
 **What follows automatically**, by calling point-in-polygon or the fans: `DateLineWrapper` decides
 whether a pole is inside a polygon with `is_point_in_polygon`
@@ -1060,10 +1063,11 @@ which is `s` (section 4.4): about `1.414e-6` radians, 9 metres on the Earth.
 The other callers of `PolygonPartitioner` are `PolygonOnSphere.partition()` in pyGPlates
 (`src/api/PyGeometriesOnSphere.cc`, `polygon_on_sphere_partition`) and
 `GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh_node_intersections`, which uses
-only the inside/outside/intersecting answer for a quad-tree node's bounding polygon. The one other
-user of the old polyline-cutting code, CitcomS mesh generation
-(`GenerateVelocityDomainCitcoms.cc`), wanted one crossing of two two-point polylines and now takes
-`GeometryIntersect::intersect`'s first record directly.
+only the inside/outside/intersecting answer for a quad-tree node's bounding polygon. That overload
+serves a static polygon drawn as a fan, and the fan fallback is under `#if 0` (section 3.3), so
+nothing reaches it today: a meshed polygon's nodes are found from its triangles. CitcomS mesh
+generation (`GenerateVelocityDomainCitcoms.cc`), which needs one crossing of two two-point
+polylines, takes `GeometryIntersect::intersect`'s first record directly.
 
 **The cascade.** `GeometryCookieCutter::partition` gives the input to the first partitioning
 polygon; what lies outside it goes to the second, and so on, and whatever is left after the last is
@@ -1084,7 +1088,7 @@ runs along its outline, or is identical to it, comes back whole, as the input ob
 side is returned itself too. A polyline is `INSIDE` when no run is outside and some run is inside,
 else `OUTSIDE` (`overlay_polyline`; a run at a single stored position is dropped first, as a
 collapsed ring is). The result is the same with or without output lists: the result-only path (no
-lists, as the raster meshes call it) makes the same overlay and the same extraction and only skips
+lists, as the cookie cutter's plate lookup and the raster meshes' unreached path call it) makes the same overlay and the same extraction and only skips
 building the `PolygonOnSphere`s, and raises the same exception. An earlier design stopped early
 after the vertex tests when a subject piece was on each side, and answered `INTERSECTING` where the
 overlay would have raised, so one polygon gave an error with lists and an answer without; the
@@ -1150,9 +1154,9 @@ internal (the hairpin bounds no area, whatever its length), but only if the othe
 two ends at the tip `B`: with two passages of the other input there, the tip is a self-touch of that
 input, the hairpin can lie between its passages, and removing it would remove a crossing. After
 both rules each vertex's ends drop the internal pieces', and the count of ends at a vertex stays
-even for each input (each pass of a ring arrives and leaves). Without the loop rule two SS records
-at one subject vertex make a loop arc with no test point and no usable direction, the failure of
-every case of the prototype's first run that grouped by identity alone.
+even for each polygon input (each pass of a ring arrives and leaves). Without the loop rule two SS
+records at one subject vertex make a loop arc with no test point and no usable direction: in the
+prototype, grouping by identity without this rule failed every case.
 
 **Common pairs** (`find_common_pairs`). A subject single arc and a clip single arc between the same
 two distinct vertices run together within the thickness (about `h / cos(L / 2)` for arcs of
@@ -1184,11 +1188,13 @@ cases of the dense shared-edge generators (`chain`, `rays`, `shared`) and almost
 
 **Rays and their order** (`build_rays`, `measure_ray`, `sort_rays_anticlockwise`). What leaves a
 vertex along a piece, or along a common pair, is a *ray*. Its direction is the exact tangent of the
-piece's first arc of non-zero length (`cross(rotation_axis, start)`, negated for an arriving end;
+piece's first arc that lies on a segment of non-zero length (`cross(rotation_axis, start)`, negated
+for an arriving end;
 the segment's cached plane, never a difference of two nearby positions), taken from the arc's own
 start, which is where it really starts. A piece whose arcs all lie on zero-length segments has no
-direction; it bounds no sector any order needs at two or four ends, and at six or more the bundle
-rule below lets it float. A common ray takes the subject's direction, or the clip's if the subject's
+direction; it bounds no sector any order needs at two or four ends, and at six or more it floats
+under the bundle rule below, or, where one input passes once, is placed by its class (the
+one-passage rule). A common ray takes the subject's direction, or the clip's if the subject's
 first arc is zero length, and the wider of its two pieces' cones (with that piece's `delta`, length
 and `reach`, below).
 The rays are sorted anticlockwise about the vertex's output position, seen from outside the sphere,
@@ -1197,7 +1203,7 @@ dot product, then the orientation within a half-plane). In principle that is a r
 measured in the prototype, the order in doubles agreed with the exact order at every vertex where
 it was used, down to rays `1.8e-15` radians apart, and a swap of two rays that close changes neither
 the memberships between them nor the pairing. For classification the order is consulted only at
-six or more ends where both inputs pass more than once (below): at four ends it is not used, and
+six or more ends where neither input passes exactly once (below): at four ends it is not used, and
 where one input passes once neither; the one-passage rule's linking order keeps the measured
 relative order of the rays inside (below).
 
@@ -1306,8 +1312,8 @@ gives `0`.
    its midpoint `X` by two exact crossing parities: for each input, the crossings of the arc from
    that input's outside point `R` (section 3.2) to `X_i`, the projection of `X` onto the input's
    own segment along the chain, with every edge of the input except that segment
-   (`PointInPolygon::get_crossing_parity_excluding_segment`, the new entry, since the crossing
-   counter was file-local). The arc from `R` meets the excluded great circle only at `X_i`, so the
+   (`PointInPolygon::get_crossing_parity_excluding_segment`, an entry of its own, since the
+   crossing counter is file-local). The arc from `R` meets the excluded great circle only at `X_i`, so the
    parity is that of the points just before `X_i` on `R`'s side, and `R` is outside, so odd parity
    means inside. (Counted to `X` itself, the clip's parity was wrong where `X`, on the subject's
    arc, lies off the clip's great circle by up to `h`: the arc from `R` then meets that great circle
@@ -1316,7 +1322,7 @@ gives `0`.
    polygon partitioned by a near-copy of itself came back wholly outside it.) An arc whose clip
    partner has a direction is preferred, so that both projections are defined; failing that (every
    such partner a segment `GreatCircleArc` calls zero length), the clip's parity is counted to the
-   subject's projection, as before. If `R` is within
+   subject's projection instead. If `R` is within
    about `1e-6` radians of the great circle (where the arc could meet it twice) or of `X_i` or its
    antipode, the input's second reference point `R2` with its cached status is used instead
    (section 3.8). If the two reference points are on opposite sides of their inputs' great circles
@@ -1336,18 +1342,21 @@ gives `0`.
 5. **A common clip piece takes its subject partner's class.**
 
 **The bundle rule** (`build_bundle`), at a vertex with six or more ends (a common ray counting two)
-where both inputs pass more than once. The residue of the prototype's second run was not parallel
-rays but short arcs leaving a chained identity group from off its output position: their directions,
-seen from that position, are noise. Rays are taken in order of certainty (smallest cone, then
+where neither input passes exactly once (both pass more than once, or only one has ends left). What
+defeated a single measured order in the prototype was not parallel rays but short arcs leaving a
+chained identity group from off its output position: their directions, seen from that position, are
+noise. Rays are taken in order of certainty (smallest cone, then
 largest reach); a ray is *anchored* if, against every ray already anchored, the angle between their
 directions is at least the sum of their cones, else it *floats*; a ray with no direction or a cone
-of `pi` never anchors. At a vertex whose rays all start at its output position every cone is `0`,
-every ray is anchored and nothing changes. The *admissible orders* place the floating rays into the
+of `pi` never anchors. At a vertex whose rays all start at its output position, with no touch inside
+a segment and no self-touch cut at either end of their first arcs (so no offset off the segment,
+above), every cone is `0`, every ray with a direction is anchored and nothing changes. The *admissible orders* place the floating rays into the
 gaps between the anchored rays (which keep their measured cyclic order), in any permutation within a
 gap, such that angles can be chosen non-decreasing round the turn, each within its cone plus the
 reference ray's of its measured angle (the reference is the most certain anchored ray; greedy
 earliest placement, which is complete for interval feasibility). The measured order is always
-admissible and is placed first. The sector walk runs over every admissible order, deduces only what
+among them, and first: it is admissible in principle, and is added if rounding keeps it out of the
+enumeration. The sector walk runs over every admissible order, deduces only what
 every consistent order agrees on, and for the pairing uses the consistent order with the fewest
 inversions (Kendall distance) against the measured order, ties by enumeration order with the
 measured order first (it is swapped with the first enumerated order; gaps in anchored order,
@@ -1382,7 +1391,7 @@ more candidate flips every piece of the chain at once, ranked with the sector cl
 before any single piece of that rank, since flipping a chain piece by piece fails the chain's
 interior vertices on the next round and runs into the cap. Every repair is counted (`repairs`,
 `whole_chain_repairs`, and `trusted_flipped` when a vertex-tested class went). No normal input needs
-repair: the prototype's runs needed none under the chosen configuration, and the prototype
+repair: the prototype's runs of the design needed none, and the prototype
 comparison fails a case on any repair of generated data. A vertex still failing after repair, or a
 piece left unclassified, is the failure of section 5.6.
 
@@ -1406,8 +1415,9 @@ two kept ends pair, with no geometry; at a four-end vertex of the free rule, at 
 output sector `(mP, mQ)` is bounded by the subject piece whose class is `mQ` and the clip piece
 whose class is `mP`, and at a bounce `P`'s two ends pair and `Q`'s two pair (the *split pairing*,
 so that the two rings touch at the vertex and no cut is needed there); where only one input has ends
-left (the other's were a loop or a spike) each kept end pairs with the end of its ring's next
-non-internal piece at the same stop, the ring passing straight through (*ring continuity*, which no
+left (the other's were a loop or a spike) each kept end pairs with the end, at this vertex, of its
+ring's next non-internal piece (a neighbour that is elsewhere or not kept is a pairing failure), the
+ring passing straight through (*ring continuity*, which no
 valid input is known to show, since where the passages do not cross any non-crossing pairing gives
 the same rings after the split); where every ray is common (identical inputs that touch themselves)
 the walk knows the memberships only up to swapping both, so consecutive kept rays pair in the order
@@ -1418,15 +1428,18 @@ keep-rule), and consecutive kept rays pair across the output sectors. The walk t
 unused paired ray, appends its vertex's position and the piece's interior stop positions (reversed
 when leaving from the piece's end), arrives at the piece's other ray, takes its partner, and so on
 until back at the start. A kept closed piece (a ring with no record) is a ring on its own. Along a
-common pair the walk follows the subject's piece, so the output's positions there are the
-subject's (the clip's can differ by up to `h`).
+common pair the walk follows the subject's piece. A common pair has no interior stops, so the output
+there is its two vertices' output positions whichever piece is walked; what the choice gives is the
+subject piece's stops, for provenance (section 5.4).
 
 **Split and clean-up.** A walked ring that passes an overlay vertex twice (by identity, not
 position) is `v, A, v, B`; it is cut into `v, A` and `v, B`, repeatedly, until no ring repeats a
-vertex (`rings_split`). The cut is always the other *non-crossing* pairing of the four ends at `v`:
-of the three pairings, the original crosses nothing and exactly one of the other two crosses; if the
-cut were the crossing one the two rings would cross at `v` and nowhere else, but two closed curves
-on the sphere cross an even number of times. OGC simple features forbid a ring that touches itself
+vertex (`rings_split`). Where the pairing at `v` crosses nothing, the cut is the other
+*non-crossing* pairing of the four ends at `v`: of the three pairings, exactly one of the other two
+crosses; if the cut were the crossing one the two rings would cross at `v` and nowhere else, but two
+closed curves on the sphere cross an even number of times. Every pairing rule above crosses nothing,
+but for the symmetric difference's at a vertex whose four kept ends pair crosswise (below), where
+the rings cross and are grouped. OGC simple features forbid a ring that touches itself
 and allow a hole touching its exterior at a point, so the split is always made (the developer's
 decision); it is Foster, Hormann and Popa's split-candidate clean-up, found without their labels. A
 twist of `P` on `Q` passes its two LL vertices once each and is not cut: the output crosses itself
@@ -1443,8 +1456,8 @@ vertex's output position can be up to its record cluster's width off its records
 vertices. Where an input's rings cross each other, or a ring crosses itself, output rings cross at
 points the overlay never computes (it intersects each input only with the other), and so do the
 symmetric difference's where a vertex's four kept ends pair crosswise. Two polygons are read as
-their union, so crossing rings in separate polygons overlap (the hunt found 11,212 of its 70,291
-cases with crossing inputs wrong read as polygons, against 255 counted as grouping failures). So
+their union, so crossing rings in separate polygons overlap (kept apart, 11,212 of the hunt's 70,291
+cases with crossing inputs read wrong as polygons, section 6). So
 rings that cross (`do_rings_cross`) are first joined into **groups**, and a group's rings all go
 into one polygon, which reads by parity as the output does. Rings whose outlines are farther apart
 than the margin below do not cross (one lies inside the other, or they are apart), which a
@@ -1455,23 +1468,24 @@ vertices and, at a vertex within the margin of the other ring, the midpoints of 
 the points three margins along them (`PROBE_DISTANCE_IN_MARGINS`). That sees rings that swap sides
 along a stretch within the margin of each other (a dense shared edge); an edge between two points
 on the other's outline, a chord through it (rings that meet only at vertices on each other's
-outline, review 7's square with an interior ring through three of its corners); and an edge that
+outline, such as a square with an interior ring through three of its corners); and an edge that
 leaves the other's outline at a vertex and leaves the other ring again through one of the other's
-vertices (two rings each with vertices on the other's edges, review 8's pinwheel): overlaps of any
+vertices (two rings each with vertices on the other's edges, a pinwheel): overlaps of any
 size with no vertex of either inside the other. Or two rings cross if an edge of each crosses an
 edge of the other with the ends of both farther than the margin from the other's great circle (two
 rings crossing like a plus sign, no vertex of either inside the other), by both rings' bounding
 trees. The point test walks one ring's bounding tree against the other ring's bounding circle: a
 node farther than the margin from that circle is outside it at once, so a large exterior is not
 walked vertex by vertex for each of its many holes. The cost, against the old grouping's (one
-point a pair): about 1.1 times for an exterior with 1,481 holes and 100,000 points, 1.2 times for an
+point a pair): about 1.1 times for an exterior with 1,481 holes and 100,000 points, 1.1 times for an
 annulus of two 100,000-point rings, 1.4 times for a cut leaving 50 long pieces side by side, and
 2.7 times for 100 of them, whose 4,950 pairs each need the distance query (without it, 25 times,
 since such rings lie in each other's bounding circles and the walk can prune nothing). So a touch at
 a vertex, a crossing within a vertex's cluster, and stretches within the thickness of each other
 are not taken for crossings, and an overlap reached only within a few margins of the outlines is
-missed: review 8's random probe, snapped to a grid of 0.004 radians so that rings share vertices
-and stretches, finds 2 such operations in 11,668 cases, and none generic or on a grid of 0.002.
+missed: a random probe of polygons with several crossing rings, snapped to a grid of 0.004 radians
+so that rings share vertices and stretches, finds 2 such operations in 11,668 cases, and none
+generic or on a grid of 0.002.
 Groups do not cross each other, so a group lies
 wholly inside or wholly outside each ring of another (a ring crossing one inside a ring `R` reaches
 inside `R`, so lies inside it), and the number of rings containing it is the same all over it. The
@@ -1492,10 +1506,12 @@ parity) and whose holes are its other rings; an odd depth puts all of the group'
 into its parent's polygon (a hole group's parent's own polygon, in a stretch the parent group
 covers twice); an island inside a hole is a polygon of its own. That is a nesting only if the
 group's depth is its parent's plus the number of its parent's rings containing it; a hole group
-for which it is not (rings whose overlap the crossing test misses, reached only within the margin)
+for which it is not (rings whose overlap the crossing test misses, reached only within a few
+margins of the outlines)
 is kept as a polygon of its own and counted (`grouping_failures`), not thrown, since partitioning has always accepted inputs whose rings cross
 (self-intersecting polygons, common in real data). For inputs whose rings do not cross, every group
-is one ring and this is plain containment with parity depth. Each exterior is oriented anticlockwise
+is one ring (but in the symmetric difference, above) and this is plain containment with parity
+depth. Each exterior is oriented anticlockwise
 seen from outside the sphere and each hole clockwise, so that the output is on every ring's left
 (the developer's decision; GeoJSON asks for this and Shapefile for the reverse, and the walk's own
 direction is arbitrary), by `PolygonOrientation::calculate_polygon_orientation`, not
@@ -1534,12 +1550,12 @@ island of a filled hole, kept, would overlap its polygon). A group of crossing r
 itself (though it is dropped with a dropped ring it lies in): its region is no one ring's. Nor is a
 ring that crosses itself (`does_ring_cross_itself`, asked only of a ring that measures as a
 sliver): its mean width uses the fan's signed area, which weights each lobe by its winding number,
-so lobes wound opposite ways cancel, and a bow-tie three quarters inside a plate measured as a
-sliver and came back wholly outside (review 7). A ring crosses itself if two of its edges cross
+so lobes wound opposite ways cancel, and a bow-tie whose lobes are near equal would measure as a
+sliver and be dropped whole, however large. A ring crosses itself if two of its edges cross
 clear of their ends (the edge test, its bounding tree against itself), or if at a vertex within the
 margin of a part of the ring not adjacent to it the ring's path through the vertex passes from one
 side of the path there to the other, judged at points three margins along both paths, each farther
-than the margin from the other path (a bow-tie with a vertex at its crossing, review 8). A touch
+than the margin from the other path (a bow-tie with a vertex at its crossing). A touch
 (lobes wound alike) is not a crossing, nor is anything decided only within a few margins of the
 crossing point, nor a side judged against a path whose arms are under two margins long (past the end
 of a short arm the ring can pass round it without crossing): so a ring of a valid input is not taken
@@ -1573,8 +1589,14 @@ between them.
 
 ### 5.3 Tolerances in the overlay
 
-The overlay adds no distance threshold of its own to section 1's system. Its decisions are of
-section 5.2's three kinds:
+The overlay builds and classifies with no distance threshold of its own: vertices are grouped by
+identity, and the one distance is `GeometryIntersect`'s thickness `h` (in the records, and again in
+the self-touch cuts). What it adds are margins for its checks and for reading its output, all in
+section 1's table: `10 h` for the hemisphere check and a whole answer's check, and the grouping
+margin, `max(10 h, twice the widest record cluster)`, for containment and for the crossing tests,
+which look three margins along an edge. A margin keeps an exact test clear of the band. It also
+bounds what the crossing tests see: an overlap or a self-crossing reached only within a few margins
+is missed (section 5.2). Its decisions are of section 5.2's three kinds:
 
 - **Exact**: the identity of vertices (union-find on record indices); whether an arc starts at a
   vertex's output position, and clean-up's repeated positions (coordinates compared exactly, never
@@ -1584,14 +1606,20 @@ section 5.2's three kinds:
   to agree with exact arithmetic wherever the order is used, and consulted only where a swap of two
   near rays is harmless, section 5.2); the vertex
   tests and the anchorless parities (point-in-polygon's sign tests, threshold off, with a margin of
-  at least `h` at a vertex); the containment tests of the grouping (with the margin above) and the
-  hemisphere check's point tests (with `10 h`).
+  at least `h` at a vertex); the containment tests of the grouping, and the point and edge tests of
+  its crossing tests and of the sliver filter's self-crossing test (point-in-polygon with the
+  threshold off and sign tests, at points farther than the margin above from what they are tested
+  against); and the point tests of the hemisphere check and of a whole answer's check (with `10 h`
+  from the inputs' outlines).
 - **Rounded**: the midpoint tests of band pieces, whose class is arbitrary by nature and confined
   to pieces within `2 h` of the other outline; the margins that order them (a cosine, resolving
   about `1.5e-8` radians, so two band pieces' margins can tie and the first in piece order is
   tested, which is harmless because both are band pieces); the cones and the separability and
   admissibility of the bundle rule, where a flip at the margin moves a ray between anchored and
-  floating and changes nothing or offers a swap confined to a sliver; the orientation of an output
+  floating and changes nothing or offers a swap confined to a sliver; the self-touch cuts (a vertex
+  within `h` of a piece's own plane and further along it by more than `1e-12` radians, section
+  5.2); which points the crossing tests take as near (a distance compared with the margin, where a
+  flip changes only whether a crossing within a few margins is seen); the orientation of an output
   ring; and the sliver filter's widths. Point-in-polygon itself is not exact near an edge
   `GreatCircleArc` calls zero length (under about `1e-6` radians): its crossing count stands such an
   edge's crossing in by its end point (section 3.4), so within about the edge's length of it the
@@ -1614,8 +1642,8 @@ thickness the one meaning of "the same point". Contracting pieces shorter than `
 
 **Provenance.** With `Options::want_provenance`, every output point carries a `Provenance`: its
 `Location` on the subject (a vertex, as ring and index, or a segment and the angle fraction along
-it; none for a *cut* point, a point of the clip's outline inside the subject) and its location on
-the clip that made it, with that clip's index in a cascade. Ratios are angle fractions along the
+it; none for a *cut* point, a point of the clip's outline inside the subject) and, for a point on a
+clip's outline, its location on that clip, with the clip's index in a cascade. Ratios are angle fractions along the
 segment, as `GreatCircleArc::point_on_arc` takes them, computed from positions by projection onto
 the segment's great circle (`ratio_along_segment`), not from a record's `angle_in_segment`, which
 only orders. At an overlay vertex (`get_vertex_provenance`) the point's provenance is its output
@@ -1649,9 +1677,10 @@ input (a piece's edge then spans the group, from a vertex before it to one after
 at an input's corner lies within `h` of both its segments but names one; such points get no subject
 location and are counted (`provenance_subject_mismatches` when both ends had one, else
 `provenance_clip_mismatches`, when nothing is lost), about 0.2% of second-step points in the large
-generated set and 3% in the dense chain set. An edge whose two ends both have subject locations but
-lie on one earlier clip's segment (a crossing to a crossing along that cut) is a cut edge, composed
-as a cut and not counted. A coverage then interpolates them along their run, as cut points. Only the
+generated set and 3% in the dense chain set. A coverage then interpolates such points along their
+run, as cut points. An edge whose two ends both have subject locations but lie on one earlier clip's
+segment (a crossing to a crossing along that cut) is a cut edge, composed as a cut and not counted.
+Only the
 subject's locations reach a caller; an earlier clip's composed location only tells an edge along an
 earlier cut from a lost location. The cookie cutter offers provenance through its single-geometry
 `partition_geometry` alone: `partition_geometries` mixes several geometries' pieces in one list, and
@@ -1680,33 +1709,32 @@ intersection) takes, at each point, the value at the nearest point of the origin
 clamped (the old fallback used the distance to the point itself, which is the ratio of no point on
 the segment). Per-tuple scalars are interpolated independently; a point or multi-point's point
 takes its own index's scalars. A coverage that an older file gives for the exterior ring only
-(`Coverage::exterior_ring_only`, section 3.3's note) is partitioned as the exterior ring alone, so
-its pieces keep that form: a hole the cut opens into an exterior ring gets values by step 2, and a
-hole left whole gets none. So, where the input's rings cross, does a ring of the input's exterior
+(`Coverage::exterior_ring_only`, `ScalarCoverageFeatureProperties.h`) stays in that form. The
+polygon is cut whole, and each piece has scalars for its exterior ring alone: a hole the cut opens
+into an exterior ring gets values by step 2, and a hole left whole gets none. So, where the input's rings cross, does a ring of the input's exterior
 that its group (section 5.2) puts in as a hole, beside a larger ring. The previous mapping, an
 epsilon map of the original points and a search for the nearest original segment within 0.5
 degrees, relied on every point of a piece lying on the input's outline, which a cut across the
-interior defeats. Step 2's loop once ran its polyline end
-rule for closed rings too, so on a ring whose first point had no value the points before its first
-valued point all took that value; a ring starts so whenever a piece is cut a second time (the
-second overlay's first stop is on the first plate's cut edge), that is for every feature spanning
-three plates.
+interior defeats. A ring's first point often has no value (whenever a piece is cut a second time,
+the second overlay's first stop is on the first plate's cut edge), which is why step 2 walks once
+round from the first valued point rather than applying a polyline's end rule.
 
 **Most overlapping plate** (`GeometrySizeMetric` in C++, and the
 `PartitionMethod.most_overlapping_plate` branch of `partition_features` in `PlatePartitioning.py`)
 compares a plate's pieces by area for polygons, then arc length for polylines, then the number of
-points, lexicographically with `real_t`'s comparisons, so that a feature with polygons is decided by
+points, lexicographically (in C++ with `real_t`'s comparisons; pyGPlates compares the floats
+exactly), so that a feature with polygons is decided by
 them: arc length, the old measure, is inflated by a polygon's cuts. The first plate with any piece
 is taken whatever its size, so that a geometry of no measure (a polygon whose edges are all too
 short for an area, a polyline at one position) still gets a plate, in both products. pyGPlates
 measures what splitting would partition (`_partition_feature_geometries`), so a time-dependent
 geometry that is not partitioned decides no plate. A piece whose rings cross (section 5.2) is
 measured as `PolygonOnSphere::get_area` measures it, its exterior's area less its interiors', which
-is not its parity area (section 3.3): a plate whose hole pokes half out of its exterior measured
-0.0121 steradians against 0.0304 sampled (review 7), and before such rings were grouped, as
-separate polygons, they summed too large instead. A ring that crosses itself is measured by its
-signed area, in which lobes wound opposite ways cancel: a bow-tie's piece has an area near zero,
-so a bow-tie three quarters inside one plate goes to the plate holding the other quarter (review 8).
+is not its parity area (section 3.3): a plate whose hole pokes half out of its exterior measures
+0.0121 steradians against 0.0304 sampled. A ring that crosses itself is measured by its signed area,
+in which lobes wound opposite ways cancel. A piece with two equal lobes measures zero: a bow-tie
+with seven eighths of its area in one plate, cut across both lobes, goes to the plate holding the
+other eighth.
 
 **Time-dependent geometry.** A geometry property whose value is a `GpmlPiecewiseAggregation` with
 exactly one time window containing the reconstruction time is partitioned as a constant geometry,
@@ -1717,14 +1745,20 @@ windows is not partitioned (written back constant beside a time-dependent range,
 window's values, it would lose the rest). Any other time-dependent geometry is not partitioned and
 stays unchanged on every feature returned (pyGPlates puts back a kept property that shares its name
 with a partitioned one, which setting the pieces replaces), and a `GpmlIrregularSampling` never is.
-Which properties are partitioned is decided once, in that visitor: pyGPlates' `partition_features`
-removes exactly the properties it reports as partitioned, so the two products cannot disagree. A
+Which properties are partitioned is decided once, in that visitor: when splitting, pyGPlates'
+`partition_features` removes exactly the properties it reports as partitioned, so the two products
+split alike. With the most overlapping plate they differ. Assign Plate IDs removes the same
+properties and puts each geometry back whole: a single-window geometry and its range come back
+constant, and an unmatched constant range (below) does not come back. pyGPlates returns the feature
+unchanged but for the copied properties (section 7). A
 constant range property under a partitioned geometry's range name that matched no coverage (its
 number of values is no geometry's, or two same-named geometries share it) is reported as partitioned
 too, with a warning, and so removed: copied into every piece's feature, it could be read back as the
 coverage of a piece that happened to have its number of points. A time-dependent one is kept: it
-belongs with a time-dependent geometry, which is kept (it is unmatched only for having no value at
-the reconstruction time). pyGPlates puts back, after setting the pieces, every kept property of the
+normally belongs with a time-dependent geometry, which is kept, and is unmatched for having no value
+at the reconstruction time. One that has a value then, but a number of values that is no
+geometry's, is kept too, and a piece with that number of points reads it back as its coverage
+(removing it could take the coverage of a kept time-dependent geometry). pyGPlates puts back, after setting the pieces, every kept property of the
 geometry's name and of its range name, which setting a geometry also replaces.
 
 ### 5.5 The sliver filter
@@ -1748,12 +1782,13 @@ sums Van Oosterom and Strackee's triangles from an apex, modulo `4 pi`, and take
 so the ring's direction does not matter; the perimeter is by `atan2`. The sum is the area for any
 apex no ring point is antipodal to *and that is not in the plane of a ring lying on one great
 circle*, where every triangle is degenerate (each term `0` or `2 pi` by the sign of its
-denominator). Built first with the vertices' mean direction as the apex, which lies in that plane, a
-36-point equator ring measured `0`, so the default filter dropped a hemisphere's exterior and
-reported the hemisphere wholly inside a 10-degree box. The apex is now the ring's vector area,
-`sum(a_i x a_(i+1))`, normalised: the plane's normal for a great-circle ring, near the centre for
-any other; where that is rounding (`magSqrd()` under `1e-18`, a ring of no area whichever apex is
-used) the mean direction, and if that cancels too the first vertex. The sum is signed by winding
+denominator). So the vertices' mean direction will not do as the apex: for a ring on a great circle
+it lies in that plane, a 36-point equator ring would measure `0`, and the default filter would drop
+a hemisphere's exterior and report the hemisphere wholly inside a 10-degree box. The apex is the
+ring's vector area, `sum(a_i x a_(i+1))`, normalised: the plane's normal for a great-circle ring,
+near the centre for any other; where its `magSqrd()` is within `real_t`'s tolerance of zero (about
+`1e-12`: a ring under about `5e-7` steradians, whose mean direction is near its centre) the mean
+direction, and if that cancels too the first vertex. The sum is signed by winding
 number, so for a ring that crosses itself it is not its parity area, and lobes wound opposite ways
 cancel: such a ring, and a group of rings that cross each other, are not dropped themselves
 (section 5.2, which says which self-crossings are seen).
@@ -1761,12 +1796,13 @@ cancel: such a ring, and a group of rings that cross each other, are not dropped
 **The widths.** `GeometryCookieCutter`'s default is `10 h` (`get_default_sliver_min_width`, about
 90 metres), so it covers Assign Plate IDs and pyGPlates' `PlatePartitioner` and
 `partition_into_plates`, whose `sliver_width_threshold_radians` is `None` for the default, zero for
-off, and raises `ValueError` if negative. `PolygonOnSphere.partition()` takes the same argument and
+off, and raises `ValueError` if negative or NaN. `PolygonOnSphere.partition()` takes the same argument and
 defaults to `h`: two outlines within `h` count as touching, so a ring narrower than `h` on average
 has collapsed by the overlay's own rule (the hunt found such rings of no area, bounded by an input
 that overlaps itself along a stretch), and a cut always separates boundaries more than `h` apart,
 so what `h` drops is thin triangles and degenerate rings. `PolygonPartitioner` keeps none as its
-default, so the raster meshes stay exact. So the three widths are `h` (the overlay's resolution),
+default, so a caller that asks for no filter (the raster meshes' unreached path among them, section
+5.1) gets an exact cut. So the three widths are `h` (the overlay's resolution),
 `10 h` (global data's) and zero (exact). The decision came from measuring Assign Plate IDs' cut of
 the Müller et al. 2022 coastlines (2,937 polygons, 100,000 points) by its topologies at 0, 100 and
 200 Ma: of the 783 output rings of the 282 polygons cut, 5 were under `h` wide, 16 under `10 h`
@@ -1785,17 +1821,19 @@ output edges of its own (every edge under `h` was an input's own), so no filter 
 The overlay never returns a best guess as if it were the answer. Classes that describe no consistent
 arrangement after repair, or a piece left unclassified, throw
 `PolygonOverlay::InconsistentOverlayException` from `classify()` (a `MathematicalException` carrying
-the `Diagnostics` and the first failing vertex's position, with the vertex's latitude, longitude and
-record kinds in its message), and on a whole answer's hemisphere check; `extract` throws it on a
-hemisphere failure and a pairing failure. A grouping failure (above, rings whose overlap the
-crossing test misses) and coincident rings (rings of no area that clean-up missed,
-`coincident_rings`) are counted only.
+the `Diagnostics` and a position: the first failing vertex's, with its latitude, longitude and
+record kinds in the message, or a hemisphere check's reference point), and on a whole answer's
+hemisphere check; `extract` throws it on a hemisphere failure and a pairing failure. A grouping
+failure (above, rings whose overlap the crossing test misses) and coincident rings
+(`coincident_rings`: rings of no area that clean-up missed, or a ring an invalid input repeats,
+section 7) are counted only.
 `Options::throw_if_inconsistent` (false for hunts and tests) counts instead, and the rings are then
 returned as read, which a caller must not take for the output. The causes a check failure can have:
 a missed or spurious intersection, a band piece's midpoint test propagated where the margin order
 should have prevented it, or a vertex the vertex rules could not resolve. The sliver filter is
-outside this guarantee: a distance rule whose measure was the one place a wrong number silently
-changed a result (the great-circle ring above, since fixed).
+outside this guarantee: it is a distance rule, and a wrong measure changes a result silently (a ring
+on a great circle, and a ring that crosses itself, section 5.5, are why the measure is as it is). A
+ring that crosses itself only within a few margins can still be dropped (section 7).
 
 `PolygonPartitioner` and `GeometryCookieCutter` let the exception propagate, with or without lists
 (every plate must get an answer, and a wrong one is worse than none); without lists the cookie
@@ -1812,7 +1850,8 @@ warning at the end, naming up to ten features by name and ID and counting the re
 user cancels part-way; the command line writes one `qWarning` per feature. Aborting the whole
 operation would lose the work on every other feature for a case no real data has produced.
 `GLReconstructedStaticPolygonMeshes` catches it itself and takes the node as intersecting, which
-costs rendering work on a node the polygon may not reach and nothing else.
+would cost rendering work on a node the polygon may not reach and nothing else (on a path nothing
+reaches today, section 5.1).
 
 One generated case is known to fail, and is the failure tests' input
 (`src/unit-test/data/polygon-overlay/inconsistent.txt`). Both its inputs are invalid: each has a
@@ -1834,8 +1873,8 @@ of the ring silently, where the overlay's wrong class affects one piece and is c
 vertex; because it needs two traces with reversed rules for the two outputs, and a separate version
 for polylines, where one classification serves every operation and polylines; and because its one
 documented failure, a twist of `P` lying on `Q`, is two ordinary vertices here, where the tracing
-would need `P` split into simple rings first. Its phase-1 case table remains the specification
-`GeometryIntersect` was audited against (section 4), its chain reasoning defines the common pieces,
+would need `P` split into simple rings first. Its case table for the intersection phase was the
+starting specification of what partitioning needs from `GeometryIntersect`, its chain reasoning defines the common pieces,
 and its split-candidate clean-up is what the pairing and the split achieve.
 
 **Every record its own vertex** (no grouping). Zero-length pieces between records at one point can
@@ -1905,8 +1944,9 @@ same number of points under one name would be ambiguous on read-back.
 `DateLineWrapper` (`DateLineWrapper.{h,cc}`) clips polylines and polygons to the dateline for the
 rectangular map projections: a geometry that crosses longitude 180 is cut into pieces that each
 stay on one side, so that no piece draws a line across the map. It also wraps longitudes into
-`[-180 + central_meridian, central_meridian + 180]` and can tessellate the output. It is the only
-polygon-by-polygon clipper in the code. The header cites Greiner and Hormann (1998) and, to a
+`[-180 + central_meridian, central_meridian + 180]` and can tessellate the output. It is separate
+from the overlay (section 5.2) and shares no code with it or with `GeometryIntersect` (section 4.1):
+it finds its own crossings, against its own tolerance. The header cites Greiner and Hormann (1998) and, to a
 lesser extent, Liu et al. (2007), and the implementation is Greiner-Hormann's three phases run
 against a degenerate clip polygon: the **dateline polygon**, the whole globe less the dateline arc
 from the south pole to the north pole, whose four corners are `(-90, 180)`, `(90, 180)`,
@@ -2094,7 +2134,8 @@ on one, and a record for every point, with no ring index.
 Tessellation (`add_tessellated_points`) subdivides the arc between consecutive untessellated
 points. A tessellated point on an original segment gets a ratio interpolated between its end
 points' records. Its both-original-points branch, selected by `is_unwrapped_point`, reconciles the
-two conventions above from the two segment indices and from whether each ratio is above `0.5`. One
+two conventions above from the two segment indices and from whether the end point's ratio is above
+`0.5`. One
 along the dateline has no record and its longitude pinned to the end points'. A corner vertex has
 no record and no flags at all, being neither original nor an intersection. The arc between the two
 poles, antipodal, which the comment attributes to the arbitrary entry/exit choice when both poles
@@ -2108,8 +2149,9 @@ the output ring repeats the point; since the walk starts from the exit copy, it 
 backwards, so the output's orientation is not preserved); a stretch along the arc is dropped and a whole geometry on it
 passed through; a zero-length segment that still straddles the plane intersects at its start
 point; a near-antipodal segment, or one whose ends are both too near the plane, gives no
-intersection; and the both-poles case is guessed. The tolerance is one global number whose size
-the code does not justify, and not the one the rest of this document uses.
+intersection; and the both-poles case is guessed. Its main tolerance, the thick plane, is one
+global number whose size the code does not justify, and not the one the rest of this document uses
+(section 1 lists its other epsilons).
 
 **What depends on the dateline, and what generalises.** Dateline-only, in that each would need
 replacing for a general clip polygon:
@@ -2141,6 +2183,9 @@ General, and the same as Greiner-Hormann's:
   a crossing-or-touch classification. Here each of the pair's flags is fixed by whether its segment
   arrives or leaves. The neighbouring vertex's class decides which edge of the clip polygon the
   copy lies on, which a general clipper would have to decide by a side test.
+
+The overlay takes nothing from this code: tracing by entry and exit flags was rejected for a general
+clip polygon (section 5.7), and putting `DateLineWrapper` onto the overlay is deferred (section 7).
 
 ## 6. Testing
 
@@ -2236,8 +2281,8 @@ circles' expansion makes the end-to-end case fail.
 `intersect_segments` in rational arithmetic on the double inputs (thick planes, coincident vertices
 first, the four types, the fictitious segment, ring wrap-around, the projected key), with a band
 round every decision, tolerant or exact, so that a case decided within rounding of a threshold is
-skipped. A hunt observed `GeometryIntersect` through `PolygonOnSphere.partition()`, whose pieces end
-at the intersections along the polyline, on generated cases: shared vertices and collinear runs
+skipped. A hunt observed `GeometryIntersect` through `PolygonOnSphere.partition()`, whose pieces
+then ended at the intersections along the polyline, on generated cases: shared vertices and collinear runs
 offset across the thickness, nearly parallel and nearly antipodal arcs, short segments and
 self-crossings on an arc, geometries `1e-5` radians across at a pole, arcs of 100 to 170 degrees,
 pieces fed back in, against the same polygon and against copies jittered by `1e-13` to `1e-8`
@@ -2302,34 +2347,36 @@ anchorless chains; and the bundle vertices, whose counts of floating rays, admis
 consistent placements are pinned. Classes compare exactly except a band piece's (and a common
 pair's where a band piece's class reaches it through the sector walk); output rings compare by the
 oracle for every operation, and as rings for the intersection, the difference and the union where
-the prototype's did not depend on the tie order (the reverse difference's and the symmetric
+the prototype's did not depend on the tie order, no band piece differs, and the rings do not touch at
+two vertices (which decompose either way) (the reverse difference's and the symmetric
 difference's rings are checked by the oracle only, which is what leaves the symmetric difference's
 pairing unguarded, section 7); output polygons compare by the oracle for every operation, and for
 inputs whose rings do not cross also by orientation and by having no crossing group of rings but in
 the symmetric difference (a touch taken for a crossing). Any repair of generated
 data fails the case, and the one-passage rule's and the result contract's cases are pinned
 (`OnePassageRule`, `PartitionerCollapsedRegion`). The prototype, its generators and its exporter
-live in the planning repository (its configuration name is `r5p`, which mirrors for polylines the
+are kept outside this repository (its configuration name is `r5p`, which mirrors for polylines the
 spike rule's restriction to polygon rings and the along rule for a hairpin along the clip's edge,
 section 5.2); a larger export is run through
-`GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES`. The hunt at scale ran 119,198 generated cases, about
-fourteen times the earlier sets, and found the grouping margin and the cone's offsets (section
-5.2); after them 9 polygon cases differ, none in a partition's geometry: 4 coincident rings of no
-area, 4 second-step provenance losses with no point's provenance wrong, and one where two crossings
-`1e-16` radians apart are two vertices in the C++ and one in the prototype (section 7). Checking
-the 70,291 cases whose input rings cross as polygons too found 11,212 wrong (polygons overlapping)
-before crossing rings were grouped, 3 with the first crossing test (a vertex each side, or edges
-crossing clear of their ends), and none once edges' midpoints were tested (rings meeting only at
-shared vertices, which were also the 4 cases first put down to the symmetric difference's
-pairing).
+`GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES`. The hunt at scale ran 119,198 generated cases, and is
+what set the grouping margin and the cone's offsets (section 5.2); 9 polygon cases differ, none in a
+partition's geometry: 4 with coincident rings (at least two of them rings of no area), 4
+second-step provenance losses with no point's provenance wrong, and one where two crossings `1e-16`
+radians apart are two vertices in the C++ and one in the prototype, the output right (the first
+eight are in section 7). One more case fails in both, the inconsistent cut of section 5.6. The
+70,291 cases whose input rings cross are checked as polygons too, and none is wrong; with crossing
+rings kept as separate polygons 11,212 would be (polygons overlapping), and 3 with a crossing test
+of vertices and edges alone, without the edges' midpoints (rings meeting only at shared vertices).
 
 The partition layer's tests (`PolygonPartitionerTest.cc`) cover the three old no-intersection bugs
 (a partitioner inside the subject, a subject across a partitioner's hole, a partitioner across the
 subject's hole) and a piece along the boundary for both orientations; the result contract (touches
 and identical inputs returned as the same object, with and without lists); the bounding-circle
-shortcut for an interior past its circle (the helix band of section 3.3, both ways); provenance
-through the cookie cutter (a multi-point, two holes, a two-plate cascade with a hole across the
-shared edge and the input's closing segments across both plates, and the other geometry types); and
+shortcut for an interior past its circle (the helix band of section 3.3, both ways); provenance (a
+multi-point and a piece keeping two holes through the partitioner's own entry; through the cookie
+cutter a cascade of two plates with a hole across their shared edge and the input's closing
+segments across both, a far plate between them returning a piece whole, and the other geometry
+types); and
 the sliver filter (an exterior with its hole, a hole alone, a hole with an island, both sides
 emptied, the cookie cutter's default, the mean width, a ring on one great circle, and a bow-tie,
 with a vertex at its crossing on one diagonal or both, and as the plate); inputs whose rings cross
@@ -2342,29 +2389,36 @@ exterior-ring-only coverage whose hole the cut opens, a ring with no valued poin
 ring's start, two scalar types, the nearest outline on a hole and its clamp, the other geometry
 types), the size metric by area, Assign Plate IDs skipping the committed inconsistent input (also as
 a second geometry property), time-dependent geometry (with a coverage in one window or in more), a
-polygon of no measure, a range matching no geometry, and coverage pieces in features of their own.
+polygon of no measure, a range matching no geometry (removed if constant, kept if time-dependent),
+and coverage pieces in features of their own.
 The pyGPlates tests (`test_partition*` in `test_geometries_on_sphere.py` and
 `test_app_logic/test.py`, and `test_most_overlapping_plate_by_area`) cover polygons with holes,
 touches returned whole, `PartitionError` on the same input, the sliver argument (`None`, zero,
 negative and NaN), coverages through `partition_features` and their pieces, time-dependent geometry
 (a kept property sharing a partitioned one's name, and most overlapping), removing exactly the
 partitioned properties, a feature with no geometry, and the most overlapping plate by area. The
-reviews' fixes are pinned by tests, all but two (the self-touch cuts' key, which no constructed
-input reaches, and the whole answer's check being called from `classify()`) checked by reverting the
-fix.
+fixes made after review are pinned by tests, each checked by reverting the fix, all but one (the
+self-touch cuts' key, which no constructed input reaches). In the grouping, no test holds the point
+test in one argument order (every crossing built is seen both ways), the nesting check's fallback,
+the exemption of a group from the sliver filter, the filter's condition that a hole is filled only
+when its parent is an exterior, the same-crossing test of two arcs, the order of holes, the
+self-crossing test's two-margin arms, or the count of a node far from the other ring as outside (a
+ring with a point inside the other has a point outside it in a near node too).
 
 **Real data** (`PolygonOverlayRealDataTest.Coastlines`, skipped unless
-`GPLATES_POLYGON_OVERLAY_REAL_DATA` names a plate model's directory, with the times in
-`GPLATES_POLYGON_OVERLAY_REAL_DATA_TIMES`) reconstructs a model's coastlines and cuts them through
+`GPLATES_POLYGON_OVERLAY_REAL_DATA` names a plate model's directory, and optionally the times in
+`GPLATES_POLYGON_OVERLAY_REAL_DATA_TIMES`, 0, 100 and 200 Ma by default) reconstructs a model's coastlines and cuts them through
 the cascade of its topologies as Assign Plate IDs does, but by the overlay itself, so that every
 cut's diagnostics and the oracle can be read, and reports the histogram of output ring widths the
 sliver decision was made from (section 5.5). Measured on Müller et al. 2022 at 0, 100 and 200 Ma:
 15,255 overlays past the bounding circles, 313 of them intersecting, no inconsistency, no repair, no
-check failure even before repair, no bundle vertex (at most six ends at a vertex), 11 midpoint
-tests, and 2 collapsed rings dropped; the piece counts equal pyGPlates' at each time (431 polygons
-at 0 Ma against 703 polylines before), and pyGPlates' `partition_features` over the 2,136 features
-takes about 30% longer than before (0.28 s against 0.20 s at 0 Ma, resolving the topologies about
-0.06 s of either).
+check failure even before repair (the 6 cuts at 0 Ma with crossing input rings read by the oracle
+as rings, not as polygons), no bundle vertex (at most six ends at a vertex), 11 midpoint tests, and
+2 collapsed rings dropped; the piece counts equal pyGPlates' at each time with its sliver filter off
+(431 polygons from the 149 cut at 0 Ma, against 703 polylines before; at pyGPlates' default width
+the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlates'
+`partition_features` over the 2,136 features takes about 45% longer than before (0.29 s against
+0.20 s at 0 Ma, after about 0.06 s resolving the topologies for either).
 
 ## 7. Deferred work
 
@@ -2379,31 +2433,35 @@ takes about 30% longer than before (0.28 s against 0.20 s at 0 Ma, resolving the
 - **The Boolean operations in pyGPlates.** The overlay computes the intersection, both differences,
   the union and the symmetric difference of two polygons (section 5.2), and tests them, but only
   partitioning (the intersection and the difference) is exposed. `PolygonOnSphere` methods for the
-  others are the next pull request, which also decides what a union or symmetric difference
-  exceeding a hemisphere raises in Python (`InconsistentOverlayException` in C++, section 5.6) and
-  whether any geometry-level entry point gains a coverage form (section 5.7). Known unfinished for
-  them: the pairing across the symmetric difference's output sectors is unguarded by the prototype
-  comparison (its rings can cross at a vertex where four kept ends pair crosswise, which the
-  grouping of crossing rings reads right; the 4 generated cases once put down to it were rings
-  meeting at shared vertices, section 5.2), and an output ring that crosses itself where an input
+  others are deferred, with two decisions: what a union or symmetric difference exceeding a
+  hemisphere raises in Python (`InconsistentOverlayException` in C++, section 5.6), and whether any
+  geometry-level entry point gains a coverage form (section 5.7). Known unfinished for them: the
+  pairing across the symmetric difference's output sectors is unguarded by the prototype comparison
+  (its rings can cross at a vertex where four kept ends pair crosswise, which the grouping of
+  crossing rings reads right, section 5.2), and an output ring that crosses itself where an input
   ring does has no orientation with the output on its left all round (section 5.2).
 - **The inconsistent cut along a dense shared edge** (section 5.6): band classes that repair cannot
   make consistent in 20 rounds, in the one known case, whose inputs both have a hole crossing
   their exterior ring. Untried: a rule for pieces running along the other outline, or a
   repair candidate that flips a chain of band pieces. Also open from the hunt: 4 generated cases
   whose second cascade step loses a subject location (no point's provenance wrong), and 4 with
-  coincident rings of no area. From review 7's random probes, for invalid inputs only: two
-  coincident rings with area (an interior ring repeating its exterior, empty by parity) are not
-  grouped, so they come out as two polygons over the same area; and inputs snapped to a grid, with
-  whole rings in common and rings crossing at once, gave a wrong parity over the output rings
-  without throwing in 5 of 5,985 cases at 0.002 radians and 52 of 5,832 at 0.004.
+  coincident rings (at least two of them rings of no area).
+- **Invalid inputs with rings in common.** From random probes of polygons with several crossing
+  rings: two coincident rings with area (an interior ring repeating its exterior, empty by parity)
+  are not grouped, so they come out as two polygons over the same area; and inputs snapped to a
+  grid, with whole rings in common and rings crossing at once, gave a wrong parity over the output
+  rings without throwing in 5 of 5,985 cases at 0.002 radians and 52 of 5,832 at 0.004.
 - **Crossings the grouping and the sliver filter miss** (section 5.2): an overlap of two output
   rings reached only within a few margins of their outlines (2 operations in 11,668 random cases
-  snapped to a grid of 0.004 radians, none generic, review 8), whose polygons then overlap there;
-  and a ring that crosses itself only within a few margins of the crossing point, which a sliver
-  filter can still drop whole where its lobes cancel. Both tests decide at sampled points clear of
-  the outlines; the cure is the self-intersection mode below, after which every output ring is
-  simple.
+  snapped to a grid of 0.004 radians, none generic), whose polygons then overlap there; and a ring
+  that crosses itself only within a few margins of the crossing point, which a sliver filter can
+  still drop whole where its lobes cancel. Both tests decide only from points, and from edges whose
+  ends are, farther than the margin from the other outline; the cure is the self-intersection mode
+  below, after which every output ring is simple.
+- **pyGPlates' feature assembly in C++.** `partition_features` assembles the partitioned features
+  in Python, where Assign Plate IDs uses the C++ partition tasks (`PartitionFeatureTask`). Routing
+  pyGPlates through those tasks would make the two products agree under the most overlapping plate
+  too (section 5.4), and reduce the time spent outside the C++ partitioning.
 - **Clipping by an open arc**, which would put `DateLineWrapper` (section 5.8) onto the overlay. The
   prototype showed three additions suffice: pieces of an open clip whose first and last pieces
   dangle (the structures for a polyline subject, `RingView::closed` and `Stop::DANGLING_END`,
@@ -2430,7 +2488,8 @@ takes about 30% longer than before (0.28 s against 0.20 s at 0 Ma, resolving the
   a leaf with itself only the pairs with a smaller first index. The `Graph`'s two orders become one
   order along the geometry in which every intersection appears twice, once per segment index.
 - **The exact parity area** for interior rings that cross the exterior ring or overlap each other
-  (section 3.3). It needs a polygon overlaid with itself (the self-intersection mode above, then
+  (section 3.3), and for a ring that crosses itself (section 5.4: its lobes cancel, which misleads
+  the most overlapping plate). It needs a polygon overlaid with itself (the self-intersection mode above, then
   the overlay's split and grouping), which the two-polygon overlay of section 5 does not do.
 - **Thin fan triangles.** `calculate_spherical_triangle_signed_area` (the three-edge overload in
   `SphericalArea.cc`) returns zero when any side is zero length (under about `1e-6` radians), even

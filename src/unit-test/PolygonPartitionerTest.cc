@@ -1472,7 +1472,7 @@ namespace
 
 
 // Inputs whose rings cross (section 5.2), through the partitioner: a plate whose hole crosses its
-// exterior (the visual check's case), and rings meeting only at shared vertices (a square and an
+// exterior, and rings meeting only at shared vertices (a square and an
 // interior ring through three of its corners, its first edge the square's diagonal), each as the
 // partitioning polygon and as the subject, with no filter and with the cascade's. The pieces read
 // as their union (as a feature's polygons are) must be the cut, with no point in two of them.
@@ -1499,7 +1499,7 @@ TEST(PolygonPartitionerTest, CrossingRings)
 			-1.5, 2.5, -1.5, 2.5
 		},
 		{
-			// Review 8's pinwheel: each ring has vertices on the other's edges, and they overlap
+			// A pinwheel: each ring has vertices on the other's edges, and they overlap
 			// in the unit square with no vertex of either inside the other. The box takes the tip
 			// off one blade.
 			"a pinwheel",
@@ -1544,10 +1544,10 @@ TEST(PolygonPartitionerTest, CrossingRings)
 
 
 // A ring that crosses itself is not a sliver (section 5.5): a bow-tie's signed area is zero, its
-// lobes wound opposite ways, so its mean width measured below every width and the filter dropped
-// it whole: three quarters inside a plate, it came back wholly outside (review 7's finding 1.2).
-// Now at every width it is cut, one piece inside (the upper three quarters, crossing itself) and
-// two outside (the lower corners).
+// lobes wound opposite ways, so its mean width measures below every width, and the filter would
+// drop it whole (three quarters of its height inside the plate, it would come back wholly
+// outside). At every width it is cut, one piece inside (the upper three quarters, crossing
+// itself) and two outside (the lower corners).
 TEST(PolygonPartitionerTest, SliverFilterSelfCrossingRing)
 {
 	const auto bow_tie = polygon(ring_type{ at(0, 0), at(2, 2), at(0, 2), at(2, 0) });
@@ -1565,8 +1565,8 @@ TEST(PolygonPartitionerTest, SliverFilterSelfCrossingRing)
 		check_pieces_sample_right(*bow_tie, *plate, inside, outside, -0.5, 2.5, -0.5, 2.5);
 	}
 
-	// With a vertex at its crossing, on one diagonal and on both (review 8: the edge test alone
-	// missed them, and the filter dropped the bow-tie whole); and the bow-tie as the plate, whose
+	// With a vertex at its crossing, on one diagonal and on both (the edge test alone misses them,
+	// so the filter would drop the bow-tie whole); and the bow-tie as the plate, whose
 	// outside piece has it for a hole that measures as a sliver.
 	const auto vertex_on_one =
 			polygon(ring_type{ at(0, 0), at(1, 1), at(2, 2), at(0, 2), at(2, 0) });

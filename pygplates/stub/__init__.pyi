@@ -9389,7 +9389,7 @@ class OpenFileForWritingError(GPlatesError):
 class PartitionError(MathematicalError):
     """A geometry could not be partitioned consistently by a partitioning polygon.
 
-      Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This can happen where the two outlines run within about 1e-6 radians of each other along many closely spaced vertices. Nothing is partitioned when it is raised.
+      Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This is rare: the only case found is two polygons that each have an interior ring crossing their exterior ring, with outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along many closely spaced vertices. Nothing is partitioned when it is raised.
 
       .. versionadded:: 1.1
     """
@@ -10399,6 +10399,13 @@ class PlatePartitioner:
 
         .. versionchanged:: 0.44
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+        .. versionchanged:: 1.1
+           A polygon is partitioned into polygons (previously polylines). With *PartitionMethod.split_into_plates* a
+           geometry's scalar coverage is carried to its pieces, a time-dependent geometry is partitioned only if it has a
+           single time window containing the reconstruction time, and a feature with no geometry is returned unpartitioned.
+           *PartitionMethod.most_overlapping_plate* measures polygons by area. :class:`PartitionError` is raised if a cut
+           is inconsistent.
         """
 
     def partition_geometry(self, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], partitioned_inside_geometries: list[tuple[ReconstructionGeometry, list[GeometryOnSphere]]] | None = ..., partitioned_outside_geometries: list[GeometryOnSphere] | None = ...) -> bool:
@@ -18699,7 +18706,9 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
 
     .. versionchanged:: 1.1
-       Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.
+       Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments. Partitions as
+       :meth:`PlatePartitioner.partition_features` now does: a polygon into polygons (previously polylines), with
+       scalar coverages carried to the pieces, and so on.
     """
 
 def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstructed_geometries: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., **output_parameters: Any) -> None:

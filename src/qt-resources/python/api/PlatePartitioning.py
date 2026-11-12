@@ -313,8 +313,15 @@ def plate_partitioner_partition_features(
     .. versionchanged:: 0.44
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ \
     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+    .. versionchanged:: 1.1
+       A polygon is partitioned into polygons (previously polylines). With *PartitionMethod.split_into_plates* a
+       geometry's scalar coverage is carried to its pieces, a time-dependent geometry is partitioned only if it has a
+       single time window containing the reconstruction time, and a feature with no geometry is returned unpartitioned.
+       *PartitionMethod.most_overlapping_plate* measures polygons by area. :class:`PartitionError` is raised if a cut
+       is inconsistent.
     """
-    
+
     # Turn function argument into something more convenient for extracting features.
     features = FeaturesFunctionArgument(features)
     
@@ -769,7 +776,9 @@ def partition_into_plates(
     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
 
     .. versionchanged:: 1.1
-       Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.
+       Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments. Partitions as
+       :meth:`PlatePartitioner.partition_features` now does: a polygon into polygons (previously polylines), with
+       scalar coverages carried to the pieces, and so on.
     """
 
     plate_partitioner = PlatePartitioner(

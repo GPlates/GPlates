@@ -456,7 +456,7 @@ GPlatesMaths::PolygonOverlay::has_points_on_both_sides(
 	// circle has all its vertices outside b by more than the margin, so it counts as outside at
 	// once, and only the nodes near b are visited edge by edge (otherwise a large ring against
 	// each of many small rings inside it costs its every vertex for each: twelve times the
-	// grouping's old cost at 1,481 rings and 100,000 points, review 7). An edge's start is its
+	// grouping's old cost at 1,481 rings and 100,000 points). An edge's start is its
 	// vertex; at a near vertex, its edge and the one before it are looked along.
 	typedef PolygonOnSphere::ring_bounding_tree_type tree_type;
 	const tree_type &tree = a.get_exterior_ring_bounding_tree();
@@ -526,7 +526,7 @@ GPlatesMaths::PolygonOverlay::do_rings_cross(
 	// below would agree. This settles almost every pair of rings of a valid input at the cost of a
 	// descent of both bounding trees, where the point test would classify every vertex of two
 	// rings that lie in each other's bounding circles (an annulus; a cut leaving many long pieces
-	// side by side, 25 times the old grouping's cost at 100 such pieces, review 8).
+	// side by side, 25 times the old grouping's cost at 100 such pieces).
 	if (!minimum_distance(ring, other_ring, false, false, margin))
 	{
 		return false;
@@ -574,7 +574,7 @@ GPlatesMaths::PolygonOverlay::does_ring_cross_itself(
 	}
 
 	// (2) A crossing at or near one of the ring's own vertices (a bow-tie with a vertex at its
-	// crossing, review 8), which the edge test does not see. At a vertex v within the margin of a
+	// crossing), which the edge test does not see. At a vertex v within the margin of a
 	// part of the ring not adjacent to it (a point x of another edge, or that edge's end, another
 	// vertex), the ring's path through v crosses its path through x if the points
 	// PROBE_DISTANCE_IN_MARGINS margins along v's two edges lie on opposite sides of the path
@@ -748,7 +748,11 @@ GPlatesMaths::PolygonOverlay::get_mean_width(
 		vector_area = vector_area + cross(a, ring[(i + 1) % ring.size()].position_vector());
 		sum = sum + Vector3D(a);
 	}
-	// A cross product's components carry rounding of about 1e-16 an edge.
+	// These are real_t comparisons, so each is the same test get_normalisation makes: magSqrd() over
+	// about 1e-12 (real_t's epsilon), not over the literal. So the vector area is the apex only for a
+	// ring of more than about 5e-7 steradians; a smaller ring is far from a great circle, and its
+	// vertices' mean direction is near its centre. Don't compare as doubles: get_normalisation
+	// would then be asked to normalise vectors it takes as zero, and throws.
 	const Vector3D apex =
 			(vector_area.magSqrd() > 1e-18) ? Vector3D(vector_area.get_normalisation())
 			: (sum.magSqrd() > 1e-12) ? Vector3D(sum.get_normalisation())
@@ -1749,7 +1753,7 @@ GPlatesMaths::PolygonOverlay::Overlay::measure_ray(
 		// scales the spherical correction to the bound is far below rounding.
 		//
 		// The offset is the start's distance from the output position plus how far the arc's start
-		// and far end lie off the segment's great circle (prototype configuration 'r5o'):
+		// and far end lie off the segment's great circle (as the prototype's cones count it):
 		// a stop at a touch record of the other polygon's vertex (and a self-touch cut) is at that
 		// vertex, up to the thickness off this ring's segment, so the arc between start and far end
 		// can leave tens of degrees from the segment's tangent, which a cone of the distance alone
@@ -3803,8 +3807,8 @@ GPlatesMaths::PolygonOverlay::Overlay::repair()
 	// Where the vertex is a common chain's end, one more candidate flips the whole chain at once,
 	// ranked with the sector classes and tried before any single piece of that rank: flipping a
 	// chain piece by piece fails the chain's interior vertices the next round, towards the cap
-	// (run 3's inversion residue). Measured: no repair in any normal Phase 4a run of the chosen
-	// configuration, so this is a safety net; every flip is counted.
+	// (as the prototype found on inverted chains). Measured: the prototype's runs of the design
+	// needed no repair, so this is a safety net; every flip is counted.
 	//
 	const auto rank = [](Method method)
 	{
@@ -4154,7 +4158,8 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			//
 			// Only one input has ends here (the other's were a loop or a spike), so the vertex is
 			// no intersection for linking: ring continuity (section 5.2). Each kept end pairs
-			// with the end of the next non-internal piece of its ring beyond it, at the same stop.
+			// with the end, at this vertex, of the next non-internal piece of its ring beyond it
+			// (a neighbour elsewhere, or not kept, is a pairing failure).
 			// (No valid input shows the rule: where the input's passages do not cross, any
 			// non-crossing pairing gives the same rings after the split, and the polygon checks
 			// skip inputs that cross. A mutation of it survived every case.)
@@ -4726,8 +4731,9 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	//
 	// The optional sliver filter (section 5.5), by each ring's mean width (get_mean_width). Not a
 	// ring that crosses itself (where an input's ring does): its signed area weights each lobe by
-	// its winding number, so lobes wound opposite ways cancel, and a bow-tie three quarters inside
-	// a plate measured as a sliver and was dropped whole. Asked only of a ring that measures as
+	// its winding number, so lobes wound opposite ways cancel, and a bow-tie whose lobes are near
+	// equal would measure as a sliver and be dropped whole, however large. Asked only of a ring
+	// that measures as
 	// one.
 	//
 	std::vector<double> ring_areas(num_rings, 0.0);

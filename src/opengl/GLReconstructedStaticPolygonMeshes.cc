@@ -977,10 +977,10 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 	}
 	//
 	// A node surrounding the test polygon is intersecting, not outside: the test polygon is then a
-	// clip ring inside the subject, which the overlay reports as intersecting. (An extra test that
-	// a vertex of the test polygon was outside the node was dropped as redundant, after a visual
-	// check and a check of 55,000 boxes against the Merdith et al. static polygons found none
-	// that it changed.)
+	// clip ring inside the subject, which the overlay reports as intersecting. So no test of the
+	// polygon's vertices against the node is needed. (This overload serves a polygon drawn as a fan,
+	// which create_polygon_mesh_drawables compiles out: nothing calls it today, and no rendering
+	// shows what it answers.)
 	if (GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE == partition_result)
 	{
 		return;

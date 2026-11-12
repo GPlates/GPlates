@@ -487,8 +487,9 @@ export_exceptions()
 					"  Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, "
 					":meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by "
 					"a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This "
-					"can happen where the two outlines run within about 1e-6 radians of each other along many closely "
-					"spaced vertices. Nothing is partitioned when it is raised.\n"
+					"is rare: the only case found is two polygons that each have an interior ring crossing their exterior "
+					"ring, with outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along "
+					"many closely spaced vertices. Nothing is partitioned when it is raised.\n"
 					"\n"
 					"  .. versionadded:: 1.1\n",
 					GPlatesApi::MathematicalError);

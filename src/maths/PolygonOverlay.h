@@ -198,15 +198,15 @@ namespace GPlatesMaths
 		 * them. So it sees rings that swap sides along a stretch within the margin of each other
 		 * (a dense shared edge, whose every edge end is within the margin of the other ring's
 		 * edges); an edge between two points on the other ring's outline, a chord through it
-		 * (rings meeting only at vertices on each other's outline, review 7: an overlap of any
+		 * (rings meeting only at vertices on each other's outline: an overlap of any
 		 * size with no vertex inside it); and an edge that leaves the other ring's outline at its
 		 * vertex, crosses the other ring, and leaves it through one of its vertices (two rings each
-		 * with vertices on the other's edges, a pinwheel, review 8). Missed: an overlap reached
+		 * with vertices on the other's edges, a pinwheel). Missed: an overlap reached
 		 * only within a few margins of the outlines. By @a a's bounding tree: a node farther than
 		 * the margin from @a b's bounding circle counts as outside at once, and only the nodes near
 		 * it are visited edge by edge (otherwise a large ring against each of many small rings
 		 * inside it would cost its every vertex for each: twelve times the grouping's old cost at
-		 * 1,481 rings and 100,000 points, review 7). Public for the tests.
+		 * 1,481 rings and 100,000 points). Public for the tests.
 		 */
 		bool
 		has_points_on_both_sides(

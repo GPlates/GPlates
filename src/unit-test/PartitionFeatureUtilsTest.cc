@@ -1096,7 +1096,7 @@ namespace
 }
 
 
-// A time-dependent geometry in Assign Plate IDs (the src/api audit's G8-1, decided 2026-11-07): one
+// A time-dependent geometry in Assign Plate IDs (section 5.4): one
 // with a single time window containing the reconstruction time is partitioned as a constant geometry,
 // and written back as constant properties (cut pieces and, by the most overlapping plate, the whole
 // geometry); one whose window doesn't contain the time, or with two windows, is left unchanged.

@@ -1158,7 +1158,7 @@ namespace
 					}
 					// Output rings cross only where an input's rings cross, but for the symmetric
 					// difference's, which can cross at a vertex whose four kept ends pair crosswise
-					// (section 5.2; PR C): otherwise a touch was taken for a crossing.
+					// (section 5.2): otherwise a touch was taken for a crossing.
 					const unsigned int crossing_ring_groups =
 							overlay.get_diagnostics().crossing_ring_groups -
 								crossing_ring_groups_before;
@@ -1339,8 +1339,8 @@ namespace
 					oracle_report << diagnostics.pairing_failures << " pairing failures, "
 							<< diagnostics.keep_mismatches << " keep mismatches; ";
 				}
-				// (Where input rings cross, a grouping failure is a crossing thinner than the
-				// margin, which the oracle checks as polygons above.)
+				// (Where input rings cross, a grouping failure is a crossing reached only within
+				// a few margins of the outlines, which the oracle checks as polygons above.)
 				if (diagnostics.hemisphere_check_failures != 0 ||
 					diagnostics.hemisphere_check_skipped != 0 ||
 					(!input_rings_cross &&

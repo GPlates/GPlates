@@ -865,7 +865,7 @@ TEST(PolygonOverlayTest, RaysCrossingsOnTheirSegments)
 
 
 // A ray's cone counts how far its first arc's far end lies off the segment's great circle
-// (section 5.2, prototype configuration 'r5o'): a subject edge crossed by the
+// (section 5.2, as the prototype's cones count it): a subject edge crossed by the
 // clip at x = -0.01 and x = -0.0075, and touched from outside at x = 0 by a clip vertex half the
 // thickness below it. At the second crossing the subject's ray east ends at the touch, so its
 // offset is the clip vertex's from the subject's edge; every other ray there ends at a crossing or
@@ -2056,7 +2056,7 @@ TEST(PolygonOverlayTest, GroupRingsCross)
 			*polygon(ring_type{
 					F.at(0.0, 0.01), F.at(0.0, 0.0), F.at(0.01, -0.01), F.at(0.01, 0.0) })));
 
-	// A pinwheel (review 8): each ring has two vertices on the other's edges, and each long edge
+	// A pinwheel: each ring has two vertices on the other's edges, and each long edge
 	// runs from the other ring's outline through one of its vertices to far outside, so no vertex
 	// of either is inside the other and no edge has both ends near the other; they overlap in the
 	// unit square. With short blades and with long ones.
@@ -2074,7 +2074,7 @@ TEST(PolygonOverlayTest, GroupRingsCross)
 	}
 
 	// A ring crossing itself (the sliver filter's test): a bow-tie does, and so does one with a
-	// vertex at its crossing, on one diagonal or on both (review 8); a square, a triangle and a
+	// vertex at its crossing, on one diagonal or on both; a square, a triangle and a
 	// figure of eight whose lobes are wound alike (touching at a vertex) do not, nor (within the
 	// margin) a ring whose notch dips 0.3 h across its own long edge.
 	EXPECT_TRUE(Overlay::does_ring_cross_itself(
@@ -2305,7 +2305,7 @@ TEST(PolygonOverlayTest, GroupRingsCrossAgainstLoops)
 
 // Inputs whose rings cross (section 5.2): output rings that cross where an input's do share a
 // polygon, read by parity, so that no two polygons overlap. The clip's hole crosses its exterior
-// (the visual check's case: its corner outside the exterior is inside the clip, by parity); the
+// (its corner outside the exterior is inside the clip, by parity); the
 // subject cuts both. Both the inside and the outside are then one polygon with one hole, the
 // clip's hole, which crosses the exterior. Then a clip whose two rings cross like a plus sign, no
 // vertex of either inside the other, cut by the subject's western edge; rings meeting only at
@@ -2364,7 +2364,7 @@ TEST(PolygonOverlayTest, GroupCrossingRings)
 		// Rings that meet only at vertices on each other's outline: a square, and an interior ring
 		// through three of its corners whose first edge is the square's diagonal (a chord through
 		// it). No vertex of either is inside the other and no two edges cross away from a shared
-		// vertex, yet they overlap in half the square (review 7's finding 1.1). Both ways round.
+		// vertex, yet they overlap in half the square. Both ways round.
 		SCOPED_TRACE("rings meeting only at shared vertices");
 		const auto crossing = polygon(
 				square(0.0, 0.0, 0.01, 0.01),

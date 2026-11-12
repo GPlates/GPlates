@@ -860,7 +860,10 @@ namespace GPlatesAppLogic
 
 					// A polyline's run at its end, and at its start, takes its one valued
 					// neighbour's. (A closed ring has none left: the walk went once round it, so
-					// its run past its start was interpolated.)
+					// its run past its start was interpolated. Applied to a ring, this would give
+					// the points before its first valued point that point's value; a ring starts
+					// valueless whenever a piece is cut a second time, the second overlay's first
+					// stop being on the first plate's cut edge, so every feature across three plates.)
 					if (!closed)
 					{
 						for (unsigned int r : run)
@@ -936,9 +939,12 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 				{
 					return other == property;
 				};
-				// Only a constant range: a time-dependent one belongs with a time-dependent
-				// geometry, which is not partitioned and keeps it (it can be unmatched only
-				// because it has no value at the reconstruction time).
+				// Only a constant range: a time-dependent one normally belongs with a
+				// time-dependent geometry, which is not partitioned and keeps it (unmatched for
+				// having no value at the reconstruction time). One that has a value then, but a
+				// number of values that is no geometry's, is kept too, and a piece with that
+				// number of points reads it back as its coverage. Removing it could take the
+				// coverage of a kept time-dependent geometry, which is worse.
 				const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> range_value =
 						GPlatesModel::ModelUtils::get_property_value(**property);
 				const bool time_dependent = range_value &&
