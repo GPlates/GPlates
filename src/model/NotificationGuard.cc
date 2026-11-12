@@ -48,6 +48,15 @@ GPlatesModel::NotificationGuard::NotificationGuard(
 }
 
 
+GPlatesModel::NotificationGuard::NotificationGuard(
+		Model *model) :
+	d_model(model ? boost::optional<Model &>(*model) : boost::none),
+	d_guard_released(true)
+{
+	acquire_guard();
+}
+
+
 GPlatesModel::NotificationGuard::~NotificationGuard()
 {
 	// Since this is a destructor we cannot let any exceptions escape.

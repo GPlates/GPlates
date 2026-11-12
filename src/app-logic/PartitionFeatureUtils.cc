@@ -298,7 +298,7 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(*partitioned_feature->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(partitioned_feature->model_ptr());
 
 	// Get the reconstruction plate id.
 	// Either from the partitioning feature or the default reconstruction plate id.
@@ -591,7 +591,7 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_featur
 		bool verify_information_model)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
 
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_reconstruction_plate_id_property_name());
@@ -638,7 +638,7 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_conjugate_plate_id_to_feature(
 		bool verify_information_model)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
 
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_conjugate_plate_id_property_name());
