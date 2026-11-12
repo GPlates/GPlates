@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <ostream>
@@ -375,44 +376,77 @@ GPlatesMaths::PolygonOverlay::do_rings_cross(
 		return false;
 	}
 
-	// A vertex farther than the margin inside the other ring and one farther than it outside (where
-	// the rings swap sides along a stretch within the margin of each other: a dense shared edge,
-	// whose every edge end is within the margin of the other ring's edges).
-	const auto has_vertices_on_both_sides = [&margin](
+	// A point of one ring farther than the margin inside the other ring and one farther than it
+	// outside: where the rings swap sides along a stretch within the margin of each other (a
+	// dense shared edge, whose every edge end is within the margin of the other ring's edges), or
+	// where an edge between two points on the other ring's outline is a chord through it (rings
+	// meeting only at vertices on each other's outline, an overlap of any size with no vertex
+	// inside it). The points: every vertex, and the midpoint of every edge whose two ends are both
+	// within the margin of the other ring (a chord's ends are; its midpoint is not, unless it is
+	// short).
+	enum PointSide { NEAR, INSIDE, OUTSIDE };
+	const auto has_points_on_both_sides = [&margin](
 			const PolygonOnSphere &a,
 			const PolygonOnSphere &b)
 	{
-		bool inside = false;
-		bool outside = false;
-		const auto vertices_end = a.exterior_ring_vertex_end();
-		for (auto vertex = a.exterior_ring_vertex_begin(); vertex != vertices_end; ++vertex)
+		const auto side_of = [&](const PointOnSphere &point)
 		{
 			const AngularDistance distance_to_bounds =
-					minimum_distance(*vertex, b.get_bounding_small_circle());
+					minimum_distance(point, b.get_bounding_small_circle());
 			if (distance_to_bounds.is_precisely_greater_than(margin))
 			{
-				outside = true;  // outside its bounding circle by more than the margin
+				return OUTSIDE;  // outside its bounding circle by more than the margin
 			}
-			else if (!minimum_distance(*vertex, b, false, margin))
+			if (minimum_distance(point, b, false, margin))
 			{
-				if (b.is_point_in_polygon(*vertex, PolygonOnSphere::ADAPTIVE, false))
-				{
-					inside = true;
-				}
-				else
-				{
-					outside = true;
-				}
+				return NEAR;
 			}
-			if (inside && outside)
+			return b.is_point_in_polygon(point, PolygonOnSphere::ADAPTIVE, false)
+					? INSIDE
+					: OUTSIDE;
+		};
+		bool inside = false;
+		bool outside = false;
+		const auto add = [&](PointSide side)
+		{
+			inside = inside || side == INSIDE;
+			outside = outside || side == OUTSIDE;
+			return inside && outside;
+		};
+		const auto add_midpoint = [&](const GreatCircleArc &edge)
+		{
+			const Vector3D sum =
+					Vector3D(edge.start_point().position_vector()) +
+					Vector3D(edge.end_point().position_vector());
+			return sum.magSqrd().dval() > 0 && add(side_of(PointOnSphere(sum.get_normalisation())));
+		};
+		boost::optional<PointSide> first_side;
+		boost::optional<PointSide> previous_side;
+		const auto edges_end = a.exterior_ring_end();
+		for (auto edge = a.exterior_ring_begin(); edge != edges_end; ++edge)
+		{
+			const PointSide side = side_of(edge->start_point());
+			if (add(side))
 			{
 				return true;
 			}
+			if (previous_side && *previous_side == NEAR && side == NEAR &&
+				add_midpoint(*std::prev(edge)))
+			{
+				return true;
+			}
+			if (!first_side)
+			{
+				first_side = side;
+			}
+			previous_side = side;
 		}
-		return false;
+		// The closing edge, from the last vertex to the first.
+		return previous_side && *previous_side == NEAR && *first_side == NEAR &&
+				add_midpoint(*std::prev(edges_end));
 	};
-	if (has_vertices_on_both_sides(ring, other_ring) ||
-		has_vertices_on_both_sides(other_ring, ring))
+	if (has_points_on_both_sides(ring, other_ring) ||
+		has_points_on_both_sides(other_ring, ring))
 	{
 		return true;
 	}
@@ -427,6 +461,23 @@ GPlatesMaths::PolygonOverlay::do_rings_cross(
 			tree.get_root_node(),
 			other_tree,
 			other_tree.get_root_node(),
+			margin.get_sine().dval());
+}
+
+
+bool
+GPlatesMaths::PolygonOverlay::does_ring_cross_itself(
+		const PolygonOnSphere &ring,
+		const AngularExtent &margin)
+{
+	// The edge test of do_rings_cross, the ring's bounding tree against itself. An edge and its
+	// neighbours share an end, which lies on the other's great circle, so they never count.
+	const PolygonOnSphere::ring_bounding_tree_type &tree = ring.get_exterior_ring_bounding_tree();
+	return do_ring_nodes_cross(
+			tree,
+			tree.get_root_node(),
+			tree,
+			tree.get_root_node(),
 			margin.get_sine().dval());
 }
 
@@ -4436,13 +4487,18 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	};
 
 	//
-	// The optional sliver filter (section 5.5), by each ring's mean width (get_mean_width).
+	// The optional sliver filter (section 5.5), by each ring's mean width (get_mean_width). Not a
+	// ring that crosses itself (where an input's ring does): its signed area weights each lobe by
+	// its winding number, so lobes wound opposite ways cancel, and a bow-tie three quarters inside
+	// a plate measured as a sliver and was dropped whole. Asked only of a ring that measures as
+	// one.
 	//
 	std::vector<double> ring_areas(num_rings, 0.0);
 	const auto is_sliver = [&](unsigned int r)
 	{
 		return d_options.sliver_min_width &&
-				get_mean_width(rings[r].points, &ring_areas[r]) < *d_options.sliver_min_width;
+				get_mean_width(rings[r].points, &ring_areas[r]) < *d_options.sliver_min_width &&
+				!does_ring_cross_itself(*ring_polygons[r], grouping_margin);
 	};
 
 	// Even depth is an exterior group; odd depth a hole group, in its parent's polygon (an island
@@ -4544,10 +4600,10 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 				continue;
 			}
 		}
-		// The containment is not a nesting (it is, once crossing rings are grouped, but a crossing
-		// within the margin of an edge's end is missed: do_rings_cross): kept as a polygon of its
-		// own, and counted. Not thrown: partitioning has always accepted inputs whose rings cross
-		// (self-intersecting polygons, common in real data).
+		// The containment is not a nesting (it is, once crossing rings are grouped, but an overlap
+		// reached only within the margin of the outlines is missed: do_rings_cross): kept as a
+		// polygon of its own, and counted. Not thrown: partitioning has always accepted inputs
+		// whose rings cross (self-intersecting polygons, common in real data).
 		++d_diagnostics.grouping_failures;
 		add_polygon(g);
 	}

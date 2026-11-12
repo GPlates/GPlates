@@ -36,6 +36,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTreeCreator.h"
 
+#include "maths/GeometryDistance.h"
 #include "maths/GeometryIntersect.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -1402,5 +1403,154 @@ TEST(PolygonPartitionerTest, CookieCutterOptions)
 				}
 			}
 		}
+	}
+}
+
+
+namespace
+{
+	/**
+	 * Each point of a grid over the box @a lat_0 .. @a lat_1, @a lon_0 .. @a lon_1 (degrees),
+	 * farther than 20 h from both inputs' outlines, is in no more than one inside piece and one
+	 * outside piece, inside a piece exactly when it is in both inputs, and outside one exactly when
+	 * it is in the subject only (each read by parity, the pieces as their union).
+	 */
+	void
+	check_pieces_sample_right(
+			const PolygonOnSphere &subject,
+			const PolygonOnSphere &partitioning_polygon,
+			const PolygonPartitioner::partitioned_polygon_seq_type &inside,
+			const PolygonPartitioner::partitioned_polygon_seq_type &outside,
+			double lat_0,
+			double lat_1,
+			double lon_0,
+			double lon_1)
+	{
+		const GPlatesMaths::AngularExtent clearance =
+				GPlatesMaths::AngularExtent::create_from_angle(20 * H);
+		const unsigned int n = 120;
+		unsigned int num_samples = 0;
+		for (unsigned int i = 0; i <= n; ++i)
+		{
+			for (unsigned int j = 0; j <= n; ++j)
+			{
+				const PointOnSphere p = at(
+						lat_0 + (lat_1 - lat_0) * i / n,
+						lon_0 + (lon_1 - lon_0) * j / n);
+				if (GPlatesMaths::minimum_distance(p, subject, false, clearance) ||
+					GPlatesMaths::minimum_distance(p, partitioning_polygon, false, clearance))
+				{
+					continue;
+				}
+				++num_samples;
+				const auto count = [&p](
+						const PolygonPartitioner::partitioned_polygon_seq_type &pieces)
+				{
+					unsigned int num_containing = 0;
+					for (const PolygonOnSphere::non_null_ptr_to_const_type &piece : pieces)
+					{
+						num_containing += piece->is_point_in_polygon(
+								p, PolygonOnSphere::ADAPTIVE, false) ? 1 : 0;
+					}
+					return num_containing;
+				};
+				const bool in_subject =
+						subject.is_point_in_polygon(p, PolygonOnSphere::ADAPTIVE, false);
+				const bool in_partitioning = partitioning_polygon.is_point_in_polygon(
+						p, PolygonOnSphere::ADAPTIVE, false);
+				const unsigned int num_inside = count(inside);
+				const unsigned int num_outside = count(outside);
+				EXPECT_LE(num_inside, 1u) << i << " " << j;
+				EXPECT_LE(num_outside, 1u) << i << " " << j;
+				EXPECT_EQ(num_inside == 1, in_subject && in_partitioning) << i << " " << j;
+				EXPECT_EQ(num_outside == 1, in_subject && !in_partitioning) << i << " " << j;
+			}
+		}
+		EXPECT_GT(num_samples, n * n / 2);
+	}
+}
+
+
+// Inputs whose rings cross (section 5.2), through the partitioner: a plate whose hole crosses its
+// exterior (the visual check's case), and rings meeting only at shared vertices (a square and an
+// interior ring through three of its corners, its first edge the square's diagonal), each as the
+// partitioning polygon and as the subject, with no filter and with the cascade's. The pieces read
+// as their union (as a feature's polygons are) must be the cut, with no point in two of them.
+TEST(PolygonPartitionerTest, CrossingRings)
+{
+	struct Case
+	{
+		const char *name;
+		PolygonOnSphere::non_null_ptr_to_const_type crossing;
+		PolygonOnSphere::non_null_ptr_to_const_type box;
+		double lat_0, lat_1, lon_0, lon_1;  // the sampled box
+	};
+	const Case cases[] = {
+		{
+			"a hole across its exterior",
+			polygon(box(0, 10, 0, 10), { box(4, 6, 8, 12) }),
+			polygon(box(-5, 15, 5, 20)),
+			-6, 16, -1, 21
+		},
+		{
+			"rings meeting only at shared vertices",
+			polygon(box(0, 1, 0, 1), { ring_type{ at(0, 1), at(1, 0), at(0, 0), at(-1, 1) } }),
+			polygon(box(-0.5, 2, -1, 2)),
+			-1.5, 2.5, -1.5, 2.5
+		},
+	};
+	for (const Case &c : cases)
+	{
+		SCOPED_TRACE(c.name);
+		for (const bool crossing_partitions : { true, false })
+		{
+			SCOPED_TRACE(crossing_partitions ? "it partitions" : "it is the subject");
+			const PolygonOnSphere::non_null_ptr_to_const_type &partitioning =
+					crossing_partitions ? c.crossing : c.box;
+			const PolygonOnSphere::non_null_ptr_to_const_type &subject =
+					crossing_partitions ? c.box : c.crossing;
+			const boost::optional<double> widths[] = { boost::none, 10 * H };
+			for (const boost::optional<double> &width : widths)
+			{
+				SCOPED_TRACE(width);
+				PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+				EXPECT_EQ(
+						partition(*filtering(partitioning, width), subject, inside, outside),
+						PolygonPartitioner::GEOMETRY_INTERSECTING);
+				check_pieces_sample_right(
+						*subject,
+						*partitioning,
+						inside,
+						outside,
+						c.lat_0,
+						c.lat_1,
+						c.lon_0,
+						c.lon_1);
+			}
+		}
+	}
+}
+
+
+// A ring that crosses itself is not a sliver (section 5.5): a bow-tie's signed area is zero, its
+// lobes wound opposite ways, so its mean width measured below every width and the filter dropped
+// it whole: three quarters inside a plate, it came back wholly outside (review 7's finding 1.2).
+// Now at every width it is cut, one piece inside (the upper three quarters, crossing itself) and
+// two outside (the lower corners).
+TEST(PolygonPartitionerTest, SliverFilterSelfCrossingRing)
+{
+	const auto bow_tie = polygon(ring_type{ at(0, 0), at(2, 2), at(0, 2), at(2, 0) });
+	const auto plate = polygon(box(0.5, 3, -1, 3));
+	const boost::optional<double> widths[] = { boost::none, H, 10 * H };
+	for (const boost::optional<double> &width : widths)
+	{
+		SCOPED_TRACE(width);
+		PolygonPartitioner::partitioned_polygon_seq_type inside, outside;
+		EXPECT_EQ(
+				partition(*filtering(plate, width), bow_tie, inside, outside),
+				PolygonPartitioner::GEOMETRY_INTERSECTING);
+		EXPECT_EQ(inside.size(), 1u);
+		EXPECT_EQ(outside.size(), 2u);
+		check_pieces_sample_right(*bow_tie, *plate, inside, outside, -0.5, 2.5, -0.5, 2.5);
 	}
 }

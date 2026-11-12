@@ -194,20 +194,37 @@ namespace GPlatesMaths
 		 * Whether two rings (each the exterior ring of a polygon of that ring alone) cross, for the
 		 * grouping of section 5.2: two output rings cross where an input's rings cross each other
 		 * (or a ring crosses itself), at points the overlay never computes, since it intersects
-		 * each input only with the other. Either ring must have a vertex inside the other and a
-		 * vertex outside it, each farther than @a margin from its outline (where the rings swap
-		 * sides along a stretch within the margin of each other, a dense shared edge, say); or an
-		 * edge of each must cross an edge of the other, the ends of both edges farther than the
-		 * margin from the other's great circle (two rings crossing like a plus sign, no vertex of
-		 * either inside the other; by the rings' bounding trees). So the rings' touches at an
-		 * overlay vertex (whose output positions can cross by up to its record cluster's width,
-		 * is_ring_inside_ring) and their stretches within the thickness of each other are not taken
-		 * for crossings, and an overlap thinner than the margin is missed.
+		 * each input only with the other. Either ring must have a point inside the other and a
+		 * point outside it, each farther than @a margin from its outline, the points being its
+		 * vertices and the midpoints of its edges whose two ends are both within the margin of the
+		 * other ring (where the rings swap sides along a stretch within the margin of each other, a
+		 * dense shared edge, say; or where an edge between two points on the other's outline is a
+		 * chord through it, rings meeting only at vertices on each other's outline, which can
+		 * overlap by any amount); or an edge of each must cross an edge of the other, the ends of
+		 * both edges farther than the margin from the other's great circle (two rings crossing like
+		 * a plus sign, no vertex of either inside the other; by the rings' bounding trees). So the
+		 * rings' touches at an overlay vertex (whose output positions can cross by up to its record
+		 * cluster's width, is_ring_inside_ring) and their stretches within the thickness of each
+		 * other are not taken for crossings. Missed: an overlap reached only within the margin of
+		 * the outlines (thinner than the margin, or a chord shorter than about twice the margin).
 		 */
 		bool
 		do_rings_cross(
 				const PolygonOnSphere &ring,
 				const PolygonOnSphere &other_ring,
+				const AngularExtent &margin);
+
+
+		/**
+		 * Whether a ring (the exterior ring of a polygon of that ring alone) crosses itself, for
+		 * the sliver filter of section 5.5: a ring that does is measured by a signed area in which
+		 * its lobes wound opposite ways cancel (a bow-tie's is zero), so it is never dropped as a
+		 * sliver. By do_rings_cross's edge test, the ring's bounding tree against itself: so a
+		 * crossing at one of its own vertices, or within the margin of an edge's end, is missed.
+		 */
+		bool
+		does_ring_cross_itself(
+				const PolygonOnSphere &ring,
 				const AngularExtent &margin);
 
 
@@ -986,8 +1003,8 @@ namespace GPlatesMaths
 			 * false: then counted (Diagnostics::hemisphere_check_failures) and the rings returned
 			 * as read, which a caller must not take for the output. Counted only: a hole not
 			 * nested in its parent's polygon, kept as a polygon of its own
-			 * (Diagnostics::grouping_failures; rings crossing within the margin of an edge's end,
-			 * which do_rings_cross misses), and coincident rings
+			 * (Diagnostics::grouping_failures; rings whose overlap do_rings_cross misses, reached
+			 * only within the margin of the outlines), and coincident rings
 			 * (Diagnostics::coincident_rings, rings of no area that clean-up missed). Also throws
 			 * as @a extract_rings does.
 			 */

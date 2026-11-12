@@ -2028,6 +2028,34 @@ TEST(PolygonOverlayTest, GroupRingsCross)
 			*polygon(ring_type{
 					F.at(-0.005, 0.01 - 0.3 * H), F.at(0.005, 0.01 + 0.3 * H),
 					F.at(0.005, 0.02), F.at(-0.005, 0.02) })));
+	// Rings meeting only at vertices on each other's outline, one edge a chord through the other;
+	// and the same rings started elsewhere, so that the edges whose midpoints decide (in both
+	// directions) are their closing edges.
+	EXPECT_TRUE(cross_both_ways(
+			*polygon(square(0.0, 0.0, 0.01, 0.01)),
+			*polygon(ring_type{
+					F.at(0.01, 0.0), F.at(0.0, 0.01), F.at(0.0, 0.0), F.at(0.01, -0.01) })));
+	EXPECT_TRUE(cross_both_ways(
+			*polygon(ring_type{
+					F.at(0.01, 0.0), F.at(0.01, 0.01), F.at(0.0, 0.01), F.at(0.0, 0.0) }),
+			*polygon(ring_type{
+					F.at(0.0, 0.01), F.at(0.0, 0.0), F.at(0.01, -0.01), F.at(0.01, 0.0) })));
+
+	// A ring crossing itself (the sliver filter's test): a bow-tie does; a square and a triangle do
+	// not, nor (within the margin) a ring whose notch dips 0.3 h across its own long edge.
+	EXPECT_TRUE(Overlay::does_ring_cross_itself(
+			*polygon(ring_type{
+					F.at(0.0, 0.0), F.at(0.01, 0.01), F.at(0.01, 0.0), F.at(0.0, 0.01) }),
+			margin));
+	EXPECT_FALSE(Overlay::does_ring_cross_itself(*E, margin));
+	EXPECT_FALSE(Overlay::does_ring_cross_itself(
+			*polygon(ring_type{
+					F.at(-0.01, 0.0), F.at(0.01, 0.0), F.at(0.01, 0.3 * H), F.at(0.0, -0.3 * H),
+					F.at(-0.01, 0.3 * H) }),
+			margin));
+	EXPECT_FALSE(Overlay::does_ring_cross_itself(
+			*polygon(ring_type{ F.at(0.0, 0.0), F.at(0.01, 0.0), F.at(0.0, 0.01) }),
+			margin));
 }
 
 
@@ -2036,8 +2064,8 @@ TEST(PolygonOverlayTest, GroupRingsCross)
 // (the visual check's case: its corner outside the exterior is inside the clip, by parity); the
 // subject cuts both. Both the inside and the outside are then one polygon with one hole, the
 // clip's hole, which crosses the exterior. Then a clip whose two rings cross like a plus sign, no
-// vertex of either inside the other, cut by the subject's western edge. A group's exterior is its
-// ring of largest area.
+// vertex of either inside the other, cut by the subject's western edge; rings meeting only at
+// shared vertices; and groups nested three deep. A group's exterior is its ring of largest area.
 TEST(PolygonOverlayTest, GroupCrossingRings)
 {
 	const auto check_exteriors_largest = [](const Overlay::Overlay &overlay)
@@ -2086,6 +2114,57 @@ TEST(PolygonOverlayTest, GroupCrossingRings)
 
 		EXPECT_EQ(polygon_holes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 1 }));
 		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 1 }));
+		check_exteriors_largest(overlay);
+	}
+	{
+		// Rings that meet only at vertices on each other's outline: a square, and an interior ring
+		// through three of its corners whose first edge is the square's diagonal (a chord through
+		// it). No vertex of either is inside the other and no two edges cross away from a shared
+		// vertex, yet they overlap in half the square (review 7's finding 1.1). Both ways round.
+		SCOPED_TRACE("rings meeting only at shared vertices");
+		const auto crossing = polygon(
+				square(0.0, 0.0, 0.01, 0.01),
+				{
+					ring_type{ F.at(0.01, 0.0), F.at(0.0, 0.01), F.at(0.0, 0.0), F.at(0.01, -0.01) }
+				});
+		const auto box = polygon(square(-0.01, -0.005, 0.02, 0.02));
+		for (const bool crossing_is_clip : { true, false })
+		{
+			SCOPED_TRACE(crossing_is_clip ? "the crossing polygon the clip" : "the subject");
+			const PolygonOnSphere &P = crossing_is_clip ? *box : *crossing;
+			const PolygonOnSphere &Q = crossing_is_clip ? *crossing : *box;
+			Overlay::Overlay overlay(P, Q);
+			classify_and_check(overlay);
+			check_oracle(P, Q, overlay, true/*input_rings_cross*/);
+			EXPECT_GT(overlay.get_diagnostics().crossing_ring_groups, 0u);
+		}
+	}
+	{
+		// Groups three deep: the clip's exterior holds two rings crossing like a plus sign (a hole
+		// group), a ring in the centre the plus covers twice (inside three rings: a hole, in the
+		// plus's polygon, which is the exterior's), and an island in that. The intersection is the
+		// exterior with three holes and the island; in the difference the plus is a polygon of its
+		// own with one hole, and the centre ring one with the island as its hole.
+		SCOPED_TRACE("groups three deep");
+		const auto P = polygon(square(-0.04, -0.04, 0.025, 0.04));
+		const auto Q = polygon(
+				square(-0.03, -0.03, 0.03, 0.03),
+				{
+					square(-0.02, -0.005, 0.02, 0.005),
+					square(-0.005, -0.025, 0.005, 0.025),
+					square(-0.002, -0.002, 0.002, 0.002),
+					square(-0.001, -0.001, 0.001, 0.001)
+				});
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_oracle(*P, *Q, overlay, true/*input_rings_cross*/);
+
+		EXPECT_EQ(
+				polygon_holes(overlay, Overlay::INTERSECTION),
+				(std::vector<unsigned int>{ 0, 3 }));
+		EXPECT_EQ(
+				polygon_holes(overlay, Overlay::DIFFERENCE),
+				(std::vector<unsigned int>{ 0, 1, 1 }));
 		check_exteriors_largest(overlay);
 	}
 }
