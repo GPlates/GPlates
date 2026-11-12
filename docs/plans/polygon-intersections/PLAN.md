@@ -1002,11 +1002,12 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     without throwing, 5 to 52 in about 6,000).
   - **Still unpinned**: the vertex test in one argument order (every pair built is found both
     ways), the nesting check's fallback, the sliver exemption for groups, `do_arcs_cross`'s
-    same-crossing sign test, hole order. GPlates 213 of 213, pyGPlates 7 of 7.
+    same-crossing sign test, hole order. GPlates 213 of 213, pyGPlates 7 of 7; Linux (Ubuntu
+    22.04, `b60b21e2d`): pyGPlates 7 of 7, GPlates 213 of 213.
 
 - **Resume here** (updated 2026-11-12): the visual check is done and the grouping of crossing
-  rings is in, with review 7 and its fixes (Status, 2026-11-12). Next: a Linux run of the tip,
-  then PR B (the branch history, its description, the roadmap). Open as before: the
+  rings is in, with review 7 and its fixes, and Linux passes at `b60b21e2d` (Status, 2026-11-12).
+  Next: PR B (the branch history, its description, the roadmap). Open as before: the
   prototype's polyline rule (`r5p`); the margin order's hand-built test.
 - *Resume here as of 2026-11-08:*
   - **PR A** is merged (#108). The branch carries PRs B and C; do not delete it.
