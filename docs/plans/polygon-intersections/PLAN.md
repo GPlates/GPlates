@@ -1124,8 +1124,41 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   so that they equal `partition`'s lists. The symmetric difference's pairing is fixed first. Section
   *PR C* below.
 
+- 2026-11-13: **PR C step 1 done: two overlay defects, both fixed** (report `prC-symdiff-twist.md`).
+  - Diagnosis (Opus): the "four kept ends pair crosswise" explanation was wrong; the free rule pairs
+    the 13 `d4 hole-between` crossings correctly. (1) **A twisted ring**, silent: a hole's tip on its
+    own exterior, where that exterior runs along the other input's edge, leaves a ring of the reverse
+    difference (swapped, partitioning's difference) crossing itself within `h` at an unkept common
+    chain, a lobe wound backwards (parity right, `get_area` off by twice the lobe). (2) **The
+    symmetric difference's crossing rings**: in those 13, and in the hunt (39,313 valid polygon cases)
+    37 as exported and 57 swapped, from the `six` and `zero` generators, with both differences clean.
+    Found by an area-identity scan of every operation (i+d=P, i+r=Q, u+i=P+Q, x=d+r), which no
+    committed check made (the area-sum oracle checks only the subject's i+d).
+  - **Decided (developer)**: try to make the overlay's own symmetric difference sound (merged
+    across shared edges, raising over a hemisphere) rather than return the two differences
+    separately; with Fable, at xHigh (an agent first launched with no effort set was stopped and
+    its draft taken over).
+  - Fix (Fable, xHigh; reviewed by Opus against the code): `extract_rings` in parts
+    (`pair_and_walk_rings`, `split_walked_rings`, `walk_rings`); a ring twisted between two vertices
+    of an unkept chain is cut there (`rings_cut_at_chains`; geometric, but no new constant: the
+    self-touch cut's `h` and `1e-12`); the symmetric difference is the two differences' rings joined
+    across the walls between them, but for a wall walked as a spike (`spike_walls`). Hunt: crossing
+    groups from valid inputs 37 / 57 to 0 / 0, area identities off 26 / 41 to 0 / 0, 10 cases
+    differing from the prototype (the 9 known and `six#13 seed 11`, on HEAD too). Partitioning
+    changes only where a twisted ring is cut (10 valid hunt cases, slivers of about `1.5 h^2`).
+    Timing: partitioning's `extract` 2% to 5% slower, the symmetric difference's 10% to 26%.
+  - Opus's checks: 217 of 217 GPlates CTests; the real-data test on Müller 2022 unchanged against PR
+    B's record (282 polygons cut, 783 output rings, 5 under `h`); three hunt cases added to
+    `prototype-hunt.txt` to pin mutations C7 (the crossing test's walk must stop: a hang without
+    it), C12 and J8 (`shared#541 seed 2`, `zero#563 seed 11`, `shared#31 seed 14`); 7 of 35
+    mutations survive, unpinned (report section 7). The session's scripts and scratch tests are in
+    the planning repository's `plans/polygon-intersection-tools/cpp/prC/`.
+  - **Decided (developer)**: at the end, archive this whole directory in the planning repository's
+    `plans/done/` rather than only deleting it (step 9 of *PR C*).
+
 - **Resume here** (updated 2026-11-13): **PR C under way**, in the steps of section *PR C* below
-  (step 0 done). PR C ends with the final Fable distillation of this directory, then deletes it.
+  (steps 0 and 1 done; next, step 2). PR C ends with the final Fable distillation of this
+  directory, then archives it in the planning repository and deletes it here (step 9).
   After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
   overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
   overlay. **Tools**: the PR B session's scripts for the C++ (the hunt at scale and run comparison,
@@ -1584,9 +1617,14 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
 #### Steps
 
 0. This plan into PLAN.md (done, with this section). Then fast-forward the branch:
-   `git merge --ff-only public/main` (`main` is this branch plus the #110 merge commit).
+   `git merge --ff-only public/main` (`main` is this branch plus the #110 merge commit). (Done, by
+   a rebase instead: the two plan commits after #110 were on `private` only, so the branch could not
+   fast-forward; they were rebased onto `public/main` and force-pushed to `private`.)
 1. **The symmetric difference's pairing** (`PolygonOverlay.cc`, `extract_rings`, the four-ray
-   free-rule block at about `:4114-4150`).
+   free-rule block at about `:4114-4150`). **Done 2026-11-13, otherwise than planned** (Status,
+   2026-11-13; `prC-symdiff-twist.md`): the hypothesis below was wrong, and the fix is the cut at a
+   chain and the join of the two differences. The symmetric difference uses the overlay's own
+   operation (decision 1 stands, and so does its hemisphere error, decision 2). The plan as written:
    - Diagnose with `dump()` on the 13 `d4 ... hole-between` catalogue cases. My working
      hypothesis: the symmetric difference is the only operation that keeps all four ends at a
      crossing; in these cases the classes say "crossing" while the order used places each input's
@@ -1633,8 +1671,9 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
    - the sliver argument (`ValueError`, zero keeps every piece);
    - `TypeError` for an argument that isn't a polygon.
 6. **Changelog.** One pyGPlates bullet. There is no GPlates entry: Assign Plate IDs uses only
-   the intersection and the difference, and the pairing fix affects only the symmetric
-   difference.
+   the intersection and the difference, and step 1's cut at a chain changes those only in rare
+   degenerate inputs of a feature not yet released (polygon partitioning is new in 1.1), so it
+   needs no entry in either product.
 7. **Design page** (`spherical-geometry.md`).
    - Section 5.1: the Boolean methods as a consumer layer, and decision 5.
    - Section 5.2: the pairing.
@@ -1655,13 +1694,23 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
      goes, and the rule that every statement must be checked against the code.
    - I review its output. Then a Fable claim check of the new text runs, serially, with a pause
      for the 5-hour limit between Fable agents.
-   - Delete the directory in its own commit.
+   - **Archive, then delete** (developer, 2026-11-13): copy the whole of
+     `docs/plans/polygon-intersections/` (every plan, report and review file, as it stands after
+     the distillation) into the planning repository as `plans/done/polygon-intersections/`, and move
+     its tools beside it (`plans/polygon-intersection-tools/`, which holds the prototype, the hunts'
+     scripts and `cpp/`, including `cpp/prC/`) to `plans/done/polygon-intersection-tools/`, fixing
+     any path that points at the old place (its README, and `plans/README.md` or the roadmap if they
+     cite it). Commit and push there first (the planning repository's update sequence). Then delete
+     the directory from the branch in its own commit, whose message names the archive. The GPlates
+     repository keeps only the distilled content; the archive is the complete record of the effort.
    - Update the roadmap row in the planning repository. Also note, against the docs E PR
      (primer, partitioning section), that it should mention the Boolean methods.
 10. **The PR** when the developer asks. Then comes the `partition_features` rework.
 
-Commits: the pairing fix with its tests; the entry point; the Python methods (docstrings, stub,
-tests, changelog); the design page; the distillation; the plan's deletion.
+Commits: the overlay fix (the cut at a chain and the symmetric difference's join, with their tests
+and the design page's account of them, step 1); the entry point; the Python methods (docstrings,
+stub, tests, changelog); the design page; the distillation; the plan's deletion (after the
+archive).
 
 #### Verification
 
