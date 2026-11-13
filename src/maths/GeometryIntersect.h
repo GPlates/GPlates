@@ -355,11 +355,9 @@ namespace GPlatesMaths
 		// vertex of the original geometry, then these should be correctly associated with vertices
 		// in the partitioned sections (by using segment/vertex indices).
 		//
-		// The following functions are also used by higher-level intersection code such as PolylineIntersections
-		// to do the crucial work of finding intersections (but the partitioned polyline geometries
-		// returned by PolylineIntersections lose knowledge of which vertices in the partitioned polylines
-		// are associated with which vertices in the original unpartitioned polylines since there is no need
-		// to track scalar values (for example) at vertices in that usage scenario).
+		// The following functions are also used by higher-level intersection code such as the
+		// polygon overlay (PolygonOverlay, which records each output point's location on the
+		// original geometries as its provenance) to do the crucial work of finding intersections.
 		//
 
 

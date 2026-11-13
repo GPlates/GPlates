@@ -18,24 +18,91 @@
 
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
-def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grouped_by_property_name):
-    features = [feature_without_geometry.clone()]
-    
+def _plate_partitioning_set_keeping_unpartitioned(feature, set_function, property_names):
+    # 'set_geometry()' replaces every property of its geometry (and range) property name. The feature here holds only
+    # the properties that were not partitioned (the partitioned ones were removed), and one of those can share the
+    # name of a partitioned one (a time-dependent geometry beside a constant one, say), so it is put back afterwards,
+    # unchanged, as GPlates' Assign Plate IDs keeps it.
+    # (Looked up by name: scanning every property of every feature returned took about an eighth of the time
+    # 'partition_features()' takes on a global coastline file.)
+    kept = [(property_name, property.get_time_dependent_value())
+            for property_name in property_names
+            for property in feature.get(property_name, PropertyReturn.all)]
+    set_function()
+    for property_name, property_value in kept:
+        feature.add(property_name, property_value, VerifyInformationModel.no)
+
+
+# This function is private in this 'pygplates' module (function name prefixed with a single underscore).
+def _plate_partitioning_set_geometry(feature, geometries, geometry_property_name, range_property_name):
+    # Each geometry is a geometry, or a (geometry, scalars) coverage. A coverage whose scalars cover a
+    # polygon's exterior ring only (an older file's, kept in that form for its pieces, as GPlates' Assign Plate IDs
+    # writes them) cannot go through 'set_geometry()', which needs a scalar for every point of every ring: so then
+    # the geometries are set alone and each coverage's scalars are added as its range property.
+    def is_exterior_ring_only(coverage):
+        geometry, scalars = coverage
+        num_scalars = len(next(iter(scalars.values())))
+        if num_scalars == len(geometry.get_points()):
+            return False
+        if isinstance(geometry, PolygonOnSphere) and num_scalars == len(geometry.get_exterior_ring_points()):
+            return True
+        raise AssertionError('A partitioned coverage has {0} scalars for a geometry of {1} points.'.format(
+                num_scalars, len(geometry.get_points())))
+
+    def set_geometries():
+        if any(isinstance(geometry, tuple) and is_exterior_ring_only(geometry) for geometry in geometries):
+            feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name)
+            for geometry, scalars in geometries:
+                feature.add(range_property_name, GmlDataBlock(scalars), VerifyInformationModel.no)
+        else:
+            feature.set_geometry(geometries, geometry_property_name)
+
+    _plate_partitioning_set_keeping_unpartitioned(
+            feature, set_geometries,
+            [name for name in (geometry_property_name, range_property_name) if name is not None])
+
+
+# This function is private in this 'pygplates' module (function name prefixed with a single underscore).
+def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grouped_by_property_name, range_property_names):
+    features = []
+    def new_feature():
+        features.append(feature_without_geometry.clone())
+        return features[-1]
+
+    # The feature holding the geometries without coverages.
+    feature_for_geometries = None
     for geometry_property_name, geometries_with_property_name in geometries_grouped_by_property_name.items():
-            
+        range_property_name = range_property_names.get(geometry_property_name)
+
+        # Each geometry with a coverage goes into a feature of its own, as GPlates' Assign Plate IDs does: several
+        # coverages under one property name in one feature are matched to their geometries by number of points, so two
+        # with the same number would be ambiguous (refused by 'set_geometry()', and unreadable).
+        coverages = [geometry for geometry in geometries_with_property_name if isinstance(geometry, tuple)]
+        for coverage in coverages:
+            _plate_partitioning_set_geometry(new_feature(), [coverage], geometry_property_name, range_property_name)
+
+        geometries = [geometry for geometry in geometries_with_property_name if not isinstance(geometry, tuple)]
+        if not geometries:
+            continue
+        if feature_for_geometries is None:
+            feature_for_geometries = new_feature()
+
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
         # If so then try again by cloning one feature per extra geometry.
+        # ('set_geometry()' without coverages also replaces every property of the range name.)
+        def set_geometry(feature, geometry_or_geometries):
+            _plate_partitioning_set_keeping_unpartitioned(
+                    feature,
+                    lambda: feature.set_geometry(geometry_or_geometries, geometry_property_name),
+                    [name for name in (geometry_property_name, range_property_name) if name is not None])
         try:
-            feature = features[-1] # most recent feature
-            feature.set_geometry(geometries_with_property_name, geometry_property_name)
+            set_geometry(feature_for_geometries, geometries)
         except InformationModelError:
-            feature.set_geometry(geometries_with_property_name[0], geometry_property_name)
-            for geometry_index in range(1, len(geometries_with_property_name)):
-                feature = feature_without_geometry.clone()
-                feature.set_geometry(geometries_with_property_name[geometry_index], geometry_property_name)
-                features.append(feature)
-    
+            set_geometry(feature_for_geometries, geometries[0])
+            for geometry_index in range(1, len(geometries)):
+                set_geometry(new_feature(), geometries[geometry_index])
+
     # Return sequence of features.
     return features
 
@@ -115,10 +182,18 @@ def plate_partitioner_partition_features(
         (**note:** new features are always returned, never the originals passed in via *features*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+    :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
     
     The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
-    specified by *partition_method*. Properties are copied from the partitioning plate features to the
+    specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
+    its pieces (each piece with a coverage in a feature of its own), as GPlates' Assign Plate IDs does. Properties are copied from the partitioning plate features to the
     features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+
+    A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+    that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned (with
+    *PartitionMethod.most_overlapping_plate*, only the geometries partitioned decide the plate). A feature with nothing to
+    partition (such as no geometry) is returned unpartitioned.
     
     .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.
     
@@ -238,8 +313,15 @@ def plate_partitioner_partition_features(
     .. versionchanged:: 0.44
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ \
     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+    .. versionchanged:: 1.1
+       A polygon is partitioned into polygons (previously polylines). With *PartitionMethod.split_into_plates* a
+       geometry's scalar coverage is carried to its pieces, a time-dependent geometry is partitioned only if it has a
+       single time window containing the reconstruction time, and a feature with no geometry is returned unpartitioned.
+       *PartitionMethod.most_overlapping_plate* measures polygons by area. :class:`PartitionError` is raised if a cut
+       is inconsistent.
     """
-    
+
     # Turn function argument into something more convenient for extracting features.
     features = FeaturesFunctionArgument(features)
     
@@ -288,42 +370,55 @@ def plate_partitioner_partition_features(
             partitioned_geometries = { }
             # Group partitioned outside geometries by geometry property name.
             unpartitioned_geometries = { }
-            
-            feature_without_geometry = feature.clone()
-            for property in feature_without_geometry:
-                property_value = property.get_value()
-                if not property_value:
-                    continue
-                
-                geometry = property_value.get_geometry()
-                if not geometry:
-                    continue
-                
-                # Remove geometry property.
-                feature_without_geometry.remove(property)
-                
-                # Partition the current geometry into inside/outside geometries.
-                partitioned_inside_geometries = []
-                partitioned_outside_geometries = []
-                plate_partitioner.partition_geometry(geometry, partitioned_inside_geometries, partitioned_outside_geometries)
-                
-                geometry_property_name = property.get_name()
-                
-                if partitioned_inside_geometries:
-                    for partitioning_plate, inside_geometries in partitioned_inside_geometries:
-                        # Group by partition.
-                        geometries_inside_partition = partitioned_geometries.setdefault(partitioning_plate, {})
-                        # Group again by property name - there could be multiple geometry properties (per feature) with the same name.
-                        geometries_in_partition_with_property_name = geometries_inside_partition.setdefault(geometry_property_name, [])
-                        geometries_in_partition_with_property_name.extend(inside_geometries)
-                
+            # The name of each geometry property's scalar coverage range property (if it has a coverage).
+            range_property_names = { }
+
+            # Partition each geometry property of the feature, with its scalar coverage (if it has one): each piece
+            # of a geometry with a coverage is a (geometry, scalars) coverage, its scalars carried from the original's
+            # (by the same code as GPlates' Assign Plate IDs). Also returned: the positions of the properties partitioned.
+            partitioned_feature_geometries, partitioned_property_indices = \
+                    plate_partitioner._partition_feature_geometries(feature)
+            for geometry_property_name, range_property_name, partitioned_inside_geometries, partitioned_outside_geometries in \
+                    partitioned_feature_geometries:
+                if range_property_name:
+                    range_property_names[geometry_property_name] = range_property_name
+
+                for partitioning_plate, inside_geometries in partitioned_inside_geometries:
+                    # Group by partition.
+                    geometries_inside_partition = partitioned_geometries.setdefault(partitioning_plate, {})
+                    # Group again by property name - there could be multiple geometry properties (per feature) with the same name.
+                    geometries_in_partition_with_property_name = geometries_inside_partition.setdefault(geometry_property_name, [])
+                    geometries_in_partition_with_property_name.extend(inside_geometries)
+
                 if partitioned_outside_geometries:
                     # Group by property name - there could be multiple geometry properties (per feature) with the same name.
                     unpartitioned_geometries_with_property_name = unpartitioned_geometries.setdefault(geometry_property_name, [])
                     unpartitioned_geometries_with_property_name.extend(partitioned_outside_geometries)
-            
+
+            # A feature with nothing partitioned (no geometry, or only geometries that are not partitioned) is
+            # returned unpartitioned, whole.
+            if not partitioned_geometries and not unpartitioned_geometries:
+                unpartitioned_features.append(feature.clone())
+                continue
+
+            # Remove the properties partitioned (the geometries, and their coverages' range properties), exactly those
+            # GPlates' Assign Plate IDs removes, by the same code.
+            #
+            # A time-dependent geometry property is partitioned only if it has a single time window that contains the
+            # reconstruction time (then as a constant geometry, its pieces set as constant properties). Any other is
+            # not partitioned (partitioning one window would leave the others undefined): it stays, unchanged, on every
+            # feature returned. (Before pyGPlates 1.1 the window at present day was partitioned, and the property's
+            # other windows were lost.)
+            feature_without_geometry = feature.clone()
+            partitioned_property_indices = set(partitioned_property_indices)
+            properties_to_remove = [property for index, property in enumerate(feature_without_geometry)
+                                    if index in partitioned_property_indices]
+            for property in properties_to_remove:
+                feature_without_geometry.remove(property)
+
             for partitioning_plate, geometries_inside_partition in partitioned_geometries.items():
-                features_inside_partition = _plate_partitioning_set_geometries(feature_without_geometry, geometries_inside_partition)
+                features_inside_partition = _plate_partitioning_set_geometries(
+                        feature_without_geometry, geometries_inside_partition, range_property_names)
                 
                 # Copy the requested properties over from the partitioning feature.
                 for feature in features_inside_partition:
@@ -336,39 +431,51 @@ def plate_partitioner_partition_features(
                     partitioned_feature_groups.setdefault(partitioning_plate, []).extend(features_inside_partition)
             
             if unpartitioned_geometries:
-                features_outside_partition = _plate_partitioning_set_geometries(feature_without_geometry, unpartitioned_geometries)
+                features_outside_partition = _plate_partitioning_set_geometries(
+                        feature_without_geometry, unpartitioned_geometries, range_property_names)
                 unpartitioned_features.extend(features_outside_partition)
             
         else: # partition_method == PartitionMethod.most_overlapping_plate
             
-            # Partition all geometries of the current feature so that we can do partition overlap testing.
-            partitioned_inside_geometries = []
-            plate_partitioner.partition_geometry(feature.get_all_geometries(), partitioned_inside_geometries)
+            # Partition the feature's geometries so that we can do partition overlap testing: the geometries
+            # 'split_into_plates' would partition, by the same code (so a time-dependent geometry counts only in a single
+            # time window that contains the reconstruction time; 'get_all_geometries()' would give any time-dependent
+            # geometry's window at present day, whatever the reconstruction time).
+            partitioned_inside_geometries_by_plate = {}
+            partitioned_feature_geometries, _ = plate_partitioner._partition_feature_geometries(feature)
+            for _, _, partitioned_inside_geometries, _ in partitioned_feature_geometries:
+                for partitioning_plate, inside_geometries in partitioned_inside_geometries:
+                    partitioned_inside_geometries_by_plate.setdefault(partitioning_plate, []).extend(
+                            geometry[0] if isinstance(geometry, tuple) else geometry for geometry in inside_geometries)
+            partitioned_inside_geometries = list(partitioned_inside_geometries_by_plate.items())
             
             if partitioned_inside_geometries:
                 # Determine which partitioning plate (if feature is partitioned into any) overlaps the current feature the most.
                 #
-                # Note: It's possible for an inside polyline/polygon to have zero arc length (if all its points are coincident).
+                # Note: It's possible for an inside polygon/polyline to have zero area/arc length (if all its points are coincident).
                 #       So we need to start with a 'max_geometry_size_measure' that will pass 'geometry_size_measure > max_geometry_size_measure'
-                #       when 'geometry_size_measure' is '(0.0, 0)' otherwise 'most_overlapping_partitioning_plate' will remain None.
-                #       So we use '(0.0, -1)'.
-                max_geometry_size_measure = (0.0, -1)
+                #       when 'geometry_size_measure' is '(0.0, 0.0, 0)' otherwise 'most_overlapping_partitioning_plate' will remain None.
+                #       So we use '(0.0, 0.0, -1)'.
+                max_geometry_size_measure = (0.0, 0.0, -1)
                 most_overlapping_partitioning_plate = None
                 for partitioning_plate, inside_geometries in partitioned_inside_geometries:
-                    # Accumulate the size of the geometries inside the current partitioning plate.
+                    # Accumulate the size of the geometries inside the current partitioning plate: a polygon's area
+                    # (not its arc length, which its cuts would inflate), a polyline's arc length, and the number
+                    # of points of a point or multi-point (as GPlates' Assign Plate IDs does).
+                    geometries_area = 0.0
                     geometries_arc_length = 0.0
                     geometries_num_points = 0
                     for geometry in inside_geometries:
-                        # If geometry is a polyline or polygon then accumulate its arc length.
-                        # Otherwise it's a point or multipoint so accumulate number of points.
-                        try:
+                        if isinstance(geometry, PolygonOnSphere):
+                            geometries_area += geometry.get_area()
+                        elif isinstance(geometry, PolylineOnSphere):
                             geometries_arc_length += geometry.get_arc_length()
-                        except AttributeError:
+                        else:
                             geometries_num_points += len(geometry.get_points())
-                    
-                    # When comparing measures we favour arc length (for polyline/polygon),
-                    # followed by number points (for point/multipoint).
-                    geometry_size_measure = (geometries_arc_length, geometries_num_points)
+
+                    # When comparing measures we favour area (for polygons), then arc length (for polylines),
+                    # then the number of points (for points and multi-points).
+                    geometry_size_measure = (geometries_area, geometries_arc_length, geometries_num_points)
                     if geometry_size_measure > max_geometry_size_measure:
                         max_geometry_size_measure = geometry_size_measure
                         most_overlapping_partitioning_plate = partitioning_plate
@@ -422,14 +529,15 @@ def partition_into_plates(
         partition_method=PartitionMethod.split_into_plates,
         partition_return=PartitionReturn.combined_partitioned_and_unpartitioned,
         sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id,
-        anchor_plate_id=None):
+        anchor_plate_id=None,
+        sliver_width_threshold_radians=None):
     """partition_into_plates(partitioning_features, rotation_model, features_to_partition, \
         [properties_to_copy=[PartitionProperty.reconstruction_plate_id]], \
         [reconstruction_time=0], \
         [partition_method=PartitionMethod.split_into_plates], \
         [partition_return=PartitionReturn.combined_partitioned_and_unpartitioned], \
         [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id], \
-        [anchor_plate_id])
+        [anchor_plate_id], [sliver_width_threshold_radians])
     Partition features into plates.
     
     :param partitioning_features: the partitioning features
@@ -469,15 +577,26 @@ def partition_into_plates(
         Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
     :type anchor_plate_id: int
 
+    :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped \
+        (see :meth:`PlatePartitioner.__init__`); defaults to about 90 metres on the Earth, and zero keeps every piece
+    :type sliver_width_threshold_radians: float, or None
+
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return* \
         (see :class:`PartitionReturn`) \
         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+    :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
     
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
     features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+
+    A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+    that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned (with
+    *PartitionMethod.most_overlapping_plate*, only the geometries partitioned decide the plate). A feature with nothing to
+    partition (such as no geometry) is returned unpartitioned.
     
     .. note:: New features are always returned. The original features (passed into the *features_to_partition* argument) are never modified or returned.
     
@@ -643,10 +762,12 @@ def partition_into_plates(
                 partition_method = PartitionMethod.split_into_plates,
                 partition_return = PartitionReturn.combined_partitioned_and_unpartitioned,
                 sort_partitioning_plates = pygplates.SortPartitioningPlates.by_partition_type_then_plate_id,
-                anchor_plate_id = None):
+                anchor_plate_id = None,
+                sliver_width_threshold_radians = None):
 
             plate_partitioner = pygplates.PlatePartitioner(
-                    partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id)
+                    partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id,
+                    sliver_width_threshold_radians)
 
             return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_method, partition_return)
 
@@ -655,10 +776,13 @@ def partition_into_plates(
     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
 
     .. versionchanged:: 1.1
-       Added the *anchor_plate_id* argument.
+       Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments. Partitions as
+       :meth:`PlatePartitioner.partition_features` now does: a polygon into polygons (previously polylines), with
+       scalar coverages carried to the pieces, and so on.
     """
 
     plate_partitioner = PlatePartitioner(
-            partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id)
+            partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id,
+            sliver_width_threshold_radians)
     
     return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_method, partition_return)

@@ -41,9 +41,9 @@
 
 //
 // Tests of GeometryIntersect, the intersection primitive under topology resolving and partitioning.
-// The cases are those of the Phase 3 audit (docs/plans/polygon-intersections/phase3-audit.md,
-// section 6.1), with the expectations of its fixes F1 (the thickness is the point-on-outline
-// threshold) and F2 (a touch is ordered by its projection onto the touched segment).
+// The cases are those of GeometryIntersect's audit (spherical-geometry.md sections 4 and 6), with
+// the expectations of its fixes (the thickness is the point-on-outline threshold, and a touch is
+// ordered by its projection onto the touched segment).
 //
 // Geometries are built in local tangent coordinates (east, north) at a centre that is not on any
 // axis, so that nothing lines up with a coordinate axis by accident. Distances are in units of the

@@ -95,6 +95,8 @@ set(srcs
     PalaeomagUtils.cc
     PalaeomagUtils.h
     PartitionFeatureTask.cc
+    PartitionFeatureGeometries.cc
+    PartitionFeatureGeometries.h
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
     PartitionFeatureUtils.h

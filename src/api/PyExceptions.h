@@ -81,6 +81,7 @@ namespace GPlatesApi
 	extern boost::python::object InvalidPointsForPolygonConstructionError;
 	extern boost::python::object InvalidPointsForPolylineConstructionError;
 	extern boost::python::object MathematicalError;
+	extern boost::python::object PartitionError;
 	extern boost::python::object OpenFileForReadingError;
 	extern boost::python::object OpenFileForWritingError;
 	extern boost::python::object PreconditionViolationError;

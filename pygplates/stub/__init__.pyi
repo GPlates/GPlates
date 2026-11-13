@@ -9412,6 +9412,14 @@ class OpenFileForWritingError(GPlatesError):
     """A file could not be opened for writing (for example, its directory does not exist or is not writable).
     """
 
+class PartitionError(MathematicalError):
+    """A geometry could not be partitioned consistently by a partitioning polygon.
+
+      Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This is rare: the only case found is two polygons that each have an interior ring crossing their exterior ring, with outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along many closely spaced vertices. Nothing is partitioned when it is raised.
+
+      .. versionadded:: 1.1
+    """
+
 class PartitionMethod(int):
     """How a feature is partitioned when it overlaps one or more partitioning plates.
 
@@ -9421,7 +9429,7 @@ class PartitionMethod(int):
       Value                                  Description
       ====================================== ==============
       PartitionMethod.split_into_plates      Split each feature into the partitioning plates, and into unpartitioned parts that are outside all partitioning plates (if the plates do not have global coverage). For example, a feature that overlaps two plates is cloned twice, each clone getting the part of the original geometry inside its plate, and any part outside all plates becomes a third clone containing the unpartitioned geometry. The partitioned clones have properties copied from their partitioning plate features (as determined by *properties_to_copy*); the unpartitioned clone has none copied.
-      PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the length of polyline or polygon geometry inside each plate (or the number of points for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.
+      PartitionMethod.most_overlapping_plate Do not split the feature; instead assign it to the single partitioning plate that most overlaps its geometry. A feature that overlaps two plates is cloned once with its geometry unmodified. Overlap is measured by the area of polygon geometry inside each plate, then by the length of polyline geometry, then by the number of points (for a multi-point or point), and multiple geometries in one feature are treated as one composite geometry. (Before pyGPlates 1.1 a polygon was measured by its outline's length.) The clone has properties copied from the most overlapping plate feature (as determined by *properties_to_copy*) if it overlaps any plate, otherwise none.
       ====================================== ==============
     """
     split_into_plates: ClassVar[PartitionMethod]
@@ -10175,7 +10183,7 @@ class PlatePartitioner:
     def __hash__(self) -> int: ...
 
     @overload
-    def __init__(self, partitioning_plates: Sequence[ReconstructionGeometry], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ...) -> None:
+    def __init__(self, partitioning_plates: Sequence[ReconstructionGeometry], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float | None = ...) -> None:
         """A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...
 
         The *sort_partitioning_plates* parameter determines the order in which the partitioning plates are searched. See :class:`SortPartitioningPlates` for the sorting criteria of each value, and why the order matters when plates overlap.
@@ -10186,6 +10194,11 @@ class PlatePartitioner:
         ::
 
           plate_partitioner = pygplates.PlatePartitioner(..., sort_partitioning_plates=pygplates.SortPartitioningPlates.by_partition_type_then_plate_area)
+
+        A cut can leave slivers: pieces of a polygon only metres wide, where its outline was digitised along a plate boundary. A piece narrower than *sliver_width_threshold_radians* (twice its area over its perimeter, on a sphere of unit radius) is dropped, so that it is not assigned the neighbouring plate. The default, ten times the distance within which two outlines count as touching, is ``1.4142e-5`` radians (about 90 metres on the Earth); zero turns this off, so that the pieces cover the polygon exactly:
+        ::
+
+          plate_partitioner = pygplates.PlatePartitioner(..., sliver_width_threshold_radians=0)
 
         .. note:: Only those reconstructed/resolved geometries that contain a *polygon* boundary are actually used for partitioning. For :func:`resolved topologies<resolve_topologies>` this includes :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`. For :func:`reconstructed geometries<reconstruct>`, a :class:`ReconstructedFeatureGeometry` is only included if its reconstructed geometry is a :class:`PolygonOnSphere`.
 
@@ -10201,7 +10214,10 @@ class PlatePartitioner:
         :type sort_partitioning_plates: SortPartitioningPlates, or None
         :param anchor_plate_id: The anchored plate id that *partitioning_plates* were reconstructed/resolved with (and that is used to reverse reconstruct in :meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
         :type anchor_plate_id: int
+        :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps every piece
+        :type sliver_width_threshold_radians: float, or None
         :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same :meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`
+        :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN
 
         The *partitioning_plates* sequence can be generated by :func:`reconstructing regular geological features<reconstruct>` and/or :func:`resolving topological features<resolve_topologies>`.
         ::
@@ -10221,11 +10237,11 @@ class PlatePartitioner:
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
 
         .. versionchanged:: 1.1
-           Added the *anchor_plate_id* argument.
+           Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.
         """
 
     @overload
-    def __init__(self, partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant = 0, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ...) -> None:
+    def __init__(self, partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant = 0, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float | None = ...) -> None:
         """Create a partitioner by reconstructing/resolving plates from a sequence of plate features.
 
         :param partitioning_features: A sequence of plate features to partition with.
@@ -10238,7 +10254,9 @@ class PlatePartitioner:
         :type sort_partitioning_plates: SortPartitioningPlates, or None
         :param anchor_plate_id: The anchored plate id used to reconstruct/resolve *partitioning_features* (and that is used to reverse reconstruct in :meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
         :type anchor_plate_id: int
-        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps every piece
+        :type sliver_width_threshold_radians: float, or None
+        :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`, or *sliver_width_threshold_radians* is negative or NaN
 
         The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>` and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and optional reconstruction time.
 
@@ -10251,7 +10269,7 @@ class PlatePartitioner:
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
 
         .. versionchanged:: 1.1
-           Added the *anchor_plate_id* argument.
+           Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments.
         """
 
     def __le__(self, other: Any) -> bool: ...
@@ -10277,10 +10295,18 @@ class PlatePartitioner:
 
         :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features*)
         :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+        :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
 
         The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
-        specified by *partition_method*. Properties are copied from the partitioning plate features to the
+        specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
+        its pieces (each piece with a coverage in a feature of its own), as GPlates' Assign Plate IDs does. Properties are copied from the partitioning plate features to the
         features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+
+        A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+        that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+        geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned (with
+        *PartitionMethod.most_overlapping_plate*, only the geometries partitioned decide the plate). A feature with nothing to
+        partition (such as no geometry) is returned unpartitioned.
 
         .. note:: New features are always returned. The original features (passed into the *features* argument) are never modified or returned.
 
@@ -10399,6 +10425,13 @@ class PlatePartitioner:
 
         .. versionchanged:: 0.44
            Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
+
+        .. versionchanged:: 1.1
+           A polygon is partitioned into polygons (previously polylines). With *PartitionMethod.split_into_plates* a
+           geometry's scalar coverage is carried to its pieces, a time-dependent geometry is partitioned only if it has a
+           single time window containing the reconstruction time, and a feature with no geometry is returned unpartitioned.
+           *PartitionMethod.most_overlapping_plate* measures polygons by area. :class:`PartitionError` is raised if a cut
+           is inconsistent.
         """
 
     def partition_geometry(self, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], partitioned_inside_geometries: list[tuple[ReconstructionGeometry, list[GeometryOnSphere]]] | None = ..., partitioned_outside_geometries: list[GeometryOnSphere] | None = ...) -> bool:
@@ -10411,6 +10444,7 @@ class PlatePartitioner:
         :param partitioned_outside_geometries: optional list of geometries partitioned *outside* all partitioning plates (note that the list is *not* cleared first)
         :type partitioned_outside_geometries: list of GeometryOnSphere, or None
         :rtype: bool
+        :raises PartitionError: if cutting *geometry* by a partitioning plate finds no consistent result
 
         If *geometry* is inside any partitioning plates (even partially) then ``True`` is returned and the inside parts of *geometry* are appended to *partitioned_inside_geometries* (if specified) and the outside parts appended to *partitioned_outside_geometries* (if specified). Otherwise ``False`` is returned and *geometry* is appended to *partitioned_outside_geometries* (if specified).
 
@@ -10418,7 +10452,10 @@ class PlatePartitioner:
 
         .. note:: Each element in *partitioned_inside_geometries* is a 2-tuple consisting of a partitioning :class:`ReconstructionGeometry` and a list of the :class:`geometry<GeometryOnSphere>` pieces partitioned into it (note that these pieces can come from multiple input geometries if *geometry* is a sequence). In contrast, *partitioned_outside_geometries* is simply a list of :class:`geometries<GeometryOnSphere>` outside all partitioning plates.
 
-        .. warning:: Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry is partial. See :meth:`PolygonOnSphere.partition` for more details.
+        A polygon geometry that intersects a partitioning plate is cut into polygons (with interior rings where needed), and the pieces outside one plate are cut by the next. A geometry that only touches a plate is not cut there. See :meth:`PolygonOnSphere.partition` for more details.
+
+        .. versionchanged:: 1.1
+           A polygon geometry is partitioned into polygons (previously polylines), and a geometry that only touches a plate is no longer split there.
 
         To find the length of a polyline partitioned inside all reconstructed static polygons:
         ::
@@ -11201,7 +11238,7 @@ class PolygonOnSphere(GeometryOnSphere):
            The inside of each ring is its smaller side. Previously it was the side away from the antipode of :meth:`get_boundary_centroid`, so a ring that wraps round the globe could be inside out.
         """
 
-    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ...) -> PolygonOnSpherePartitionResult:
+    def partition(self, geometry: GeometryOnSphere, partitioned_geometries_inside: list[GeometryOnSphere] | None = ..., partitioned_geometries_outside: list[GeometryOnSphere] | None = ..., sliver_width_threshold_radians: float | None = ...) -> PolygonOnSpherePartitionResult:
         """Partition a geometry into optional inside/outside lists of partitioned geometry pieces.
 
         :param geometry: the geometry to be partitioned
@@ -11210,7 +11247,11 @@ class PolygonOnSphere(GeometryOnSphere):
         :type partitioned_geometries_inside: list of GeometryOnSphere, or None
         :param partitioned_geometries_outside: optional list of geometries partitioned *outside* this polygon (note that the list is *not* cleared first)
         :type partitioned_geometries_outside: list of GeometryOnSphere, or None
+        :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see below); defaults to about 9 metres on the Earth, and zero keeps every piece
+        :type sliver_width_threshold_radians: float, or None
         :rtype: PolygonOnSphere.PartitionResult
+        :raises PartitionError: if cutting *geometry* by this polygon finds no consistent result (whether or not the lists are specified)
+        :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN
 
         The returned result is:
 
@@ -11226,11 +11267,19 @@ class PolygonOnSphere(GeometryOnSphere):
 
         If a partitioned :class:`multi-point<MultiPointOnSphere>` contains points both inside and outside this polygon then *PolygonOnSphere.PartitionResult.intersecting* is returned. In this case the points *inside* are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_inside* (if specified) and the points *outside* are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_outside* (if specified).
 
-        .. warning:: | Support for partitioning a :class:`polygon<PolygonOnSphere>` geometry is partial.
-                     | If a polygon geometry is entirely inside or entirely outside this polygon then it will get added as a **polygon** as expected (to *partitioned_geometries_inside* or *partitioned_geometries_outside* respectively if specified).
-                     | But if a polygon geometry intersects this polygon, then partitioned **polylines** (not polygons) are added (to the optional inside/outside lists).
-                     | This is also how it is in the Assign Plate IDs dialog in `GPlates <http://www.gplates.org>`_.
-                     | *In a future release this will be fixed to always return polygons.*
+        A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, with interior rings where the pieces need them. The interior rings of both polygons take part in the cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region *inside* and, *outside*, the polygon geometry with a hole where this polygon is.
+
+        Where either polygon's rings cross each other or themselves (an invalid polygon, which :meth:`is_point_in_polygon` reads by parity), the pieces follow that reading: rings of a piece that cross each other are kept in one polygon, so no two pieces overlap (but, rarely, within a few hundred metres of where the rings meet). An interior ring of such a piece can then lie partly or wholly outside its exterior ring, its :meth:`get_area` is its exterior ring's area less its interior rings' (not the area :meth:`is_point_in_polygon` covers; for a ring that crosses itself, a bow-tie say, the lobes' areas cancel), and it is not dropped as a sliver (below).
+
+        A cut polygon's pieces narrower than *sliver_width_threshold_radians* are dropped, as a :meth:`PlatePartitioner<PlatePartitioner.__init__>` drops them: a piece's width is twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely on the other (and *geometry* itself is added to that list). The default is ``1.4142e-6`` radians (about 9 metres on the Earth), the distance within which two outlines count as touching, so that only pieces thinner than the cut can resolve are dropped; :class:`PlatePartitioner`'s default is ten times that. Zero keeps every piece, so that the pieces cover the polygon exactly however thin some are:
+        ::
+
+          result = polygon.partition(geometry, inside, outside, sliver_width_threshold_radians=0)
+
+        A geometry that only touches this polygon (from inside or outside), runs along its outline, or is identical to it, is not cut: it is entirely *inside* or *outside*, and *geometry* itself is added to the corresponding list. A :class:`polyline<PolylineOnSphere>` running along this polygon's outline is *inside*.
+
+        .. versionchanged:: 1.1
+           A polygon geometry that intersects this polygon is partitioned into polygons (previously polylines), and the interior rings of both polygons take part. A geometry that only touches this polygon, or runs along its outline, is no longer split there. :class:`PartitionError` is raised if the cut is inconsistent. Added the *sliver_width_threshold_radians* argument.
 
         Test if a polyline is entirely inside a polygon:
 
@@ -18482,7 +18531,7 @@ def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | F
        (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
 
-def partition_into_plates(partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], features_to_partition: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], properties_to_copy: Sequence[PropertyName | PartitionProperty] = ..., reconstruction_time: float | GeoTimeInstant = 0, partition_method: PartitionMethod = PartitionMethod.split_into_plates, partition_return: PartitionReturn = PartitionReturn.combined_partitioned_and_unpartitioned, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int | None = None) -> list[Feature] | tuple[list[Feature], list[Feature]] | tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]:
+def partition_into_plates(partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], features_to_partition: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], properties_to_copy: Sequence[PropertyName | PartitionProperty] = ..., reconstruction_time: float | GeoTimeInstant = 0, partition_method: PartitionMethod = PartitionMethod.split_into_plates, partition_return: PartitionReturn = PartitionReturn.combined_partitioned_and_unpartitioned, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int | None = None, sliver_width_threshold_radians: float | None = None) -> list[Feature] | tuple[list[Feature], list[Feature]] | tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]:
     """Partition features into plates.
 
     :param partitioning_features: the partitioning features
@@ -18512,12 +18561,22 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     :param anchor_plate_id: The anchored plate id used to reconstruct/resolve *partitioning_features*         (and to reverse reconstruct the partitioned features).         Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
     :type anchor_plate_id: int
 
+    :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped         (see :meth:`PlatePartitioner.__init__`); defaults to about 90 metres on the Earth, and zero keeps every piece
+    :type sliver_width_threshold_radians: float, or None
+
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
+    :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
 
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
     features partitioned by them as specified by *properties_to_copy* (by default this is only the reconstruction plate ID).
+
+    A time-dependent geometry (in a :class:`GpmlPiecewiseAggregation`) is partitioned only if it has a single time window
+    that contains the reconstruction time: it is then partitioned like a constant geometry, and its pieces set as constant
+    geometry. Any other time-dependent geometry is not partitioned, and is kept unchanged on every feature returned (with
+    *PartitionMethod.most_overlapping_plate*, only the geometries partitioned decide the plate). A feature with nothing to
+    partition (such as no geometry) is returned unpartitioned.
 
     .. note:: New features are always returned. The original features (passed into the *features_to_partition* argument) are never modified or returned.
 
@@ -18683,10 +18742,12 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
                 partition_method = PartitionMethod.split_into_plates,
                 partition_return = PartitionReturn.combined_partitioned_and_unpartitioned,
                 sort_partitioning_plates = pygplates.SortPartitioningPlates.by_partition_type_then_plate_id,
-                anchor_plate_id = None):
+                anchor_plate_id = None,
+                sliver_width_threshold_radians = None):
 
             plate_partitioner = pygplates.PlatePartitioner(
-                    partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id)
+                    partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates, anchor_plate_id,
+                    sliver_width_threshold_radians)
 
             return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_method, partition_return)
 
@@ -18694,7 +18755,9 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_     (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
 
     .. versionchanged:: 1.1
-       Added the *anchor_plate_id* argument.
+       Added the *anchor_plate_id* and *sliver_width_threshold_radians* arguments. Partitions as
+       :meth:`PlatePartitioner.partition_features` now does: a polygon into polygons (previously polylines), with
+       scalar coverages carried to the pieces, and so on.
     """
 
 def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstructed_geometries: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., **output_parameters: Any) -> None:

@@ -2203,10 +2203,390 @@ class PlatePartitionerTestCase(unittest.TestCase):
         partitioned_inside_geometries = []
         partitioned_outside_geometries = []
         plate_partitioner.partition_geometry(polygon, partitioned_inside_geometries, partitioned_outside_geometries)
+        # An intersecting polygon is cut into polygons (this one crosses itself, so its pieces are
+        # each of its two lobes' parts).
         self.assertTrue(len(partitioned_inside_geometries) == 3)
-        # Note that *polylines* are returned when intersecting (not polygons) - will be fixed in future.
-        # Also we end up with 3 polylines outside (instead of 2).
-        self.assertTrue(len(partitioned_outside_geometries) == 3)
+        for recon_geom, inside_geoms in partitioned_inside_geometries:
+            self.assertTrue(len(inside_geoms) == 1)
+            self.assertTrue(isinstance(inside_geoms[0], pygplates.PolygonOnSphere))
+        self.assertTrue(len(partitioned_outside_geometries) == 2)
+        for outside_geom in partitioned_outside_geometries:
+            self.assertTrue(isinstance(outside_geom, pygplates.PolygonOnSphere))
+
+    def test_most_overlapping_plate_by_area(self):
+        # An L-shaped polygon: a thin arm in plate 1 whose outline is longer than that of the fat block in
+        # plate 2. By area (pyGPlates 1.1) the feature goes to plate 2; by arc length it went to plate 1.
+        def static_plate(plate_id, points):
+            return pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere(points),
+                    reconstruction_plate_id=plate_id)
+        plates = [
+                static_plate(1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                static_plate(2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])]
+        l_shape = pygplates.PolygonOnSphere(
+                [(-10, -10), (-10, 0), (-0.5, 0), (-0.5, 30), (0.5, 30), (0.5, 0), (10, 0), (10, -10)])
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature, l_shape)
+
+        plate_partitioner = pygplates.PlatePartitioner(plates, pygplates.RotationModel([]))
+        inside = []
+        plate_partitioner.partition_geometry(l_shape, inside)
+        pieces = dict((partition.get_feature().get_reconstruction_plate_id(), geometries[0])
+                for partition, geometries in inside)
+        self.assertTrue(pieces[1].get_arc_length() > pieces[2].get_arc_length())
+        self.assertTrue(pieces[1].get_area() < pieces[2].get_area())
+
+        partitioned = plate_partitioner.partition_features(
+                [feature], partition_method=pygplates.PartitionMethod.most_overlapping_plate)
+        self.assertTrue(len(partitioned) == 1)
+        self.assertTrue(partitioned[0].get_reconstruction_plate_id() == 2)
+
+    def test_partition_features_coverage(self):
+        # partition_features carries a geometry's scalar coverage to its pieces (pyGPlates 1.1): each piece's
+        # scalars at the original's vertices are the original's, and a piece has one scalar per point.
+        def static_plate(plate_id, points):
+            return pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere(points),
+                    reconstruction_plate_id=plate_id)
+        plates = [
+                static_plate(1, [(-20, 0), (-20, 10), (20, 10), (20, 0)]),
+                static_plate(2, [(-20, 10), (-20, 30), (20, 30), (20, 10)])]
+        plate_partitioner = pygplates.PlatePartitioner(plates, pygplates.RotationModel([]))
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+
+        # A polygon with a hole across the plates' shared edge; scalars 0, 1, 2, ... in point order.
+        polygon = pygplates.PolygonOnSphere(
+                [(-5, 5), (-5, 25), (5, 25), (5, 5)], [[(-2, 8), (-2, 12), (2, 12), (2, 8)]])
+        values = list(range(len(polygon.get_points())))
+        feature = pygplates.Feature()
+        feature.set_geometry((polygon, {scalar_type: values}))
+        original_values = dict((point.to_xyz(), value) for point, value in zip(polygon.get_points(), values))
+
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(len(partitioned) == 2)
+        num_original_vertices = 0
+        for partitioned_feature in partitioned:
+            piece, scalars = partitioned_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+            self.assertTrue(len(scalars[scalar_type]) == len(piece.get_points()))
+            for point, value in zip(piece.get_points(), scalars[scalar_type]):
+                if point.to_xyz() in original_values:
+                    self.assertEqual(value, original_values[point.to_xyz()])
+                    num_original_vertices += 1
+                self.assertTrue(min(values) <= value <= max(values))
+        self.assertTrue(num_original_vertices == len(values))
+        # The original's range property went with its geometry: one per feature.
+        for partitioned_feature in partitioned:
+            ranges = [property for property in partitioned_feature
+                    if isinstance(property.get_value(), pygplates.GmlDataBlock)]
+            self.assertTrue(len(ranges) == 1)
+
+        # An older file's coverage, with scalars for the exterior ring only: a piece keeping the hole whole keeps
+        # that form (scalars for its exterior ring only), as GPlates' Assign Plate IDs writes it.
+        polygon = pygplates.PolygonOnSphere(
+                [(-5, 5), (-5, 25), (5, 25), (5, 5)], [[(-2, 14), (-2, 16), (2, 16), (2, 14)]])
+        feature = pygplates.Feature()
+        feature.set_geometry(polygon)
+        feature.add(
+                pygplates.PropertyName.create_gpml('unclassifiedGeometryCoverage'),
+                pygplates.GmlDataBlock({scalar_type: [1.0, 2.0, 3.0, 4.0]}),
+                pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(len(partitioned) == 2)
+        pieces_with_hole = 0
+        for partitioned_feature in partitioned:
+            pieces = [property.get_value().get_geometry() for property in partitioned_feature
+                    if property.get_value().get_geometry()]
+            ranges = [property.get_value() for property in partitioned_feature
+                    if isinstance(property.get_value(), pygplates.GmlDataBlock)]
+            self.assertTrue(len(pieces) == 1 and len(ranges) == 1)
+            num_scalars = len(ranges[0].get_scalar_values(scalar_type))
+            self.assertTrue(num_scalars == len(pieces[0].get_exterior_ring_points()))
+            pieces_with_hole += 1 if pieces[0].get_number_of_interior_rings() else 0
+        self.assertTrue(pieces_with_hole == 1)
+
+    def _static_plates(self, *plates):
+        return [pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere(points),
+                    reconstruction_plate_id=plate_id)
+                for plate_id, points in plates]
+
+    def test_partition_features_coverage_pieces(self):
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+        # A strip plate across a box cuts it into three pieces, two of them outside with four points each: each piece
+        # with a coverage goes into its own feature, so two with the same number of points are not ambiguous
+        # (spherical-geometry.md section 5.7).
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 8), (-20, 12), (20, 12), (20, 8)])), pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_geometry((pygplates.PolygonOnSphere([(-5, 0), (-5, 20), (5, 20), (5, 0)]), {scalar_type: [1, 2, 3, 4]}))
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature], partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(partitioned) == 1 and len(unpartitioned) == 2)
+        for piece_feature in partitioned + unpartitioned:
+            piece, scalars = piece_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+            self.assertTrue(len(scalars[scalar_type]) == len(piece.get_points()))
+
+        # A coverage's range goes only with its geometry: a feature holding only another geometry property's pieces
+        # has no range property.
+        feature = pygplates.Feature()
+        feature.set_geometry((pygplates.PolygonOnSphere([(-5, 0), (-5, 20), (5, 20), (5, 0)]), {scalar_type: [1, 2, 3, 4]}))
+        feature.set_geometry(
+                pygplates.PolylineOnSphere([(30, 0), (30, 20)]),
+                pygplates.PropertyName.gpml_center_line_of,
+                verify_information_model=pygplates.VerifyInformationModel.no)
+        for piece_feature in plate_partitioner.partition_features([feature]):
+            has_range = any(isinstance(property.get_value(), pygplates.GmlDataBlock) for property in piece_feature)
+            has_polygon = piece_feature.get_geometry(pygplates.PropertyName.gpml_unclassified_geometry) is not None
+            self.assertTrue(has_range == has_polygon)
+
+    def test_partition_features_other_cases(self):
+        # A feature whose valid time excludes the partitioning time is still partitioned, as it always was in
+        # pyGPlates (Assign Plate IDs' time check is not used here).
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_geometry(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)]))
+        feature.set_valid_time(100, 50)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+
+        # Most overlapping: a feature's polygons decide before its polylines, here a small polygon in plate 2 against a
+        # long polyline in plate 1.
+        feature = pygplates.Feature()
+        feature.set_geometry([pygplates.PolygonOnSphere([(-1, -2), (-1, -1), (1, -1), (1, -2)]),
+                              pygplates.PolylineOnSphere([(0, 5), (0, 35)])],
+                             verify_information_model=pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features(
+                [feature], partition_method=pygplates.PartitionMethod.most_overlapping_plate)
+        self.assertTrue(len(partitioned) == 1 and partitioned[0].get_reconstruction_plate_id() == 2)
+
+    def test_partition_features_time_dependent_geometry(self):
+        # A time-dependent geometry property is not partitioned, and not lost: it stays, unchanged, on the features
+        # returned (spherical-geometry.md section 5.4), whether or not the feature also has a constant geometry that is
+        # partitioned.
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        piecewise = pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(
+                        pygplates.GmlPolygon(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)])), 10, 0),
+                pygplates.GpmlTimeWindow(
+                        pygplates.GmlPolygon(pygplates.PolygonOnSphere([(-5, 20), (-5, 30), (5, 30), (5, 20)])), 50, 10)])
+        name = pygplates.PropertyName.create_gpml('outlineOf')
+
+        def windows(feature):
+            values = [property.get_time_dependent_value() for property in feature if property.get_name() == name]
+            return [len(value) for value in values if isinstance(value, pygplates.GpmlPiecewiseAggregation)]
+
+        # Only the time-dependent geometry: returned whole, unpartitioned.
+        feature = pygplates.Feature()
+        feature.add(name, piecewise, pygplates.VerifyInformationModel.no)
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature], partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(not partitioned and len(unpartitioned) == 1)
+        self.assertTrue(windows(unpartitioned[0]) == [2])
+
+        # With a constant geometry across both plates: it is partitioned, and every piece's feature keeps the
+        # time-dependent property, both its windows.
+        feature.set_geometry(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)]))
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            self.assertTrue(windows(partitioned_feature) == [2])
+
+    def test_partition_features_single_time_window(self):
+        # A time-dependent geometry with a single time window that contains the reconstruction time is partitioned
+        # as a constant geometry, its pieces set as constant properties; one whose window doesn't contain it is not
+        # (the src/api audit's G8-1). As GPlates' Assign Plate IDs does, by the same code.
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        name = pygplates.PropertyName.create_gpml('outlineOf')
+        polygon = pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)])
+
+        def feature_with_window(begin_time, end_time):
+            feature = pygplates.Feature()
+            feature.add(
+                    name,
+                    pygplates.GpmlPiecewiseAggregation([
+                            pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), begin_time, end_time)]),
+                    pygplates.VerifyInformationModel.no)
+            return feature
+
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature_with_window(10, 0)],
+                partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        self.assertTrue(not unpartitioned)
+        for partitioned_feature in partitioned:
+            properties = [property for property in partitioned_feature if property.get_name() == name]
+            self.assertTrue(len(properties) == 1)
+            self.assertFalse(isinstance(properties[0].get_time_dependent_value(), pygplates.GpmlPiecewiseAggregation))
+            self.assertTrue(isinstance(partitioned_feature.get_geometry(name), pygplates.PolygonOnSphere))
+
+        # With a coverage in a single window too: each piece has its coverage, constant like its geometry.
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+        feature = pygplates.Feature()
+        for property_name, value in (
+                (pygplates.PropertyName.gpml_unclassified_geometry, pygplates.GmlPolygon(polygon)),
+                (pygplates.PropertyName.create_gpml('unclassifiedGeometryCoverage'),
+                 pygplates.GmlDataBlock({scalar_type: [1, 2, 3, 4]}))):
+            feature.add(property_name, pygplates.GpmlPiecewiseAggregation([pygplates.GpmlTimeWindow(value, 10, 0)]),
+                        pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            piece, scalars = partitioned_feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+            self.assertTrue(len(scalars[scalar_type]) == len(piece.get_points()))
+            self.assertFalse(any(isinstance(property.get_time_dependent_value(), pygplates.GpmlPiecewiseAggregation)
+                                 for property in partitioned_feature))
+
+        # A time-dependent geometry that is not partitioned (two windows) beside a constant one of the same property name
+        # that is: the time-dependent one is kept, unchanged, on every feature returned (setting the pieces replaces every
+        # property of the name, which once dropped it from them all).
+        two_windows = pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 10, 0),
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 20, 10)])
+        # Its coverage, in the same two windows, is kept too (setting a plain geometry replaces every property of the
+        # range name as well).
+        coverage_name = pygplates.PropertyName.create_gpml('unclassifiedGeometryCoverage')
+        two_window_range = pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(pygplates.GmlDataBlock({scalar_type: [1, 2, 3, 4]}), 10, 0),
+                pygplates.GpmlTimeWindow(pygplates.GmlDataBlock({scalar_type: [1, 2, 3, 4]}), 20, 10)])
+        feature = pygplates.Feature()
+        feature.add(pygplates.PropertyName.gpml_unclassified_geometry, pygplates.GmlPolygon(polygon))
+        feature.add(pygplates.PropertyName.gpml_unclassified_geometry, two_windows, pygplates.VerifyInformationModel.no)
+        feature.add(coverage_name, two_window_range, pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            values = [property.get_time_dependent_value() for property in partitioned_feature
+                      if property.get_name() == pygplates.PropertyName.gpml_unclassified_geometry]
+            self.assertTrue(len(values) == 2)
+            self.assertTrue(sum(isinstance(value, pygplates.GpmlPiecewiseAggregation) for value in values) == 1)
+            kept = next(value for value in values if isinstance(value, pygplates.GpmlPiecewiseAggregation))
+            self.assertTrue(len(kept.get_time_windows()) == 2)
+            ranges = [property.get_time_dependent_value() for property in partitioned_feature
+                      if property.get_name() == coverage_name]
+            self.assertTrue(len(ranges) == 1 and len(ranges[0].get_time_windows()) == 2)
+
+        # The window doesn't contain the reconstruction time: returned whole, unpartitioned, its window kept.
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature_with_window(50, 10)],
+                partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(not partitioned and len(unpartitioned) == 1)
+        values = [property.get_time_dependent_value() for property in unpartitioned[0] if property.get_name() == name]
+        self.assertTrue(len(values) == 1 and isinstance(values[0], pygplates.GpmlPiecewiseAggregation))
+
+        # Most overlapping plate counts what splitting would partition: a geometry with two windows (the first containing
+        # present day) is not, so it decides no plate and the feature is returned unpartitioned (its window at present day
+        # once decided the plate, whatever the reconstruction time).
+        feature = pygplates.Feature()
+        feature.add(name, pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 10, 0),
+                pygplates.GpmlTimeWindow(pygplates.GmlPolygon(polygon), 50, 10)]), pygplates.VerifyInformationModel.no)
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature],
+                partition_method=pygplates.PartitionMethod.most_overlapping_plate,
+                partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(not partitioned and len(unpartitioned) == 1)
+        # A single window containing it does decide the plate.
+        partitioned, unpartitioned = plate_partitioner.partition_features(
+                [feature_with_window(10, 0)],
+                partition_method=pygplates.PartitionMethod.most_overlapping_plate,
+                partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+        self.assertTrue(len(partitioned) == 1 and not unpartitioned)
+
+    def test_partition_features_removes_partitioned_properties(self):
+        # Each feature returned holds only its own pieces: a polygon wholly in plate 1 and a polyline (under another
+        # property name) wholly in plate 2 go to two features, neither keeping the other's geometry.
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_geometry(pygplates.PolygonOnSphere([(-5, 10), (-5, 20), (5, 20), (5, 10)]))
+        feature.set_geometry(
+                pygplates.PolylineOnSphere([(0, -15), (0, -5)]),
+                pygplates.PropertyName.gpml_center_line_of,
+                verify_information_model=pygplates.VerifyInformationModel.no)
+        partitioned = plate_partitioner.partition_features([feature])
+        names = {f.get_reconstruction_plate_id(): sorted(p.get_name().to_qualified_string() for p in f
+                                                         if p.get_value() and p.get_value().get_geometry())
+                 for f in partitioned}
+        self.assertTrue(names == {1: ['gpml:unclassifiedGeometry'], 2: ['gpml:centerLineOf']})
+
+    def test_partition_features_no_geometry(self):
+        # A feature with no geometry is returned unpartitioned, whole, by every partition method (previously
+        # split_into_plates dropped it: the src/api audit's G8-1).
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)])), pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_name('no geometry')
+        for partition_method in (pygplates.PartitionMethod.split_into_plates,
+                                 pygplates.PartitionMethod.most_overlapping_plate):
+            partitioned, unpartitioned = plate_partitioner.partition_features(
+                    [feature],
+                    partition_method=partition_method,
+                    partition_return=pygplates.PartitionReturn.separate_partitioned_and_unpartitioned)
+            self.assertTrue(not partitioned and len(unpartitioned) == 1)
+            self.assertTrue(unpartitioned[0].get_name() == 'no geometry')
+
+    def test_partition_sliver_width_threshold(self):
+        # A polygon reaching 5e-6 radians (about 32 metres) into plate 1 from plate 2: the sliver it leaves in
+        # plate 1 is dropped by default (narrower than about 90 metres), so the polygon is whole in plate 2; a
+        # threshold of zero, or one below the sliver's width, keeps it.
+        plates = self._static_plates((1, [(-10, 0), (-10, 10), (10, 10), (10, 0)]),
+                                     (2, [(-10, 10), (-10, 20), (10, 20), (10, 10)]))
+        sliver = math.degrees(5e-6)
+        polygon = pygplates.PolygonOnSphere([(-5, 10 - sliver), (-5, 15), (5, 15), (5, 10 - sliver)])
+
+        def plate_ids(**kwargs):
+            inside = []
+            pygplates.PlatePartitioner(plates, pygplates.RotationModel([]), **kwargs).partition_geometry(polygon, inside)
+            return sorted(plate.get_feature().get_reconstruction_plate_id()
+                          for plate, pieces in inside for piece in pieces)
+
+        self.assertTrue(plate_ids() == [2])
+        self.assertTrue(plate_ids(sliver_width_threshold_radians=None) == [2])
+        self.assertTrue(plate_ids(sliver_width_threshold_radians=0) == [1, 2])
+        self.assertTrue(plate_ids(sliver_width_threshold_radians=1e-6) == [1, 2])
+        self.assertRaises(ValueError, plate_ids, sliver_width_threshold_radians=-1e-6)
+        self.assertRaises(ValueError, plate_ids, sliver_width_threshold_radians=float('nan'))
+
+        # From reconstructed plates too, and through partition_into_plates.
+        reconstructed = []
+        pygplates.reconstruct(plates, pygplates.RotationModel([]), reconstructed, 0)
+        inside = []
+        pygplates.PlatePartitioner(reconstructed, pygplates.RotationModel([]),
+                                   sliver_width_threshold_radians=0).partition_geometry(polygon, inside)
+        self.assertTrue(sum(len(pieces) for _, pieces in inside) == 2)
+        feature = pygplates.Feature()
+        feature.set_geometry(polygon)
+        for threshold, expected in ((None, [2]), (0, [1, 2])):
+            partitioned = pygplates.partition_into_plates(
+                    plates, pygplates.RotationModel([]), [feature], sliver_width_threshold_radians=threshold)
+            self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == expected)
+
+        # The northern hemisphere, bounded by one great circle (a 36-point equator ring), over a 10-degree plate:
+        # cut at the default width. (Its exterior was once measured 0 wide, so it went into the plate whole.)
+        box = [(10, 10), (10, 20), (20, 20), (20, 10)]
+        hemisphere = pygplates.PolygonOnSphere([(0, 10 * i) for i in range(36)])
+        inside, outside = [], []
+        pygplates.PlatePartitioner(self._static_plates((7, box)), pygplates.RotationModel([])).partition_geometry(
+                hemisphere, inside, outside)
+        self.assertTrue(len(inside) == 1 and len(inside[0][1]) == 1)
+        self.assertAlmostEqual(inside[0][1][0].get_area(), pygplates.PolygonOnSphere(box).get_area(), places=9)
+        self.assertTrue(len(outside) == 1)
+        self.assertAlmostEqual(outside[0].get_area(), 2 * math.pi - pygplates.PolygonOnSphere(box).get_area(),
+                               places=9)
 
     def test_partition_point(self):
         rotation_model = pygplates.RotationModel(self.rotation_features)

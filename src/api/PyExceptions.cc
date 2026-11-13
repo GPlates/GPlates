@@ -51,6 +51,7 @@
 #include "maths/IndeterminateArcRotationAxisException.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/MathematicalException.h"
+#include "maths/PolygonOverlay.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -258,6 +259,7 @@ namespace GPlatesApi
 	bp::object MathematicalError;
 	bp::object OpenFileForReadingError;
 	bp::object OpenFileForWritingError;
+	bp::object PartitionError;
 	bp::object PreconditionViolationError;
 	bp::object UnableToNormaliseZeroVectorError;
 	bp::object ViolatedUnitVectorInvariantError;
@@ -476,6 +478,20 @@ export_exceptions()
 			export_exception<GPlatesMaths::UnableToNormaliseZeroVectorException>(
 					"UnableToNormaliseZeroVectorError",
 					"A vector of zero magnitude cannot be normalised because it has no direction.\n",
+					GPlatesApi::MathematicalError);
+	GPlatesApi::PartitionError =
+			export_exception<GPlatesMaths::PolygonOverlay::InconsistentOverlayException>(
+					"PartitionError",
+					"A geometry could not be partitioned consistently by a partitioning polygon.\n"
+					"\n"
+					"  Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, "
+					":meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by "
+					"a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This "
+					"is rare: the only case found is two polygons that each have an interior ring crossing their exterior "
+					"ring, with outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along "
+					"many closely spaced vertices. Nothing is partitioned when it is raised.\n"
+					"\n"
+					"  .. versionadded:: 1.1\n",
 					GPlatesApi::MathematicalError);
 	GPlatesApi::ViolatedUnitVectorInvariantError =
 			export_exception<GPlatesMaths::ViolatedUnitVectorInvariantException>(

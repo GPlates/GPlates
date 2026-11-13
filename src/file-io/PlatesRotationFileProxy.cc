@@ -129,7 +129,9 @@ namespace
 			z(rotation.z().dval())
 		{
 			// A quaternion and its negation are the same rotation: pick one sign, for sorting.
-			if (w < 0 || (w == 0 && (x < 0 || (x == 0 && (y < 0 || (y == 0 && z < 0))))))
+			if (w < 0 || (GPlatesMaths::are_exactly_equal(w, 0) &&
+					(x < 0 || (GPlatesMaths::are_exactly_equal(x, 0) &&
+						(y < 0 || (GPlatesMaths::are_exactly_equal(y, 0) && z < 0))))))
 			{
 				w = -w;
 				x = -x;

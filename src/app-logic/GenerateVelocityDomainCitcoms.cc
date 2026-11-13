@@ -26,7 +26,7 @@
 
 #include "GenerateVelocityDomainCitcoms.h"
 
-#include "maths/PolylineIntersections.h"
+#include "maths/GeometryIntersect.h"
 #include "maths/Rotation.h"
 
 #include "utils/Profile.h"
@@ -269,12 +269,13 @@ namespace
 					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type line_2 =
 							GPlatesMaths::PolylineOnSphere::create(points_pair_2);
 
-					GPlatesMaths::PolylineIntersections::Graph intersection_graph;
-					if (GPlatesMaths::PolylineIntersections::partition(intersection_graph, *line_1, *line_2))
+					GPlatesMaths::GeometryIntersect::Graph intersection_graph;
+					if (GPlatesMaths::GeometryIntersect::intersect(
+							intersection_graph, *line_1, *line_2))
 					{
 						d_intersections.push_back(
 								// There should only be one intersection...
-								intersection_graph.unordered_intersections[0]->intersection_point);
+								intersection_graph.unordered_intersections[0].position);
 					}
 			}
 		}

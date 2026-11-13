@@ -1807,6 +1807,130 @@ class PolygonOnSphereCase(unittest.TestCase):
                 else:
                     self.assertEqual(answers, [expected] * 3, msg=msg)
 
+    def _box(self, lat_0, lat_1, lon_0, lon_1):
+        return [(lat_0, lon_0), (lat_0, lon_1), (lat_1, lon_1), (lat_1, lon_0)]
+
+    def test_partition_polygons_with_holes(self):
+        # A partitioning polygon wholly inside the polygon partitioned: inside is its own region, outside the
+        # polygon with a hole there (this was partitioned wholly outside before pyGPlates 1.1).
+        partitioner = pygplates.PolygonOnSphere(self._box(-3, 3, 5, 10))
+        polygon = pygplates.PolygonOnSphere(self._box(-10, 10, 0, 20))
+        inside, outside = [], []
+        self.assertTrue(partitioner.partition(polygon, inside, outside) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(partitioner.partition(polygon) == pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(len(inside) == 1 and len(outside) == 1)
+        self.assertTrue(inside[0].get_number_of_interior_rings() == 0)
+        self.assertTrue(outside[0].get_number_of_interior_rings() == 1)
+        self.assertAlmostEqual(inside[0].get_area() + outside[0].get_area(), polygon.get_area())
+
+        # A polygon with a hole cut by a partitioning polygon with a hole: the partitioner's hole cuts it too.
+        partitioner = pygplates.PolygonOnSphere(self._box(-15, 15, 0, 30), [self._box(-5, 5, 10, 20)])
+        polygon = pygplates.PolygonOnSphere(self._box(-2, 2, 5, 25), [self._box(-1, 1, 6, 8)])
+        inside, outside = [], []
+        self.assertTrue(partitioner.partition(polygon, inside, outside) ==
+                pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(all(isinstance(piece, pygplates.PolygonOnSphere) for piece in inside + outside))
+        self.assertTrue(any(piece.is_point_in_polygon(pygplates.PointOnSphere(0, 15)) for piece in outside))
+        self.assertFalse(any(piece.is_point_in_polygon(pygplates.PointOnSphere(0, 7)) for piece in inside + outside))
+        self.assertAlmostEqual(sum(piece.get_area() for piece in inside + outside), polygon.get_area())
+
+    def test_partition_touching(self):
+        # A geometry that only touches the partitioning polygon, or runs along its outline, is not split: it is
+        # returned itself, inside or outside.
+        partitioner = pygplates.PolygonOnSphere(self._box(-10, 10, 0, 10))
+        for points, expected in (
+                ([(0, 10), (-5, 15), (5, 15)], pygplates.PolygonOnSphere.PartitionResult.outside),
+                ([(0, 10), (5, 5), (-5, 5)], pygplates.PolygonOnSphere.PartitionResult.inside),
+                (self._box(-10, 10, 10, 20), pygplates.PolygonOnSphere.PartitionResult.outside),
+                (self._box(-10, 10, 0, 10), pygplates.PolygonOnSphere.PartitionResult.inside)):
+            polygon = pygplates.PolygonOnSphere(points)
+            inside, outside = [], []
+            self.assertTrue(partitioner.partition(polygon, inside, outside) == expected)
+            self.assertTrue(partitioner.partition(polygon) == expected)
+            whole = inside if expected == pygplates.PolygonOnSphere.PartitionResult.inside else outside
+            self.assertTrue(whole == [polygon])
+            self.assertTrue(len(inside) + len(outside) == 1)
+        # A polyline along the outline is inside.
+        polyline = pygplates.PolylineOnSphere([(-5, 10), (5, 10)])
+        inside = []
+        self.assertTrue(partitioner.partition(polyline, inside) == pygplates.PolygonOnSphere.PartitionResult.inside)
+        self.assertTrue(inside == [polyline])
+
+    def test_partition_error(self):
+        # An input whose cut is inconsistent (a dense shared-edge case the C++ tests share) raises PartitionError,
+        # with or without lists, and the error is a MathematicalError.
+        filename = os.path.join(os.path.dirname(__file__), '..', '..', '..',
+                'src', 'unit-test', 'data', 'polygon-overlay', 'inconsistent.txt')
+        rings = {'P': [], 'Q': []}
+        with open(filename) as f:
+            words = f.read().split()
+        index = 0
+        while index < len(words):
+            if words[index] == 'ring':
+                which, count = words[index + 1], int(words[index + 2])
+                values = [float(word) for word in words[index + 3:index + 3 + 3 * count]]
+                rings[which].append([pygplates.PointOnSphere(values[k:k + 3]) for k in range(0, len(values), 3)])
+                index += 3 + 3 * count
+            else:
+                index += 1
+        subject = pygplates.PolygonOnSphere(rings['P'][0], rings['P'][1:])
+        partitioner = pygplates.PolygonOnSphere(rings['Q'][0], rings['Q'][1:])
+        self.assertRaises(pygplates.PartitionError, partitioner.partition, subject)
+        self.assertRaises(pygplates.PartitionError, partitioner.partition, subject, [], [])
+        self.assertTrue(issubclass(pygplates.PartitionError, pygplates.MathematicalError))
+
+    def test_partition_sliver_width_threshold(self):
+        # A polygon reaching 5e-6 radians (about 32 metres) into this polygon: by default (about 9 metres) the
+        # sliver it leaves inside is kept; at PlatePartitioner's default width it is dropped, and the polygon is
+        # entirely outside.
+        sliver = math.degrees(5e-6)
+        partitioning_polygon = pygplates.PolygonOnSphere([(-10, 0), (-10, 10), (10, 10), (10, 0)])
+        polygon = pygplates.PolygonOnSphere([(-5, 10 - sliver), (-5, 15), (5, 15), (5, 10 - sliver)])
+
+        inside, outside = [], []
+        self.assertTrue(partitioning_polygon.partition(polygon, inside, outside) ==
+                        pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertTrue(len(inside) == 1 and len(outside) == 1)
+
+        inside, outside = [], []
+        self.assertTrue(partitioning_polygon.partition(polygon, inside, outside, sliver_width_threshold_radians=1.4142e-5) ==
+                        pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(not inside and len(outside) == 1)
+        self.assertTrue(outside[0] == polygon)
+
+        # Below the sliver's width it is kept; a negative width is refused.
+        self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=1e-6) ==
+                        pygplates.PolygonOnSphere.PartitionResult.intersecting)
+        self.assertRaises(ValueError, partitioning_polygon.partition, polygon, sliver_width_threshold_radians=-1e-6)
+        self.assertRaises(ValueError, partitioning_polygon.partition, polygon,
+                          sliver_width_threshold_radians=float('nan'))
+
+        # A polygon whose slanted western edge crosses this polygon's eastern edge at a shallow angle, leaving
+        # inside it a triangle 2.1e-6 radians (about 13 metres, 1.5 times the thickness, so that it is cut) wide
+        # at its widest, about half that on average: dropped by default (about 9 metres; also by None, the
+        # default given explicitly), kept at zero. (A strip thinner than the thickness is not cut at all: its
+        # outline counts as touching.)
+        thin = math.degrees(2.1e-6)
+        polygon = pygplates.PolygonOnSphere([(-5, 10 - thin), (-5, 15), (5, 15), (5, 10 + thin)])
+        self.assertTrue(partitioning_polygon.partition(polygon) == pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=None) ==
+                        pygplates.PolygonOnSphere.PartitionResult.outside)
+        self.assertTrue(partitioning_polygon.partition(polygon, sliver_width_threshold_radians=0) ==
+                        pygplates.PolygonOnSphere.PartitionResult.intersecting)
+
+        # The northern hemisphere, bounded by one great circle (a 36-point equator ring), partitioned by a 10-degree
+        # box inside it: intersecting at every width. (Its exterior was once measured 0 wide, so the filter dropped
+        # the hemisphere outside the box, and reported it inside.)
+        hemisphere = pygplates.PolygonOnSphere([(0, 10 * i) for i in range(36)])
+        box = pygplates.PolygonOnSphere([(10, 10), (10, 20), (20, 20), (20, 10)])
+        for threshold in (None, 0, 1.4142e-5):
+            inside, outside = [], []
+            self.assertTrue(box.partition(hemisphere, inside, outside, sliver_width_threshold_radians=threshold) ==
+                            pygplates.PolygonOnSphere.PartitionResult.intersecting)
+            self.assertTrue(len(inside) == 1 and len(outside) == 1)
+            self.assertAlmostEqual(outside[0].get_area(), 2 * math.pi - box.get_area(), places=9)
+
     def test_partition(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         
@@ -1872,20 +1996,17 @@ class PolygonOnSphereCase(unittest.TestCase):
         outside_geometries = []
         self.assertTrue(self.polygon.partition(polygon, inside_geometries, outside_geometries) ==
                 pygplates.PolygonOnSphere.PartitionResult.intersecting)
-        # Note that *polylines* are returned when intersecting (not polygons) - will be fixed in future.
-        # Also we end up with 2 polylines inside (instead of 1).
-        self.assertTrue(len(inside_geometries) == 2)
-        self.assertTrue(inside_geometries[0] == pygplates.PolylineOnSphere([(10, 0), (0, 0)]) or
-                        inside_geometries[0] == pygplates.PolylineOnSphere([(0, 0), (10, 0)]) or
-                        inside_geometries[0] == pygplates.PolylineOnSphere([(0, 5), (10, 5), (10, 0)]) or
-                        inside_geometries[0] == pygplates.PolylineOnSphere([(10, 0), (10, 5), (0, 5)]))
-        self.assertTrue(inside_geometries[1] == pygplates.PolylineOnSphere([(10, 0), (0, 0)]) or
-                        inside_geometries[1] == pygplates.PolylineOnSphere([(0, 0), (10, 0)]) or
-                        inside_geometries[1] == pygplates.PolylineOnSphere([(0, 5), (10, 5), (10, 0)]) or
-                        inside_geometries[1] == pygplates.PolylineOnSphere([(10, 0), (10, 5), (0, 5)]))
+        # An intersecting polygon is cut into polygons: the half north of the equator inside, the half
+        # south of it outside, together covering the input.
+        self.assertTrue(len(inside_geometries) == 1)
+        self.assertTrue(isinstance(inside_geometries[0], pygplates.PolygonOnSphere))
+        self.assertTrue(inside_geometries[0].is_point_in_polygon(pygplates.PointOnSphere(5, 2.5)))
         self.assertTrue(len(outside_geometries) == 1)
-        self.assertTrue(outside_geometries[0] == pygplates.PolylineOnSphere([(0, 0), (-10, 0), (-10, 5), (0, 5)]) or
-                        outside_geometries[0] == pygplates.PolylineOnSphere([(0, 5), (-10, 5), (-10, 0), (0, 0)]))
+        self.assertTrue(isinstance(outside_geometries[0], pygplates.PolygonOnSphere))
+        self.assertTrue(outside_geometries[0].is_point_in_polygon(pygplates.PointOnSphere(-5, 2.5)))
+        self.assertAlmostEqual(
+                inside_geometries[0].get_area() + outside_geometries[0].get_area(),
+                polygon.get_area())
         polygon = pygplates.PolygonOnSphere([(10, 0), (5, 0), (5, 5), (10,5)])
         inside_geometries = []
         self.assertTrue(self.polygon.partition(polygon, inside_geometries) ==

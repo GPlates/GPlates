@@ -29,6 +29,7 @@
 #include <string>
 #include <boost/bind/bind.hpp>
 #include <boost/lexical_cast.hpp>
+#include <QDebug>
 #include <QString>
 
 #include "CliAssignPlateIdsCommand.h"
@@ -387,6 +388,14 @@ GPlatesCli::AssignPlateIdsCommand::run(
 					boost::ref(plate_id_assigner),
 					boost::placeholders::_1,
 					boost::optional<const GPlatesAppLogic::ReconstructMethodInterface::Context &>()/*boost::none*/));
+
+	// Report, once, any features left unpartitioned because a cut was inconsistent.
+	for (const GPlatesModel::FeatureHandle::weak_ref &feature_ref :
+			plate_id_assigner->get_features_not_partitioned())
+	{
+		qWarning() << "Feature not partitioned (cutting its geometry gave an inconsistent result):"
+				<< GPlatesAppLogic::AssignPlateIds::get_feature_description(feature_ref);
+	}
 
 	// Iterate through the feature collection files that had their plate ids (re)assigned and
 	// save them to file.

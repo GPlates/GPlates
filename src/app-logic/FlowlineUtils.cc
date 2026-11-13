@@ -558,7 +558,7 @@ GPlatesAppLogic::FlowlineUtils::fill_seed_point_rotations(
 
 	for (unsigned int n = 1; n < step_times.size(); ++n)
 	{
-		if (step_times[n] != step_times[n - 1])
+		if (!GPlatesMaths::are_exactly_equal(step_times[n], step_times[n - 1]))
 		{
 			seed_point_rotations.push_back(
 					get_half_stage_rotation(

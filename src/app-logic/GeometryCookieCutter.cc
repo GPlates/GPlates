@@ -45,6 +45,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "maths/GeometryIntersect.h"
 
 #include "model/FeatureVisitor.h"
 
@@ -105,9 +106,11 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		boost::optional<const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
 		boost::optional<const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
 		boost::optional<SortPlates> sort_plates,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_time(reconstruction_time),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 	// Resolved networks are added first and hence are used first (along with their interior polygons, if any)
 	// during partitioning.
@@ -133,9 +136,11 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		const std::vector<ReconstructionGeometry::non_null_ptr_type> &reconstruction_geometries,
 		bool group_networks_then_boundaries_then_static_polygons,
 		boost::optional<SortPlates> sort_plates,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_time(reconstruction_time),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 	if (group_networks_then_boundaries_then_static_polygons)
 	{
@@ -174,9 +179,11 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		bool group_networks_then_boundaries_then_static_polygons,
 		boost::optional<SortPlates> sort_plates,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_time(reconstruction_time),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 	// Contains the reconstructed static polygons used for cookie-cutting.
 	// Can also contain the topological section geometries referenced by topologies.
@@ -317,6 +324,13 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 }
 
 
+double
+GPlatesAppLogic::GeometryCookieCutter::get_default_sliver_min_width()
+{
+	return 10 * GPlatesMaths::GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+}
+
+
 bool
 GPlatesAppLogic::GeometryCookieCutter::has_partitioning_polygons() const
 {
@@ -324,16 +338,31 @@ GPlatesAppLogic::GeometryCookieCutter::has_partitioning_polygons() const
 }
 
 
+std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryCookieCutter::get_partitioning_polygons() const
+{
+	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> partitioning_polygons;
+	for (const PartitioningGeometry &partitioning_geometry : d_partitioning_geometries)
+	{
+		partitioning_polygons.push_back(
+				partitioning_geometry.d_polygon_partitioner->get_partitioning_polygon());
+	}
+	return partitioning_polygons;
+}
+
+
 bool
 GPlatesAppLogic::GeometryCookieCutter::partition_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		boost::optional<partition_seq_type &> partitioned_inside_geometries,
-		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries) const
+		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries,
+		bool want_provenance) const
 {
-	return partition_geometries(
-			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>(1, geometry),
+	return partition(
+			partitioned_geometry_seq_type(1, PartitionedGeometry(geometry)),
 			partitioned_inside_geometries,
-			partitioned_outside_geometries);
+			partitioned_outside_geometries,
+			want_provenance ? geometry.get() : nullptr);
 }
 
 
@@ -343,6 +372,26 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 		boost::optional<partition_seq_type &> partitioned_inside_geometries,
 		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries) const
 {
+	partitioned_geometry_seq_type partitioned_geometries;
+	for (const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry : geometries)
+	{
+		partitioned_geometries.push_back(PartitionedGeometry(geometry));
+	}
+	return partition(
+			partitioned_geometries,
+			partitioned_inside_geometries,
+			partitioned_outside_geometries,
+			nullptr);
+}
+
+
+bool
+GPlatesAppLogic::GeometryCookieCutter::partition(
+		const partitioned_geometry_seq_type &geometries,
+		boost::optional<partition_seq_type &> partitioned_inside_geometries,
+		boost::optional<partitioned_geometry_seq_type &> partitioned_outside_geometries,
+		const GPlatesMaths::GeometryOnSphere *original_geometry) const
+{
 	// Return early if no partitioning polygons.
 	if (d_partitioning_geometries.empty())
 	{
@@ -350,12 +399,35 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 		// to the list of geometries partitioned outside all partitioning polygons.
 		if (partitioned_outside_geometries)
 		{
-			partitioned_outside_geometries->insert(
-					partitioned_outside_geometries->end(),
-					geometries.begin(),
-					geometries.end());
+			for (const PartitionedGeometry &geometry : geometries)
+			{
+				using GPlatesMaths::PolygonPartitioner;
+				partitioned_outside_geometries->push_back(
+						original_geometry
+								? PartitionedGeometry(
+										geometry.geometry,
+										PolygonPartitioner::create_identity_provenance(
+												*geometry.geometry))
+								: geometry);
+			}
 		}
 		return false;
+	}
+
+	// Provenance (spherical-geometry.md section 5.4): each piece's table is composed with the next
+	// partitioning polygon's cut, and its clip locations are indexed by partitioning polygon.
+	std::vector<const GPlatesMaths::PolygonOnSphere *> partitioning_polygons;
+	GPlatesMaths::PolygonPartitioner::CascadeProvenance cascade_provenance;
+	if (original_geometry)
+	{
+		partitioning_polygons.reserve(d_partitioning_geometries.size());
+		for (const PartitioningGeometry &partitioning_geometry : d_partitioning_geometries)
+		{
+			partitioning_polygons.push_back(
+					partitioning_geometry.d_polygon_partitioner->get_partitioning_polygon().get());
+		}
+		cascade_provenance.original_geometry = original_geometry;
+		cascade_provenance.partitioning_polygons = &partitioning_polygons;
 	}
 
 	bool was_geometry_partitioned = false;
@@ -370,7 +442,8 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 			&partitioned_outside_geometries2;
 
 	// Add the geometries to be partitioned to the current list of outside geometries
-	// to start off the processing chain.
+	// to start off the processing chain. A geometry with no table is the original (its pieces'
+	// tables are relative to it).
 	current_partitioned_outside_geometries->insert(
 			current_partitioned_outside_geometries->end(),
 			geometries.begin(),
@@ -388,6 +461,7 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 		++partition_iter)
 	{
 		const PartitioningGeometry &partitioning_geometry = *partition_iter;
+		cascade_provenance.clip_index = partition_iter - d_partitioning_geometries.begin();
 
 		// Geometries partitioned inside the current partitioning polygon will be stored here.
 		Partition current_partitioned_inside_geometries(
@@ -404,16 +478,26 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 				current_partitioned_outside_geometries->end();
 		for ( ; outside_geometry_iter != outside_geometry_end; ++outside_geometry_iter)
 		{
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &outside_geometry =
-					*outside_geometry_iter;
+			const PartitionedGeometry &outside_geometry = *outside_geometry_iter;
 
 			// Partition the current outside geometry against the partitioning polygon.
 			// Geometry partitioned outside the current partitioning polygon get stored
 			// in the sequence of outside geometries used for the next partitioning polygon.
-			partitioning_geometry.d_polygon_partitioner->partition_geometry(
-					outside_geometry,
-					current_partitioned_inside_geometries.partitioned_geometries/*inside*/,
-					*next_partitioned_outside_geometries/*outside*/);
+			if (original_geometry)
+			{
+				partitioning_geometry.d_polygon_partitioner->partition_geometry(
+						outside_geometry,
+						current_partitioned_inside_geometries.partitioned_geometries/*inside*/,
+						*next_partitioned_outside_geometries/*outside*/,
+						cascade_provenance);
+			}
+			else
+			{
+				partitioning_geometry.d_polygon_partitioner->partition_geometry(
+						outside_geometry.geometry,
+						current_partitioned_inside_geometries.partitioned_geometries/*inside*/,
+						*next_partitioned_outside_geometries/*outside*/);
+			}
 		}
 
 		// Add the partitioned geometries to the caller's list if any were partitioned
@@ -557,7 +641,8 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 
 		// Add interior block as a partitioning geometry.
 		d_partitioning_geometries.push_back(
-				PartitioningGeometry(rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory));
+				PartitioningGeometry(
+						rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory, d_sliver_min_width));
 	}
 
 	// Add boundary (excluding rigid block holes) as a partitioning geometry.
@@ -565,7 +650,8 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 			PartitioningGeometry(
 					rtn,
 					rtn->get_triangulation_network().get_boundary_polygon(true/*include_rigid_blocks_as_interior_holes*/),
-					d_partition_point_speed_and_memory));
+					d_partition_point_speed_and_memory,
+					d_sliver_min_width));
 }
 
 
@@ -599,7 +685,11 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_bou
 {
 	// Add it as a partitioning geometry.
 	d_partitioning_geometries.push_back(
-			PartitioningGeometry(rtb, rtb->resolved_topology_boundary(), d_partition_point_speed_and_memory));
+			PartitioningGeometry(
+					rtb,
+					rtb->resolved_topology_boundary(),
+					d_partition_point_speed_and_memory,
+					d_sliver_min_width));
 }
 
 
@@ -641,7 +731,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_po
 
 	// Add it as a partitioning geometry.
 	d_partitioning_geometries.push_back(
-			PartitioningGeometry(rfg, polygon.get(), d_partition_point_speed_and_memory));
+			PartitioningGeometry(rfg, polygon.get(), d_partition_point_speed_and_memory, d_sliver_min_width));
 }
 
 
@@ -680,10 +770,12 @@ GPlatesAppLogic::GeometryCookieCutter::sort_plates_in_partitioning_group(
 GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometry(
 		const ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry,
 		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_reconstruction_geometry(reconstruction_geometry),
 	d_polygon_partitioner(
-			GPlatesMaths::PolygonPartitioner::create(partitioning_polygon, partition_point_speed_and_memory))
+			GPlatesMaths::PolygonPartitioner::create(
+					partitioning_polygon, partition_point_speed_and_memory, sliver_min_width))
 {
 }
 

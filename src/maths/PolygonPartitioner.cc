@@ -1,10 +1,10 @@
 /* $Id$ */
- 
+
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2009 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -24,44 +24,277 @@
  */
 
 #include <algorithm>
-#include <iterator>
 #include <vector>
+#include <boost/make_shared.hpp>
 #include <boost/optional.hpp>
-#include <boost/utility/in_place_factory.hpp>
-#include <QDebug>
 
 #include "PolygonPartitioner.h"
 
 #include "ConstGeometryOnSphereVisitor.h"
-#include "GreatCircleArc.h"
-#include "PointInPolygon.h"
-#include "PolylineIntersections.h"
-
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
+#include "SmallCircleBounds.h"
 
 
 namespace
 {
+	using GPlatesMaths::PolygonPartitioner;
+	namespace Overlay = GPlatesMaths::PolygonOverlay;
+
+	typedef PolygonPartitioner::provenance_seq_type provenance_seq_type;
+	typedef boost::shared_ptr<const provenance_seq_type> provenance_ptr_type;
+	typedef PolygonPartitioner::partitioned_geometry_seq_type partitioned_geometry_seq_type;
+
+
+	provenance_ptr_type
+	make_table(
+			const provenance_seq_type &provenance)
+	{
+		return boost::make_shared<const provenance_seq_type>(provenance);
+	}
+
+
+	PolygonPartitioner::Result
+	to_partition_result(
+			Overlay::Result result)
+	{
+		switch (result)
+		{
+		case Overlay::RESULT_INSIDE:
+			return PolygonPartitioner::GEOMETRY_INSIDE;
+		case Overlay::RESULT_OUTSIDE:
+			return PolygonPartitioner::GEOMETRY_OUTSIDE;
+		case Overlay::RESULT_INTERSECTING:
+		default:
+			return PolygonPartitioner::GEOMETRY_INTERSECTING;
+		}
+	}
+
+
+	/**
+	 * Whether a subject whose outline lies within @a subject_bounds is certainly outside
+	 * @a partitioning_polygon without an overlay (spherical-geometry.md section 5.1): the two
+	 * bounding circles are disjoint, and the partitioning polygon's interior lies within its own
+	 * circle, and so does the subject's when it is a polygon (@a subject_polygon; none for a
+	 * polyline, whose outline is all there is).
+	 */
+	bool
+	is_outside_by_bounds(
+			const GPlatesMaths::BoundingSmallCircle &subject_bounds,
+			const GPlatesMaths::PolygonOnSphere *subject_polygon,
+			const GPlatesMaths::PolygonOnSphere &partitioning_polygon)
+	{
+		const GPlatesMaths::BoundingSmallCircle &partitioning_bounds =
+				partitioning_polygon.get_bounding_small_circle();
+		if (GPlatesMaths::intersect(subject_bounds, partitioning_bounds))
+		{
+			return false;
+		}
+		return partitioning_polygon.is_outside_bounding_small_circle_outside_polygon(
+						partitioning_bounds) &&
+				(!subject_polygon ||
+					subject_polygon->is_outside_bounding_small_circle_outside_polygon(
+							subject_bounds));
+	}
+
+
+	/**
+	 * Overlay a polygon subject with the partitioning polygon. The result follows the result
+	 * contract (section 5.1): GEOMETRY_INSIDE if the difference is empty, GEOMETRY_OUTSIDE if the
+	 * intersection is (after clean-up), and only for GEOMETRY_INTERSECTING are @a inside and
+	 * @a outside filled (else the subject is returned whole by the caller).
+	 *
+	 * With or without lists the overlay is the same: only the output geometries are not built when
+	 * no list wants them.
+	 */
+	PolygonPartitioner::Result
+	overlay_polygon(
+			const GPlatesMaths::PolygonOnSphere &subject,
+			const GPlatesMaths::PolygonOnSphere &partitioning_polygon,
+			const Overlay::Options &options,
+			std::vector<Overlay::OutputPolygon> &inside,
+			std::vector<Overlay::OutputPolygon> &outside)
+	{
+		if (is_outside_by_bounds(
+				subject.get_bounding_small_circle(),
+				&subject,
+				partitioning_polygon))
+		{
+			return PolygonPartitioner::GEOMETRY_OUTSIDE;
+		}
+
+		Overlay::Overlay overlay(subject, partitioning_polygon, options);
+		const PolygonPartitioner::Result result = to_partition_result(overlay.classify());
+		if (result != PolygonPartitioner::GEOMETRY_INTERSECTING)
+		{
+			return result;
+		}
+
+		const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+		const double area_dropped_before = diagnostics.sliver_area_dropped;
+		overlay.extract(Overlay::INTERSECTION, inside);
+		const double area_dropped_after_inside = diagnostics.sliver_area_dropped;
+		overlay.extract(Overlay::DIFFERENCE, outside);
+		const double inside_area_dropped = area_dropped_after_inside - area_dropped_before;
+		const double outside_area_dropped =
+				diagnostics.sliver_area_dropped - area_dropped_after_inside;
+
+		// Pieces kept but collapsed by clean-up, or dropped by the sliver filter, leave one side
+		// empty: the subject is then whole. If both are emptied (only the filter can, as when it
+		// drops both halves of a subject thinner than its width), it is whole on the side that
+		// lost the larger area; on a tie (no filter), outside.
+		if (inside.empty() && outside.empty())
+		{
+			return (inside_area_dropped > outside_area_dropped)
+					? PolygonPartitioner::GEOMETRY_INSIDE
+					: PolygonPartitioner::GEOMETRY_OUTSIDE;
+		}
+		if (inside.empty())
+		{
+			outside.clear();
+			return PolygonPartitioner::GEOMETRY_OUTSIDE;
+		}
+		if (outside.empty())
+		{
+			return PolygonPartitioner::GEOMETRY_INSIDE;
+		}
+		return PolygonPartitioner::GEOMETRY_INTERSECTING;
+	}
+
+
+	//! Whether @a points hold two different stored positions (a polyline needs two).
+	bool
+	has_two_positions(
+			const std::vector<GPlatesMaths::PointOnSphere> &points)
+	{
+		for (const GPlatesMaths::PointOnSphere &point : points)
+		{
+			// Coordinates, not PointOnSphere's operator== (which has a tolerance).
+			if (point.position_vector().x() != points.front().position_vector().x() ||
+				point.position_vector().y() != points.front().position_vector().y() ||
+				point.position_vector().z() != points.front().position_vector().z())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	/**
+	 * Overlay a polyline subject with the partitioning polygon (section 5.2):
+	 * as @a overlay_polygon, with the runs of each class in @a runs for GEOMETRY_INTERSECTING. A
+	 * run at one position (if one can arise) is dropped as a collapsed region is; a side left with
+	 * no run makes the polyline whole, as for a polygon (section 5.1). A polyline's classification
+	 * is cheap and never throws.
+	 */
+	PolygonPartitioner::Result
+	overlay_polyline(
+			const GPlatesMaths::PolylineOnSphere &subject,
+			const GPlatesMaths::PolygonOnSphere &partitioning_polygon,
+			const Overlay::Options &options,
+			std::vector<Overlay::OutputPolyline> &runs)
+	{
+		if (is_outside_by_bounds(
+				subject.get_bounding_small_circle(),
+				nullptr,
+				partitioning_polygon))
+		{
+			return PolygonPartitioner::GEOMETRY_OUTSIDE;
+		}
+
+		Overlay::Overlay overlay(subject, partitioning_polygon, options);
+		const PolygonPartitioner::Result result = to_partition_result(overlay.classify());
+		if (result != PolygonPartitioner::GEOMETRY_INTERSECTING)
+		{
+			return result;
+		}
+
+		overlay.extract_polylines(runs);
+		const auto is_collapsed = [](const Overlay::OutputPolyline &run)
+		{
+			return !has_two_positions(run.points);
+		};
+		runs.erase(std::remove_if(runs.begin(), runs.end(), is_collapsed), runs.end());
+		bool any_inside = false;
+		bool any_outside = false;
+		for (const Overlay::OutputPolyline &run : runs)
+		{
+			(run.inside ? any_inside : any_outside) = true;
+		}
+		if (!any_inside || !any_outside)
+		{
+			runs.clear();
+			return any_inside
+					? PolygonPartitioner::GEOMETRY_INSIDE
+					: PolygonPartitioner::GEOMETRY_OUTSIDE;
+		}
+		return result;
+	}
+
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+	create_polygon(
+			const Overlay::OutputPolygon &output_polygon)
+	{
+		std::vector<std::vector<GPlatesMaths::PointOnSphere>> interiors;
+		interiors.reserve(output_polygon.interiors.size());
+		for (const Overlay::OutputRing &interior : output_polygon.interiors)
+		{
+			interiors.push_back(interior.points);
+		}
+		return GPlatesMaths::PolygonOnSphere::create(
+				output_polygon.exterior.points,
+				interiors.begin(),
+				interiors.end());
+	}
+
+
+	//! An output polygon's provenance, in the order of its points (exterior, then interiors).
+	provenance_ptr_type
+	get_polygon_provenance(
+			const Overlay::OutputPolygon &output_polygon)
+	{
+		boost::shared_ptr<provenance_seq_type> provenance =
+				boost::make_shared<provenance_seq_type>(output_polygon.exterior.provenances);
+		for (const Overlay::OutputRing &interior : output_polygon.interiors)
+		{
+			provenance->insert(
+					provenance->end(),
+					interior.provenances.begin(),
+					interior.provenances.end());
+		}
+		return provenance;
+	}
+
+
+	/**
+	 * Partitions one geometry into lists of partitioned geometries, with provenance when
+	 * @a cascade_provenance is given.
+	 */
 	class GeometryPartitioner :
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
 		GeometryPartitioner(
-				const GPlatesMaths::PolygonPartitioner &polygon_partitioner,
-				boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_inside,
-				boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_outside) :
+				const PolygonPartitioner &polygon_partitioner,
+				const provenance_ptr_type &input_provenance,
+				const PolygonPartitioner::CascadeProvenance *cascade_provenance,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_inside,
+				boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_outside) :
 			d_polygon_partitioner(polygon_partitioner),
+			d_input_provenance(input_provenance),
+			d_cascade_provenance(cascade_provenance),
 			d_partitioned_geometries_inside(partitioned_geometries_inside),
-			d_partitioned_geometries_outside(partitioned_geometries_outside)
+			d_partitioned_geometries_outside(partitioned_geometries_outside),
+			d_result(PolygonPartitioner::GEOMETRY_OUTSIDE)
 		{  }
 
 
-		GPlatesMaths::PolygonPartitioner::Result
+		PolygonPartitioner::Result
 		partition_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_to_be_partitioned)
 		{
-			d_result = GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE;
+			d_geometry = geometry_to_be_partitioned;
+			d_result = PolygonPartitioner::GEOMETRY_OUTSIDE;
 
 			geometry_to_be_partitioned->accept_visitor(*this);
 
@@ -81,28 +314,54 @@ namespace
 				return;
 			}
 
-			GPlatesMaths::PolygonPartitioner::partitioned_point_seq_type partitioned_points_inside;
-			GPlatesMaths::PolygonPartitioner::partitioned_point_seq_type partitioned_points_outside;
-			d_result = d_polygon_partitioner.partition_multipoint(
-					multi_point_on_sphere,
-					partitioned_points_inside,
-					partitioned_points_outside);
-
-			if (d_partitioned_geometries_inside &&
-				!partitioned_points_inside.empty())
+			std::vector<GPlatesMaths::PointOnSphere> points[2];  // outside, inside
+			provenance_seq_type provenances[2];
+			bool any_intersecting = false;
+			unsigned int index = 0;
+			for (const GPlatesMaths::PointOnSphere &point : *multi_point_on_sphere)
 			{
-				d_partitioned_geometries_inside->push_back(
-						GPlatesMaths::MultiPointOnSphere::create(
-								partitioned_points_inside.begin(),
-								partitioned_points_inside.end()));
+				const PolygonPartitioner::Result point_result =
+						d_polygon_partitioner.partition_point(point);
+				// A point on the boundary is inside.
+				const unsigned int side =
+						(point_result == PolygonPartitioner::GEOMETRY_OUTSIDE) ? 0 : 1;
+				any_intersecting = any_intersecting ||
+						point_result == PolygonPartitioner::GEOMETRY_INTERSECTING;
+				points[side].push_back(point);
+				if (d_cascade_provenance)
+				{
+					provenances[side].push_back(input_point_provenance(index));
+				}
+				++index;
 			}
-			if (d_partitioned_geometries_outside &&
-				!partitioned_points_outside.empty())
+
+			d_result = (any_intersecting || (!points[0].empty() && !points[1].empty()))
+					? PolygonPartitioner::GEOMETRY_INTERSECTING
+					: (points[1].empty()
+							? PolygonPartitioner::GEOMETRY_OUTSIDE
+							: PolygonPartitioner::GEOMETRY_INSIDE);
+
+			// A multi-point wholly on one side is itself (as for every geometry, section 5.1).
+			if (d_result != PolygonPartitioner::GEOMETRY_INTERSECTING)
 			{
-				d_partitioned_geometries_outside->push_back(
-						GPlatesMaths::MultiPointOnSphere::create(
-								partitioned_points_outside.begin(),
-								partitioned_points_outside.end()));
+				add_whole(d_result);
+				return;
+			}
+			for (unsigned int side = 0; side < 2; ++side)
+			{
+				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> &list =
+						side ? d_partitioned_geometries_inside : d_partitioned_geometries_outside;
+				if (list && !points[side].empty())
+				{
+					list->push_back(
+							PolygonPartitioner::PartitionedGeometry(
+									GPlatesMaths::MultiPointOnSphere::create(
+										points[side].begin(),
+										points[side].end()),
+									d_cascade_provenance
+											? make_table(provenances[side])
+											: provenance_ptr_type()));
+				}
 			}
 		}
 
@@ -113,20 +372,10 @@ namespace
 		{
 			d_result = d_polygon_partitioner.partition_point(point_on_sphere->position());
 
-			if (d_result == GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
-			{
-				if (d_partitioned_geometries_outside)
-				{
-					d_partitioned_geometries_outside->push_back(point_on_sphere);
-				}
-			}
-			else
-			{
-				if (d_partitioned_geometries_inside)
-				{
-					d_partitioned_geometries_inside->push_back(point_on_sphere);
-				}
-			}
+			// A point on the boundary is inside.
+			add_whole(d_result == PolygonPartitioner::GEOMETRY_OUTSIDE
+					? PolygonPartitioner::GEOMETRY_OUTSIDE
+					: PolygonPartitioner::GEOMETRY_INSIDE);
 		}
 
 		virtual
@@ -141,41 +390,35 @@ namespace
 				return;
 			}
 
-			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
-			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
-			d_result = d_polygon_partitioner.partition_polygon(
-					polygon_on_sphere,
-					partitioned_polylines_inside,
-					partitioned_polylines_outside);
+			std::vector<Overlay::OutputPolygon> outputs[2];  // outside, inside
+			d_result = overlay_polygon(
+					*polygon_on_sphere,
+					*d_polygon_partitioner.get_partitioning_polygon(),
+					get_overlay_options(),
+					outputs[1],
+					outputs[0]);
+			if (d_result != PolygonPartitioner::GEOMETRY_INTERSECTING)
+			{
+				add_whole(d_result);
+				return;
+			}
 
-			// NOTE: 'PolygonPartitioner::partition_polygon()' only returns partitioned *polylines*
-			// if there was an intersection, otherwise the inside/outside polylines are empty.
-			// Hence if there was no intersection then we add the inside or outside *polygon*.
-			if (d_result == GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
+			for (unsigned int side = 0; side < 2; ++side)
 			{
-				if (d_partitioned_geometries_inside)
+				boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> &list =
+						side ? d_partitioned_geometries_inside : d_partitioned_geometries_outside;
+				if (!list)
 				{
-					d_partitioned_geometries_inside->push_back(polygon_on_sphere);
+					continue;
 				}
-			}
-			else if (d_result == GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
-			{
-				if (d_partitioned_geometries_outside)
+				for (const Overlay::OutputPolygon &output : outputs[side])
 				{
-					d_partitioned_geometries_outside->push_back(polygon_on_sphere);
-				}
-			}
-			else // GEOMETRY_INTERSECTING...
-			{
-				if (d_partitioned_geometries_inside)
-				{
-					std::copy(partitioned_polylines_inside.begin(), partitioned_polylines_inside.end(),
-							std::back_inserter(d_partitioned_geometries_inside.get()));
-				}
-				if (d_partitioned_geometries_outside)
-				{
-					std::copy(partitioned_polylines_outside.begin(), partitioned_polylines_outside.end(),
-							std::back_inserter(d_partitioned_geometries_outside.get()));
+					list->push_back(
+							PolygonPartitioner::PartitionedGeometry(
+									create_polygon(output),
+									d_cascade_provenance
+											? get_polygon_provenance(output)
+											: provenance_ptr_type()));
 				}
 			}
 		}
@@ -192,204 +435,177 @@ namespace
 				return;
 			}
 
-			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_inside;
-			GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type partitioned_polylines_outside;
-			d_result = d_polygon_partitioner.partition_polyline(
-					polyline_on_sphere,
-					partitioned_polylines_inside,
-					partitioned_polylines_outside);
-
-			if (d_partitioned_geometries_inside)
+			std::vector<Overlay::OutputPolyline> runs;
+			d_result = overlay_polyline(
+					*polyline_on_sphere,
+					*d_polygon_partitioner.get_partitioning_polygon(),
+					get_overlay_options(),
+					runs);
+			if (d_result != PolygonPartitioner::GEOMETRY_INTERSECTING)
 			{
-				std::copy(partitioned_polylines_inside.begin(), partitioned_polylines_inside.end(),
-						std::back_inserter(d_partitioned_geometries_inside.get()));
+				add_whole(d_result);
+				return;
 			}
-			if (d_partitioned_geometries_outside)
+
+			for (const Overlay::OutputPolyline &run : runs)
 			{
-				std::copy(partitioned_polylines_outside.begin(), partitioned_polylines_outside.end(),
-						std::back_inserter(d_partitioned_geometries_outside.get()));
+				boost::optional<partitioned_geometry_seq_type &> &list = run.inside
+						? d_partitioned_geometries_inside
+						: d_partitioned_geometries_outside;
+				if (list)
+				{
+					list->push_back(
+							PolygonPartitioner::PartitionedGeometry(
+									GPlatesMaths::PolylineOnSphere::create(
+										run.points.begin(),
+										run.points.end()),
+									d_cascade_provenance
+											? make_table(run.provenances)
+											: provenance_ptr_type()));
+				}
 			}
 		}
 
 	private:
-		const GPlatesMaths::PolygonPartitioner &d_polygon_partitioner;
+		const PolygonPartitioner &d_polygon_partitioner;
+		provenance_ptr_type d_input_provenance;
+		const PolygonPartitioner::CascadeProvenance *d_cascade_provenance;
+		boost::optional<partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
+		boost::optional<partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
 
-		GPlatesMaths::PolygonPartitioner::Result d_result;
-		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_inside;
-		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> d_partitioned_geometries_outside;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
+		PolygonPartitioner::Result d_result;
+
+
+		Overlay::Options
+		get_overlay_options() const
+		{
+			Overlay::Options options;
+			options.clip_speed = d_polygon_partitioner.get_partition_point_speed_and_memory();
+			options.sliver_min_width = d_polygon_partitioner.get_sliver_min_width();
+			if (d_cascade_provenance)
+			{
+				options.want_provenance = true;
+				if (d_input_provenance)
+				{
+					options.subject_provenance = d_input_provenance.get();
+					options.original_subject = d_cascade_provenance->original_geometry;
+				}
+				options.cascade_clips = d_cascade_provenance->partitioning_polygons;
+				options.clip_index = d_cascade_provenance->clip_index;
+			}
+			return options;
+		}
+
+		//! The provenance of the input's point @a index (its own vertex, if it has no table).
+		Overlay::Provenance
+		input_point_provenance(
+				unsigned int index) const
+		{
+			if (d_input_provenance)
+			{
+				return (*d_input_provenance)[index];
+			}
+			Overlay::Provenance provenance;
+			provenance.subject = Overlay::Location{ 0, index, boost::none };
+			return provenance;
+		}
+
+		//! The input itself, in the list of @a side (inside or outside), with its own table.
+		void
+		add_whole(
+				PolygonPartitioner::Result side)
+		{
+			boost::optional<PolygonPartitioner::partitioned_geometry_seq_type &> &list =
+					(side == PolygonPartitioner::GEOMETRY_INSIDE)
+							? d_partitioned_geometries_inside
+							: d_partitioned_geometries_outside;
+			if (!list)
+			{
+				return;
+			}
+			provenance_ptr_type provenance;
+			if (d_cascade_provenance)
+			{
+				provenance = d_input_provenance
+						? d_input_provenance
+						: PolygonPartitioner::create_identity_provenance(**d_geometry);
+			}
+			list->push_back(PolygonPartitioner::PartitionedGeometry(*d_geometry, provenance));
+		}
 	};
 
 
 	/**
-	 * Sequential partitioned polylines that are inside and/or overlapping with the
-	 * partitioning polygon's boundary can really be merged into a single polygon since
-	 * we are classifying them all as inside; this class keeps track of this.
+	 * The identity provenance of a geometry's points (each its own vertex, ring by ring).
 	 */
-	class InsidePartitionedPolylineMerger
+	class IdentityProvenance :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
-		/**
-		 * Construct with the list of polylines that are inside the partitioning polygon.
-		 */
-		explicit
-		InsidePartitionedPolylineMerger(
-				GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type &inside_list) :
-			d_inside_polyline_list(inside_list)
-		{  }
+		provenance_seq_type provenance;
 
-
-		/**
-		 * Add a polyline that's inside (or overlapping the boundary) of the
-		 * partitioning polygon.
-		 */
+	protected:
+		virtual
 		void
-		add_inside_polyline(
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &inside_polyline)
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 		{
-			d_inside_polylines.push_back(inside_polyline);
+			add_ring(0, multi_point_on_sphere->number_of_points());
 		}
 
-
-		/**
-		 * We've come to the end of a contiguous sequence of polylines that are
-		 * inside (or overlapping the boundary) the partitioning polygon.
-		 * So merge them into a single polyline and output that to the caller's inside list.
-		 */
+		virtual
 		void
-		merge_inside_polylines_and_output()
+		visit_point_on_sphere(
+				GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 		{
-			if (d_inside_polylines.empty())
+			add_ring(0, 1);
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			add_ring(0, polygon_on_sphere->number_of_vertices_in_exterior_ring());
+			for (unsigned int i = 0; i < polygon_on_sphere->number_of_interior_rings(); ++i)
 			{
-				return;
+				add_ring(i + 1, polygon_on_sphere->number_of_vertices_in_interior_ring(i));
 			}
+		}
 
-			if (d_inside_polylines.size() == 1)
-			{
-				// There's only one polyline so just output it and return.
-				d_inside_polyline_list.push_back(d_inside_polylines[0]);
-				// Clear for the next merge.
-				d_inside_polylines.clear();
-				return;
-			}
-
-			// Get the number of merged points.
-			inside_polyline_seq_type::size_type num_merged_polyline_points = 0;
-			inside_polyline_seq_type::const_iterator merged_iter = d_inside_polylines.begin();
-			inside_polyline_seq_type::const_iterator merged_end = d_inside_polylines.end();
-			for ( ; merged_iter != merged_end; ++merged_iter)
-			{
-				num_merged_polyline_points += (*merged_iter)->number_of_vertices();
-			}
-
-			// Merge all the points into one sequence.
-			std::vector<GPlatesMaths::PointOnSphere> merged_polyline_points;
-			merged_polyline_points.reserve(num_merged_polyline_points);
-			merged_iter = d_inside_polylines.begin();
-			for ( ; merged_iter != merged_end; ++merged_iter)
-			{
-				const GPlatesMaths::PolylineOnSphere &polyline = **merged_iter;
-				merged_polyline_points.insert(
-						merged_polyline_points.end(),
-						polyline.vertex_begin(),
-						polyline.vertex_end());
-			}
-
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_polyline =
-					GPlatesMaths::PolylineOnSphere::create(
-							merged_polyline_points.begin(), merged_polyline_points.end());
-
-			// Add to the caller's inside polyline sequence.
-			d_inside_polyline_list.push_back(merged_polyline);
-
-			// Clear for the next merge.
-			d_inside_polylines.clear();
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			add_ring(0, polyline_on_sphere->number_of_vertices());
 		}
 
 	private:
-		typedef std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
-				inside_polyline_seq_type;
-
-		inside_polyline_seq_type d_inside_polylines;
-		GPlatesMaths::PolygonPartitioner::partitioned_polyline_seq_type &d_inside_polyline_list;
+		void
+		add_ring(
+				unsigned int ring,
+				unsigned int num_points)
+		{
+			for (unsigned int index = 0; index < num_points; ++index)
+			{
+				Overlay::Provenance point;
+				point.subject = Overlay::Location{ ring, index, boost::none };
+				provenance.push_back(point);
+			}
+		}
 	};
-
-
-	/**
-	 * Get first (or last) non-zero length GCA of polyline.
-	 *
-	 * Returns none if polyline has only zero length GCA's (ie, if polyline is coincident with a point).
-	 */
-	boost::optional<const GPlatesMaths::GreatCircleArc &>
-	get_first_or_last_non_zero_great_circle_arc(
-			const GPlatesMaths::PolylineOnSphere &polyline,
-			bool get_first)
-	{
-		if (get_first)
-		{
-			// Get the first (non-zero length) GCA of the polyline.
-			GPlatesMaths::PolylineOnSphere::const_iterator gca_iter = polyline.begin();
-			do
-			{
-				if (!gca_iter->is_zero_length())
-				{
-					return *gca_iter;
-				}
-
-				++gca_iter;
-			}
-			while (gca_iter != polyline.end());
-		}
-		else
-		{
-			// Get the last (non-zero length) GCA of the polyline.
-			GPlatesMaths::PolylineOnSphere::const_iterator gca_iter = polyline.end();
-			do
-			{
-				--gca_iter;
-
-				if (!gca_iter->is_zero_length())
-				{
-					return *gca_iter;
-				}
-			}
-			while (gca_iter != polyline.begin());
-		}
-
-		// All GCA's of the polyline are zero-length.
-		return boost::none;
-	}
-
-
-	/**
-	 * Precondition: the GCA's are not zero length.
-	 */
-	bool
-	do_adjacent_great_circle_arcs_bend_left(
-			const GPlatesMaths::GreatCircleArc &prev_gca,
-			const GPlatesMaths::GreatCircleArc &next_gca,
-			const GPlatesMaths::PointOnSphere &intersection_point)
-	{
-		// Unless the two GCAs are parallel there they will form a smaller acute angle
-		// on one side and a larger obtuse angle on the other side.
-		// If the acute angle is to the left (meaning the next GCA bends to the left
-		// relative to the previous GCA when following along the vertices) then the
-		// cross product vector of the GCAs will be in the same hemisphere as the
-		// intersection point (where the two GCAs meet) otherwise it will be in the
-		// opposite hemisphere.
-		return dot(
-				intersection_point.position_vector(),
-				cross(prev_gca.rotation_axis(), next_gca.rotation_axis())).dval()
-						> 0;
-	}
 }
 
 
 GPlatesMaths::PolygonPartitioner::PolygonPartitioner(
 		const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
-		PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+		PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory,
+		boost::optional<double> sliver_min_width) :
 	d_partitioning_polygon(partitioning_polygon),
-	d_partitioning_polygon_orientation(partitioning_polygon->get_orientation()),
-	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory),
+	d_sliver_min_width(sliver_min_width)
 {
 }
 
@@ -401,9 +617,31 @@ GPlatesMaths::PolygonPartitioner::partition_geometry(
 		boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_outside) const
 {
 	GeometryPartitioner geometry_partitioner(
-			*this, partitioned_geometries_inside, partitioned_geometries_outside);
+			*this,
+			provenance_ptr_type(),
+			nullptr,
+			partitioned_geometries_inside,
+			partitioned_geometries_outside);
 
 	return geometry_partitioner.partition_geometry(geometry_to_be_partitioned);
+}
+
+
+GPlatesMaths::PolygonPartitioner::Result
+GPlatesMaths::PolygonPartitioner::partition_geometry(
+		const PartitionedGeometry &geometry_to_be_partitioned,
+		boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_inside,
+		boost::optional<partitioned_geometry_seq_type &> partitioned_geometries_outside,
+		const CascadeProvenance &cascade_provenance) const
+{
+	GeometryPartitioner geometry_partitioner(
+			*this,
+			geometry_to_be_partitioned.provenance,
+			&cascade_provenance,
+			partitioned_geometries_inside,
+			partitioned_geometries_outside);
+
+	return geometry_partitioner.partition_geometry(geometry_to_be_partitioned.geometry);
 }
 
 
@@ -413,93 +651,85 @@ GPlatesMaths::PolygonPartitioner::partition_polyline(
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
 {
-	// Partition the geometry to be partitioned against the partitioning polygon.
-	//
-	// If there were no intersections then the polyline to be partitioned must be either
-	// fully inside or fully outside the partitioning polygon - find out which.
-	PolylineIntersections::Graph partitioned_polylines_graph;
-	if (!PolylineIntersections::partition(
-			partitioned_polylines_graph,
-			// NOTE: The first geometry specified is the partitioning polygon.
-			// This means it corresponds to the first sequence in the returned graph...
+	PolygonOverlay::Options options;
+	options.clip_speed = d_partition_point_speed_and_memory;
+	std::vector<PolygonOverlay::OutputPolyline> runs;
+	const Result result = overlay_polyline(
+			*polyline_to_be_partitioned,
 			*d_partitioning_polygon,
-			*polyline_to_be_partitioned))
+			options,
+			runs);
+
+	if (result != GEOMETRY_INTERSECTING)
 	{
-		// Choose any point on the polyline and to see if it's inside the partitioning polygon.
-		// Any point will do. Pick the first point.
-		if (is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
-				*polyline_to_be_partitioned->vertex_begin()))
+		boost::optional<partitioned_polyline_seq_type &> &list = (result == GEOMETRY_INSIDE)
+				? partitioned_polylines_inside
+				: partitioned_polylines_outside;
+		if (list)
 		{
-			if (partitioned_polylines_inside)
-			{
-				partitioned_polylines_inside->push_back(polyline_to_be_partitioned);
-			}
-
-			return GEOMETRY_INSIDE;
+			list->push_back(polyline_to_be_partitioned);
 		}
-		else
-		{
-			if (partitioned_polylines_outside)
-			{
-				partitioned_polylines_outside->push_back(polyline_to_be_partitioned);
-			}
-
-			return GEOMETRY_OUTSIDE;
-		}
+		return result;
 	}
 
-	// Determine which partitioned polylines are inside/outside the partitioning polygon
-	// and add to the appropriate lists.
-	partition_intersecting_geometry(
-			partitioned_polylines_graph,
-			partitioned_polylines_inside,
-			partitioned_polylines_outside);
-
-	// There were intersections.
-	return GEOMETRY_INTERSECTING;
+	for (const PolygonOverlay::OutputPolyline &run : runs)
+	{
+		boost::optional<partitioned_polyline_seq_type &> &list =
+				run.inside ? partitioned_polylines_inside : partitioned_polylines_outside;
+		if (list)
+		{
+			list->push_back(PolylineOnSphere::create(run.points.begin(), run.points.end()));
+		}
+	}
+	return result;
 }
 
 
 GPlatesMaths::PolygonPartitioner::Result
 GPlatesMaths::PolygonPartitioner::partition_polygon(
 		const PolygonOnSphere::non_null_ptr_to_const_type &polygon_to_be_partitioned,
-		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
-		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
+		boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_inside,
+		boost::optional<partitioned_polygon_seq_type &> partitioned_polygons_outside) const
 {
-	// Partition the geometry to be partitioned against the partitioning polygon.
-	//
-	// If there were no intersections then the polygon to be partitioned must be either
-	// fully inside or fully outside the partitioning polygon - find out which.
-	PolylineIntersections::Graph partitioned_polylines_graph;
-	if (!PolylineIntersections::partition(
-			partitioned_polylines_graph,
-			// NOTE: The first argument is the partitioning polygon.
-			// This means it corresponds to the first sequence in the returned graph...
+	PolygonOverlay::Options options;
+	options.clip_speed = d_partition_point_speed_and_memory;
+	options.sliver_min_width = d_sliver_min_width;
+	std::vector<PolygonOverlay::OutputPolygon> inside;
+	std::vector<PolygonOverlay::OutputPolygon> outside;
+	const Result result = overlay_polygon(
+			*polygon_to_be_partitioned,
 			*d_partitioning_polygon,
-			*polygon_to_be_partitioned))
+			options,
+			inside,
+			outside);
+
+	if (result != GEOMETRY_INTERSECTING)
 	{
-		// Choose any point on the polygon and to see if it's inside the partitioning polygon.
-		// Any point will do. Pick the first point.
-		if (is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
-				*polygon_to_be_partitioned->exterior_ring_vertex_begin()))
+		boost::optional<partitioned_polygon_seq_type &> &list = (result == GEOMETRY_INSIDE)
+				? partitioned_polygons_inside
+				: partitioned_polygons_outside;
+		if (list)
 		{
-			return GEOMETRY_INSIDE;
+			list->push_back(polygon_to_be_partitioned);
 		}
-		else
-		{
-			return GEOMETRY_OUTSIDE;
-		}
+		return result;
 	}
 
-	// Determine which partitioned polylines are inside/outside the partitioning polygon
-	// and add to the appropriate lists.
-	partition_intersecting_geometry(
-			partitioned_polylines_graph,
-			partitioned_polylines_inside,
-			partitioned_polylines_outside);
-
-	// There were intersections.
-	return GEOMETRY_INTERSECTING;
+	if (partitioned_polygons_inside)
+	{
+		for (const PolygonOverlay::OutputPolygon &output : inside)
+		{
+			partitioned_polygons_inside->push_back(create_polygon(output));
+		}
+	}
+	if (partitioned_polygons_outside)
+	{
+		for (const PolygonOverlay::OutputPolygon &output : outside)
+		{
+			partitioned_polygons_outside->push_back(create_polygon(output));
+		}
+	}
+	return result;
 }
 
 
@@ -594,305 +824,11 @@ GPlatesMaths::PolygonPartitioner::partition_multipoint(
 }
 
 
-bool
-GPlatesMaths::PolygonPartitioner::is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
-		const PointOnSphere &arbitrary_point_on_geometry) const
+boost::shared_ptr<const GPlatesMaths::PolygonPartitioner::provenance_seq_type>
+GPlatesMaths::PolygonPartitioner::create_identity_provenance(
+		const GeometryOnSphere &geometry)
 {
-	// PolylineIntersections has guaranteed there are no intersections within an extremely small
-	// threshold distance of the partitioning polygon. So we know the polyline (or polygon) to be
-	// partitioned is either fully inside or fully outside the partitioning polygon. If it's fully
-	// outside then we don't want the point-in-polygon test to return true if the point is *very*
-	// close to the partitioning polygon, so we turn off point-on-polygon threshold testing.
-	return d_partitioning_polygon->is_point_in_polygon(
-					arbitrary_point_on_geometry,
-					d_partition_point_speed_and_memory,
-					// Note we turn off point-on-polygon outline threshold testing...
-					false/*use_point_on_polygon_threshold*/);
-}
-
-
-void
-GPlatesMaths::PolygonPartitioner::partition_intersecting_geometry(
-		const PolylineIntersections::Graph &partitioned_polylines_graph,
-		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_inside,
-		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
-{
-	if (!partitioned_polylines_inside &&
-		!partitioned_polylines_outside)
-	{
-		return;
-	}
-
-	boost::optional<InsidePartitionedPolylineMerger> inside_partitioned_polyline_merger;
-	if (partitioned_polylines_inside)
-	{
-		inside_partitioned_polyline_merger =
-				boost::in_place(boost::ref(partitioned_polylines_inside.get()));
-	}
-
-	// Iterate over the partitioned polylines of the geometry being partitioned.
-	// NOTE: The geometry that was partitioned is the second sequence in the graph.
-	PolylineIntersections::partitioned_polyline_ptr_to_const_seq_type::const_iterator
-			partitioned_polyline_iter = partitioned_polylines_graph.partitioned_polylines2.begin();
-	PolylineIntersections::partitioned_polyline_ptr_to_const_seq_type::const_iterator
-			partitioned_polyline_end = partitioned_polylines_graph.partitioned_polylines2.end();
-	for ( ; partitioned_polyline_iter != partitioned_polyline_end; ++partitioned_polyline_iter)
-	{
-		const PolylineIntersections::PartitionedPolyline::non_null_ptr_to_const_type &
-				partitioned_poly = *partitioned_polyline_iter;
-
-		// Determine if the current partitioned polyline is inside or outside the partitioning polygon.
-		const bool is_partitioned_poly_inside =
-				is_partitioned_polyline_inside_partitioning_polygon(
-						partitioned_polylines_graph,
-						*partitioned_poly);
-
-		if (is_partitioned_poly_inside)
-		{
-			// Add inside polyline to the merger instead of the caller's inside list.
-			if (inside_partitioned_polyline_merger)
-			{
-				inside_partitioned_polyline_merger->add_inside_polyline(partitioned_poly->polyline);
-			}
-		}
-		else
-		{
-			// Add to the list of outside polylines.
-			if (partitioned_polylines_outside)
-			{
-				partitioned_polylines_outside->push_back(partitioned_poly->polyline);
-			}
-
-			// We've come across an outside polyline so merge any inside polylines
-			// we've accumulated so far and append resulting polyline to the
-			// caller's inside list.
-			if (inside_partitioned_polyline_merger)
-			{
-				inside_partitioned_polyline_merger->merge_inside_polylines_and_output();
-			}
-		}
-	}
-
-	// If there are any inside polylines accumulated then merge them and
-	// append resulting polyline to the caller's inside list.
-	if (inside_partitioned_polyline_merger)
-	{
-		inside_partitioned_polyline_merger->merge_inside_polylines_and_output();
-	}
-}
-
-
-bool
-GPlatesMaths::PolygonPartitioner::is_partitioned_polyline_inside_partitioning_polygon(
-		const PolylineIntersections::Graph &partitioned_polylines_graph,
-		const PolylineIntersections::PartitionedPolyline &partitioned_poly) const
-{
-	// Whether the partitioned polyline if previous to the intersection point.
-	//
-	// By default (when has a previous intersection) the partitioned polyline is
-	// the next polyline after the intersection (which means it's not the previous).
-	bool is_prev_partitioned_polyline = false;
-
-	const PolylineIntersections::Intersection *intersection = partitioned_poly.prev_intersection;
-	// If no previous intersection...
-	if (intersection == NULL)
-	{
-		// We must be the first polyline of the sequence and it doesn't start at a T-junction.
-		// Use the intersection at the end of the partitioned polyline instead.
-		intersection = partitioned_poly.next_intersection;
-
-		// It's not possible for a partitioned polyline to have no intersections at either end.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				intersection != NULL,
-				GPLATES_ASSERTION_SOURCE);
-
-		// The end of the partitioned polyline is now touching the intersection point
-		// instead of the start touching it.
-		is_prev_partitioned_polyline = true;
-	}
-
-	//
-	// Get the previous and next non-zero-length GCA of the partitioning polygon (at the intersection).
-	//
-
-	// Get the non-zero-length great circle arc of the partitioning polygon just prior to the intersection point.
-	// NOTE: The partitioning polygon is the first sequence in the graph.
-	boost::optional<const GPlatesMaths::GreatCircleArc &> prev_partitioning_polygon_gca;
-
-	// It's possible the an entire partitioned polyline of the partitioning polygon is made up of zero-length arcs,
-	// in which case we consider the previous partitioned polyline (until we've searched all its partitioned polylines).
-	const PolylineIntersections::PartitionedPolyline *prev_partitioning_polygon = intersection->prev_partitioned_polyline1;
-	for (unsigned int p = 0; p < partitioned_polylines_graph.partitioned_polylines1.size(); ++p)
-	{
-		if (prev_partitioning_polygon == NULL)
-		{
-			// There's no previous polyline in the partitioning polygon so the current intersection point must
-			// coincide with the polygon's start point. Use the last polyline in the partitioning polygon instead.
-			prev_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.back().get();
-		}
-
-		prev_partitioning_polygon_gca = get_first_or_last_non_zero_great_circle_arc(
-				*prev_partitioning_polygon->polyline,
-				false/*get_first*/);
-		if (prev_partitioning_polygon_gca)
-		{
-			break;
-		}
-
-		// Get previous polyline in the partitioning polygon.
-		const PolylineIntersections::Intersection *prev_intersection = prev_partitioning_polygon->prev_intersection;
-		if (prev_intersection)
-		{
-			prev_partitioning_polygon = prev_intersection->prev_partitioned_polyline1;
-		}
-		else
-		{
-			// There's no previous intersection in the partitioning polygon so use the last polyline.
-			prev_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.back().get();
-		}
-	}
-
-	// Get the non-zero-length great circle arc of the partitioning polygon just past to the intersection point.
-	// NOTE: The partitioning polygon is the first sequence in the graph.
-	boost::optional<const GPlatesMaths::GreatCircleArc &> next_partitioning_polygon_gca;
-
-	// It's possible the an entire partitioned polyline of the partitioning polygon is made up of zero-length arcs,
-	// in which case we consider the next partitioned polyline (until we've searched all its partitioned polylines).
-	const PolylineIntersections::PartitionedPolyline *next_partitioning_polygon = intersection->next_partitioned_polyline1;
-	for (unsigned int p = 0; p < partitioned_polylines_graph.partitioned_polylines1.size(); ++p)
-	{
-		if (next_partitioning_polygon == NULL)
-		{
-			// There's no next polyline in the partitioning polygon so the current intersection point must
-			// coincide with the polygon's end point. Use the first polyline in the partitioning polygon instead.
-			next_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.front().get();
-		}
-
-		next_partitioning_polygon_gca = get_first_or_last_non_zero_great_circle_arc(
-				*next_partitioning_polygon->polyline,
-				true/*get_first*/);
-		if (next_partitioning_polygon_gca)
-		{
-			break;
-		}
-
-		// Get next polyline in the partitioning polygon.
-		const PolylineIntersections::Intersection *next_intersection = next_partitioning_polygon->next_intersection;
-		if (next_intersection)
-		{
-			next_partitioning_polygon = next_intersection->next_partitioned_polyline1;
-		}
-		else
-		{
-			// There's no next intersection in the partitioning polygon so use the first polyline.
-			next_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.front().get();
-		}
-	}
-
-	//
-	// Get first (or last) non-zero length GCA of the partitioning and partitioned polylines.
-	//
-
-	boost::optional<const GPlatesMaths::GreatCircleArc &> partitioned_polyline_gca =
-			get_first_or_last_non_zero_great_circle_arc(
-					*partitioned_poly.polyline,
-					!is_prev_partitioned_polyline/*get_first*/);
-
-	// If a non-zero great circle arc cannot be found for either the previous or next polyline of the
-	// partitioning polygon (at intersection point) then there's not much we can do (so just return true).
-	// This shouldn't really happen anyway.
-	// 
-	// However if the *partitioned* polyline is coincident with a point then consider it inside the polygon
-	// (since we know it is *on* the polygon).
-	if (!prev_partitioning_polygon_gca ||
-		!next_partitioning_polygon_gca ||
-		!partitioned_polyline_gca)
-	{
-		return true;
-	}
-
-	// It is assumed that 'prev_partitioning_polygon's end point equals
-	// 'next_partitioning_polygon's start point.
-
-	/*
-	 * When testing to see if 'partitioned_polyline' is to the left or right of the
-	 * two GCAs from the partitioning polygon the test needs to be done
-	 * to see if 'partitioned_polyline' falls in the acute angle region.
-	 * For example,
-	 *
-	 *    ^               ^
-	 *     \               \ A /
-	 * left \  right        \ /
-	 *       ^               ^
-	 *      /               / \
-	 *     /               / B \
-	 *
-	 * ...we can test for the left region by testing left of both arcs.
-	 * If we tried to test for the right region instead we would try testing
-	 * right of both arcs but that would miss regions A and B shown above
-	 * which are supposed to be part of the right region.
-	 */
-	if (do_adjacent_great_circle_arcs_bend_left(
-			prev_partitioning_polygon_gca.get(),
-			next_partitioning_polygon_gca.get(),
-			intersection->intersection_point))
-	{
-		// If the adjacent arcs on the partitioning polygon bend to the left then
-		// left is the narrowest region.
-		// This region is inside the polygon if the polygon's vertices
-		// are counter-clockwise and outside if they are clockwise.
-
-		// See if the polyline GCA is in the narrow region to the left.
-		//
-		// If the partitioned polyline is prior to (previous) the intersection point so
-		// we have to reverse the interpretation of the left/right test.
-		if ((is_prev_partitioned_polyline ^
-				do_adjacent_great_circle_arcs_bend_left(
-						prev_partitioning_polygon_gca.get(),
-						partitioned_polyline_gca.get(),
-						intersection->intersection_point)) &&
-			(is_prev_partitioned_polyline ^
-				do_adjacent_great_circle_arcs_bend_left(
-						next_partitioning_polygon_gca.get(),
-						partitioned_polyline_gca.get(),
-						intersection->intersection_point)))
-		{
-			// The polyline GCA is in the narrow region to the left.
-			return d_partitioning_polygon_orientation == PolygonOrientation::COUNTERCLOCKWISE;
-		}
-
-		// The polyline GCA was not in the narrow region to the left
-		// so invert the test for inside.
-		return d_partitioning_polygon_orientation == PolygonOrientation::CLOCKWISE;
-	}
-
-	// Adjacent args on the partitioning polygon bend to the right making
-	// it the narrowest region.
-	// This region is inside the polygon if the polygon's vertices
-	// are clockwise and outside if they are counter-clockwise.
-
-	// See if the polyline GCA is in the narrow region to the right.
-	// We do this by testing that the polyline GCA is not to the left
-	// of either GCA of the partitioning polygon.
-	//
-	// If the partitioned polyline is prior to (previous) the intersection point so
-	// we have to reverse the interpretation of the left/right test.
-	if ((is_prev_partitioned_polyline ^
-			!do_adjacent_great_circle_arcs_bend_left(
-					prev_partitioning_polygon_gca.get(),
-					partitioned_polyline_gca.get(),
-					intersection->intersection_point)) &&
-		(is_prev_partitioned_polyline ^
-			!do_adjacent_great_circle_arcs_bend_left(
-					next_partitioning_polygon_gca.get(),
-					partitioned_polyline_gca.get(),
-					intersection->intersection_point)))
-	{
-		// The polyline GCA is in the narrow region to the right.
-		return d_partitioning_polygon_orientation == PolygonOrientation::CLOCKWISE;
-	}
-
-	// The polyline GCA was not in the narrow region to the right
-	// so invert the test for inside.
-	return d_partitioning_polygon_orientation == PolygonOrientation::COUNTERCLOCKWISE;
+	IdentityProvenance identity;
+	geometry.accept_visitor(identity);
+	return boost::make_shared<const provenance_seq_type>(identity.provenance);
 }
