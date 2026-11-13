@@ -1157,8 +1157,7 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     `plans/done/` rather than only deleting it (step 9 of *PR C*).
 
 - **Resume here** (updated 2026-11-13): **PR C under way**, in the steps of section *PR C* below
-  (steps 0 to 2 done; next, step 3, from the session's drafts of the docstrings and the Python
-  tests, which steps 3 and 5 still have to check against the built methods). PR C ends with the final Fable distillation of this
+  (steps 0 to 6 done, 2026-11-13: the four methods are `26351dba6`; next, step 7, the design page). PR C ends with the final Fable distillation of this
   directory, then archives it in the planning repository and deletes it here (step 9).
   After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
   overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
@@ -1651,7 +1650,12 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
    operation, options)`, which builds the overlay, classifies it, extracts the polygons and
    returns `std::vector<PolygonOnSphere::non_null_ptr_to_const_type>`. Add a short GoogleTest in
    `PolygonOverlayTest.cc` for each operation, including disjoint and nested inputs.
-3. **pyGPlates methods** (`src/api/PyGeometriesOnSphere.cc`).
+3. **pyGPlates methods** (`src/api/PyGeometriesOnSphere.cc`). (Steps 3 to 6 done 2026-11-13 as
+   one commit, `26351dba6`. Checked in Python before the tests were written: a union is merged
+   across a shared edge and kept separate at a touching corner; `intersection` and `difference`
+   return the input itself where it is whole; the hemisphere cases raise `PartitionError`; a
+   non-polygon raises `ArgumentError`, a `TypeError`. Docs built from scratch with `-W`; GPlates
+   218 of 218, pyGPlates 7 of 7, the stub test among them.)
    - Factor the sliver-argument validation out of `polygon_on_sphere_partition` and share it.
    - Write one binding function per operation (or one parameterised by operation) and four
      `.def`s with `bp::arg("other_polygon")`.
