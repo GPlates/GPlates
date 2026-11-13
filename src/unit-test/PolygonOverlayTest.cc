@@ -1647,8 +1647,7 @@ namespace
 			EXPECT_EQ(PolygonOverlayOracle::count_failures(P, Q, operation, rings, samples), 0u);
 
 			// Grouped into polygons, and oriented with the output on the left. Output rings cross
-			// only where an input's do (but for the symmetric difference's, at a vertex whose four
-			// kept ends pair crosswise).
+			// only where an input's do.
 			std::vector<Overlay::OutputPolygon> polygons;
 			const unsigned int crossing_ring_groups_before =
 					overlay.get_diagnostics().crossing_ring_groups;
@@ -1657,12 +1656,9 @@ namespace
 			if (!input_rings_cross)
 			{
 				EXPECT_EQ(PolygonOverlayOracle::count_misoriented_rings(polygons), 0u);
-				if (operation != Overlay::SYMMETRIC_DIFFERENCE)
-				{
-					EXPECT_EQ(
-							overlay.get_diagnostics().crossing_ring_groups,
-							crossing_ring_groups_before);
-				}
+				EXPECT_EQ(
+						overlay.get_diagnostics().crossing_ring_groups,
+						crossing_ring_groups_before);
 			}
 		}
 		if (PolygonOverlayOracle::is_area_sum_applicable(P, Q))
@@ -1678,6 +1674,83 @@ namespace
 		EXPECT_EQ(diagnostics.grouping_failures, 0u);
 		EXPECT_EQ(diagnostics.hemisphere_check_failures, 0u);
 		EXPECT_EQ(diagnostics.hemisphere_check_skipped, 0u);
+	}
+}
+
+
+namespace
+{
+	//! The area of an operation's output: each polygon's rings read by parity.
+	double
+	output_area(
+			const Overlay::Overlay &overlay,
+			Overlay::Operation operation)
+	{
+		std::vector<Overlay::OutputPolygon> polygons;
+		overlay.extract(operation, polygons);
+		double area = 0;
+		for (const Overlay::OutputPolygon &output : polygons)
+		{
+			std::vector<ring_type> rings{ output.exterior.points };
+			for (const Overlay::OutputRing &interior : output.interiors)
+			{
+				rings.push_back(interior.points);
+			}
+			area += PolygonOverlayOracle::parity_area(rings);
+		}
+		return area;
+	}
+
+	std::vector<ring_type>
+	polygon_rings(
+			const PolygonOnSphere &polygon)
+	{
+		std::vector<ring_type> rings{ ring_type(
+				polygon.exterior_ring_vertex_begin(), polygon.exterior_ring_vertex_end()) };
+		for (unsigned int i = 0; i < polygon.number_of_interior_rings(); ++i)
+		{
+			rings.push_back(ring_type(
+					polygon.interior_ring_vertex_begin(i), polygon.interior_ring_vertex_end(i)));
+		}
+		return rings;
+	}
+
+	/**
+	 * The areas of all five operations against the inputs' (for inputs whose rings do not cross):
+	 * the intersection and each difference make up their input, the union and the intersection
+	 * both inputs, and the symmetric difference is the two differences. Each within four
+	 * thicknesses times both perimeters (an output ring runs up to a thickness off an input's
+	 * edge, and each identity adds two or three outputs). A ring twisted between two vertices
+	 * reads right by parity, point for point, and only its area shows it.
+	 */
+	void
+	check_areas(
+			const PolygonOnSphere &P,
+			const PolygonOnSphere &Q,
+			const Overlay::Overlay &overlay)
+	{
+		double perimeter = 0;
+		for (const PolygonOnSphere *polygon : { &P, &Q })
+		{
+			for (auto arc = polygon->begin(); arc != polygon->end(); ++arc)
+			{
+				perimeter += PolygonOverlayOracle::angle_between(
+						arc->start_point().position_vector(), arc->end_point().position_vector());
+			}
+		}
+		const double tolerance = 4 * H * perimeter;
+		const double subject = PolygonOverlayOracle::parity_area(polygon_rings(P));
+		const double clip = PolygonOverlayOracle::parity_area(polygon_rings(Q));
+		const double intersection = output_area(overlay, Overlay::INTERSECTION);
+		const double difference = output_area(overlay, Overlay::DIFFERENCE);
+		const double reverse_difference = output_area(overlay, Overlay::REVERSE_DIFFERENCE);
+		EXPECT_NEAR(intersection + difference, subject, tolerance);
+		EXPECT_NEAR(intersection + reverse_difference, clip, tolerance);
+		EXPECT_NEAR(output_area(overlay, Overlay::UNION) + intersection, subject + clip, tolerance);
+		EXPECT_NEAR(
+				output_area(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+				difference + reverse_difference,
+				tolerance);
 	}
 }
 
@@ -1874,6 +1947,226 @@ namespace
 			}
 		}
 		return false;
+	}
+}
+
+
+// A ring twisted between the two ends of a common chain its operation does not keep is cut there
+// (section 5.2, split). The catalogue's 'd4 hole-between': P's short edge crosses Q's top edge
+// within the thickness of it (its two ends are touches), and the tip of P's hole lies on both, so
+// the edge is cut at the tip into two common pieces, the first with the interiors on opposite sides
+// and the second on the same side. The hole's lower edge leaves the tip between P's edge and Q's,
+// and passes between them at the short edge's far end. The reverse difference keeps the first
+// common piece, not the second, and its walk goes from the first along the hole's edge, comes back
+// along Q's edge to the far end, and leaves along P's exterior: one ring, crossing itself between
+// the tip and the far end, its part in the hole wound against the rest. Cut there, it is the two
+// parts. With the inputs swapped it is the difference (partitioning's outside).
+TEST(PolygonOverlayTest, LinkTwistAtChain)
+{
+	const double phi = 20.0 * 3.14159265358979323846 / 180.0;
+	// The short edge's length, and a long one: the hole's edge then runs between the two
+	// boundaries for 140 thicknesses, and the cut does not depend on the chain's length.
+	for (double length : { 1.0 * H, 400.0 * H })
+	{
+		SCOPED_TRACE(length / H);
+		// The far end 0.4 thicknesses below Q's edge at most, as the short edge's is.
+		const double drop = (std::min)(0.5 * length * std::sin(phi), 0.4 * H);
+		const double half = std::sqrt(0.25 * length * length - drop * drop);
+		const ring_type exterior{
+				F.at(-half, drop), F.at(half, -drop), F.at(0.01, -0.01), F.at(0.02, 0.01) };
+		// The hole's lower edge passes half way between the far end and Q's edge.
+		const double tip = 0.3 * half;
+		const double slope = 0.5 * drop / (half - tip);
+		const ring_type hole{
+				F.at(tip, 0.0), F.at(0.003, -slope * (0.003 - tip)), F.at(0.004, 0.001) };
+		const auto P = polygon(exterior, { hole });
+		const auto Q = polygon(square(-0.03, -0.03, 0.03, 0.0));
+
+		{
+			Overlay::Overlay overlay(*P, *Q);
+			classify_and_check(overlay);
+			EXPECT_EQ(overlay.get_diagnostics().self_touch_cuts, 1u);
+			// The hole's part inside Q (the tip, the hole's vertex, its crossing of Q's edge and
+			// the far end), and the rest of Q outside P.
+			EXPECT_EQ(
+					ring_sizes(overlay, Overlay::REVERSE_DIFFERENCE),
+					(std::vector<unsigned int>{ 4, 9 }));
+			EXPECT_EQ(overlay.get_diagnostics().rings_cut_at_chains, 1u);
+			EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 6 }));
+			EXPECT_EQ(ring_sizes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 6 }));
+			EXPECT_EQ(overlay.get_diagnostics().rings_cut_at_chains, 1u);
+			check_oracle(*P, *Q, overlay);
+			check_areas(*P, *Q, overlay);
+		}
+		{
+			Overlay::Overlay overlay(*Q, *P);
+			classify_and_check(overlay);
+			EXPECT_EQ(
+					ring_sizes(overlay, Overlay::DIFFERENCE),
+					(std::vector<unsigned int>{ 4, 9 }));
+			EXPECT_EQ(overlay.get_diagnostics().rings_cut_at_chains, 1u);
+			check_oracle(*Q, *P, overlay);
+			check_areas(*Q, *P, overlay);
+		}
+	}
+
+	{
+		// A ring that passes both ends of a chain its operation does not keep, and does not
+		// cross itself, is left whole: a hole of Q whose south edge lies along part of P's. The
+		// intersection is P with a notch, one ring through both ends of the shared stretch.
+		SCOPED_TRACE("a notch");
+		const auto P = polygon(square(-0.01, 0.0, 0.01, 0.02));
+		const auto Q = polygon(
+				square(-0.03, -0.03, 0.03, 0.03), { square(-0.004, 0.0, 0.004, 0.008) });
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		EXPECT_EQ(overlay.get_diagnostics().common_pairs, 1u);
+		EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 8 }));
+		EXPECT_EQ(ring_sizes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 4 }));
+		check_oracle(*P, *Q, overlay);
+		check_areas(*P, *Q, overlay);
+		EXPECT_EQ(overlay.get_diagnostics().rings_cut_at_chains, 0u);
+	}
+}
+
+
+// The symmetric difference's rings do not cross where the inputs' do not (section 5.2, linking):
+// they are the two differences' rings, joined across the walls between them.
+TEST(PolygonOverlayTest, LinkSymmetricDifference)
+{
+	{
+		// Q lies along part of P's east edge from outside, and overlaps P's north-east corner.
+		// The two differences are one ring each, which share that stretch of the edge (a wall)
+		// and touch where Q's outline crosses P's north edge. Joined across the wall they are
+		// one ring that passes the crossing twice, and the split cuts it there: the outline of
+		// the two together, and the overlap as a hole that touches it at the crossing.
+		SCOPED_TRACE("joined across a wall, and split at a touch");
+		const auto P = polygon(square(0.0, 0.0, 0.02, 0.02));
+		const auto Q = polygon(ring_type{
+				F.at(0.02, 0.005), F.at(0.03, 0.005), F.at(0.03, 0.03), F.at(0.01, 0.03),
+				F.at(0.01, 0.015), F.at(0.02, 0.015) });
+		for (bool swap : { false, true })
+		{
+			SCOPED_TRACE(swap);
+			const PolygonOnSphere &subject = swap ? *Q : *P;
+			const PolygonOnSphere &clip = swap ? *P : *Q;
+			Overlay::Overlay overlay(subject, clip);
+			classify_and_check(overlay);
+			EXPECT_EQ(overlay.get_diagnostics().common_pairs, 1u);
+			EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION), (std::vector<unsigned int>{ 4 }));
+			EXPECT_EQ(
+					ring_sizes(overlay, swap ? Overlay::REVERSE_DIFFERENCE : Overlay::DIFFERENCE),
+					(std::vector<unsigned int>{ 7 }));
+			EXPECT_EQ(
+					ring_sizes(overlay, swap ? Overlay::DIFFERENCE : Overlay::REVERSE_DIFFERENCE),
+					(std::vector<unsigned int>{ 7 }));
+			EXPECT_EQ(
+					ring_sizes(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+					(std::vector<unsigned int>{ 4, 8 }));
+			EXPECT_EQ(overlay.get_diagnostics().spike_walls, 0u);
+			check_oracle(subject, clip, overlay);
+			check_areas(subject, clip, overlay);
+		}
+	}
+	{
+		//
+		// The hunt's 'six' cases. Two holes of P a little over a thickness apart along an edge,
+		// and a vertex of Q between them, within the thickness of both edges: one overlay vertex,
+		// which both holes pass straight through. Q's edge runs on between the two to their west
+		// ends (it pairs with the north hole's edge), and Q's other edge reaches the vertex
+		// across the south hole. The holes' two rays to the east are parallel but for the
+		// difference of the gaps, so their order by direction is the order of the edges
+		// themselves for one of the two east gaps here and the reverse for the other, and with
+		// the reverse the two holes' passages, as paired, cross at the vertex. Each difference
+		// undoes that, since its walk comes back to the vertex with no other repeated in
+		// between. A walk of the symmetric difference's own pairs also passes the crossing of
+		// Q's edge and the south hole twice, in between (the first vertex of the overlay: the
+		// south hole's first edge is the one Q crosses, so the walk starts there), and the cut
+		// made there first left the south hole's whole ring crossing a ring through it along
+		// Q's edge (with the wider gap, and the inputs this way round).
+		//
+		SCOPED_TRACE("parallel rays at a vertex");
+		for (double east_gap : { 0.4 * H, 2.0 * H })
+		{
+			SCOPED_TRACE(east_gap / H);
+			const double west_gap = 1.2 * H;
+			const ring_type south_hole{
+					F.at(-0.011, -0.01), F.at(0.012, -0.008), F.at(0.01, 0.0),
+					F.at(-0.01 - 2 * H, 0.0) };
+			const ring_type north_hole{
+					F.at(-0.01, west_gap), F.at(0.01, east_gap), F.at(0.012, 0.01),
+					F.at(-0.011, 0.009) };
+			const auto P = polygon(square(-0.05, -0.05, 0.05, 0.05), { south_hole, north_hole });
+			// Q's vertex half way between the two edges, and its edge half way between their
+			// west ends.
+			const double middle = 0.25 * (west_gap + east_gap);
+			const auto Q = polygon(ring_type{
+					F.at(0.0, middle), F.at(-0.03, middle + 3 * (0.5 * west_gap - middle)),
+					F.at(-0.03, 0.03), F.at(0.03, 0.03), F.at(0.02, -0.02) });
+			for (bool swap : { false, true })
+			{
+				SCOPED_TRACE(swap);
+				const PolygonOnSphere &subject = swap ? *Q : *P;
+				const PolygonOnSphere &clip = swap ? *P : *Q;
+				Overlay::Overlay overlay(subject, clip);
+				classify_and_check(overlay);
+				// Outside Q: P's exterior, the rest of P round Q and the south hole's west part
+				// (a hole of the output), and the sliver of P between Q's edge and the south
+				// hole's. Inside Q, outside P: the north hole and the south hole's east part.
+				EXPECT_EQ(
+						ring_sizes(
+								overlay, swap ? Overlay::REVERSE_DIFFERENCE : Overlay::DIFFERENCE),
+						(std::vector<unsigned int>{ 3, 4, 7 }));
+				EXPECT_EQ(
+						ring_sizes(
+								overlay, swap ? Overlay::DIFFERENCE : Overlay::REVERSE_DIFFERENCE),
+						(std::vector<unsigned int>{ 4, 5 }));
+				// The same rings, the sliver and the north hole joined across the edge they share.
+				EXPECT_EQ(
+						ring_sizes(overlay, Overlay::SYMMETRIC_DIFFERENCE),
+						(std::vector<unsigned int>{ 4, 4, 6, 7 }));
+				EXPECT_EQ(overlay.get_diagnostics().spike_walls, 0u);
+				EXPECT_EQ(overlay.get_diagnostics().rings_cut_at_chains, 0u);
+				check_oracle(subject, clip, overlay);
+				check_areas(subject, clip, overlay);
+			}
+		}
+	}
+	{
+		//
+		// The hunt's 'zero' cases. An edge of P under the thickness long that doubles back
+		// along the edge before it, on Q's edge, where P crosses Q: the pair it makes with Q's
+		// edge is classified as a wall with the interiors on opposite sides, and both
+		// differences walk it, but one of their rings goes on from it along the edge before,
+		// which runs back past its far end: a spike. Joined across it (as the symmetric
+		// difference's own pairs were), the two rings are P's boundary and Q's passing straight
+		// through the crossing. It is not joined, and the two differences' rings touch there.
+		//
+		SCOPED_TRACE("a spike is no wall");
+		const auto P = polygon(ring_type{
+				F.at(-0.002, 0.0053),
+				F.at(0.158 * H, 0.458 * H),
+				F.at(-0.12 * H, 0.958 * H),
+				F.at(0.0, 0.0),
+				F.at(0.002, -0.00535),
+				F.at(-0.03, -0.02) });
+		const auto Q = polygon(square(0.0, -0.03, 0.03, 0.03));
+		for (bool swap : { false, true })
+		{
+			SCOPED_TRACE(swap);
+			const PolygonOnSphere &subject = swap ? *Q : *P;
+			const PolygonOnSphere &clip = swap ? *P : *Q;
+			Overlay::Overlay overlay(subject, clip);
+			classify_and_check(overlay);
+			// As many rings as the two differences have together: nothing is joined.
+			EXPECT_EQ(
+					ring_sizes(overlay, Overlay::SYMMETRIC_DIFFERENCE).size(),
+					ring_sizes(overlay, Overlay::DIFFERENCE).size() +
+						ring_sizes(overlay, Overlay::REVERSE_DIFFERENCE).size());
+			EXPECT_EQ(overlay.get_diagnostics().spike_walls, 1u);
+			check_oracle(subject, clip, overlay);
+			check_areas(subject, clip, overlay);
+		}
 	}
 }
 
