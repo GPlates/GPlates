@@ -1157,7 +1157,8 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     `plans/done/` rather than only deleting it (step 9 of *PR C*).
 
 - **Resume here** (updated 2026-11-13): **PR C under way**, in the steps of section *PR C* below
-  (steps 0 and 1 done; next, step 2). PR C ends with the final Fable distillation of this
+  (steps 0 to 2 done; next, step 3, from the session's drafts of the docstrings and the Python
+  tests, which steps 3 and 5 still have to check against the built methods). PR C ends with the final Fable distillation of this
   directory, then archives it in the planning repository and deletes it here (step 9).
   After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
   overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
@@ -1642,7 +1643,9 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
    - If the diagnosis shows that the order itself is unreliable there, stop and bring the
      findings to the developer. The grouping already reads these cases correctly, so leaving them
      documented is a valid fallback.
-2. **C++ entry point.** Move `create_polygon(const OutputPolygon &)` out of
+2. **C++ entry point.** (Done 2026-11-13: `PolygonOverlay::create_polygon` and
+   `extract_polygons`, also used by `PolygonPartitioner` and the real-data test, which each had a
+   copy; test `ExtractPolygons`.) Move `create_polygon(const OutputPolygon &)` out of
    `PolygonPartitioner.cc`'s anonymous namespace into `PolygonOverlay.{h,cc}` as a public
    function, and use it in both places. Add `PolygonOverlay::extract_polygons(subject, clip,
    operation, options)`, which builds the overlay, classifies it, extracts the polygons and
@@ -1728,12 +1731,13 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
      - The root `README.md`: one line pointing developers at `docs/design/architecture/README.md`
        (today it links only the versioning design).
      - Each area page lists its design documents with their kind. `foundation/README.md` exists
-       only on `feature/architecture-diagrams`, so its links are made on whichever of the two
-       branches reaches `main` second (open: the order, below).
+       only on `feature/architecture-diagrams`, so its links are made on that branch, which
+       reaches `main` after this one (below).
      - Not now: splitting section 5 into its own `polygon-overlay.md`, which would pair the
        overview one to one but repoint the code's 270-odd citations of "section 5.x" again.
        Revisit if the page grows (eg `DateLineWrapper` onto the overlay).
-   - **Open (developer): `feature/architecture-diagrams` before or after this PR.** Its pages
+   - **Decided (developer, 2026-11-13): `feature/architecture-diagrams` after pyGPlates 1.1**, so
+     after this PR; the `foundation` page's links to the two overviews are made there. Its pages
      (every area's but the model's) await the developer's review, and it last merged `main` at #103:
      #104 to #110 changed `maths/` (39 files), `app-logic/` (24, plate partitioning), `api/` (8) and
      `opengl/` (6), so its `foundation` page (2026-10-18) still describes `PolylineIntersections`
