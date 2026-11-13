@@ -273,6 +273,9 @@ build-verbosity = 1
 # 'test-sources' copies 'pygplates/test' into the test working directory (preserving the
 # relative path), so the test command below finds it without referencing {project}
 # (which is unavailable when testing on a different machine/container than the build).
+# A test that reads a file from outside 'pygplates/test' (eg, an input shared with the C++ unit
+# tests in 'src/unit-test/data') needs that file listed here too: the CI build-and-test runs pass
+# from the full checkout, so only a wheel run shows one missing.
 # -X faulthandler prints the Python stack if the native library crashes (a crash otherwise
 # reports nothing but the exit code, which makes CI failures undiagnosable).
 #
@@ -287,6 +290,7 @@ build-verbosity = 1
 # segfault at 'import pygplates' was in a wheel whose build-tree module was fine.
 test-sources = [
     "pygplates/test",
+    "src/unit-test/data/polygon-overlay/inconsistent.txt",  # test_geometries_on_sphere.py's test_partition_error
     "pygplates/wheel/check_wheel_contents.py",
     "cmake/check_linkage.py",
 ]
