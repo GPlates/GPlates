@@ -1157,8 +1157,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     `plans/done/` rather than only deleting it (step 9 of *PR C*).
 
 - **Resume here** (updated 2026-11-13): **PR C under way**, in the steps of section *PR C* below
-  (steps 0 to 6 done, 2026-11-13: the four methods are `26351dba6`; next, step 7, the design page). PR C ends with the final Fable distillation of this
-  directory, then archives it in the planning repository and deletes it here (step 9).
+  (steps 0 to 7 done, 2026-11-13: the four methods are `26351dba6`; next, step 8, verification:
+  the Linux Docker run, then step 9, the distillation, with its two Fable agents at explicit
+  xHigh). PR C ends with the final Fable distillation of this directory, then archives it in the
+  planning repository and deletes it here (step 9).
   After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
   overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
   overlay. **Tools**: the PR B session's scripts for the C++ (the hunt at scale and run comparison,
@@ -1681,7 +1683,8 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
    the intersection and the difference, and step 1's cut at a chain changes those only in rare
    degenerate inputs of a feature not yet released (polygon partitioning is new in 1.1), so it
    needs no entry in either product.
-7. **Design page** (`spherical-geometry.md`).
+7. **Design page** (`spherical-geometry.md`). (Done 2026-11-13, by Opus; checked by step 9's Fable
+   claim check.)
    - Section 5.1: the Boolean methods as a consumer layer, and decision 5.
    - Section 5.2: the pairing.
    - Section 5.6: `PartitionError` for the hemisphere case.

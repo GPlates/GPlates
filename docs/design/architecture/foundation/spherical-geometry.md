@@ -23,9 +23,10 @@ Two more pieces build on these: the intersection of polylines and polygons
 inside and outside it (the overlay `PolygonOverlay.{h,cc}`, `PolygonPartitioner.{h,cc}` on top of
 it, and the plate partitioner `src/app-logic/GeometryCookieCutter.{h,cc}`, section 5). The overlay
 also computes the other Boolean operations of two polygons (the union, both differences and the
-symmetric difference), which nothing exposes yet (section 7). pyGPlates exposes partitioning
-through `PolygonOnSphere.partition()` and `PlatePartitioner`, and GPlates through Assign Plate IDs
-(and, for points, the velocity layers).
+symmetric difference). pyGPlates exposes partitioning through `PolygonOnSphere.partition()` and
+`PlatePartitioner`, and the Boolean operations through `PolygonOnSphere.intersection()`, `union()`,
+`difference()` and `symmetric_difference()` (section 5.1); GPlates exposes partitioning through
+Assign Plate IDs (and, for points, the velocity layers).
 
 They are one design because their tolerances are one system. Point-in-polygon's point-on-outline
 threshold has the cosine `1 - 1e-12`, which is the distance code's epsilon zero (a distance with
@@ -1070,6 +1071,24 @@ nothing reaches it today: a meshed polygon's nodes are found from its triangles.
 generation (`GenerateVelocityDomainCitcoms.cc`), which needs one crossing of two two-point
 polylines, takes `GeometryIntersect::intersect`'s first record directly.
 
+**The Boolean methods.** pyGPlates' `PolygonOnSphere.intersection()`, `union()`, `difference()`
+and `symmetric_difference()` (`src/api/PyGeometriesOnSphere.cc`) each take another polygon and the
+sliver width of section 5.5 (`sliver_width_threshold_radians`, as `partition()`'s), and return a
+list of polygons. `intersection` and `difference` are partitioning's two outputs: they cut this
+polygon with a `PolygonPartitioner` of the other (`polygon_on_sphere_intersection`,
+`polygon_on_sphere_difference`, through `partition_polygon`), so they return exactly what
+`other.partition(polygon)` puts inside and outside, under the result contract below: this polygon
+itself, the input object, where it is whole. `union` and `symmetric_difference` call the overlay
+directly, through `PolygonOverlay::extract_polygons` (one `Overlay`, classified and extracted, its
+output polygons made `PolygonOnSphere`s by `PolygonOverlay::create_polygon`, which the partitioner
+uses too); there is no bounding-circle shortcut before it, and a whole input comes back as the
+overlay's copy of it, its rings oriented with the output on their left. Extracting the intersection
+and the difference from the overlay too was rejected: with the sliver filter on, an intersection
+dropped as a sliver leaves the extracted difference with a notch where the sliver was, while the
+partitioner returns the subject whole outside, so the two methods would disagree with each other
+and with `partition()`. The symmetric difference as the two differences side by side is in
+section 5.7. No method has a coverage form (section 5.7).
+
 **The cascade.** `GeometryCookieCutter::partition` gives the input to the first partitioning
 polygon; what lies outside it goes to the second, and so on, and whatever is left after the last is
 outside all of them. A piece belongs to the first polygon that contains it, which is how overlapping
@@ -1944,7 +1963,15 @@ cutter stops at the first plate that claims a piece (its answer is then known), 
 it consulted can raise. pyGPlates raises it as
 `PartitionError` (a `MathematicalError`, `src/api/PyExceptions.cc`) from
 `PolygonOnSphere.partition()`, `PlatePartitioner.partition_geometry()`, `partition_features()` and
-`partition_into_plates()`.
+`partition_into_plates()`, and from the Boolean methods `PolygonOnSphere.intersection()`,
+`union()`, `difference()` and `symmetric_difference()` (section 5.1). For `union()` and
+`symmetric_difference()` it is also the answer to a result whose outer ring would enclose more than
+a hemisphere. The overlay's hemisphere check cannot tell that from wrong classes (section 5.2), and
+wrong classes, its only possible cause for the intersection and the differences (which cannot
+exceed an input), have never been seen, so one exception serves both. A separate exception for the
+hemisphere case was rejected
+(developer, 2026-11-13): the overlay could only guess which of the two it was, and the name fits a
+union too, since the overlay cuts both polygons into pieces.
 GPlates' `AssignPlateIds::assign_reconstruction_plate_id` catches it around each feature's
 partition task and records the feature (`get_features_not_partitioned`); a task partitions every
 geometry before it modifies the feature (`GenericPartitionFeatureTask`, as `PartitionFeatureTask`
@@ -2031,6 +2058,14 @@ pairs cross, which is what is not known, and each of the two orders tried fails 
 one way, 47 the other). And joining the two differences' rings across every wall: the 25 cases
 where a wall separates nothing remain.
 
+**The symmetric difference as the two differences side by side**, unjoined
+(`polygon.difference(other) + other.difference(polygon)`): always as robust as the differences, and
+never over a hemisphere, since each piece lies inside an input; but two polygons sharing an edge
+would come back as two pieces along it rather than one polygon, unlike `union()`. Rejected by the
+developer (2026-11-13), who wanted shared edges merged and a result over a hemisphere reported, as
+for the union. The join keeps the differences' robustness, since it starts from their own rings
+(section 5.2).
+
 **For the ring twisted at a chain** (section 5.2). *Cutting wherever an arc of a ring passes one of
 its vertices*, a touch with no test of a crossing (the first form of the rule): it cuts a ring in
 362 of the hunt's intersections and differences from valid inputs, where the rule cuts 10 (206 of
@@ -2057,8 +2092,13 @@ the developer's requirement is never a silent wrong answer.
 **Partitioning by all plates in one overlay**: a different algorithm, for a spatial index of many
 polygons.
 
-**A public coverage form of `PlatePartitioner.partition_geometry`**, `(geometry, scalars)` in and
-out: deferred with any geometry-level coverage entry point (section 7); `partition_features` calls a
+**A coverage form of a geometry-level entry point**: `PlatePartitioner.partition_geometry`,
+`PolygonOnSphere.partition()` or the Boolean methods taking `(geometry, scalars)` and returning each
+piece's scalars, or `DateLineWrapper.wrap` and `to_tessellated` likewise. Rejected (developer,
+2026-11-13): a coverage belongs to a feature's geometry property, so coverages stay at the feature
+level, where Assign Plate IDs and `partition_features` carry them (section 5.4), and a
+geometry-level form would need rules the feature level does not (a union's point can come from
+either input's coverage, or from both where they meet). `partition_features` calls a
 private helper (`PlatePartitioner._partition_feature_geometries`) that returns each property's
 pieces with their coverages and the positions of the properties partitioned. No two pieces with a
 coverage share a feature under one property name (pyGPlates gives each its own feature; Assign
@@ -2559,7 +2599,14 @@ touches returned whole, `PartitionError` on the same input, the sliver argument 
 negative and NaN), coverages through `partition_features` and their pieces, time-dependent geometry
 (a kept property sharing a partitioned one's name, and most overlapping), removing exactly the
 partitioned properties, a feature with no geometry, and the most overlapping plate by area. The
-fixes made after review are pinned by tests, each checked by reverting the fix, all but one (the
+Boolean methods' tests (`test_boolean_operations*` there) check every method's polygons against
+the inputs' memberships on a grid of points (each covered once), the area identities, that the
+intersection and the difference are `partition()`'s inside and outside lists, inputs apart, nested,
+sharing an edge, touching at a corner and identical (the pieces and their holes), the hemisphere
+errors of the union and the symmetric difference, and the arguments. `ExtractPolygons`
+(`PolygonOverlayTest.cc`) checks that `extract_polygons` gives `extract`'s polygons point for
+point, for every operation. The fixes made after review are pinned by tests, each checked by
+reverting the fix, all but one (the
 self-touch cuts' key, which no constructed input reaches). In the grouping, no test holds the point
 test in one argument order (every crossing built is seen both ways), the nesting check's fallback,
 the exemption of a group from the sliver filter, the filter's condition that a hole is filled only
@@ -2602,17 +2649,15 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   (0-1000 Ma) and Cao 2024 (0-1800 Ma) never exceed half the sphere; the closest are India-Australia
   at 720 Ma (47.7% in Merdith 2021) and Rodinia at 860 Ma (47.1% in Cao 2024), so a
   supercontinent-era model could cross the limit.
-- **The Boolean operations in pyGPlates.** The overlay computes the intersection, both differences,
-  the union and the symmetric difference of two polygons (section 5.2), and tests them, but only
-  partitioning (the intersection and the difference) is exposed. `PolygonOnSphere` methods for the
-  others are deferred, with two decisions: what a union or symmetric difference exceeding a
-  hemisphere raises in Python (`InconsistentOverlayException` in C++, section 5.6), and whether any
-  geometry-level entry point gains a coverage form (section 5.7). Known unfinished for them: an
-  output ring that crosses itself where an input ring does has no orientation with the output on
-  its left all round (section 5.2); and the symmetric difference leaves the two differences' rings
-  unjoined along a shared edge where an input folds back on itself along all of it, or the edge is
-  shorter than about the thickness (the spike rule of section 5.2: the output reads the same, as
-  two rings sharing the edge).
+- **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
+  edge where an input folds back on itself along all of it, or a short one (its far end within the
+  thickness of the arc beside it), the two differences' rings are left sharing the edge, unless
+  other walls join them: the output reads the same, as two rings, but is not merged there
+  (`symmetric_difference()` can then return two polygons along an edge where `union()` returns
+  one). A sharper rule would tell which of a ring's passes along the
+  wall has the output beside it. The rule also looks only at the arc beside the wall, so a ring
+  doubling back over a whole wall in two arcs would be joined across it, giving a crossing group,
+  which reads right; the hunt has none.
 - **The inconsistent cut along a dense shared edge** (section 5.6): band classes that repair cannot
   make consistent in 20 rounds, in the one known case, whose inputs both have a hole crossing
   their exterior ring. Untried: a rule for pieces running along the other outline, or a
@@ -2654,7 +2699,9 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   own input, which the overlay now finds only in three places, each with the thickness again (the
   self-touch cuts, the cut of a ring twisted at a chain and the walls the symmetric difference
   leaves unjoined, section 5.2); what those leave is the band's noise, such as a sliver under half a
-  thickness wide wound backwards on a ring.
+  thickness wide wound backwards on a ring. After it every output ring would be simple, and so
+  oriented with the output on its left all round, which an output ring that crosses itself where an
+  input ring does is not today (section 5.2), in partitioning as in the Boolean methods.
   A segment must never be tested against itself: its start coincides with its own start, which is
   an SS. Adjacent segments need no special skip: their shared vertex is a coincident end and start,
   which excludes a crossing and the later segment's start touching the earlier one (section 4.2),
