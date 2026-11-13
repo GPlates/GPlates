@@ -1128,9 +1128,9 @@ about `2.4e-11` radians in a dense shared edge, section 5.2), far inside the thi
 the piece meets that edge again (the next plate's copy of a shared boundary) the vertex is a touch
 on it, never a crossing beside it. Nor does anything accumulate from step to step: each cut is an
 overlay of its own, which sees the previous output's vertices as ordinary vertices. Measured in the
-prototype over 157 cascade steps with shared edges jittered by up to `2 h`, neither the identity
-groups nor the widest cluster of records grew from the first step to the fourth, and no step
-failed.
+prototype over 157 cascade steps with shared edges jittered by up to `2 h`, no identity group
+joined two records at any step, the widest cluster of records stayed between `1.5 h` and `1.8 h`
+from the first step to the fourth (the jitter's size, with no trend), and no step failed.
 
 **The result contract** (`PolygonPartitioner::Result`). `GEOMETRY_INSIDE` means the difference (`P`
 less `Q`) is empty, `GEOMETRY_OUTSIDE` that the intersection is, and `GEOMETRY_INTERSECTING` that
@@ -1483,7 +1483,7 @@ repair: the prototype's runs of the design needed none, and the prototype
 comparison fails a case on any repair of generated data. A vertex still failing after repair, or a
 piece left unclassified, is the failure of section 5.6.
 
-**Linking** (`is_kept`, `extract_rings`). With `f(in P, in Q)` the operation's function
+**Linking** (`is_kept`, `pair_and_walk_rings`, from `extract_rings`). With `f(in P, in Q)` the operation's function
 (`is_in_output`), a subject piece of class `c` is kept iff `f(1, c) != f(0, c)`, a clip piece iff
 `f(c, 1) != f(c, 0)`, a same-side chain iff `f(1, 1) != f(0, 0)`, an opposite-sides chain iff
 `f(1, 0) != f(0, 1)`: the output differs across the piece. Per operation:
@@ -1637,9 +1637,10 @@ inputs, as exported: 3 intersections and 7 differences, all from the `zero` gene
 off a sliver of `1.1` to `1.7 h^2` that was wound backwards, after which the intersection's and the
 difference's areas sum to the subject's to rounding (they were off by twice the sliver). No valid
 case of the hunt had a twisted ring whose narrower part was over a thickness wide, before or
-after. The cut is also made in 88 of the hunt's cases whose input rings cross (59 of them in the
-intersection or the difference), where a ring crosses itself because an input does: each is one
-ring more, reading the same by parity.
+after. The cut is also made in cases whose input rings cross (96 operations of the hunt as
+exported, in the intersection, the differences and the union; 59 cases in the intersection or the
+difference), where a ring crosses itself because an input does: each is one ring more, reading the
+same by parity.
 
 **Grouping, orientation and the hemisphere check** (`extract`). For inputs whose rings do not cross,
 the rings of one output do not cross each other (twists apart) but within an overlay vertex, where a
@@ -2707,7 +2708,7 @@ The hunt was run again, before and after the linking's two rules (the cut of a r
 chain and the symmetric difference's join, section 5.2), on a fresh export of the same 119,198
 cases. The prototype's ring decompositions vary from one export to the next, and with this one a
 tenth case differs before the rules and after alike (`six#13 seed 11`: three intersection rings
-against the prototype's two, at two vertices of six ends each). The same ten differ after as
+against the prototype's two, which share one point). The same ten differ after as
 before, for the same reasons. Before, 37 more had a crossing group of rings in the symmetric
 difference from inputs whose rings do not cross; after, 96 ring sets of the intersection, the
 difference and the union are not compared, for a cut at a chain. Three scans of the 109,613 polygon
@@ -2770,11 +2771,12 @@ when its parent is an exterior, the same-crossing test of two arcs, the order of
 self-crossing test's two-margin arms, or the count of a node far from the other ring as outside (a
 ring with a point inside the other has a point outside it in a near node too). The linking's two
 rules (the cut of a ring twisted at a chain, and the symmetric difference's join) were mutated 35
-ways against the committed tests, and 28 of the mutations fail one: 25 at first, and three more
-since three of the hunt's cases were committed to hold them (the walk's stop at the other passage,
-without which the walk does not end in a dense shared edge; one of the two directions in which a
-pair of vertices is tested; and, in the join, that an arc ending at the wall's far end is no
-spike). No committed test holds, in the cut: the sectors of the passage against the two sides of the
+ways against the committed tests, and 28 of the mutations no longer pass: 25 failed a test at
+first, and three more since three of the hunt's cases were committed to hold them. Two of those
+fail a test: one of the two directions in which a pair of vertices is tested, and, in the join,
+that an arc ending at the wall's far end is no spike. With the third, the walk's stop at the other
+passage removed, the walk does not end in a dense shared edge and the test never finishes. No
+committed test holds, in the cut: the sectors of the passage against the two sides of the
 arc's plane; the three conditions under which a doubtful walk decides nothing (an arc that ends at
 the vertex, a point within the thickness past the arc's end, or within it of the other arc's
 plane); that the chain is one the operation does not keep, and that the ring does not walk it; and
@@ -2861,10 +2863,9 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   construction, and the dateline arc ends at the poles, so a polygon round a pole, the dateline's
   own case, is untried; no vertex of six or more ends arose (one ring of `P` near a simple arc); and
   its only failures, 13 of 600 cuts, were invalid inputs (an exterior ring that crosses itself, or a
-  hole outside its exterior). The port would cure what
-  section 5.8 lists as dateline-only (a hole that crosses the dateline merged into an exterior, the
-  guess when both poles are touched, the ring run backwards at a touch, the grouping of the other
-  rings by an epsilon distance) and keep, as a thin layer, the latitude and longitude output, the
+  hole outside its exterior). The port would cure four defects of section 5.8 (a hole that crosses
+  the dateline merged into an exterior, the guess when both poles are touched, the grouping of the
+  other rings by an epsilon distance, and the ring run backwards at a touch) and keep, as a thin layer, the latitude and longitude output, the
   snapping to the dateline and the poles, the central meridian, the tessellation and the per-point
   provenance. It would change the map views' and exports' wrapped polygons and pyGPlates'
   `DateLineWrapper` output (holes stay holes, rings keep their direction).
@@ -2882,8 +2883,8 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   leaves unjoined, section 5.2); what those leave is the band's noise, such as a sliver under half a
   thickness wide wound backwards on a ring. (The cut looks only between two vertices of one unkept
   chain: a ring twisted where an arc passes a vertex of its own input with no common piece between
-  them is not looked for, and the hunt has none wider than a thickness.) After it every output ring would be simple, and so
-  oriented with the output on its left all round, which an output ring that crosses itself where an
+  them is not looked for, and no valid input of the hunt gives one wider than a thickness.) After
+  it every output ring would be simple, and so oriented with the output on its left all round, which an output ring that crosses itself where an
   input ring does is not today (section 5.2), in partitioning as in the Boolean methods.
   A segment must never be tested against itself: its start coincides with its own start, which is
   an SS. Adjacent segments need no special skip: their shared vertex is a coincident end and start,
