@@ -629,6 +629,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), 'Unknown') == 'Unknown')
         self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), None) is None)
         self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), [], pygplates.PropertyReturn.all) == [])
+        # The default (not an empty list) when nothing matches, as for 'PropertyReturn.exactly_one'.
+        self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName'), None, pygplates.PropertyReturn.all) is None)
         
         self.feature.set_string(pygplates.PropertyName.create_gpml('shipTrackName'), 'TestShip')
         self.assertTrue(self.feature.get_string(pygplates.PropertyName.create_gpml('shipTrackName')) == 'TestShip')
@@ -661,6 +663,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive')) == False)
         self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), None) is None)
         self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), [], pygplates.PropertyReturn.all) == [])
+        # The default (not an empty list) when nothing matches, as for 'PropertyReturn.exactly_one'.
+        self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), None, pygplates.PropertyReturn.all) is None)
         
         self.feature.set_boolean(pygplates.PropertyName.create_gpml('isActive'), False)
         self.assertTrue(self.feature.get_boolean(pygplates.PropertyName.create_gpml('isActive'), None) == False)
@@ -687,6 +691,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')) == 0)
         self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), None) is None)
         self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), [], pygplates.PropertyReturn.all) == [])
+        # The default (not an empty list) when nothing matches, as for 'PropertyReturn.exactly_one'.
+        self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), None, pygplates.PropertyReturn.all) is None)
         
         self.feature.set_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), 20)
         self.assertTrue(self.feature.get_integer(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'), None) == 20)
@@ -712,6 +718,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth')), 0)
         self.assertTrue(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), None) is None)
         self.assertTrue(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), [], pygplates.PropertyReturn.all) == [])
+        # The default (not an empty list) when nothing matches, as for 'PropertyReturn.exactly_one'.
+        self.assertTrue(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), None, pygplates.PropertyReturn.all) is None)
         
         self.feature.set_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), 20.4)
         self.assertAlmostEqual(self.feature.get_double(pygplates.PropertyName.create_gpml('subductionZoneDepth'), None), 20.4)
@@ -990,6 +998,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertRaises(ValueError, self.feature.set_times, [5])
         # Raises error if time sequence is not monotonically increasing.
         self.assertRaises(ValueError, self.feature.set_times, [5, 4])
+        # A repeated time.
+        self.assertRaises(ValueError, self.feature.set_times, [5, 5])
+        self.assertRaises(ValueError, self.feature.set_times, [5, 6, 6, 7])
         self.assertRaises(ValueError, self.feature.set_times, [5, 4, 6, 7])
         self.assertRaises(ValueError, self.feature.set_times, [5, 6, 8, 7])
         self.assertRaises(ValueError, self.feature.set_times, [5, 6, 8, 7, 9])
@@ -1344,6 +1355,11 @@ class GetTimeWindowsCase(unittest.TestCase):
         time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(pygplates.GeoTimeInstant(2.5))
         self.assertTrue(time_window)
         self.assertTrue(time_window.get_value().get_integer() == 20)
+        # A 'float' time compares within epsilon, like a 'GeoTimeInstant' time.
+        for time in (4 + 1e-10, pygplates.GeoTimeInstant(4 + 1e-10)):
+            time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(time)
+            self.assertTrue(time_window)
+            self.assertTrue(time_window.get_value().get_integer() == 30)
 
     def test_set(self):
         self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,

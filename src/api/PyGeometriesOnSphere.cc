@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <sstream>
 #include <utility>
 #include <vector>
 #include <boost/cast.hpp>
@@ -35,6 +36,7 @@
 #include <boost/tuple/tuple.hpp>
 
 #include "PyGeometriesOnSphere.h"
+#include "PyGreatCircleArc.h"
 
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
@@ -796,7 +798,12 @@ namespace GPlatesApi
 			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
 
 			// Is a sequence containing floats ?
-			boost::optional<unsigned int> sequence_size = PythonExtractUtils::check_sequence<double>(py_obj);
+			//
+			// An iterator gives "not convertible" rather than raising, since a raise here would stop
+			// Boost.Python's overload resolution (rather than trying the next overload).
+			boost::optional<unsigned int> sequence_size = PythonExtractUtils::check_sequence<double>(
+					py_obj,
+					PythonExtractUtils::NOT_A_SEQUENCE_IF_ITERATOR);
 			if (!sequence_size)
 			{
 				return NULL;
@@ -1992,11 +1999,7 @@ namespace GPlatesApi
 			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
 			const double &tessellate_radians)
 	{
-		if (tessellate_radians <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
-			bp::throw_error_already_set();
-		}
+		raise_value_error_if_invalid_tessellate_radians(tessellate_radians);
 
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -2125,6 +2128,13 @@ namespace GPlatesApi
 			const double interpolate_resolution_radians =
 					extract_interpolate_resolution_radians();
 
+			// Note: '!(x > 0)' also catches NaN.
+			if (!(interpolate_resolution_radians > 0))
+			{
+				PyErr_SetString(PyExc_ValueError, "Interpolate resolution must be positive");
+				bp::throw_error_already_set();
+			}
+
 			if (!GPlatesMaths::interpolate(
 					interpolated_polylines,
 					from_polyline_on_sphere.get(),
@@ -2148,6 +2158,18 @@ namespace GPlatesApi
 					interpolate_object,
 					"Expected an interpolate resolution (float) or "
 					"a sequence of interpolate ratios (eg, list or tuple of float)");
+
+			// Each ratio must be in the range [0, 1] (which also rejects NaN).
+			for (const double &interpolate_ratio : interpolate_ratios)
+			{
+				if (!(interpolate_ratio >= 0 && interpolate_ratio <= 1))
+				{
+					std::ostringstream error_message;
+					error_message << "Interpolate ratio " << interpolate_ratio << " is not in the range [0, 1]";
+					PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
+					bp::throw_error_already_set();
+				}
+			}
 
 			if (!GPlatesMaths::interpolate(
 					interpolated_polylines,
@@ -2536,6 +2558,9 @@ export_polyline_on_sphere()
 				"  :rtype: list of PolylineOnSphere or None\n"
 				"  :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type "
 				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)\n"
+				"  :raises ValueError: if *interpolate* is a single number that is not positive (or is so small that "
+				"the number of interpolated polylines doesn't fit a 32-bit unsigned integer), or is a sequence "
+				"containing a ratio outside the range [0,1]\n"
 				"\n"
 				"  If *interpolate* is a single number then it is the distance interval spacing, in radians, "
 				"between *from_polyline* and *to_polyline* at which to generate interpolated polylines. "
@@ -2792,7 +2817,7 @@ export_polyline_on_sphere()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: PolylineOnSphere\n"
-				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
+				"  :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"
@@ -3567,11 +3592,7 @@ namespace GPlatesApi
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
 			const double &tessellate_radians)
 	{
-		if (tessellate_radians <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
-			bp::throw_error_already_set();
-		}
+		raise_value_error_if_invalid_tessellate_radians(tessellate_radians);
 
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -4629,7 +4650,7 @@ export_polygon_on_sphere()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: PolygonOnSphere\n"
-				"  :raises ValueError: if *tessellate_radians* is negative or zero\n"
+				"  :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
 				"*tessellate_radians* on the globe.\n"

@@ -355,6 +355,7 @@ namespace GPlatesApi
 			// Search for the feature.
 			// Note: This searches for the same feature *instance* - it does not compare values of
 			// two different feature instances.
+			bool found_feature = false;
 			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
 			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
 			for ( ; features_iter != features_end; ++features_iter)
@@ -362,20 +363,28 @@ namespace GPlatesApi
 				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
 
 				// Compare pointers not pointed-to-objects.
+				//
+				// Remove every copy (a feature added more than once is in the collection more than once).
+				// Note that removing a feature does not prevent us from incrementing to the next feature.
 				if (feature == collection_feature)
 				{
 					feature_collection_handle.remove(features_iter);
-					return;
+					found_feature = true;
 				}
 			}
 
 			// Raise the 'ValueError' python exception if the feature was not found.
-			PyErr_SetString(PyExc_ValueError, "Feature instance not found");
-			bp::throw_error_already_set();
+			if (!found_feature)
+			{
+				PyErr_SetString(PyExc_ValueError, "Feature instance not found");
+				bp::throw_error_already_set();
+			}
+
+			return;
 		}
 
 		// See if a single predicate callable.
-		if (PyObject_HasAttrString(feature_query_object.ptr(), "__call__"))
+		if (PyCallable_Check(feature_query_object.ptr()))
 		{
 			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
 			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
@@ -385,7 +394,7 @@ namespace GPlatesApi
 
 				// See if current feature matches the query.
 				// Feature query is a callable predicate...
-				if (bp::extract<bool>(feature_query_object(collection_feature)))
+				if (PythonExtractUtils::is_true(feature_query_object(collection_feature)))
 				{
 					// Note that removing a feature does not prevent us from incrementing to the next feature.
 					feature_collection_handle.remove(features_iter);
@@ -450,7 +459,7 @@ namespace GPlatesApi
 			}
 
 			// See if a predicate callable.
-			if (PyObject_HasAttrString(feature_query.ptr(), "__call__"))
+			if (PyCallable_Check(feature_query.ptr()))
 			{
 				predicates_seq.push_back(feature_query);
 				continue;
@@ -465,38 +474,46 @@ namespace GPlatesApi
 		// Process features first to avoid unnecessarily throwing ValueError exception.
 		//
 
-		// Remove duplicate feature pointers.
-		features_seq.erase(
-				std::unique(features_seq.begin(), features_seq.end()),
-				features_seq.end());
-
+		// NOTE: We don't remove duplicate feature pointers with 'std::unique', which only removes
+		// *adjacent* duplicates (and the list isn't sorted).
+		// Each feature instance in the list just needs to be found at least once.
 		if (!features_seq.empty())
 		{
-			// Search for the features.
+			// First check that every feature instance is in this collection, before removing anything,
+			// so that a 'ValueError' leaves this collection unchanged.
+			std::vector<bool> features_found(features_seq.size(), false);
 			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
 			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
 			for ( ; features_iter != features_end; ++features_iter)
 			{
-				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
-
 				// Compare pointers not pointed-to-objects.
-				features_seq_type::iterator features_seq_iter =
-						std::find(features_seq.begin(), features_seq.end(), collection_feature);
-				if (features_seq_iter != features_seq.end())
+				for (unsigned int n = 0; n < features_seq.size(); ++n)
 				{
-					// Remove the feature from the collection.
-					// Note that removing a feature does not prevent us from incrementing to the next feature.
-					feature_collection_handle.remove(features_iter);
-					// Record that we have removed this feature.
-					features_seq.erase(features_seq_iter);
+					if (features_seq[n] == *features_iter)
+					{
+						features_found[n] = true;
+					}
 				}
 			}
 
 			// Raise the 'ValueError' python exception if not all features were found.
-			if (!features_seq.empty())
+			if (std::find(features_found.begin(), features_found.end(), false) != features_found.end())
 			{
 				PyErr_SetString(PyExc_ValueError, "Not all feature instances were found");
 				bp::throw_error_already_set();
+			}
+
+			// Then remove every copy of each
+			// (a feature added more than once is in the collection more than once).
+			features_iter = feature_collection_handle.begin();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				// Compare pointers not pointed-to-objects.
+				if (std::find(features_seq.begin(), features_seq.end(), *features_iter) != features_seq.end())
+				{
+					// Note that removing a feature does not prevent us from incrementing to the next feature.
+					feature_collection_handle.remove(features_iter);
+				}
 			}
 		}
 
@@ -504,10 +521,9 @@ namespace GPlatesApi
 		// Process feature types next.
 		//
 
-		// Remove duplicate feature types.
-		feature_types_seq.erase(
-				std::unique(feature_types_seq.begin(), feature_types_seq.end()),
-				feature_types_seq.end());
+		// NOTE: Entries are never erased from this list when they match (unlike the instances above),
+		// since one feature type can match many features. So a future "not found" check
+		// would need a per-entry flag (like the instances above).
 
 		if (!feature_types_seq.empty())
 		{
@@ -535,10 +551,9 @@ namespace GPlatesApi
 		// Process feature IDs next.
 		//
 
-		// Remove duplicate feature IDs.
-		feature_ids_seq.erase(
-				std::unique(feature_ids_seq.begin(), feature_ids_seq.end()),
-				feature_ids_seq.end());
+		// NOTE: Entries are never erased from this list when they match (unlike the instances above),
+		// since one feature ID can match many features (features can share an ID).
+		// So a future "not found" check would need a per-entry flag (like the instances above).
 
 		if (!feature_ids_seq.empty())
 		{
@@ -584,7 +599,7 @@ namespace GPlatesApi
 
 					// See if current feature matches the query.
 					// Feature query is a callable predicate...
-					if (bp::extract<bool>(predicate(collection_feature)))
+					if (PythonExtractUtils::is_true(predicate(collection_feature)))
 					{
 						// Note that removing a feature does not prevent us from incrementing to the next feature.
 						feature_collection_handle.remove(features_iter);
@@ -618,6 +633,13 @@ namespace GPlatesApi
 			{
 				feature_id = extract_feature_id();
 			}
+			else
+			{
+				// Else feature query should be a callable predicate.
+				PythonExtractUtils::raise_type_error_if_not_callable(
+						feature_query_object,
+						"Expected FeatureType, or FeatureId, or predicate");
+			}
 		}
 
 		if (feature_return == FeatureReturn::EXACTLY_ONE)
@@ -644,7 +666,7 @@ namespace GPlatesApi
 				else
 				{
 					// Property query is a callable predicate...
-					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+					feature_query_result = PythonExtractUtils::is_true(feature_query_object(collection_feature));
 				}
 
 				if (feature_query_result)
@@ -687,7 +709,7 @@ namespace GPlatesApi
 				else
 				{
 					// Property query is a callable predicate...
-					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+					feature_query_result = PythonExtractUtils::is_true(feature_query_object(collection_feature));
 				}
 
 				if (feature_query_result)
@@ -725,7 +747,7 @@ namespace GPlatesApi
 				else
 				{
 					// Property query is a callable predicate...
-					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+					feature_query_result = PythonExtractUtils::is_true(feature_query_object(collection_feature));
 				}
 
 				if (feature_query_result)
@@ -994,6 +1016,9 @@ export_feature_collection()
 				"  A feature collection is an *unordered* collection of features "
 				"so there is no concept of where a feature is inserted in the sequence of features.\n"
 				"\n"
+				"  This does not check for duplicates: a feature added twice is in this collection twice "
+				"(and is written twice to a file). :meth:`remove` removes every copy.\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    feature_collection.add(feature)\n"
@@ -1017,7 +1042,9 @@ export_feature_collection()
 				"However if any specified :class:`Feature` is not currently a feature in this collection "
 				"then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* "
 				"must have previously been added (in other words the feature *values* are not compared - "
-				"it actually looks for the same feature *instance*).\n"
+				"it actually looks for the same feature *instance*). If ``ValueError`` is raised then "
+				"no features are removed. A :class:`Feature` added to this collection more than once "
+				"(see :meth:`add`) has every copy removed.\n"
 				"\n"
 				"  ::\n"
 				"\n"

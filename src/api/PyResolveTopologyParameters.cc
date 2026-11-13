@@ -58,6 +58,42 @@ namespace GPlatesApi
 				const double &rift_strain_rate_resolution,
 				const double &rift_edge_length_threshold_degrees)
 		{
+			// Note: Using '!(x > 0)' rather than 'x <= 0' also rejects NaN.
+
+			// The value is stored, and checked, even if clamping is disabled.
+			if (!(max_total_strain_rate > 0))
+			{
+				PyErr_SetString(PyExc_ValueError, "'max_clamped_strain_rate' must be positive");
+				bp::throw_error_already_set();
+			}
+
+			typedef GPlatesAppLogic::TopologyNetworkParams::RiftParams RiftParams;
+
+			if (!RiftParams::is_valid_exponential_stretching_constant(rift_exponential_stretching_constant))
+			{
+				std::ostringstream error_message;
+				error_message << "'rift_exponential_stretching_constant' must be positive, and at most "
+						<< RiftParams::MAX_EXPONENTIAL_STRETCHING_CONSTANT;
+				PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
+				bp::throw_error_already_set();
+			}
+
+			if (!RiftParams::is_valid_strain_rate_resolution(rift_strain_rate_resolution))
+			{
+				PyErr_SetString(PyExc_ValueError, "'rift_strain_rate_resolution' must be positive (and finite)");
+				bp::throw_error_already_set();
+			}
+
+			if (!RiftParams::is_valid_edge_length_threshold_degrees(rift_edge_length_threshold_degrees))
+			{
+				std::ostringstream error_message;
+				error_message << "'rift_edge_length_threshold_degrees' must be in the range ["
+						<< RiftParams::MIN_EDGE_LENGTH_THRESHOLD_DEGREES << ", "
+						<< RiftParams::MAX_EDGE_LENGTH_THRESHOLD_DEGREES << "]";
+				PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
+				bp::throw_error_already_set();
+			}
+
 			return ResolveTopologyParameters::create(
 					enable_strain_rate_clamping,
 					max_total_strain_rate,
@@ -198,7 +234,7 @@ export_resolve_topology_parameters()
 			"  :param max_clamped_strain_rate: Maximum :meth:`total strain rate <StrainRate.get_total_strain_rate>` (in units of :math:`second^{-1}`). "
 			"This is only used if *enable_strain_rate_clamping* is true. Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate
-			<< "`` :math:`second^{-1}`. See :attr:`max_clamped_strain_rate`.\n"
+			<< "`` :math:`second^{-1}`. Must be positive (even if clamping is disabled). See :attr:`max_clamped_strain_rate`.\n"
 			"  :type max_clamped_strain_rate: float\n"
 			"  :param strain_rate_smoothing: How deformation strain rates are smoothed (if at all). "
 			"This can be no smoothing, barycentric smoothing or natural neighbour smoothing. Default value is ``"
@@ -207,18 +243,29 @@ export_resolve_topology_parameters()
 			"  :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. "
 			"Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().exponential_stretching_constant
-			<< "``. See :attr:`rift_exponential_stretching_constant`.\n"
+			<< "``. Must be positive, and at most ``"
+			<< GPlatesAppLogic::TopologyNetworkParams::RiftParams::MAX_EXPONENTIAL_STRETCHING_CONSTANT
+			<< "``: larger values concentrate the stretching towards the rift axis, "
+			"and values approaching zero approach a uniform strain rate across the rift. "
+			"See :attr:`rift_exponential_stretching_constant`.\n"
 			"  :type rift_exponential_stretching_constant: float\n"
 			"  :param rift_strain_rate_resolution: Controls how accurately the strain rate curve (across rift profile) matches exponential curve (in units of :math:`second^{-1}`). "
 			"Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().strain_rate_resolution
-			<< "``. See :attr:`rift_strain_rate_resolution`.\n"
+			<< "``. Must be positive (and finite). See :attr:`rift_strain_rate_resolution`.\n"
 			"  :type rift_strain_rate_resolution: float\n"
 			"  :param rift_edge_length_threshold_degrees: Rift edges in network triangulation shorter than this length (in degrees) will not be further sub-divided. "
 			"Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().edge_length_threshold_degrees
-			<< "``. See :attr:`rift_edge_length_threshold_degrees`.\n"
+			<< "``. Must be in the range ["
+			<< GPlatesAppLogic::TopologyNetworkParams::RiftParams::MIN_EDGE_LENGTH_THRESHOLD_DEGREES << ", "
+			<< GPlatesAppLogic::TopologyNetworkParams::RiftParams::MAX_EDGE_LENGTH_THRESHOLD_DEGREES << "]. "
+			"Smaller values give finer rift profiles but take longer: each halving can subdivide rift edges "
+			"one level deeper (doubling their vertices). See :attr:`rift_edge_length_threshold_degrees`.\n"
 			"  :type rift_edge_length_threshold_degrees: float\n"
+			"  :raises ValueError: if *max_clamped_strain_rate* is not positive (including NaN), or "
+			"*rift_exponential_stretching_constant*, *rift_strain_rate_resolution* or *rift_edge_length_threshold_degrees* "
+			"is outside its range (including NaN)\n"
 			"\n"
 			"  .. seealso:: :ref:`pygplates_primer_strain_rate_clamping`, :ref:`pygplates_primer_strain_rate_smoothing` and "
 			":ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation.\n"

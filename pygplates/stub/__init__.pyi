@@ -10,7 +10,7 @@
 import numpy
 import os
 
-from typing import Any, Callable, ClassVar, NamedTuple, Sequence, overload
+from typing import Any, Callable, ClassVar, Iterable, NamedTuple, Sequence, overload
 
 __version__: str
 
@@ -199,7 +199,7 @@ class DateLineWrapper:
 
         :param geometry: the geometry to wrap
         :type geometry: GeometryOnSphere
-        :param tessellate_degrees: optional tessellation threshold (in degrees) - threshold is clamped to the range [0, 180] if specified
+        :param tessellate_degrees: optional tessellation threshold (in degrees) - threshold is clamped to the range [0, 180] if specified (zero, negative or NaN means no tessellation)
         :type tessellate_degrees: float or None
         :rtype: LatLonPoint, or DateLineWrapper.LatLonMultiPoint, or list of DateLineWrapper.LatLonPolyline, or list of DateLineWrapper.LatLonPolygon
 
@@ -514,7 +514,7 @@ class EnumerationType:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:SubductionPolarityEnumeration``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           enumeration_type = pygplates.EnumerationType.create_from_qualified_string('gpml:SubductionPolarityEnumeration')
@@ -526,6 +526,7 @@ class EnumerationType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: EnumerationType
 
         ::
@@ -2366,7 +2367,7 @@ class Feature:
         :type property_query: PropertyName, or Property, or callable (accepting single Property argument), or a sequence (eg, list or tuple) of any combination of them
         :raises ValueError: if any specified :class:`Property` is not currently a property in this feature
 
-        All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property in this feature is ignored. However if any specified :class:`Property` is not currently a property in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must have previously been added (in other words the property *values* are not compared - it actually looks for the same property *instance*).
+        All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property in this feature is ignored. However if any specified :class:`Property` is not currently a property in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must have previously been added (in other words the property *values* are not compared - it actually looks for the same property *instance*). If ``ValueError`` is raised then no properties are removed.
 
         ::
 
@@ -2960,13 +2961,13 @@ class Feature:
         :returns: the property containing the list of times
         :rtype: Property
         :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`     does not support the `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ property.
-        :raises ValueError: if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
+        :raises ValueError: if the time values in *times* are not in strictly increasing order (including a repeated time), or there are fewer than two time values.
 
         This is a convenience method that wraps :meth:`set` for the common property
         `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_ used in flowlines and motion paths.
 
-        The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past)
-        otherwise *ValueError* will be raised.
+        The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past),
+        with no time repeated, otherwise *ValueError* will be raised.
 
         Set the list of times:
         ::
@@ -2986,7 +2987,7 @@ class Feature:
         .. seealso:: :meth:`get_times`
 
         .. versionchanged:: 1.1
-           Sets the geometry import time of a flowline that has none.
+           Sets the geometry import time of a flowline that has none, and raises *ValueError* for a repeated time.
         """
 
     def set_topological_geometry(self, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Sequence[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], property_name: PropertyName = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
@@ -3232,6 +3233,8 @@ class FeatureCollection:
 
         A feature collection is an *unordered* collection of features so there is no concept of where a feature is inserted in the sequence of features.
 
+        This does not check for duplicates: a feature added twice is in this collection twice (and is written twice to a file). :meth:`remove` removes every copy.
+
         ::
 
           feature_collection.add(feature)
@@ -3321,7 +3324,7 @@ class FeatureCollection:
         :type feature_query: FeatureType, or FeatureId, or Feature, or callable (accepting single Feature argument), or a sequence (eg, list or tuple) of any combination of them
         :raises ValueError: if any specified :class:`Feature` is not currently a feature in this collection
 
-        All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable (if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` or predicate callable that does not match a feature in this collection is ignored. However if any specified :class:`Feature` is not currently a feature in this collection then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* must have previously been added (in other words the feature *values* are not compared - it actually looks for the same feature *instance*).
+        All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable (if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` or predicate callable that does not match a feature in this collection is ignored. However if any specified :class:`Feature` is not currently a feature in this collection then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* must have previously been added (in other words the feature *values* are not compared - it actually looks for the same feature *instance*). If ``ValueError`` is raised then no features are removed. A :class:`Feature` added to this collection more than once (see :meth:`add`) has every copy removed.
 
         ::
 
@@ -3577,7 +3580,7 @@ class FeatureType:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:Coastline``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           feature_type = pygplates.FeatureType.create_from_qualified_string('gpml:Coastline')
@@ -3589,6 +3592,7 @@ class FeatureType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: FeatureType
 
         ::
@@ -4436,6 +4440,7 @@ class GeoTimeInstant:
 
         :param time_value: the time position - positive values represent times in the *past*
         :type time_value: float or GeoTimeInstant
+        :raises ValueError: if *time_value* is NaN
 
         Note that if *time_value* is +infinity then :meth:`is_distant_past` will subsequently return true. And if *time_value* is -infinity then :meth:`is_distant_future` will subsequently return true.
         ::
@@ -4904,7 +4909,7 @@ class GmlDataBlock(PropertyValue):
               pygplates.ScalarType.create_gpml('VelocityColat'),
               [-1.5, -1.6, -1.55])
 
-        .. note:: If there is no list of scalar values associated with *scalar_type* then a new list is added, otherwise the existing list is replaced.
+        .. note:: If there is no list of scalar values associated with *scalar_type* then a new list is added, otherwise the existing list is replaced (keeping its place in the order of scalar types).
         """
 
 class GmlLineString(PropertyValue):
@@ -5459,8 +5464,9 @@ class GpmlConstantValue(PropertyValue):
     def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value of this constant value wrapper.
 
-        :param property_value: arbitrary property value
+        :param property_value: property value of the same type as the current value (see :meth:`get_value`)
         :type property_value: PropertyValue
+        :raises ValueError: if *property_value* is not of the same type as the current value
 
         This essentially replaces the previous property value. Note that an alternative is to directly modify the property value returned by :meth:`get_value` using its property value methods.
         """
@@ -5506,6 +5512,10 @@ class GpmlFiniteRotation(PropertyValue):
 
 class GpmlIrregularSampling(PropertyValue):
     """A time-dependent property consisting of a sequence of time samples irregularly spaced in time.
+
+    The time samples are kept in order of time, from most recent (closest to present day) to least recent (furthest in the geological past). The :meth:`constructor<__init__>` sorts them into that order (keeping time samples with equal times in the order given). Everything that uses the time samples relies on that order (eg, :meth:`get_value` and :class:`RotationModel`).
+
+    **Keep the time samples in that order when changing them directly** (eg, inserting a time sample, or changing a time sample's time with :meth:`GpmlTimeSample.set_time`). Otherwise interpolation finds the wrong time samples, or none. For example, :meth:`sort` them afterwards, or use :meth:`set_value`, which keeps them in order.
 
     GpmlIrregularSampling behaves like a regular python ``list`` (of :class:`GpmlTimeSample` elements) in that the following operations are supported:
 
@@ -5571,7 +5581,7 @@ class GpmlIrregularSampling(PropertyValue):
     def __init__(self, time_samples: Sequence[Any]) -> None:
         """Create an irregularly sampled time-dependent property from a sequence of time samples.
 
-        :param time_samples: A sequence of :class:`GpmlTimeSample` elements.
+        :param time_samples: A sequence of :class:`GpmlTimeSample` elements, in any order (they are sorted by time, from most recent to least recent).
         :type time_samples: Any sequence such as a list or a tuple
         :raises RuntimeError: if time sample sequence is empty
 
@@ -5580,6 +5590,9 @@ class GpmlIrregularSampling(PropertyValue):
         ::
 
           irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)
+
+        .. versionchanged:: 1.1
+           Sorts the time samples by time (previously they were kept in the order given).
         """
 
     def __iter__(self) -> Any: ...
@@ -5678,9 +5691,10 @@ class GpmlIrregularSampling(PropertyValue):
         :param time: the time to extract value (defaults to present day)
         :type time: float or GeoTimeInstant
         :rtype: PropertyValue or None
-        :raises InterpolationError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or     :meth:`distant future<GeoTimeInstant.is_distant_future>`
+        :raises InterpolationError: if a :meth:`time sample<get_time_samples>` bounding *time* has a time that is     :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
-        Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`.
+        Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`
+        (including a *time* that is itself distant past or distant future).
 
         Note that the extracted property value is interpolated (at reconstruction *time*) if property
         value can be interpolated (currently only :class:`GpmlFiniteRotation` and :class:`XsDouble`),
@@ -5756,7 +5770,7 @@ class GpmlIrregularSampling(PropertyValue):
         :type time: float or GeoTimeInstant
         :param description: description of the time sample
         :type description: str or None
-        :param is_enabled: whether time sample is enabled
+        :param is_enabled: whether time sample is enabled (defaults to ``True``, as does ``None``)
         :type is_enabled: bool or None
         :returns: the time sample that is modified, or inserted into the time sequence
         :rtype: GpmlTimeSample
@@ -5770,6 +5784,13 @@ class GpmlIrregularSampling(PropertyValue):
         ordered by time from most recent to least recent.
 
         Note that *time* can be outside the time range of existing :meth:`time samples<get_time_samples>`.
+
+        .. note:: *is_enabled* set to ``None`` means enabled (the default), not disabled.
+           A disabled time sample is ignored when interpolating (eg, a disabled sample of a total reconstruction pole
+           is ignored when calculating rotations).
+
+        .. versionchanged:: 1.1
+           *is_enabled* set to ``None`` means enabled (previously it disabled the time sample).
         """
 
     def sort(self, key: Callable[[GpmlTimeSample], Any], reverse: bool = ...) -> None:
@@ -6821,8 +6842,9 @@ class GpmlTimeSample:
     def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value associated with this time sample.
 
-        :param property_value: arbitrary property value
+        :param property_value: property value of the same type as :meth:`get_value_type`
         :type property_value: PropertyValue
+        :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`
 
         This essentially replaces the previous property value. Note that an alternative is to directly modify the property value returned by :meth:`get_value` using its property value methods.
         """
@@ -7082,8 +7104,9 @@ class GpmlTimeWindow:
     def set_value(self, property_value: PropertyValue) -> None:
         """Sets the property value associated with this time window.
 
-        :param property_value: arbitrary property value
+        :param property_value: property value of the same type as :meth:`get_value_type`
         :type property_value: PropertyValue
+        :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`
 
         This essentially replaces the previous property value. Note that an alternative is to directly modify the property value returned by :meth:`get_value` using its property value methods.
         """
@@ -7974,7 +7997,7 @@ class GreatCircleArc:
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: list of PointOnSphere
-        :raises ValueError: if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)
 
         .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then only its :meth:`start point <get_start_point>` and :meth:`end point <get_end_point>` are returned. For example, this applies to a :meth:`zero length <is_zero_length>` arc. Otherwise tessellated points *within* this arc are *also* returned.
 
@@ -8791,6 +8814,7 @@ class NetRotation:
         :type finite_rotation: FiniteRotation
         :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).
         :type time_interval: float
+        :raises ValueError: if *time_interval* is not positive and finite
         :rtype: Vector3D
 
         To convert a finite rotation over 10Myr to a rotation rate vector (in radians per Myr):  ::
@@ -8806,6 +8830,7 @@ class NetRotation:
         :type rotation_rate_vector: Vector3D
         :param time_interval: The time interval of the returned finite rotation (defaults to 1Myr).
         :type time_interval: float
+        :raises ValueError: if *time_interval* is not positive and finite
         :rtype: FiniteRotation
 
         To convert a rotation rate vector (in radians per Myr) to a finite rotation over 10Myr (ie, having the same pole but with an angle multiplied by 10):  ::
@@ -8825,6 +8850,7 @@ class NetRotation:
         :type finite_rotation: FiniteRotation
         :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).
         :type time_interval: float
+        :raises ValueError: if *time_interval* is not positive and finite
         :rtype: NetRotation
 
         In this contrived example we calculate the net rotation of a single plate. This is just for demonstration purposes in case you wanted to do your own intersections of point samples with plates (otherwise it's easier to just use :class:`NetRotationSnapshot` which does all this for you).
@@ -8927,7 +8953,7 @@ class NetRotationModel:
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.
+        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:
 
@@ -9029,7 +9055,7 @@ class NetRotationSnapshot:
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
         :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
-        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.
+        :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:
 
@@ -10270,6 +10296,7 @@ class PlatePartitioner:
         :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features*)
         :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
         :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
+        :raises TypeError: if *properties_to_copy* is an iterator (rather than a sequence such as a list)
 
         The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
         specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
@@ -10319,7 +10346,7 @@ class PlatePartitioner:
 
         *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
 
-        *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
+        *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it). A property is copied whole, including a time-dependent value (such as a :class:`GpmlPiecewiseAggregation`).
 
         .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
 
@@ -10439,7 +10466,7 @@ class PlatePartitioner:
 
           plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')
           partitioned_inside_geometries = []
-          if plate_partitioner.partition(polyline_to_partition, partitioned_inside_geometries):
+          if plate_partitioner.partition_geometry(polyline_to_partition, partitioned_inside_geometries):
               for partitioning_recon_geom, inside_geometries in partitioned_inside_geometries:
                   for inside_geometry in inside_geometries:
                       polyline_inside_length += inside_geometry.get_arc_length()
@@ -11286,7 +11313,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: PolygonOnSphere
-        :raises ValueError: if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)
 
         Adjacent points (in the returned tessellated polygon) are separated by no more than *tessellate_radians* on the globe.
 
@@ -11629,11 +11656,11 @@ class PolylineOnSphere(GeometryOnSphere):
         """
 
     @staticmethod
-    def join(geometries: Sequence[GeometryOnSphere], distance_threshold_radians: float | None = None, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere]:
+    def join(geometries: Iterable[GeometryOnSphere], distance_threshold_radians: float | None = None, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere]:
         """Joins geometries that have end points closer than a distance threshold.
 
         :param geometries: the geometries to join
-        :type geometries: sequence (eg, list or tuple) of GeometryOnSphere
+        :type geometries: iterable of GeometryOnSphere
         :param distance_threshold_radians: optional closeness distance threshold in radians for joining to occur     (if not specified then end point *equality* is used)
         :type distance_threshold_radians: float
         :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to     *PolylineConversion.ignore_non_polyline*
@@ -11706,6 +11733,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping latitude ranges or if maximum distance threshold exceeded or if either polyline is not a :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.ignore_non_polyline*)
         :rtype: list of PolylineOnSphere or None
         :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)
+        :raises ValueError: if *interpolate* is a single number that is not positive (or is so small that the number of interpolated polylines doesn't fit a 32-bit unsigned integer), or is a sequence containing a ratio outside the range [0,1]
 
         If *interpolate* is a single number then it is the distance interval spacing, in radians, between *from_polyline* and *to_polyline* at which to generate interpolated polylines. Also modified versions of *from_polyline* and *to_polyline* are returned along with the interpolated polylines.
 
@@ -11845,7 +11873,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :param tessellate_radians: maximum tessellation angle (in radians)
         :type tessellate_radians: float
         :rtype: PolylineOnSphere
-        :raises ValueError: if *tessellate_radians* is negative or zero
+        :raises ValueError: if *tessellate_radians* is negative, zero or NaN, or less than about 1.5e-9 (where the number of points would no longer fit a 32-bit integer)
 
         Adjacent points (in the returned tessellated polyline) are separated by no more than *tessellate_radians* on the globe.
 
@@ -12160,7 +12188,7 @@ class PropertyName:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:reconstructionPlateId``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           property_name = pygplates.PropertyName.create_from_qualified_string('gpml:reconstructionPlateId')
@@ -12172,6 +12200,7 @@ class PropertyName:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: PropertyName
 
         ::
@@ -12185,6 +12214,7 @@ class PropertyName:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: PropertyName
 
         ::
@@ -12198,6 +12228,7 @@ class PropertyName:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: PropertyName
 
         ::
@@ -12639,11 +12670,11 @@ class PropertyValueVisitor:
         :type gpml_constant_value: GpmlConstantValue
         """
 
-    def visit_gpml_finite_rotation(self, ppml_finite_rotation: GpmlFiniteRotation) -> None:
+    def visit_gpml_finite_rotation(self, gpml_finite_rotation: GpmlFiniteRotation) -> None:
         """Visits a :class:`GpmlFiniteRotation` property value.
 
-        :param ppml_finite_rotation: the property value being visited
-        :type ppml_finite_rotation: GpmlFiniteRotation
+        :param gpml_finite_rotation: the property value being visited
+        :type gpml_finite_rotation: GpmlFiniteRotation
         """
 
     def visit_gpml_irregular_sampling(self, gpml_irregular_sampling: GpmlIrregularSampling) -> None:
@@ -12789,6 +12820,7 @@ class ReconstructModel:
         :type anchor_plate_id: int
         :param reconstruct_snapshot_cache_size: Number of reconstruct snapshots to cache internally. Defaults to unlimited.
         :type reconstruct_snapshot_cache_size: int
+        :raises ValueError: if *reconstruct_snapshot_cache_size* is zero
 
         Load a reconstruct model (and its associated rotation model):
         ::
@@ -13359,20 +13391,20 @@ class ReconstructedGeometryTimeSpan:
 
         def __init__(self, *args: Any, **kwargs: Any) -> None: ...
 
-        def deactivate(self, prev_point: PointOnSphere, prev_location: TopologyPointLocation, prev_time: float | GeoTimeInstant, current_point: PointOnSphere, current_location: TopologyPointLocation, current_time: float | GeoTimeInstant) -> bool:
+        def deactivate(self, prev_point: PointOnSphere, prev_location: TopologyPointLocation, prev_time: float, current_point: PointOnSphere, current_location: TopologyPointLocation, current_time: float) -> bool:
             """Return true if the point should be deactivated.
 
             * **prev_point** (:class:`PointOnSphere`): the previous position of the point
 
             * **prev_location** (:class:`TopologyPointLocation`): the previous location of the point in the topologies
 
-            * **prev_time** (float or :class:`GeoTimeInstant`): the time associated with the previous position of the point
+            * **prev_time** (float): the time associated with the previous position of the point
 
             * **current_point** (:class:`PointOnSphere`): the current position of the point
 
             * **current_location** (:class:`TopologyPointLocation`): the current location of the point in the topologies
 
-            * **current_time** (float or :class:`GeoTimeInstant`): the time associated with the current position of the point
+            * **current_time** (float): the time associated with the current position of the point
 
             * **Return type**: bool
 
@@ -13561,7 +13593,7 @@ class ReconstructedGeometryTimeSpan:
         :returns: the 4-tuple of (oldest time, youngest time, time increment, number of time slots)
         :rtype: tuple[float, float, float, int]
 
-        The oldest time, youngest time and time increment are the same as were specified in :meth:`TopologicalModel.reconstruct_geometry`. And the number of time slots is :math:`\frac{(oldest\_time - youngest\_time)}{time\_increment}` which is an integer value (since :meth:`TopologicalModel.reconstruct_geometry` requires the oldest to youngest time period to be an integer multiple of the time increment).
+        The oldest time, youngest time and time increment are the same as were specified in :meth:`TopologicalModel.reconstruct_geometry`. And the number of time slots is :math:`\frac{(oldest\_time - youngest\_time)}{time\_increment} + 1` which is an integer value (since :meth:`TopologicalModel.reconstruct_geometry` requires the oldest to youngest time period to be an integer multiple of the time increment).
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span` in the *Primer* documentation.
 
@@ -14202,16 +14234,17 @@ class ResolveTopologyParameters:
 
         :param enable_strain_rate_clamping: Whether to enable clamping of strain rate. Defaults to ``False``. See :attr:`enable_strain_rate_clamping`.
         :type enable_strain_rate_clamping: bool
-        :param max_clamped_strain_rate: Maximum :meth:`total strain rate <StrainRate.get_total_strain_rate>` (in units of :math:`second^{-1}`). This is only used if *enable_strain_rate_clamping* is true. Default value is ``5e-15`` :math:`second^{-1}`. See :attr:`max_clamped_strain_rate`.
+        :param max_clamped_strain_rate: Maximum :meth:`total strain rate <StrainRate.get_total_strain_rate>` (in units of :math:`second^{-1}`). This is only used if *enable_strain_rate_clamping* is true. Default value is ``5e-15`` :math:`second^{-1}`. Must be positive (even if clamping is disabled). See :attr:`max_clamped_strain_rate`.
         :type max_clamped_strain_rate: float
         :param strain_rate_smoothing: How deformation strain rates are smoothed (if at all). This can be no smoothing, barycentric smoothing or natural neighbour smoothing. Default value is ``pygplates.StrainRateSmoothing.natural_neighbour``. See :attr:`strain_rate_smoothing`.
         :type strain_rate_smoothing: StrainRateSmoothing
-        :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. Default value is ``1``. See :attr:`rift_exponential_stretching_constant`.
+        :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. Default value is ``1``. Must be positive, and at most ``100``: larger values concentrate the stretching towards the rift axis, and values approaching zero approach a uniform strain rate across the rift. See :attr:`rift_exponential_stretching_constant`.
         :type rift_exponential_stretching_constant: float
-        :param rift_strain_rate_resolution: Controls how accurately the strain rate curve (across rift profile) matches exponential curve (in units of :math:`second^{-1}`). Default value is ``5e-17``. See :attr:`rift_strain_rate_resolution`.
+        :param rift_strain_rate_resolution: Controls how accurately the strain rate curve (across rift profile) matches exponential curve (in units of :math:`second^{-1}`). Default value is ``5e-17``. Must be positive (and finite). See :attr:`rift_strain_rate_resolution`.
         :type rift_strain_rate_resolution: float
-        :param rift_edge_length_threshold_degrees: Rift edges in network triangulation shorter than this length (in degrees) will not be further sub-divided. Default value is ``0.1``. See :attr:`rift_edge_length_threshold_degrees`.
+        :param rift_edge_length_threshold_degrees: Rift edges in network triangulation shorter than this length (in degrees) will not be further sub-divided. Default value is ``0.1``. Must be in the range [0.001, 180]. Smaller values give finer rift profiles but take longer: each halving can subdivide rift edges one level deeper (doubling their vertices). See :attr:`rift_edge_length_threshold_degrees`.
         :type rift_edge_length_threshold_degrees: float
+        :raises ValueError: if *max_clamped_strain_rate* is not positive (including NaN), or *rift_exponential_stretching_constant*, *rift_strain_rate_resolution* or *rift_edge_length_threshold_degrees* is outside its range (including NaN)
 
         .. seealso:: :ref:`pygplates_primer_strain_rate_clamping`, :ref:`pygplates_primer_strain_rate_smoothing` and :ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation.
 
@@ -16008,6 +16041,7 @@ class RotationModel:
         :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. Defaults to 150.
         :type reconstruction_tree_cache_size: int
+        :raises ValueError: if *reconstruction_tree_cache_size* is zero
         :param extend_total_reconstruction_poles_to_distant_past: extend each moving plate sequence back infinitely far into the distant past such that reconstructed geometries will not snap back to their present day positions when the reconstruction time is older than the oldest times specified in the rotation features (defaults to ``False``)
         :type extend_total_reconstruction_poles_to_distant_past: bool
         :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. Defaults to 0.
@@ -16062,6 +16096,7 @@ class RotationModel:
         :type rotation_model: RotationModel
         :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. Defaults to 2 - this is much lower than the usual default cache size since the existing rotation model likely already has a sizeable cache anyway - and if you are leaving this at its default value then you are presumably only interested in changing the default anchor plate ID (not increasing the cache size).
         :type reconstruction_tree_cache_size: int
+        :raises ValueError: if *reconstruction_tree_cache_size* is zero
         :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. Defaults to the default anchor plate of *rotation_model*.
         :type default_anchor_plate_id: int
 
@@ -16230,7 +16265,7 @@ class ScalarType:
 
         The name string should have a ``:`` character separating the namespace alias from the unqualified name, for example ``gpml:VelocityColat``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.
 
-        An over-qualified name string (eg, containing two or more ``:`` characters) will result in ``None`` being returned.
+        An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name (eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.
         ::
 
           gpml_velocity_colat_scalar_type = pygplates.ScalarType.create_from_qualified_string('gpml:VelocityColat')
@@ -16242,6 +16277,7 @@ class ScalarType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: ScalarType
         """
 
@@ -16251,6 +16287,7 @@ class ScalarType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: ScalarType
 
         ::
@@ -16264,6 +16301,7 @@ class ScalarType:
 
         :param name: unqualified name
         :type name: str
+        :raises ValueError: if *name* is empty
         :rtype: ScalarType
         """
 
@@ -16499,10 +16537,14 @@ class Strain:
         :type deformation_gradient_phi_theta: float
         :param deformation_gradient_phi_phi: :math:`F_{\phi\phi}`
         :type deformation_gradient_phi_phi: float
+        :raises ValueError: if :math:`\det \boldsymbol F` is not positive (it is the ratio of deformed to original area, so it is always positive physically)
 
         .. seealso:: :meth:`get_deformation_gradient`
 
         .. note:: Typically you wouldn't need this since you can start with no deformation (``pygplates.Strain.identity``) at the initial time and use :meth:`accumulate` to incrementally update strain over time using your own calculations of :class:`strain rate <StrainRate>`.
+
+        .. versionchanged:: 1.1
+           Raises ``ValueError`` if :math:`\det \boldsymbol F` is not positive.
         """
 
     def __le__(self, other: Any) -> bool: ...
@@ -16564,6 +16606,8 @@ class Strain:
            \boldsymbol{F}_{t + \Delta t} = (\boldsymbol I - \boldsymbol{L}_{t + \Delta t} \frac{\Delta t}{2})^{-1} (\boldsymbol I + \boldsymbol{L}_{t} \frac{\Delta t}{2}) \boldsymbol{F}_{t}
 
         ...where :math:`\Delta t` is *time_increment*, :math:`\boldsymbol{L}_{t}` is *previous_strain_rate*, :math:`\boldsymbol{L}_{t + \Delta t}` is *current_strain_rate*, :math:`\boldsymbol{F}_{t}` is *previous_strain* and :math:`\boldsymbol{F}_{t + \Delta t}` is returned by this function.
+
+        .. note:: The strain rates multiplied by *time_increment* must stay small (well below one). This scheme multiplies :math:`\det \boldsymbol F` by :math:`\det(\boldsymbol I + \boldsymbol{L}_{t} \frac{\Delta t}{2}) / \det(\boldsymbol I - \boldsymbol{L}_{t + \Delta t} \frac{\Delta t}{2})`, which changes sign once a strain rate times :math:`\frac{\Delta t}{2}` passes about one, giving a non-physical strain (with :math:`\det \boldsymbol F` not positive).
         """
 
     def get_deformation_gradient(self) -> tuple[float, float, float, float]:
@@ -16591,6 +16635,8 @@ class Strain:
         .. math::
 
            \frac{\Delta A}{A} = \det \boldsymbol F - 1
+
+        .. note:: This actually returns :math:`|\det \boldsymbol F| - 1`, which is the same since :math:`\det \boldsymbol F` is positive physically (and always is for a strain :meth:`created <__init__>`, or :meth:`accumulated <accumulate>` with a small enough strain rate and time increment).
 
         .. seealso::
 
@@ -16630,6 +16676,8 @@ class Strain:
            e_{(2)} &= \Lambda_{(2)} - 1 &= \frac{1}{\sqrt{\hat{\boldsymbol n}_{(2)} \cdot \boldsymbol c \cdot \hat{\boldsymbol n}_{(2)}}} - 1
 
         .. note:: This function returns principal *strains*. To get the principal *stretches* simply add one since :math:`\Lambda_{(i)} = 1 + e_{(i)}` (see :class:`Strain`).
+
+        .. note:: If :math:`\det \boldsymbol F` is not positive (which can only happen if strain was :meth:`accumulated <accumulate>` with too large a strain rate and time increment) then ``(0, 0, 0)`` is returned.
 
         To get the principal *stretches* (ie, *strains* plus one) with the angle (in degrees) of the major principal axis clockwise relative to North (ie, azimuth):
         ::
@@ -16931,6 +16979,7 @@ class TopologicalModel:
         :type default_resolve_topology_parameters: ResolveTopologyParameters
         :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.
         :type topological_snapshot_cache_size: int
+        :raises ValueError: if *topological_snapshot_cache_size* is zero
 
         .. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.
 
@@ -16974,18 +17023,18 @@ class TopologicalModel:
         .. note:: The reconstruction tree cache size of the returned rotation model is equal to the *topological_snapshot_cache_size* argument specified in the :meth:`constructor<__init__>` plus one (or unlimited if not specified).
         """
 
-    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | Sequence[PointOnSphere | tuple[float, float, float] | tuple[float, float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
+    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Sequence[PointOnSphere | tuple[float, float, float] | tuple[float, float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
         """Reconstruct a geometry (and optional scalars) over a time span.
 
-        :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. Polylines and polygons to be introduced in future.
-        :type geometry: MultiPointOnSphere, or PointOnSphere, or sequence of points (where a point can be PointOnSphere or (x,y,z) tuple or (latitude,longitude) tuple in degrees)
-        :param initial_time: The time that reconstruction by topologies starts at.
+        :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points (all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. Reconstructing polylines and polygons as such is to be introduced in future.
+        :type geometry: MultiPointOnSphere, or PointOnSphere, or PolylineOnSphere, or PolygonOnSphere, or sequence of points (where a point can be PointOnSphere or (x,y,z) tuple or (latitude,longitude) tuple in degrees)
+        :param initial_time: The time that reconstruction by topologies starts at. If it's not one of the time slots (from *oldest_time* to *youngest_time* in steps of *time_increment*) then it's snapped to the nearest one, at a cost in accuracy: if *reconstruction_plate_id* is specified then the present-day *geometry* is rigidly rotated to that time slot's time (so it's correct for that time slot), otherwise *geometry* is treated as being at that time slot's time.
         :type initial_time: float or GeoTimeInstant
         :param oldest_time: Oldest time in the history of topologies. Defaults to *initial_time*.
         :type oldest_time: float or GeoTimeInstant
         :param youngest_time: Youngest time in the history of topologies. Defaults to present day.
         :type youngest_time: float or GeoTimeInstant
-        :param time_increment: Time step in the history of topologies (``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My.
+        :param time_increment: Time step in the history of topologies (``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My. There can be at most 100,000 time slots (``(oldest_time - youngest_time) / time_increment + 1``). Note that the run time grows with the square of the number of time slots (and memory linearly), so a small increment over a long time span is expensive.
         :type time_increment: float
         :param reconstruction_plate_id: If specified then *geometry* is assumed to be a snapshot at present day, and this will rotate it to *initial_time*. If not specified then *geometry* is assumed to already be a snapshot at *initial_time* - this is the default.
         :type reconstruction_plate_id: int
@@ -16998,7 +17047,8 @@ class TopologicalModel:
         :rtype: ReconstructedGeometryTimeSpan
         :raises ValueError: if initial time, oldest time or youngest time is distant-past (``float('inf')``) or distant-future (``float('-inf')``).
         :raises ValueError: if oldest time is later than (or same as) youngest time.
-        :raises ValueError: if time increment is negative or zero.
+        :raises ValueError: if time increment is negative or zero (or NaN).
+        :raises ValueError: if there would be more than 100,000 time slots.
         :raises ValueError: if oldest to youngest time period is not an integer multiple of the time increment.
         :raises ValueError: if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values, or the number of scalars is not equal to the number of points in *geometry*
 
@@ -17107,7 +17157,7 @@ class TopologicalSnapshot:
         :type return_shared_sub_segment_dict: bool
         :returns: list of :class:`PlateBoundaryStatistic` for all uniform points, or (if *return_shared_sub_segment_dict* is ``True``) a ``dict`` mapping each :class:`ResolvedTopologicalSharedSubSegment` to a list of :class:`PlateBoundaryStatistic`
         :rtype: list[PlateBoundaryStatistic], or dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]
-        :raises ValueError: if *uniform_point_spacing_radians* is negative or zero
+        :raises ValueError: if *uniform_point_spacing_radians* is negative or zero (or NaN), or *first_uniform_point_spacing_radians* is negative (or NaN)
         :raises ValueError: if *velocity_delta_time* is negative or zero.
 
         .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.
@@ -18518,6 +18568,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
+    :raises TypeError: if *properties_to_copy* is an iterator (rather than a sequence such as a list)
 
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
@@ -18578,7 +18629,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
 
     *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
 
-    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
+    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it). A property is copied whole, including a time-dependent value (such as a :class:`GpmlPiecewiseAggregation`).
 
     .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
 
@@ -19110,10 +19161,10 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     :param crossover_type_function: A function that determines a crossover's type, or one of the         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* -         can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
     :type crossover_type_function: a callable, or a CrossoverType enumerated value, or None
 
-    :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or         *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of         *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
+    :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or         *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of         *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate         at the crossover time) - the list is sorted by crossover time - default is None
     :type crossover_results: list[tuple[Crossover, int]], or None
 
-    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown* (which         generates a *CrossoverResult.error* in *crossover_results*, if specified, due to inability to         process crossover). Also returns False if unable to synchronise all crossovers due to an infinite         cycle between crossovers. In all cases (success or failure) as many crossovers as possible will be         processed and results saved to rotation features (and rotation files, if any).
+    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown*, or if there is         no plate circuit from the moving plate of any crossover to its synchronised crossover's fixed plate at the         crossover time (either of which generates a *CrossoverResult.error* in *crossover_results*, if specified,         due to inability to process crossover, whose time samples are then left unchanged).         Also returns False if unable to synchronise all crossovers due to an infinite         cycle between crossovers. In all cases (success or failure) as many crossovers as possible will be         processed and results saved to rotation features (and rotation files, if any).
     :rtype: bool
 
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
@@ -19262,7 +19313,8 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or
     *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or
     *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of
-    *CrossoverType.unknown*). The appended list elements are sorted by crossover time.
+    *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate
+    at the crossover time). The appended list elements are sorted by crossover time.
 
     Synchronise all crossovers found in a rotation file (and save modifications back to the same rotation file)
     where crossover types are determined by '\@xo_' tags in the young crossover description/comment:

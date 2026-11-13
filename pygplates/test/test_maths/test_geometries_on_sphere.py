@@ -932,6 +932,16 @@ class PolylineOnSphereCase(unittest.TestCase):
         point_sequence = self.polyline.get_points()
         self.assertEqual(self.polyline, pygplates.PolylineOnSphere(point_sequence))
     
+    def test_join_iterable(self):
+        # The geometries are iterated once, so a generator works (with each polyline conversion).
+        polylines = [pygplates.PolylineOnSphere([(0,0), (0,10)]), pygplates.PolylineOnSphere([(0,10), (0,20)])]
+        for polyline_conversion in (pygplates.PolylineConversion.convert_to_polyline,
+                                    pygplates.PolylineConversion.ignore_non_polyline,
+                                    pygplates.PolylineConversion.raise_if_non_polyline):
+            joined_polylines = pygplates.PolylineOnSphere.join(
+                    (polyline for polyline in polylines), polyline_conversion=polyline_conversion)
+            self.assertEqual(len(joined_polylines), 1)
+
     def test_join(self):
         # Should work on any GeometryOnSphere type.
         joined_polylines = pygplates.PolylineOnSphere.join(
@@ -1090,6 +1100,13 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PolylineOnSphere([(5,10), (15,10)]),
                 pygplates.PointOnSphere(90,0),
                 [0])) == 1)
+        # An interval that is not positive (or NaN), too small an interval, or a ratio outside [0,1], raises ValueError.
+        for interpolate in (0, -0.05, float('nan'), False, 1e-12, [0, 1.5], [-0.1], [float('nan')]):
+            self.assertRaises(ValueError, pygplates.PolylineOnSphere.rotation_interpolate,
+                    pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+                    pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                    pygplates.PointOnSphere(90,0),
+                    interpolate)
         # An empty list means just test if interpolation is possible.
         self.assertTrue(len(pygplates.PolylineOnSphere.rotation_interpolate(
                 pygplates.PolylineOnSphere([(10,0), (20,0)]),
@@ -1241,6 +1258,9 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(isinstance(self.polyline.get_centroid(), pygplates.PointOnSphere))
     
     def test_tessellate(self):
+        # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
+        for tessellate_radians in (0, -1, float('nan'), 1e-12):
+            self.assertRaises(ValueError, self.polyline.to_tessellated, tessellate_radians)
         tessellated = self.polyline.to_tessellated(math.radians(91))
         self.assertTrue(tessellated == self.polyline)
         
@@ -2030,6 +2050,9 @@ class PolygonOnSphereCase(unittest.TestCase):
             self.assertLess(_angle(polygon.get_interior_centroid().to_xyz(), _normalise(total)), 2e-5)
     
     def test_tessellate(self):
+        # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
+        for tessellate_radians in (0, -1, float('nan'), 1e-12):
+            self.assertRaises(ValueError, self.polygon.to_tessellated, tessellate_radians)
         tessellated = self.polygon.to_tessellated(math.radians(91))
         self.assertTrue(tessellated == self.polygon)
         

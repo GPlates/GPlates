@@ -470,26 +470,20 @@ namespace GPlatesApi
 
 		explicit
 		GmlDataBlockCoordinateListIterator(
-				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &coordinate_lists) :
-			d_coordinate_lists(coordinate_lists),
+				GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block) :
+			d_gml_data_block(gml_data_block),
 			d_index(0)
 		{  }
-
-		GmlDataBlockCoordinateListIterator &
-		self()
-		{
-			return *this;
-		}
 
 		const GPlatesPropertyValues::ValueObjectType &
 		next()
 		{
-			if (d_index >= d_coordinate_lists.size())
+			if (d_index >= d_gml_data_block->tuple_list().size())
 			{
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_coordinate_lists[d_index++]->get_value_object_type();
+			return d_gml_data_block->tuple_list()[d_index++]->get_value_object_type();
 		}
 
 	private:
@@ -497,7 +491,8 @@ namespace GPlatesApi
 		typedef GPlatesModel::RevisionedVector<
 				GPlatesPropertyValues::GmlDataBlockCoordinateList>::size_type size_type;
 
-		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &d_coordinate_lists;
+		// Keep the data block alive (eg, iterating over a temporary 'GmlDataBlock').
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type d_gml_data_block;
 		size_type d_index;
 	};
 
@@ -627,9 +622,9 @@ namespace GPlatesApi
 
 	GmlDataBlockCoordinateListIterator
 	gml_data_block_get_iter(
-			GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block)
 	{
-		return GmlDataBlockCoordinateListIterator(gml_data_block.tuple_list());
+		return GmlDataBlockCoordinateListIterator(gml_data_block);
 	}
 
 	unsigned int
@@ -738,27 +733,38 @@ namespace GPlatesApi
 		GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type scalar_values;
 		PythonExtractUtils::extract_iterable(scalar_values, scalar_values_object, "Expected a sequence of float");
 
-		// Make sure has the same number of scalar values as existing scalar values.
-		if (!coordinate_lists.empty() &&
-			scalar_values.size() != coordinate_lists.front()->get_coordinates().size())
+		// Make sure has the same number of scalar values as the *other* scalar types (if any).
+		//
+		// Note that the list being replaced (if any) doesn't count, so that the only scalar type
+		// can change its number of scalar values.
+		for (auto other_coordinate_lists_iter = coordinate_lists.begin();
+			other_coordinate_lists_iter != coordinate_lists_end;
+			++other_coordinate_lists_iter)
 		{
-			PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
-			bp::throw_error_already_set();
+			if (other_coordinate_lists_iter != coordinate_lists_iter &&
+				scalar_values.size() != (*other_coordinate_lists_iter)->get_coordinates().size())
+			{
+				PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
+				bp::throw_error_already_set();
+			}
 		}
 
 		// Now that all exceptions have been dealt with we can make modifications.
-		if (coordinate_lists_iter != coordinate_lists_end)
-		{
-			// Remove the existing list of scalar values (we'll add the new list of scalar values after the loop).
-			coordinate_lists.erase(coordinate_lists_iter);
-		}
-
-		// Add a new list of scalar values to the data block.
-		coordinate_lists.push_back(
+		const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type new_coordinate_list =
 				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
 						scalar_type,
 						GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
-						scalar_values));
+						scalar_values);
+		if (coordinate_lists_iter != coordinate_lists_end)
+		{
+			// Replace the existing list of scalar values in place (keeping the order of the scalar types).
+			*coordinate_lists_iter = new_coordinate_list;
+		}
+		else
+		{
+			// Add a new list of scalar values to the data block.
+			coordinate_lists.push_back(new_coordinate_list);
+		}
 	}
 
 	void
@@ -798,7 +804,7 @@ export_gml_data_block()
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_GmlDataBlockCoordinateListIterator",
 			bp::no_init)
-		.def("__iter__", &GPlatesApi::GmlDataBlockCoordinateListIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::GmlDataBlockCoordinateListIterator::next,
@@ -934,7 +940,8 @@ export_gml_data_block()
 				"        [-1.5, -1.6, -1.55])\n"
 				"\n"
 				"  .. note:: If there is no list of scalar values associated with *scalar_type* then "
-				"a new list is added, otherwise the existing list is replaced.\n")
+				"a new list is added, otherwise the existing list is replaced (keeping its place in the "
+				"order of scalar types).\n")
 		.def("remove",
 				&GPlatesApi::gml_data_block_remove,
 				(bp::arg("scalar_type")),
@@ -1748,6 +1755,56 @@ export_gpml_array()
 
 namespace GPlatesApi
 {
+	/**
+	 * Raises Python 'ValueError' if @a property_value is not of type @a value_type.
+	 *
+	 * The value type of a time sample, time window or constant value wrapper never changes
+	 * (and it must match the value type of any sampling or aggregation containing it).
+	 * So a 'set_value()' with a property value of another type is rejected (before changing anything)
+	 * rather than leaving the value type inconsistent with the value.
+	 */
+	void
+	raise_value_error_if_not_value_type(
+			const GPlatesModel::PropertyValue &property_value,
+			const GPlatesPropertyValues::StructuralType &value_type)
+	{
+		if (!(property_value.get_structural_type() == value_type))
+		{
+			PyErr_SetString(PyExc_ValueError, "Property value is not of the same type as the value it replaces");
+			bp::throw_error_already_set();
+		}
+	}
+
+	void
+	gpml_constant_value_set_value(
+			GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value,
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		raise_value_error_if_not_value_type(*property_value, gpml_constant_value.get_value_type());
+
+		gpml_constant_value.set_value(property_value);
+	}
+
+	void
+	gpml_time_sample_set_value(
+			GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample,
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		raise_value_error_if_not_value_type(*property_value, gpml_time_sample.get_value_type());
+
+		gpml_time_sample.set_value(property_value);
+	}
+
+	void
+	gpml_time_window_set_value(
+			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window,
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		raise_value_error_if_not_value_type(*property_value, gpml_time_window.get_value_type());
+
+		gpml_time_window.set_time_dependent_value(property_value);
+	}
+
 	const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 	gpml_constant_value_create(
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
@@ -1843,13 +1900,14 @@ export_gpml_constant_value()
 		.def("_get_value",
 				&GPlatesApi::gpml_constant_value_get_value)
 		.def("set_value",
-				&GPlatesPropertyValues::GpmlConstantValue::set_value,
+				&GPlatesApi::gpml_constant_value_set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
 				"  Sets the property value of this constant value wrapper.\n"
 				"\n"
-				"  :param property_value: arbitrary property value\n"
+				"  :param property_value: property value of the same type as the current value (see :meth:`get_value`)\n"
 				"  :type property_value: PropertyValue\n"
+				"  :raises ValueError: if *property_value* is not of the same type as the current value\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
@@ -2218,6 +2276,16 @@ export_gpml_irregular_sampling()
 	gpml_irregular_sampling_class_docstring_stream <<
 			"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n"
 			"\n"
+			"The time samples are kept in order of time, from most recent (closest to present day) to least recent "
+			"(furthest in the geological past). The :meth:`constructor<__init__>` sorts them into that order "
+			"(keeping time samples with equal times in the order given). Everything that uses the time samples "
+			"relies on that order (eg, :meth:`get_value` and :class:`RotationModel`).\n"
+			"\n"
+			"**Keep the time samples in that order when changing them directly** (eg, inserting a "
+			"time sample, or changing a time sample's time with :meth:`GpmlTimeSample.set_time`). "
+			"Otherwise interpolation finds the wrong time samples, or none. For example, "
+			":meth:`sort` them afterwards, or use :meth:`set_value`, which keeps them in order.\n"
+			"\n"
 			<< gpml_irregular_sampling_class_name <<
 			" behaves like a regular python ``list`` (of :class:`GpmlTimeSample` elements) in that "
 			"the following operations are supported:\n"
@@ -2281,7 +2349,8 @@ export_gpml_irregular_sampling()
 #endif
 				"\n"
 				"\n"
-				"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
+				"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements, in any order "
+				"(they are sorted by time, from most recent to least recent).\n"
 				"  :type time_samples: Any sequence such as a list or a tuple\n"
 				// Not including interpolation function since it is not really used (yet) in GPlates and hence
 				// is just extra baggage for the python API user (we can add it later though)...
@@ -2296,7 +2365,10 @@ export_gpml_irregular_sampling()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n")
+				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Sorts the time samples by time (previously they were kept in the order given).\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -2574,26 +2646,20 @@ namespace GPlatesApi
 
 		explicit
 		GpmlKeyValueDictionaryIterator(
-				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements) :
-			d_elements(elements),
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type gpml_key_value_dictionary) :
+			d_gpml_key_value_dictionary(gpml_key_value_dictionary),
 			d_index(0)
 		{  }
-
-		GpmlKeyValueDictionaryIterator &
-		self()
-		{
-			return *this;
-		}
 
 		const GPlatesPropertyValues::TextContent &
 		next()
 		{
-			if (d_index >= d_elements.size())
+			if (d_index >= d_gpml_key_value_dictionary->elements().size())
 			{
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_elements[d_index++]->key()->get_value();
+			return d_gpml_key_value_dictionary->elements()[d_index++]->key()->get_value();
 		}
 
 	private:
@@ -2601,7 +2667,8 @@ namespace GPlatesApi
 		typedef GPlatesModel::RevisionedVector<
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::size_type size_type;
 
-		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &d_elements;
+		// Keep the dictionary alive (eg, iterating over a temporary 'GpmlKeyValueDictionary').
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type d_gpml_key_value_dictionary;
 		size_type d_index;
 	};
 
@@ -2684,9 +2751,9 @@ namespace GPlatesApi
 
 	GpmlKeyValueDictionaryIterator
 	gpml_key_value_dictionary_get_iter(
-			GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type gpml_key_value_dictionary)
 	{
-		return GpmlKeyValueDictionaryIterator(gpml_key_value_dictionary.elements());
+		return GpmlKeyValueDictionaryIterator(gpml_key_value_dictionary);
 	}
 
 	unsigned int
@@ -2853,7 +2920,7 @@ export_gpml_key_value_dictionary()
 			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
 			"_GpmlKeyValueDictionaryIterator",
 			bp::no_init)
-		.def("__iter__", &GPlatesApi::GpmlKeyValueDictionaryIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::GpmlKeyValueDictionaryIterator::next,
@@ -3993,13 +4060,14 @@ export_gpml_time_sample()
 				"\n"
 				"  .. versionadded:: 0.21\n")
 		.def("set_value",
-				&GPlatesPropertyValues::GpmlTimeSample::set_value,
+				&GPlatesApi::gpml_time_sample_set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
 				"  Sets the property value associated with this time sample.\n"
 				"\n"
-				"  :param property_value: arbitrary property value\n"
+				"  :param property_value: property value of the same type as :meth:`get_value_type`\n"
 				"  :type property_value: PropertyValue\n"
+				"  :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
@@ -4047,7 +4115,7 @@ export_gpml_time_sample()
 				"are considered when interpolating rotations at some arbitrary time.\n")
 		.def("set_enabled",
 				&GPlatesApi::gpml_time_sample_set_enabled,
-				(bp::arg("set_enabled")=true),
+				(bp::arg("is_enabled")=true),
 				"set_enabled([is_enabled=True])\n"
 				"  Sets whether this time sample is enabled.\n"
 				"\n"
@@ -4222,13 +4290,14 @@ export_gpml_time_window()
 				"\n"
 				"  .. versionadded:: 0.21\n")
 		.def("set_value",
-				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
+				&GPlatesApi::gpml_time_window_set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
 				"  Sets the property value associated with this time window.\n"
 				"\n"
-				"  :param property_value: arbitrary property value\n"
+				"  :param property_value: property value of the same type as :meth:`get_value_type`\n"
 				"  :type property_value: PropertyValue\n"
+				"  :raises ValueError: if *property_value* is not of the same type as :meth:`get_value_type`\n"
 				"\n"
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "

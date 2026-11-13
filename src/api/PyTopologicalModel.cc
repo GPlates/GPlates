@@ -88,6 +88,11 @@ namespace GPlatesApi
 			boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
 			boost::optional<unsigned int> topological_snapshot_cache_size)
 	{
+		if (topological_snapshot_cache_size)
+		{
+			raise_value_error_if_zero_cache_size(topological_snapshot_cache_size.get(), "topological_snapshot_cache_size");
+		}
+
 		return TopologicalModel::create(
 				topological_features,
 				rotation_model_argument,
@@ -1025,8 +1030,12 @@ GPlatesApi::TopologicalModel::initialise_topological_reconstruction()
 
 	// Size of reconstruction tree cache.
 	//
-	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
-	const unsigned int reconstruction_tree_cache_size = topological_snapshot_cache_size + 1;
+	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities)
+	// (saturating, so that the largest 'unsigned int' doesn't wrap to zero).
+	const unsigned int reconstruction_tree_cache_size =
+			(topological_snapshot_cache_size < (std::numeric_limits<unsigned int>::max)())
+			? topological_snapshot_cache_size + 1
+			: topological_snapshot_cache_size;
 	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(reconstruction_tree_cache_size);
 
 	// Extract a feature collection from each topological file.
@@ -1255,9 +1264,27 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		bp::throw_error_already_set();
 	}
 
-	if (time_increment <= 0)
+	// Note: '!(x > 0)' also rejects NaN.
+	if (!(time_increment > 0))
 	{
 		PyErr_SetString(PyExc_ValueError, "Time increment must be positive.");
+		bp::throw_error_already_set();
+	}
+
+	// Limit the number of time slots (computed as a double, before creating the time range, since it
+	// might not fit an integer).
+	//
+	// Run time is quadratic in the number of time slots (and memory is linear). 1e5 slots covers 1,000 Myr
+	// at 0.01 Myr, which on even a tiny topology is already about 1.5 GB and many minutes.
+	const double max_num_time_slots = 1e5;
+	const double num_time_slots_double = (oldest_time.value() - youngest_time.value()) / time_increment + 1;
+	if (!(num_time_slots_double <= max_num_time_slots))
+	{
+		std::ostringstream error_message;
+		error_message << "Too many time slots (" << num_time_slots_double
+				<< ") from oldest time to youngest time with the time increment (the limit is "
+				<< max_num_time_slots << ").";
+		PyErr_SetString(PyExc_ValueError, error_message.str().c_str());
 		bp::throw_error_already_set();
 	}
 
@@ -1668,7 +1695,7 @@ export_topological_model()
 					"  :rtype: tuple[float, float, float, int]\n"
 					"\n"
 					"  The oldest time, youngest time and time increment are the same as were specified in :meth:`TopologicalModel.reconstruct_geometry`. "
-					"And the number of time slots is :math:`\\frac{(oldest\\_time - youngest\\_time)}{time\\_increment}` which is an integer value "
+					"And the number of time slots is :math:`\\frac{(oldest\\_time - youngest\\_time)}{time\\_increment} + 1` which is an integer value "
 					"(since :meth:`TopologicalModel.reconstruct_geometry` requires the oldest to youngest time period to be an integer multiple of the time increment).\n"
 					"\n"
 					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span` in the *Primer* documentation.\n"
@@ -2016,13 +2043,13 @@ export_topological_model()
 					"\n"
 					"  * **prev_location** (:class:`TopologyPointLocation`): the previous location of the point in the topologies\n"
 					"\n"
-					"  * **prev_time** (float or :class:`GeoTimeInstant`): the time associated with the previous position of the point\n"
+					"  * **prev_time** (float): the time associated with the previous position of the point\n"
 					"\n"
 					"  * **current_point** (:class:`PointOnSphere`): the current position of the point\n"
 					"\n"
 					"  * **current_location** (:class:`TopologyPointLocation`): the current location of the point in the topologies\n"
 					"\n"
-					"  * **current_time** (float or :class:`GeoTimeInstant`): the time associated with the current position of the point\n"
+					"  * **current_time** (float): the time associated with the current position of the point\n"
 					"\n"
 					"  * **Return type**: bool\n"
 					"\n"
@@ -2197,6 +2224,7 @@ export_topological_model()
 			"  :type default_resolve_topology_parameters: ResolveTopologyParameters\n"
 			"  :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.\n"
 			"  :type topological_snapshot_cache_size: int\n"
+			"  :raises ValueError: if *topological_snapshot_cache_size* is zero\n"
 			"\n"
 			"  .. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.\n"
 			"\n"
@@ -2264,17 +2292,26 @@ export_topological_model()
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
 				"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
-				"multipoint, or a point or sequence of points. Polylines and polygons to be introduced in future.\n"
-				"  :type geometry: MultiPointOnSphere, or PointOnSphere, or sequence of points "
+				"multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points "
+				"(all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. "
+				"Reconstructing polylines and polygons as such is to be introduced in future.\n"
+				"  :type geometry: MultiPointOnSphere, or PointOnSphere, or PolylineOnSphere, or PolygonOnSphere, or sequence of points "
 				"(where a point can be PointOnSphere or (x,y,z) tuple or (latitude,longitude) tuple in degrees)\n"
-				"  :param initial_time: The time that reconstruction by topologies starts at.\n"
+				"  :param initial_time: The time that reconstruction by topologies starts at. "
+				"If it's not one of the time slots (from *oldest_time* to *youngest_time* in steps of *time_increment*) then "
+				"it's snapped to the nearest one, at a cost in accuracy: if *reconstruction_plate_id* is specified then the "
+				"present-day *geometry* is rigidly rotated to that time slot's time (so it's correct for that time slot), "
+				"otherwise *geometry* is treated as being at that time slot's time.\n"
 				"  :type initial_time: float or GeoTimeInstant\n"
 				"  :param oldest_time: Oldest time in the history of topologies. Defaults to *initial_time*.\n"
 				"  :type oldest_time: float or GeoTimeInstant\n"
 				"  :param youngest_time: Youngest time in the history of topologies. Defaults to present day.\n"
 				"  :type youngest_time: float or GeoTimeInstant\n"
 				"  :param time_increment: Time step in the history of topologies ("
-				"``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My.\n"
+				"``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My. "
+				"There can be at most 100,000 time slots (``(oldest_time - youngest_time) / time_increment + 1``). "
+				"Note that the run time grows with the square of the number of time slots (and memory linearly), "
+				"so a small increment over a long time span is expensive.\n"
 				"  :type time_increment: float\n"
 				"  :param reconstruction_plate_id: If specified then *geometry* is assumed to be a snapshot at present day, and this will "
 				"rotate it to *initial_time*. If not specified then *geometry* is assumed to already be a snapshot at *initial_time* - this is the default.\n"
@@ -2297,7 +2334,8 @@ export_topological_model()
 				"  :raises ValueError: if initial time, oldest time or youngest time is "
 				"distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 				"  :raises ValueError: if oldest time is later than (or same as) youngest time.\n"
-				"  :raises ValueError: if time increment is negative or zero.\n"
+				"  :raises ValueError: if time increment is negative or zero (or NaN).\n"
+				"  :raises ValueError: if there would be more than 100,000 time slots.\n"
 				"  :raises ValueError: if oldest to youngest time period is not an integer multiple of the time increment.\n"
 				"  :raises ValueError: if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
 				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "

@@ -98,6 +98,18 @@ namespace GPlatesPropertyValues
 			return create(time_samples_.begin(), time_samples_.end(), interp_func, value_type_);
 		}
 
+		/**
+		 * Create from the time samples in the range [@a time_samples_begin, @a time_samples_end).
+		 *
+		 * The time samples are sorted by time, from most recent (youngest) to least recent (oldest),
+		 * which is the order everything using a sampling expects (eg, interpolating rotations).
+		 * A sampling is keyed by time, so the order it's given in carries no other information.
+		 * The sort is stable (time samples with equal times keep their order).
+		 *
+		 * Note that the time samples can still be reordered afterwards (eg, by changing the time of
+		 * a time sample, or by modifying @a time_samples directly). Keeping them in time order is then
+		 * the responsibility of the code doing that.
+		 */
 		template <typename GpmlTimeSampleIter>
 		static
 		non_null_ptr_type
@@ -107,18 +119,33 @@ namespace GPlatesPropertyValues
 				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
 				const StructuralType &value_type_)
 		{
+			std::vector<GpmlTimeSample::non_null_ptr_type> sorted_time_samples(
+					time_samples_begin,
+					time_samples_end);
+			sort_time_samples(sorted_time_samples);
+
 			GPlatesModel::ModelTransaction transaction;
 			non_null_ptr_type ptr(
 					new GpmlIrregularSampling(
 							transaction,
 							GPlatesModel::RevisionedVector<GpmlTimeSample>::create(
-									time_samples_begin,
-									time_samples_end),
+									sorted_time_samples.begin(),
+									sorted_time_samples.end()),
 							interp_func,
 							value_type_));
 			transaction.commit();
 			return ptr;
 		}
+
+		/**
+		 * Stable-sorts @a time_samples by time, from most recent (youngest) to least recent (oldest).
+		 *
+		 * Returns true if this changed their order (ie, they were not already in that order).
+		 */
+		static
+		bool
+		sort_time_samples(
+				std::vector<GpmlTimeSample::non_null_ptr_type> &time_samples);
 
 		const non_null_ptr_type
 		clone() const

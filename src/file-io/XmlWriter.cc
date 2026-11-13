@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <boost/bind/bind.hpp>
 #include <iostream>
+#include <QDebug>
 #include <QDir>
 #include <QFileInfo>
 
@@ -87,11 +88,9 @@ GPlatesFileIO::XmlWriter::writeEndElement(
 		bool pop_ns_stack)
 {
 	if (pop_ns_stack) {
-		// XXX: temporary
-		std::cout << "Popping namespace stack." << std::endl;
 		if (d_ns_stack.empty()) {
 			// FIXME: throw exception.
-			std::cerr << "XXX: Attempt to pop empty namespace stack!" << std::endl;
+			qWarning() << "Attempt to pop empty XML namespace stack when writing.";
 		} else {
 			d_ns_stack.pop_back();
 		}

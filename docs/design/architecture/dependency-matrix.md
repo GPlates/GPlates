@@ -42,7 +42,7 @@ flowchart TD
     app_logic["app-logic<br/>module: 153 of 287 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
-    api["api<br/>module: 77 of 110 files"]:::module
+    api["api<br/>module: 78 of 111 files"]:::module
   end
   subgraph L5 ["GPlates engine"]
     app_logic_gp["app-logic<br/>GPlates-only: 134 of 287 files"]:::gplates
@@ -63,7 +63,7 @@ flowchart TD
     presentation["presentation<br/>48 files"]:::gplates
     view_operations["view-operations<br/>82 files"]:::gplates
     canvas_tools["canvas-tools<br/>51 files"]:::gplates
-    api_gp["api<br/>GPlates-only: 33 of 110 files"]:::gplates
+    api_gp["api<br/>GPlates-only: 33 of 111 files"]:::gplates
     qt_widgets["qt-widgets<br/>441 files"]:::gplates
   end
   maths --> global
@@ -158,7 +158,7 @@ flowchart TD
     app_logic["app-logic<br/>module: 153 of 287 files"]:::module
   end
   subgraph L4 ["pyGPlates bindings"]
-    api["api<br/>module: 77 of 110 files"]:::module
+    api["api<br/>module: 78 of 111 files"]:::module
   end
   maths --> global
   maths --> utils
@@ -232,7 +232,7 @@ in the *column* directory, over every `.h`/`.cc` in the built `src/` subdirector
 | includes -> | (src root) | api | app-logic | canvas-tools | cli | data-mining | file-io | global | gui | maths | model | opengl | presentation | property-values | qt-widgets | scribe | unit-test | utils | view-operations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | (src root) |  | 2 | 2 |  | 1 | 1 | 1 | 4 | 4 | 3 | 1 | 1 | 2 | 1 | 2 | 6 | 1 | 3 |  |
-| api |  | 275 | 128 |  |  | 8 | 36 | 156 | 15 | 88 | 79 | 2 | 3 | 115 | 5 | 29 |  | 44 |  |
+| api |  | 281 | 129 |  |  | 8 | 36 | 156 | 15 | 89 | 79 | 2 | 3 | 116 | 5 | 29 |  | 44 |  |
 | app-logic |  |  | 949 |  |  | 7 | 21 | 163 |  | 285 | 302 | 12 |  | 314 |  | 25 |  | 123 |  |
 | canvas-tools |  |  | 12 | 42 |  |  |  | 3 | 36 | 27 | 14 |  | 7 | 2 | 38 |  |  | 8 | 68 |
 | cli |  |  | 17 |  | 42 |  | 29 | 6 |  | 5 | 24 |  |  |  |  |  |  |  |  |
@@ -264,7 +264,7 @@ Roots: the exporter `.cc` of every `export_*()` call registered in
 | directory | module files / total |
 | --- | ---: |
 | (src root) | 1 / 7 |
-| api | 77 / 110 |
+| api | 78 / 111 |
 | app-logic | 153 / 287 |
 | canvas-tools | 0 / 51 |
 | cli | 0 / 20 |
@@ -289,7 +289,7 @@ What the module takes from each partially-included directory:
 
 - `ScribeExportPyGPlates.cc`
 
-## api (77 of 110)
+## api (78 of 111)
 
 - `api/APIVersion.cc`
 - `api/APIVersion.h`
@@ -310,6 +310,7 @@ What the module takes from each partially-included directory:
 - `api/PyFiniteRotation.cc`
 - `api/PyGPlatesModule.cc`
 - `api/PyGeoTimeInstant.cc`
+- `api/PyGeoTimeInstant.h`
 - `api/PyGeometriesOnSphere.cc`
 - `api/PyGeometriesOnSphere.h`
 - `api/PyGreatCircleArc.cc`

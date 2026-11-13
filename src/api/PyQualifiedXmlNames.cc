@@ -51,6 +51,42 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	/**
+	 * Raises Python 'ValueError' if the unqualified @a name is empty (eg, 'gpml:' alone).
+	 */
+	void
+	raise_value_error_if_empty_name(
+			const QString &name)
+	{
+		if (name.isEmpty())
+		{
+			PyErr_SetString(PyExc_ValueError, "Name cannot be empty");
+			bp::throw_error_already_set();
+		}
+	}
+
+	/**
+	 * Same as 'GPlatesModel::convert_qstring_to_qualified_xml_name()' except an empty name part
+	 * (eg, '' or 'gpml:') also gives none (like an over-qualified string).
+	 *
+	 * Note: GPlates' own parsing (shared with 'convert_qstring_to_qualified_xml_name') is unchanged.
+	 */
+	template <class QualifiedXmlNameType>
+	boost::optional<QualifiedXmlNameType>
+	qualified_xml_name_create_from_qualified_string(
+			const QString &name)
+	{
+		const boost::optional<QualifiedXmlNameType> qualified_xml_name =
+				GPlatesModel::convert_qstring_to_qualified_xml_name<QualifiedXmlNameType>(name);
+		if (!qualified_xml_name ||
+			qualified_xml_name->get_name().isEmpty())
+		{
+			return boost::none;
+		}
+
+		return qualified_xml_name;
+	}
+
 	// Only allow the single argument version of the creation function.
 	// There's no need for the user to also specify the namespace alias.
 	template <class QualifiedXmlNameType>
@@ -58,6 +94,8 @@ namespace GPlatesApi
 	qualified_xml_name_create_gpgim(
 			const QString &name)
 	{
+		raise_value_error_if_empty_name(name);
+
 		// Use the single argument overload.
 		return QualifiedXmlNameType::create_gpgim(name);
 	}
@@ -69,6 +107,8 @@ namespace GPlatesApi
 	qualified_xml_name_create_gpml(
 			const QString &name)
 	{
+		raise_value_error_if_empty_name(name);
+
 		// Use the single argument overload.
 		return QualifiedXmlNameType::create_gpml(name);
 	}
@@ -80,6 +120,8 @@ namespace GPlatesApi
 	qualified_xml_name_create_gml(
 			const QString &name)
 	{
+		raise_value_error_if_empty_name(name);
+
 		// Use the single argument overload.
 		return QualifiedXmlNameType::create_gml(name);
 	}
@@ -91,6 +133,8 @@ namespace GPlatesApi
 	qualified_xml_name_create_xsi(
 			const QString &name)
 	{
+		raise_value_error_if_empty_name(name);
+
 		// Use the single argument overload.
 		return QualifiedXmlNameType::create_xsi(name);
 	}
@@ -100,10 +144,14 @@ namespace GPlatesApi
 	qualified_xml_name_hash(
 			const QualifiedXmlNameType &qualified_xml_name)
 	{
-		// Use the Python built-in 'hash()' function on the fully-qualified string.
-		return bp::object(PyObject_Hash(bp::object(
-				GPlatesModel::convert_qualified_xml_name_to_qstring<QualifiedXmlNameType>(qualified_xml_name)
-				).ptr()));
+		// Hash the namespace URI and the unqualified name, which is what '==' compares.
+		//
+		// Note: Not the qualified string, since that uses the namespace *alias*, which can differ for equal names
+		// (eg, a name read from a file keeps the file's own prefix).
+		return bp::object(PyObject_Hash(
+				bp::make_tuple(
+						qualified_xml_name.get_namespace(),
+						qualified_xml_name.get_name()).ptr()));
 	}
 }
 
@@ -211,8 +259,8 @@ export_qualified_xml_name(
 			"for example ``" << example_qualified_name
 			<< "``. If the namespace alias is not recognised (as ``gpml``, ``gml`` or ``xsi``) then ``gpml`` is assumed.\n"
 			"\n"
-			"  An over-qualified name string (eg, containing two or more ``:`` characters) will result "
-			"in ``None`` being returned.\n"
+			"  An over-qualified name string (eg, containing two or more ``:`` characters), or an empty name "
+			"(eg, ``''`` or ``'gpml:'``), will result in ``None`` being returned.\n"
 			"  ::\n"
 			"\n"
 			"    " << instance_name << " = pygplates." << class_name
@@ -220,7 +268,8 @@ export_qualified_xml_name(
 
 	// Static-member from-QString conversion function.
 	qualified_xml_name_class.def("create_from_qualified_string",
-			&GPlatesModel::convert_qstring_to_qualified_xml_name<qualified_xml_name_type>,
+			&GPlatesApi::qualified_xml_name_create_from_qualified_string<qualified_xml_name_type>,
+			(bp::arg("name")),
 			from_qualified_string_docstring_stream.str().c_str());
 	qualified_xml_name_class.staticmethod("create_from_qualified_string");
 
@@ -251,11 +300,13 @@ export_enumeration_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	enumeration_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::EnumerationType>,
+			(bp::arg("name")),
 			"create_gpml(name)\n"
 			"  Create an enumeration type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: str\n"
+			"  :raises ValueError: if *name* is empty\n"
 			"  :rtype: EnumerationType\n"
 			"\n"
 			"  ::\n"
@@ -462,11 +513,13 @@ export_feature_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	feature_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::FeatureType>,
+			(bp::arg("name")),
 			"create_gpml(name)\n"
 			"  Create a feature type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 			"\n"
 			"  :param name: unqualified name\n"
 			"  :type name: str\n"
+			"  :raises ValueError: if *name* is empty\n"
 			"  :rtype: FeatureType\n"
 			"\n"
 			"  ::\n"
@@ -716,11 +769,13 @@ export_property_name()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	property_name_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::PropertyName>,
+			(bp::arg("name")),
 				"create_gpml(name)\n"
 				"  Create a property name qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: PropertyName\n"
 				"\n"
 				"  ::\n"
@@ -729,11 +784,13 @@ export_property_name()
 	property_name_class.staticmethod("create_gpml");
 	property_name_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesModel::PropertyName>,
+			(bp::arg("name")),
 				"create_gml(name)\n"
 				"  Create a property name qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: PropertyName\n"
 				"\n"
 				"  ::\n"
@@ -742,11 +799,13 @@ export_property_name()
 	property_name_class.staticmethod("create_gml");
 	property_name_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesModel::PropertyName>,
+			(bp::arg("name")),
 				"create_xsi(name)\n"
 				"  Create a property name qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: PropertyName\n"
 				"\n"
 				"  ::\n"
@@ -815,11 +874,13 @@ export_scalar_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	scalar_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::ValueObjectType>,
+			(bp::arg("name")),
 				"create_gpml(name)\n"
 				"  Create a scalar type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: ScalarType\n"
 				"\n"
 				"  ::\n"
@@ -828,20 +889,24 @@ export_scalar_type()
 	scalar_type_class.staticmethod("create_gpml");
 	scalar_type_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::ValueObjectType>,
+			(bp::arg("name")),
 				"create_gml(name)\n"
 				"  Create a scalar type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: ScalarType\n");
 	scalar_type_class.staticmethod("create_gml");
 	scalar_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::ValueObjectType>,
+			(bp::arg("name")),
 				"create_xsi(name)\n"
 				"  Create a scalar type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: ScalarType\n");
 	scalar_type_class.staticmethod("create_xsi");
 
@@ -1050,11 +1115,13 @@ export_structural_type()
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	structural_type_class.def("create_gpml",
 			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::StructuralType>,
+			(bp::arg("name")),
 				"create_gpml(name)\n"
 				"  Create a structural type qualified with the ``gpml:`` prefix (``gpml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: StructuralType\n"
 				"\n"
 				"  ::\n"
@@ -1063,11 +1130,13 @@ export_structural_type()
 	structural_type_class.staticmethod("create_gpml");
 	structural_type_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::StructuralType>,
+			(bp::arg("name")),
 				"create_gml(name)\n"
 				"  Create a structural type qualified with the ``gml:`` prefix (``gml:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: StructuralType\n"
 				"\n"
 				"  ::\n"
@@ -1076,11 +1145,13 @@ export_structural_type()
 	structural_type_class.staticmethod("create_gml");
 	structural_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::StructuralType>,
+			(bp::arg("name")),
 				"create_xsi(name)\n"
 				"  Create a structural type qualified with the ``xsi:`` prefix (``xsi:`` + ``name``).\n"
 				"\n"
 				"  :param name: unqualified name\n"
 				"  :type name: str\n"
+				"  :raises ValueError: if *name* is empty\n"
 				"  :rtype: StructuralType\n"
 				"\n"
 				"  ::\n"

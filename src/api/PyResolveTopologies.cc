@@ -96,7 +96,7 @@ namespace GPlatesApi
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				boost::optional<resolved_topological_sections_argument_type> &resolved_topological_sections,
 				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id,
-				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters,
 				ResolveTopologyType::flags_type &resolve_topology_types,
 				ResolveTopologyType::flags_type &resolve_topological_section_types,
 				bool &export_topological_line_sub_segments,
@@ -173,8 +173,10 @@ namespace GPlatesApi
 					VariableArguments::extract_and_remove_or_default<ResolveTopologyType::flags_type>(
 							unused_keyword_args,
 							"resolve_topological_section_types",
-							// Defaults to the value of 'resolve_topology_types'...
-							resolve_topology_types);
+							// Defaults to the value of 'resolve_topology_types' (without any 'line' flag, since
+							// only boundaries and networks have topological sections, and only a value that is
+							// specified is checked for flags other than those two)...
+							resolve_topology_types & ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES);
 
 			export_topological_line_sub_segments =
 					VariableArguments::extract_and_remove_or_default<bool>(
@@ -261,6 +263,15 @@ namespace GPlatesApi
 		if ((resolve_topology_types & ~ResolveTopologyType::ALL_RESOLVE_TOPOLOGY_TYPES) != 0)
 		{
 			PyErr_SetString(PyExc_ValueError, "Unknown bit flag specified in resolve topology types.");
+			bp::throw_error_already_set();
+		}
+
+		// Resolved topological section type flags must correspond to BOUNDARY and/or NETWORK
+		// (the same check, and message, as 'TopologicalSnapshot.get_resolved_topological_sections()').
+		if ((resolve_topological_section_types & ~ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Bit flags specified in resolve topological section types must be "
+					"ResolveTopologyType.BOUNDARY and/or ResolveTopologyType.NETWORK.");
 			bp::throw_error_already_set();
 		}
 

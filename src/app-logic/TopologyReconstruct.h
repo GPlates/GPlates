@@ -189,9 +189,15 @@ namespace GPlatesAppLogic
 			// This is an optimisation that saves a few seconds (for a large number of points in geometry)
 			// since many points will be inside the same resolved boundary.
 			mutable boost::optional<PlateVelocityUtils::StageRotationCalculator> d_velocity_stage_rotation_calculator;
-			// Only cache stage rotations for a specific reconstruction time.
-			// We clear it when we move onto a different reconstruction time.
+			// Only cache stage rotations for a specific reconstruction time, velocity delta time and
+			// velocity delta time type. We clear it when any of those changes.
+			//
+			// NOTE: All three matter (not just the time): one instance can be used by different calls with
+			// different time increments or directions (eg, the default 'deactivate_points' argument of
+			// pyGPlates' 'TopologicalModel.reconstruct_geometry()' is one instance shared by every call).
 			mutable GPlatesMaths::real_t d_velocity_stage_rotation_time;
+			mutable GPlatesMaths::real_t d_velocity_stage_rotation_delta_time;
+			mutable VelocityDeltaTime::Type d_velocity_stage_rotation_delta_time_type;
 
 			DefaultDeactivatePoint(
 					const double &threshold_velocity_delta,

@@ -532,12 +532,32 @@ namespace GPlatesFileIO
 		public RotationFileSegmentVisitor
 	{
 	public:
-		explicit
+		/**
+		 * Read warnings (eg, a sequence whose poles are not in time order) go to @a read_errors,
+		 * reported against @a data_source.
+		 */
 		PopulateReconstructionFeatureCollection(
-				GPlatesModel::FeatureCollectionHandle::weak_ref fc):
+				GPlatesModel::FeatureCollectionHandle::weak_ref fc,
+				boost::shared_ptr<DataSource> data_source,
+				ReadErrorAccumulation &read_errors):
 			d_fc(fc),
-			d_current_pole_accepted(false)
+			d_current_pole_accepted(false),
+			d_data_source(data_source),
+			d_read_errors(read_errors),
+			d_current_line_number(1),
+			d_current_sequence_line_number(1)
 		{	}
+
+		/**
+		 * The (1-based) line number, in the file, of the segment about to be visited
+		 * (used to report read warnings).
+		 */
+		void
+		set_current_line_number(
+				unsigned int line_number)
+		{
+			d_current_line_number = line_number;
+		}
 
 		void
 		visit(
@@ -590,6 +610,13 @@ namespace GPlatesFileIO
 				const RotationPoleData& pre,
 				const RotationPoleData& current);
 
+		/**
+		 * Add the sampling of the sequence just finished to its feature, first sorting its poles
+		 * by time (with a read warning) if they are not in time order.
+		 */
+		void
+		add_current_sampling_to_current_feature();
+
 
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_fc;
 		GPlatesModel::FeatureHandle::weak_ref d_current_feature;
@@ -610,6 +637,15 @@ namespace GPlatesFileIO
 		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> d_mprs_attrs, d_last_mprs;
 		std::vector<AttributeSegment> d_attrs;
 		GPlatesModel::FeatureCollectionMetadata d_fc_metadata;
+
+		boost::shared_ptr<DataSource> d_data_source;
+		ReadErrorAccumulation &d_read_errors;
+
+		//! The line number of the segment being visited.
+		unsigned int d_current_line_number;
+
+		//! The line number of the first pole of the current sequence.
+		unsigned int d_current_sequence_line_number;
 	};
 
 	

@@ -39,6 +39,7 @@ set(srcs
     PyGeometriesOnSphere.cc
     PyGeometriesOnSphere.h
     PyGeoTimeInstant.cc
+    PyGeoTimeInstant.h
     PyGPlatesModule.cc
     PyGreatCircleArc.cc
     PyGreatCircleArc.h

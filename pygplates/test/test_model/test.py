@@ -3,9 +3,11 @@ Unit tests for the pygplates model API.
 """
 
 import math
+import numpy
 import os
 import sys
 import pickle
+import subprocess
 import tempfile
 import unittest
 import pygplates
@@ -208,6 +210,14 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
         self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
         
+        # Values out of range raise ValueError.
+        for rift_parameters in (
+                (201, 701, 0), (201, 701, -1), (201, 701, float('nan')), (201, 701, 100.1),
+                (201, 701, None, 0), (201, 701, None, float('nan')), (201, 701, None, float('inf')),
+                (201, 701, None, None, 0), (201, 701, None, None, float('nan')), (201, 701, None, None, 181)):
+            self.assertRaises(ValueError, pygplates.Feature.create_topological_network_feature,
+                    topological_network, rift_parameters=rift_parameters)
+
         network_feature = pygplates.Feature.create_topological_network_feature(
                 topological_network,
                 rift_parameters=(201, 701, None, None, 0.3))  # params 3-5 can be optional
@@ -636,6 +646,75 @@ class FeatureCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('reconstructionPlateId')])
         self.assertTrue(len(self.feature) == self.property_count - 3)
 
+    def test_remove_instances(self):
+        properties = list(self.feature)
+        # The same instance more than once in the list (not adjacent).
+        self.feature.remove([properties[0], properties[1], properties[0]])
+        self.assertEqual(len(self.feature), self.property_count - 2)
+        # A property instance not found raises ValueError and removes nothing.
+        other_property = next(iter(pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature, pygplates.PointOnSphere(0, 0))))
+        self.assertRaises(ValueError, self.feature.remove, [properties[2], other_property])
+        self.assertRaises(ValueError, self.feature.remove, [properties[2], pygplates.PropertyName.gml_name, other_property])
+        self.assertRaises(ValueError, self.feature.remove, other_property)
+        self.assertEqual(len(self.feature), self.property_count - 2)
+
+    def test_add_set_unchanged_on_error(self):
+        # An error part-way through adding or setting several properties leaves the feature unchanged.
+        feature = pygplates.Feature(pygplates.FeatureType.gpml_coastline)
+        feature.set_name('name')
+        properties = list(feature)
+        # A property value of the wrong type after a good one.
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          pygplates.PropertyName.gml_name, [pygplates.XsString('a'), pygplates.XsInteger(1)])
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          [(pygplates.PropertyName.gml_name, pygplates.XsString('a')),
+                           (pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.XsString('not a plate ID'))])
+        self.assertRaises(pygplates.InformationModelError, feature.set,
+                          pygplates.PropertyName.gml_name, [pygplates.XsString('a'), pygplates.XsInteger(1)])
+        # A property that can occur at most once, given twice in the same call.
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          pygplates.PropertyName.gpml_reconstruction_plate_id,
+                          [pygplates.GpmlPlateId(1), pygplates.GpmlPlateId(2)])
+        self.assertRaises(pygplates.InformationModelError, feature.add,
+                          [(pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.GpmlPlateId(1)),
+                           (pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.GpmlPlateId(2))])
+        self.assertEqual(list(feature), properties)
+        self.assertEqual(feature.get_name(), 'name')
+        # What succeeds is still added, and returned as before.
+        self.assertTrue(isinstance(feature.add(pygplates.PropertyName.gml_name, pygplates.XsString('a')), pygplates.Property))
+        self.assertEqual(len(feature.add(pygplates.PropertyName.gml_name, [pygplates.XsString('b'), pygplates.XsString('c')])), 2)
+        self.assertEqual(len(feature.add([(pygplates.PropertyName.gml_name, pygplates.XsString('d')),
+                                          (pygplates.PropertyName.gpml_reconstruction_plate_id, pygplates.GpmlPlateId(1))])), 2)
+        self.assertEqual(len(feature), len(properties) + 5)
+        # No values to add: nothing added, and nothing checked, even for a property name the feature type doesn't allow
+        # (as before, when each value was checked as it was added).
+        not_allowed = pygplates.PropertyName.create_gpml('notAllowedHere')
+        self.assertEqual(feature.add(not_allowed, []), [])
+        self.assertEqual(feature.add([(not_allowed, [])]), [])
+        self.assertEqual(len(feature), len(properties) + 5)
+
+    def test_predicate_truth_value(self):
+        # A predicate's result is tested for truth, so it need not be a 'bool'.
+        self.assertEqual(len(self.feature.get(lambda property: 'yes', pygplates.PropertyReturn.all)), len(self.feature))
+        self.assertFalse(self.feature.get(lambda property: [], pygplates.PropertyReturn.all))
+        self.assertTrue(self.feature.get_value(lambda property: numpy.bool_(property.get_name() == pygplates.PropertyName.gpml_reconstruction_plate_id)))
+        self.assertTrue(self.feature.get_geometry(lambda property: 'yes'))
+        self.assertTrue(self.feature.get_geometries(lambda property: [1]))
+        self.feature.remove(lambda property: [])
+        self.assertEqual(len(self.feature), self.property_count)
+        # A query that isn't a PropertyName, callable or None raises TypeError
+        # (rather than "'str' object is not callable", or None for a feature with no properties).
+        for feature in (self.feature, pygplates.Feature()):
+            self.assertRaises(TypeError, feature.get, 'gml:name')
+            self.assertRaises(TypeError, feature.get_value, 'gml:name')
+            self.assertRaises(TypeError, feature.get_geometry, 'gpml:position')
+            self.assertRaises(TypeError, feature.get_geometries, 'gpml:position')
+            self.assertRaises(TypeError, feature.get_topological_geometry, 'gpml:boundary')
+            self.assertRaises(TypeError, feature.remove, 'gml:name')
+        self.feature.remove(lambda property: numpy.bool_(True))
+        self.assertEqual(len(self.feature), 0)
+
     def test_set(self):
         # Should not be able to set two 'gpml:reconstructionPlateId' properties.
         self.assertRaises(pygplates.InformationModelError, self.feature.set,
@@ -857,6 +936,70 @@ class FeatureCollectionCase(unittest.TestCase):
             pygplates.FeatureCollection(written_filename).write(rewritten_filename)
             with open(rewritten_filename) as rewritten_file:
                 self.assertEqual(rewritten_file.read(), written_text)
+
+    def test_ogr_reconstruction_method_round_trip(self):
+        # The reconstruction method 'ByPlateId' (the GPGIM value) was lost when read back from an OGR format
+        # (the reader only accepted 'ByPlateID').
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_mid_ocean_ridge, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)
+        feature.set_enumeration(pygplates.PropertyName.gpml_reconstruction_method, 'ByPlateId')
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            for extension in ('shp', 'geojson', 'gpkg'):
+                filename = os.path.join(tmp_dir, 'reconstruction_method.' + extension)
+                pygplates.FeatureCollection([feature]).write(filename)
+                read_feature = next(iter(pygplates.FeatureCollection(filename)))
+                self.assertEqual(read_feature.get_enumeration(pygplates.PropertyName.gpml_reconstruction_method), 'ByPlateId', extension)
+
+    def test_gpml_write_prints_nothing(self):
+        # Writing GPML once printed "Popping namespace stack." (a leftover debug line) to stdout whenever an
+        # element declared a namespace (eg, a feature type that keeps the GPML namespace prefix of the file it
+        # was read from). Check in a separate process, since it's printed by C++ (not to Python's 'sys.stdout').
+        script = (
+                'import os, sys, tempfile, pygplates\n'
+                'feature = pygplates.Feature.create_reconstructable_feature(\n'
+                '        pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)\n'
+                'with tempfile.TemporaryDirectory() as tmp_dir:\n'
+                '    filename = os.path.join(tmp_dir, "feature.gpml")\n'
+                '    pygplates.FeatureCollection([feature]).write(filename)\n'
+                '    with open(filename, encoding="utf-8") as gpml_file:\n'
+                '        gpml_text = gpml_file.read()\n'
+                '    with open(filename, "w", encoding="utf-8") as gpml_file:\n'
+                '        gpml_file.write(gpml_text.replace("xmlns:gpml=", "xmlns:gx=").replace("gpml:", "gx:"))\n'
+                '    pygplates.FeatureCollection(filename).write(os.path.join(tmp_dir, "rewritten.gpml"))\n')
+        environment = dict(os.environ, PYTHONPATH=os.pathsep.join(path for path in sys.path if path))
+        result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, env=environment)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, '')
+
+    def test_grot_crossover_round_trip(self):
+        # Two sequences of one moving plate (a crossover) share an 'MPRS:pid'. Writing the second one
+        # once also wrote the first one's poles again (and more of them on every save).
+        grot_text = (
+                '> @MPRS:pid"801" @MPRS:code"AUS" @MPRS:name"Australia"\n'
+                '801  0.0   90.0    0.0    0.0  701\n'
+                '801 10.0   10.0   20.0    5.0  701\n'
+                '> @MPRS:pid"801" @MPRS:code"AUS" @MPRS:name"Australia"\n'
+                '801 10.0   10.0   20.0    5.0  501\n'
+                '801 20.0   11.0   21.0    9.0  501\n')
+        expected_poles = [
+                (701, 801, 0.0, True),
+                (701, 801, 10.0, True),
+                (501, 801, 10.0, True),
+                (501, 801, 20.0, True)]
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            filename = os.path.join(tmp_dir, 'rotations.grot')
+            with open(filename, 'w') as grot_file:
+                grot_file.write(grot_text)
+            self.assertEqual(self._get_poles(pygplates.FeatureCollection(filename)), expected_poles)
+
+            # Saved twice, the poles are unchanged.
+            for _ in range(2):
+                written_filename = os.path.join(tmp_dir, 'written.grot')
+                pygplates.FeatureCollection(filename).write(written_filename)
+                self.assertEqual(self._get_poles(pygplates.FeatureCollection(written_filename)), expected_poles)
+                filename = os.path.join(tmp_dir, 'rotations2.grot')
+                os.replace(written_filename, filename)
 
     def test_grot_unclosed_multi_line_attribute(self):
         # An unclosed triple-quoted attribute on a pole line once made the reader loop forever.
@@ -1247,6 +1390,36 @@ class FeatureCollectionCase(unittest.TestCase):
         self.feature_collection.remove([feature_to_remove1.get_feature_id(), feature_to_remove2.get_feature_id()])
         self.assertTrue(len(self.feature_collection) == self.feature_count - 2)
     
+    def test_remove_instances(self):
+        feature_iter = iter(self.feature_collection)
+        feature1 = next(feature_iter)
+        feature2 = next(feature_iter)
+        feature3 = next(feature_iter)
+
+        # The same instance more than once in the list (not adjacent).
+        feature_collection = pygplates.FeatureCollection(list(self.feature_collection))
+        feature_collection.remove([feature1, feature2, feature1])
+        self.assertEqual(len(feature_collection), self.feature_count - 2)
+
+        # A feature instance not found raises ValueError and removes nothing.
+        feature_collection = pygplates.FeatureCollection([feature1, feature2, feature3])
+        self.assertRaises(ValueError, feature_collection.remove, [feature1, pygplates.Feature()])
+        self.assertRaises(ValueError, feature_collection.remove,
+                          [feature1, feature2, pygplates.FeatureType.gpml_unclassified_feature, pygplates.Feature()])
+        self.assertEqual(len(feature_collection), 3)
+        self.assertRaises(ValueError, feature_collection.remove, pygplates.Feature())
+        self.assertEqual(len(feature_collection), 3)
+
+        # A feature added twice is in the collection twice, and removing it removes both copies.
+        feature_collection = pygplates.FeatureCollection([feature1, feature2])
+        feature_collection.add(feature1)
+        self.assertEqual(len(feature_collection), 3)
+        feature_collection.remove(feature1)
+        self.assertEqual(list(feature_collection), [feature2])
+        feature_collection.add([feature2, feature1, feature1])
+        feature_collection.remove([feature1, feature2])
+        self.assertEqual(len(feature_collection), 0)
+
     def test_remove_by_predicate(self):
         # Get the first and second features.
         feature_iter = iter(self.feature_collection)
@@ -1324,6 +1497,27 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertFalse(self.feature_collection.get(
                 lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron'),
                 pygplates.FeatureReturn.all))
+        # A predicate's result is tested for truth, so it need not be a 'bool'.
+        num_features = len(self.feature_collection)
+        self.assertEqual(len(self.feature_collection.get(lambda feature: 'yes', pygplates.FeatureReturn.all)), num_features)
+        self.assertFalse(self.feature_collection.get(lambda feature: [], pygplates.FeatureReturn.all))
+        self.assertEqual(len(self.feature_collection.get(lambda feature: numpy.bool_(True), pygplates.FeatureReturn.all)), num_features)
+        # A query that isn't a FeatureType, FeatureId or callable raises TypeError
+        # (rather than "'str' object is not callable", or no error at all on an empty collection).
+        self.assertRaises(TypeError, self.feature_collection.get, 'gpml:Isochron')
+        self.assertRaises(TypeError, pygplates.FeatureCollection().get, 'gpml:Isochron', pygplates.FeatureReturn.all)
+        self.assertRaises(TypeError, self.feature_collection.remove, 'gpml:Isochron')
+        # An exception raised by the truth test propagates.
+        class NoTruth(object):
+            def __bool__(self):
+                raise ValueError('no truth value')
+        self.assertRaises(ValueError, self.feature_collection.get, lambda feature: NoTruth())
+        # The same for 'remove()'.
+        feature_collection = self.feature_collection.clone()
+        feature_collection.remove(lambda feature: [])
+        self.assertEqual(len(feature_collection), num_features)
+        feature_collection.remove(lambda feature: numpy.bool_(True))
+        self.assertEqual(len(feature_collection), 0)
     
     def test_pickle(self):
         pickled_feature_collection = pickle.loads(pickle.dumps(self.feature_collection))
@@ -1413,6 +1607,31 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
 
 class GeoTimeInstantCase(unittest.TestCase):
 
+    def test_nan(self):
+        # A NaN time raises ValueError (previously AbortError, with a call stack), wherever a time is taken.
+        nan = float('nan')
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)
+        for function in (
+                lambda: pygplates.GeoTimeInstant(nan),
+                lambda: pygplates.GeoTimeInstant(1) == nan,
+                lambda: pygplates.GmlTimePeriod(nan, 0),
+                lambda: pygplates.GpmlTimeSample(pygplates.XsDouble(1), nan),
+                lambda: feature.set_valid_time(nan, 0),
+                lambda: feature.set_geometry(pygplates.PointOnSphere(0, 0), reverse_reconstruct=(rotation_model, nan)),
+                lambda: pygplates.Feature.create_reconstructable_feature(
+                        pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0),
+                        reconstruction_plate_id=801, reverse_reconstruct=(rotation_model, nan)),
+                lambda: pygplates.reconstruct([feature], rotation_model, [], nan),
+                lambda: rotation_model.get_rotation(nan, 801),
+                lambda: pygplates.ReconstructSnapshot([feature], rotation_model, nan),
+                lambda: pygplates.TopologicalSnapshot(os.path.join(FIXTURES, 'topologies.gpml'), rotation_model, nan)):
+            self.assertRaises(ValueError, function)
+        # But infinities are distant past and future.
+        self.assertTrue(pygplates.GeoTimeInstant(float('inf')).is_distant_past())
+        self.assertTrue(pygplates.GeoTimeInstant(float('-inf')).is_distant_future())
+
     def test_create(self):
         age = 10.0
         instant = pygplates.GeoTimeInstant(age)
@@ -1470,6 +1689,35 @@ class PropertyCase(unittest.TestCase):
 
 
 class PropertyNameCase(unittest.TestCase):
+
+    def test_hash_with_another_prefix(self):
+        # A GPML file can bind the GPML namespace to another prefix, which feature types keep when read.
+        # Such a name equals the canonical one, so it also hashes equal (eg, for 'set' and 'dict' lookups).
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            filename = os.path.join(tmp_dir, 'prefix.gpml')
+            pygplates.FeatureCollection([feature]).write(filename)
+            with open(filename, encoding='utf-8') as gpml_file:
+                gpml_text = gpml_file.read()
+            with open(filename, 'w', encoding='utf-8') as gpml_file:
+                gpml_file.write(gpml_text.replace('xmlns:gpml=', 'xmlns:gx=').replace('gpml:', 'gx:'))
+            feature_type = next(iter(pygplates.FeatureCollection(filename))).get_feature_type()
+        self.assertEqual(feature_type.to_qualified_string(), 'gx:Coastline')
+        self.assertEqual(feature_type, pygplates.FeatureType.gpml_coastline)
+        self.assertEqual(hash(feature_type), hash(pygplates.FeatureType.gpml_coastline))
+        self.assertTrue(feature_type in {pygplates.FeatureType.gpml_coastline})
+
+    def test_empty_name(self):
+        # An empty name is rejected (creating), or gives None (parsing).
+        self.assertRaises(ValueError, pygplates.PropertyName.create_gpml, '')
+        self.assertRaises(ValueError, pygplates.PropertyName.create_gml, '')
+        self.assertRaises(ValueError, pygplates.FeatureType.create_gpml, '')
+        self.assertRaises(ValueError, pygplates.ScalarType.create_xsi, '')
+        self.assertTrue(pygplates.PropertyName.create_from_qualified_string('') is None)
+        self.assertTrue(pygplates.PropertyName.create_from_qualified_string('gpml:') is None)
+        self.assertTrue(pygplates.FeatureType.create_from_qualified_string('gpml:') is None)
+        self.assertEqual(pygplates.PropertyName.create_from_qualified_string('gpml:name'), pygplates.PropertyName.create_gpml('name'))
 
     def setUp(self):
         feature = next(iter(pygplates.FeatureCollectionFileFormatRegistry().read(

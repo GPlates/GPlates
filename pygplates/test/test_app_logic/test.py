@@ -2,6 +2,7 @@
 Unit tests for the pygplates application logic API.
 """
 
+import gc
 import math
 import os
 import sys
@@ -95,6 +96,30 @@ class CrossoverTestCase(unittest.TestCase):
             self.assertTrue(len(crossover_results) == 123)
         
         # TODO: Add more tests.
+
+    def test_synchronise_crossovers_without_plate_circuit(self):
+        # The preserved (young) crossover sequence has only one enabled time sample, which the rotation model
+        # ignores, so there's no plate circuit from the moving plate to the synchronised crossover's fixed plate
+        # at the crossover time. That's an error (previously an identity rotation was written as the crossover).
+        rotation_text = (
+            '701   0.0   90.0    0.0    0.0  501 !\n'
+            '701 100.0   10.0   20.0   30.0  501 !\n'
+            '802  50.0   20.0   30.0   10.0  701 ! young crossover sequence with one enabled sample\n'
+            '802  50.0   30.0   40.0   20.0  501 ! old crossover sequence\n'
+            '802 100.0   35.0   45.0   25.0  501 !\n')
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            filename = os.path.join(tmp_dir, 'rotations.rot')
+            with open(filename, 'w') as rotation_file:
+                rotation_file.write(rotation_text)
+            crossover_results = []
+            self.assertFalse(pygplates.synchronise_crossovers(
+                    filename,
+                    crossover_type_function=pygplates.CrossoverType.synch_old_crossover_and_stages,
+                    crossover_results=crossover_results))
+            self.assertEqual([result for _, result in crossover_results], [pygplates.CrossoverResult.error])
+            # The file is unchanged.
+            with open(filename) as rotation_file:
+                self.assertEqual(rotation_file.read(), rotation_text)
 
     def test_synchronise_crossovers_writes_only_if_synchronised(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -591,6 +616,18 @@ class ReconstructSnapshotTestCase(unittest.TestCase):
 
 
 class ReconstructTestCase(unittest.TestCase):
+    def test_reconstructed_geometries_keyword(self):
+        # The documented keyword 'reconstructed_geometries' works, as does 'reconstructed_feature_geometries'
+        # (the only one that worked from 2014), but not both together.
+        features = os.path.join(FIXTURES, 'volcanoes.gpml')
+        rotations = os.path.join(FIXTURES, 'rotations.rot')
+        for keyword in ('reconstructed_geometries', 'reconstructed_feature_geometries'):
+            reconstructed_geometries = []
+            pygplates.reconstruct(features, rotations, reconstruction_time=10, **{keyword: reconstructed_geometries})
+            self.assertTrue(reconstructed_geometries)
+        self.assertRaises(TypeError, pygplates.reconstruct, features, rotations,
+                          reconstructed_geometries=[], reconstructed_feature_geometries=[], reconstruction_time=10)
+
     def test_reconstruct(self):
         pygplates.reconstruct(
             os.path.join(FIXTURES, 'volcanoes.gpml'),
@@ -1249,6 +1286,19 @@ class ReconstructTestCase(unittest.TestCase):
             # Last point in motion path is reconstructed seed point.
             self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
 
+        # A repeated time (which 'Feature.set_times()' rejects, but a file can have) is skipped,
+        # rather than duplicating a point in the motion path (as for flowlines).
+        motion_path_feature.set(
+                pygplates.PropertyName.gpml_times,
+                pygplates.GpmlArray([pygplates.GmlTimePeriod(begin, end) for begin, end in ((10, 0), (20, 10), (20, 20), (30, 20), (40, 30))]))
+        self.assertEqual(motion_path_feature.get_times(), [0, 10, 20, 20, 30, 40])
+        reconstructed_motion_paths = []
+        pygplates.reconstruct(
+                motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.motion_path)
+        for reconstructed_motion_path in reconstructed_motion_paths:
+            self.assertTrue(len(reconstructed_motion_path.get_motion_path()) == 4)
+
     def test_reconstruct_export_name(self):
         # Exported flowlines and motion paths both include the feature's name.
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
@@ -1393,6 +1443,26 @@ class NetRotationTestCase(unittest.TestCase):
         self.topological_model = pygplates.TopologicalModel(topologies, rotation_model)
         self.net_rotation_model = pygplates.NetRotationModel(self.topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
     
+    def test_point_distribution(self):
+        # A point distribution of zero or less raises ValueError (previously a negative one raised OverflowError).
+        topological_snapshot = self.topological_model.topological_snapshot(10)
+        for point_distribution in (-1, 0):
+            self.assertRaises(ValueError, pygplates.NetRotationSnapshot, topological_snapshot, point_distribution=point_distribution)
+            self.assertRaises(ValueError, pygplates.NetRotationModel, self.topological_model, point_distribution=point_distribution)
+        pygplates.NetRotationSnapshot(topological_snapshot, point_distribution=1)
+        # A point distribution too large for a 32-bit integer is still an OverflowError.
+        self.assertRaises(OverflowError, pygplates.NetRotationSnapshot, topological_snapshot, point_distribution=2**33)
+
+    def test_time_interval(self):
+        # The time interval of a finite rotation must be positive and finite.
+        for time_interval in (0, -1, float('nan'), float('inf')):
+            self.assertRaises(ValueError, pygplates.NetRotation.create_sample_from_finite_rotation,
+                    pygplates.PointOnSphere(0, 0), 1.0, pygplates.FiniteRotation((0, 0), 0.1), time_interval)
+            self.assertRaises(ValueError, pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector,
+                    pygplates.FiniteRotation((0, 0), 0.1), time_interval)
+            self.assertRaises(ValueError, pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation,
+                    pygplates.Vector3D(0, 0, 0.1), time_interval)
+
     def test_pickle(self):
         # Pickle a NetRotationModel.
         pickled_net_rotation_model = pickle.loads(pickle.dumps(self.net_rotation_model))
@@ -2469,6 +2539,80 @@ class PlatePartitionerTestCase(unittest.TestCase):
             self.assertTrue(not partitioned and len(unpartitioned) == 1)
             self.assertTrue(unpartitioned[0].get_name() == 'no geometry')
 
+    def test_partition_features_property_not_allowed_by_feature_type(self):
+        # A feature can hold a geometry property that its type doesn't allow (if it was created, or read, without
+        # checking the information model). Its pieces are set without checking (InformationModelError was raised).
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        polygon = pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)])
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+        for geometry in (polygon, (polygon, {scalar_type: [1, 2, 3, 4]})):
+            feature = pygplates.Feature(pygplates.FeatureType.gpml_coastline)
+            feature.set_geometry(geometry, pygplates.PropertyName.gpml_outline_of,
+                                 verify_information_model=pygplates.VerifyInformationModel.no)
+            self.assertRaises(pygplates.InformationModelError, pygplates.Feature(pygplates.FeatureType.gpml_coastline).set_geometry,
+                              geometry, pygplates.PropertyName.gpml_outline_of)
+            partitioned = plate_partitioner.partition_features([feature])
+            self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+            for partitioned_feature in partitioned:
+                self.assertTrue(isinstance(partitioned_feature.get_geometry(pygplates.PropertyName.gpml_outline_of),
+                                           pygplates.PolygonOnSphere))
+
+        # A multipoint in a property that can occur only once in a feature (allowed by its type): partitioned into one
+        # multipoint per plate, each in a feature of its own (as before).
+        multi_position = pygplates.PropertyName.create_gpml('multiPosition')
+        feature = pygplates.Feature(pygplates.FeatureType.gpml_hot_spot)
+        feature.set_geometry(pygplates.MultiPointOnSphere([(0, 5), (0, 10), (0, -5), (0, -10)]), multi_position)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            self.assertTrue(len(partitioned_feature.get_geometries(multi_position)) == 1)
+
+    def test_partition_features_properties_to_copy(self):
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_geometry(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)]))
+
+        # The properties are copied to every partitioned feature, so they can't be an iterator (it would copy them to
+        # the first feature only).
+        self.assertRaises(TypeError, plate_partitioner.partition_features,
+                          [feature], iter([pygplates.PartitionProperty.reconstruction_plate_id]))
+        self.assertRaises(TypeError, pygplates.partition_into_plates,
+                          self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)])), pygplates.RotationModel([]),
+                          [feature],
+                          properties_to_copy=(p for p in [pygplates.PartitionProperty.reconstruction_plate_id]))
+        partitioned = plate_partitioner.partition_features([feature], (pygplates.PartitionProperty.reconstruction_plate_id,))
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+
+        # A property copied by name is copied whole: here a time-dependent subduction polarity with no value at present
+        # day (it raised an error, and a time-dependent value was copied only at present day).
+        polarity = pygplates.PropertyName.create_gpml('subductionPolarity')
+        partitioning_features = self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)]))
+        for plate_id, partitioning_feature in enumerate(partitioning_features, start=1):
+            partitioning_feature.add(
+                    polarity,
+                    pygplates.GpmlPiecewiseAggregation([
+                            pygplates.GpmlTimeWindow(
+                                    pygplates.Enumeration(pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration'),
+                                                          'Left' if plate_id == 1 else 'Right'),
+                                    50, 10)]),
+                    pygplates.VerifyInformationModel.no)
+        feature = pygplates.Feature(pygplates.FeatureType.gpml_subduction_zone)
+        feature.set_geometry(pygplates.PolylineOnSphere([(0, -10), (0, 10)]))
+        partitioned = pygplates.PlatePartitioner(partitioning_features, pygplates.RotationModel([])).partition_features(
+                [feature], [pygplates.PartitionProperty.reconstruction_plate_id, polarity])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            self.assertTrue(partitioned_feature.get_value(polarity) is None)
+            self.assertTrue(partitioned_feature.get_value(polarity, 30).get_content() ==
+                            ('Left' if partitioned_feature.get_reconstruction_plate_id() == 1 else 'Right'))
+
     def test_partition_sliver_width_threshold(self):
         # A polygon reaching 5e-6 radians (about 32 metres) into plate 1 from plate 2: the sliver it leaves in
         # plate 1 is dropped by default (narrower than about 90 metres), so the polygon is whole in plate 2; a
@@ -2580,6 +2724,103 @@ class PlatePartitionerTestCase(unittest.TestCase):
 
 
 class ResolvedTopologiesTestCase(unittest.TestCase):
+    @staticmethod
+    def _straining_network():
+        # A network whose interior point (plate 2) moves relative to its boundary (plate 1), so it strains.
+        rotation_features = [pygplates.Feature.create_total_reconstruction_sequence(
+                0, 2, pygplates.GpmlIrregularSampling([
+                        pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation.create_identity_rotation()), 0),
+                        pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 90), 0.5)), 100)]))]
+        boundary_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                pygplates.PolygonOnSphere([(-20, -20), (-20, 20), (20, 20), (20, -20)]), reconstruction_plate_id=1)
+        interior_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_unclassified_feature,
+                pygplates.MultiPointOnSphere([(5, 5)]), reconstruction_plate_id=2)
+        network = pygplates.GpmlTopologicalNetwork(
+                [pygplates.GpmlTopologicalSection.create(boundary_feature, topological_geometry_type=pygplates.GpmlTopologicalPolygon)],
+                [pygplates.GpmlTopologicalSection.create_network_interior(interior_feature)])
+        topological_features = [boundary_feature, interior_feature, pygplates.Feature.create_topological_network_feature(network)]
+        return topological_features, rotation_features
+
+    @staticmethod
+    def _max_strain_rate(resolved_topologies):
+        return max(vertex.strain_rate.get_total_strain_rate()
+                   for resolved_topology in resolved_topologies if isinstance(resolved_topology, pygplates.ResolvedTopologicalNetwork)
+                   for vertex in resolved_topology.get_network_triangulation().get_vertices())
+
+    def test_resolve_topologies_default_resolve_topology_parameters(self):
+        # 'default_resolve_topology_parameters' is used (it was ignored, giving the defaults).
+        topological_features, rotation_features = self._straining_network()
+        clamping = pygplates.ResolveTopologyParameters(enable_strain_rate_clamping=True, max_clamped_strain_rate=1e-30)
+        snapshot_resolved_topologies = pygplates.TopologicalSnapshot(
+                topological_features, rotation_features, 10, default_resolve_topology_parameters=clamping).get_resolved_topologies()
+        for keyword in (True, False):
+            resolved_topologies = []
+            if keyword:
+                pygplates.resolve_topologies(topological_features, rotation_features, resolved_topologies, 10,
+                                             default_resolve_topology_parameters=clamping)
+            else:
+                pygplates.resolve_topologies(topological_features, rotation_features, resolved_topologies, 10, None, None, clamping)
+            self.assertAlmostEqual(self._max_strain_rate(resolved_topologies), self._max_strain_rate(snapshot_resolved_topologies), places=40)
+        self.assertTrue(self._max_strain_rate(snapshot_resolved_topologies) <= 1e-30)
+        # Without clamping it strains much more.
+        self.assertTrue(self._max_strain_rate(
+                pygplates.TopologicalSnapshot(topological_features, rotation_features, 10).get_resolved_topologies()) > 1e-20)
+
+    def test_network_keeps_interior_features_alive(self):
+        # A resolved network keeps the features of its rigid blocks (and other interior geometries) alive,
+        # as it does its boundary sections' features. So they're still available once the features used to
+        # resolve it are gone (eg, 'TopologicalSnapshot(files, ...).get_resolved_topologies()').
+        def resolve_networks():
+            boundary_feature = pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere([(-20, -20), (-20, 20), (20, 20), (20, -20)]), reconstruction_plate_id=1)
+            rigid_block_feature = pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.PolygonOnSphere([(-5, -5), (-5, 5), (5, 5), (5, -5)]), reconstruction_plate_id=1,
+                    name='rigid block')
+            interior_feature = pygplates.Feature.create_reconstructable_feature(
+                    pygplates.FeatureType.gpml_unclassified_feature,
+                    pygplates.MultiPointOnSphere([(10, 10)]), reconstruction_plate_id=2)
+            network = pygplates.GpmlTopologicalNetwork(
+                    [pygplates.GpmlTopologicalSection.create(boundary_feature, topological_geometry_type=pygplates.GpmlTopologicalPolygon)],
+                    [pygplates.GpmlTopologicalSection.create_network_interior(rigid_block_feature),
+                     pygplates.GpmlTopologicalSection.create_network_interior(interior_feature)])
+            features = [boundary_feature, rigid_block_feature, interior_feature,
+                        pygplates.Feature.create_topological_network_feature(network)]
+            return pygplates.TopologicalSnapshot(features, [], 10).get_resolved_topologies(pygplates.ResolveTopologyType.network)
+
+        networks = resolve_networks()
+        gc.collect()
+        self.assertEqual(len(networks), 1)
+        rigid_blocks = networks[0].get_rigid_blocks()
+        self.assertEqual(len(rigid_blocks), 1)
+        self.assertEqual(rigid_blocks[0].get_feature().get_name(), 'rigid block')
+        self.assertTrue(rigid_blocks[0].get_present_day_geometry())
+        point_features = networks[0].get_resolved_geometry_point_features(True)
+        self.assertTrue(any(feature.get_name() == 'rigid block' for feature in point_features))
+
+    def test_resolve_topologies_section_types(self):
+        # Topological section types other than boundary and network raise ValueError (and write no file).
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            sections_filename = os.path.join(tmp_dir, 'sections.gmt')
+            for resolve_topological_section_types in (
+                    pygplates.ResolveTopologyType.line,
+                    pygplates.ResolveTopologyType.boundary | (1 << 10)):
+                self.assertRaises(ValueError, pygplates.resolve_topologies,
+                        os.path.join(FIXTURES, 'topologies.gpml'), os.path.join(FIXTURES, 'rotations.rot'),
+                        [], 10, sections_filename,
+                        resolve_topological_section_types=resolve_topological_section_types)
+                self.assertFalse(os.path.exists(sections_filename))
+            # But 'line' in 'resolve_topology_types', from which the section types default, is fine.
+            resolved_topological_sections = []
+            pygplates.resolve_topologies(
+                    os.path.join(FIXTURES, 'topologies.gpml'), os.path.join(FIXTURES, 'rotations.rot'),
+                    [], 10, resolved_topological_sections,
+                    resolve_topology_types=pygplates.ResolveTopologyType.line | pygplates.ResolveTopologyType.boundary)
+            self.assertTrue(resolved_topological_sections)
+
     def test_resolve_topologies(self):
         pygplates.resolve_topologies(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -3351,6 +3592,16 @@ class ReconstructionTreeCase(unittest.TestCase):
             edge_count += 1
         self.assertEqual(edge_count, len(edges))
 
+        # An iterator returns itself from 'iter()' (for both kinds of edge view)...
+        for edge_view in (edges, self.reconstruction_tree.get_anchor_plate_edges()):
+            edges_iter = iter(edge_view)
+            self.assertIs(iter(edges_iter), edges_iter)
+        # ...so 'zip' over the same iterator groups consecutive edges (rather than pairing each edge with itself).
+        edge_pairs = list(zip(*[iter(edges)] * 2))
+        self.assertEqual(len(edge_pairs), len(edges) // 2)
+        for edge1, edge2 in edge_pairs:
+            self.assertNotEqual(edge1.get_moving_plate_id(), edge2.get_moving_plate_id())
+
     def test_get_parent_traversal(self):
         edge = self.reconstruction_tree.get_edge(907)
         edge = edge.get_parent_edge()
@@ -3440,6 +3691,26 @@ class ReconstructionTreeCase(unittest.TestCase):
 
 
 class RotationModelTestCase(unittest.TestCase):
+    def test_cache_size(self):
+        # A cache size of zero raises ValueError (previously PreconditionViolationError, with no description).
+        rotation_filename = os.path.join(FIXTURES, 'rotations.rot')
+        rotation_model = pygplates.RotationModel(rotation_filename)
+        self.assertRaises(ValueError, pygplates.RotationModel, rotation_filename, 0)
+        self.assertRaises(ValueError, pygplates.RotationModel, rotation_model, 0)
+        self.assertRaises(ValueError, pygplates.ReconstructModel,
+                          os.path.join(FIXTURES, 'volcanoes.gpml'), rotation_model, reconstruct_snapshot_cache_size=0)
+        self.assertRaises(ValueError, pygplates.TopologicalModel,
+                          os.path.join(FIXTURES, 'topologies.gpml'), rotation_model, topological_snapshot_cache_size=0)
+        # The largest size works (previously its reconstruction tree cache size wrapped to zero).
+        pygplates.ReconstructModel(
+                os.path.join(FIXTURES, 'volcanoes.gpml'), rotation_model,
+                reconstruct_snapshot_cache_size=2**32-1).reconstruct_snapshot(10)
+        pygplates.TopologicalModel(
+                os.path.join(FIXTURES, 'topologies.gpml'), rotation_model,
+                topological_snapshot_cache_size=2**32-1).topological_snapshot(10)
+        # A negative size is still an OverflowError.
+        self.assertRaises(OverflowError, pygplates.RotationModel, rotation_filename, -1)
+
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
@@ -3646,6 +3917,23 @@ class RotationModelTestCase(unittest.TestCase):
 
 
 class StrainTestCase(unittest.TestCase):
+    def test_non_positive_deformation_gradient_determinant(self):
+        # det(F) is the ratio of deformed to original area, so a Strain can't be created with det(F) <= 0.
+        for deformation_gradient in ((-1, 0, 0, 1), (0, 0, 0, 0), (1, 0, 0, float('nan'))):
+            self.assertRaises(ValueError, pygplates.Strain, *deformation_gradient)
+        self.assertAlmostEqual(pygplates.Strain(2, 0, 0, 1).get_dilatation(), 1.0)
+        # But accumulating with too large a strain rate times time increment can give det(F) <= 0.
+        # Then the dilatation is |det(F)| - 1 and the principal strains are zero (as documented).
+        time_increment_5myr_in_seconds = 5e6 * 365.25 * 24 * 60 * 60
+        strain = pygplates.Strain.accumulate(
+                pygplates.Strain.identity, pygplates.StrainRate.zero, pygplates.StrainRate(0, 0, 0, 1e-12),
+                time_increment_5myr_in_seconds)
+        theta_theta, theta_phi, phi_theta, phi_phi = strain.get_deformation_gradient()
+        deformation_gradient_determinant = theta_theta * phi_phi - theta_phi * phi_theta
+        self.assertTrue(deformation_gradient_determinant < 0)
+        self.assertAlmostEqual(strain.get_dilatation(), abs(deformation_gradient_determinant) - 1)
+        self.assertEqual(strain.get_principal_strain(), (0, 0, 0))
+
 
     def test_create(self):
         self.assertTrue(pygplates.StrainRate().get_velocity_spatial_gradient() == (0, 0, 0, 0))
@@ -3929,6 +4217,45 @@ class TopologicalModelTestCase(unittest.TestCase):
                 100.0,
                 oldest_time=4,
                 time_increment=0)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4,
+                time_increment=float('nan'))
+        # At most 100,000 time slots (previously, a tiny increment could overflow the slot count and exhaust memory).
+        for time_increment in (100 / 2**31, 1e-7, 0.0009):
+            self.assertRaises(
+                    ValueError,
+                    self.topological_model.reconstruct_geometry,
+                    multipoint,
+                    100.0,
+                    oldest_time=100,
+                    time_increment=time_increment)
+
+    def test_get_time_span(self):
+        # The number of time slots is (oldest_time - youngest_time) / time_increment + 1.
+        time_span = self.topological_model.reconstruct_geometry(
+                pygplates.PointOnSphere(0, 0), 30, oldest_time=30, youngest_time=10, time_increment=1)
+        self.assertEqual(time_span.get_time_span(), (30, 10, 1, 21))
+
+    def test_deactivate_points_independent_of_earlier_calls(self):
+        # The same reconstruction gives the same active points whether its DefaultDeactivatePoints is fresh,
+        # or was used earlier with a different time increment (its cached stage rotations were keyed by time
+        # only, and the default 'deactivate_points' argument is one instance shared by every call).
+        points = pygplates.MultiPointOnSphere([(lat, lon) for lat in range(-80, 81, 2) for lon in range(-180, 180, 2)])
+        def active_points(deactivate_points, initial_time, time_increment):
+            time_span = self.topological_model.reconstruct_geometry(
+                    points, initial_time, oldest_time=40, youngest_time=0,
+                    time_increment=time_increment, deactivate_points=deactivate_points)
+            return [[point is not None for point in time_span.get_geometry_points(time, return_inactive_points=True)]
+                    for time in range(0, 41)]
+        fresh = active_points(pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints(), 20, 20)
+        for earlier_initial_time, earlier_time_increment in ((0, 1), (20, 10)):
+            deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()
+            active_points(deactivate_points, earlier_initial_time, earlier_time_increment)
+            self.assertEqual(active_points(deactivate_points, 20, 20), fresh)
 
     def test_get_reconstructed_data(self):
         multipoint =  pygplates.MultiPointOnSphere([(0,0), (0,-30), (0,-60)])
@@ -4641,6 +4968,22 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertAlmostEqual(resolve_topology_parameters.rift_strain_rate_resolution, 1e-16, 19)
         self.assertAlmostEqual(resolve_topology_parameters.rift_edge_length_threshold_degrees, 0.2)
 
+        # Values out of range raise ValueError (some previously crashed, or gave wrong strain rates).
+        nan = float('nan')
+        for keyword, values in (
+                # Checked even when clamping is disabled (it's stored).
+                ('max_clamped_strain_rate', (-1, 0, nan)),
+                ('rift_exponential_stretching_constant', (-1, 0, nan, 100.1, float('inf'))),
+                ('rift_strain_rate_resolution', (-1, 0, nan, float('inf'))),
+                ('rift_edge_length_threshold_degrees', (-1, 0, nan, 0.0009, 180.1))):
+            for value in values:
+                self.assertRaises(ValueError, pygplates.ResolveTopologyParameters, **{keyword: value})
+        # The ends of the edge length threshold's range are fine.
+        pygplates.ResolveTopologyParameters(rift_edge_length_threshold_degrees=0.001)
+        pygplates.ResolveTopologyParameters(rift_edge_length_threshold_degrees=180)
+        # As is the largest exponential stretching constant (above about 709, exp() overflows in the rift maths).
+        pygplates.ResolveTopologyParameters(rift_exponential_stretching_constant=100)
+
     def test_resolved_export_files(self):
         resolve_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml')) 
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
@@ -4744,6 +5087,12 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             pygplates.GeoTimeInstant(10))
 
         plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0)
+        # Spacings out of range (or NaN) raise ValueError (zero is fine for the first spacing, but not for the spacing).
+        for uniform_point_spacing_radians, first_uniform_point_spacing_radians in (
+                (math.radians(-5), None), (0, None), (float('nan'), None),
+                (math.radians(10), math.radians(-5)), (math.radians(10), float('nan'))):
+            self.assertRaises(ValueError, snapshot.calculate_plate_boundary_statistics,
+                    uniform_point_spacing_radians, first_uniform_point_spacing_radians)
         self.assertTrue(len(plate_boundary_stats) == 46)
         plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0, include_network_boundaries=True)
         self.assertTrue(len(plate_boundary_stats) == 60)
@@ -4898,6 +5247,17 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         # There is only one resolved topological line, but it has multiple shared sub-segments.
         topological_sections = set(shared_sub_segment.get_topological_section() for shared_sub_segment in plate_boundary_stats_filtered.keys())
         self.assertTrue(len(topological_sections) == 1)
+        # The filter's result is tested for truth, so it need not be a 'bool'.
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 include_network_boundaries=True,
+                                                                                 boundary_section_filter=lambda rts: 'yes',
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 26)
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 include_network_boundaries=True,
+                                                                                 boundary_section_filter=lambda rts: [],
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 0)
     
     def test_pickle(self):
         snapshot = pygplates.TopologicalSnapshot(

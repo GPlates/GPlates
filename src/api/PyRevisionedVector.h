@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -321,27 +322,6 @@ namespace GPlatesApi
 			typedef typename boost::iterator_difference<iterator_type>::type iterator_difference_type;
 
 
-			/**
-			 * Sort key for the @a sort function sorts based on the result of converting 'element_type'
-			 * to an unknown key type (done by a 'key' function provided on the python side).
-			 */
-			struct SortKey
-			{
-				bool
-				operator()(
-						const std::pair<boost::python::object/*key*/, element_type> &lhs,
-						const std::pair<boost::python::object/*key*/, element_type> &rhs) const
-				{
-					// Use '__lt__', otherwise '__cmp__', for comparison.
-					// Python 'int' has no '__lt__', but 'float' does.
-					if (PyObject_HasAttrString(lhs.first.ptr(), "__lt__"))
-					{
-						return boost::python::extract<bool>(lhs.first.attr("__lt__")(rhs.first));
-					}
-					return boost::python::extract<int>(lhs.first.attr("__cmp__")(rhs.first)) < 0;
-				}
-			};
-
 		public:
 
 			/**
@@ -360,12 +340,6 @@ namespace GPlatesApi
 					d_revisioned_vector(revisioned_vector),
 					d_index(0)
 				{  }
-
-				Iterator &
-				self()
-				{
-					return *this;
-				}
 
 				element_type
 				next()
@@ -494,8 +468,8 @@ namespace GPlatesApi
 					boost::python::object element_object,
 					// Defaults to first element...
 					long i = 0,
-					// Defaults to one past last element...
-					long j = 0);
+					// Defaults to one past last element (clamped to the size)...
+					long j = (std::numeric_limits<long>::max)());
 
 			// Default argument overloads of 'index()'.
 			// Avoiding BOOST_PYTHON_FUNCTION_OVERLOADS since it generates 'keywords' shadow warning.
@@ -564,6 +538,19 @@ namespace GPlatesApi
 					long index,
 					bool allow_index_to_last_element_plus_one = false);
 
+			/**
+			 * Helper function to interpret an integer index like a slice index (as Python does):
+			 * a negative index counts from the end, and then an index out of range is clamped
+			 * to the range [0, size].
+			 *
+			 * Never throws.
+			 */
+			static
+			long
+			get_clamped_slice_index(
+					revisioned_vector_non_null_ptr_type revisioned_vector,
+					long index);
+
 		};
 
 		ENABLE_GCC_WARNING("-Wshadow")
@@ -586,7 +573,7 @@ namespace GPlatesApi
 
 			// Note: We don't docstring this - it's not an interface the python user needs to know about.
 			bp::class_<Iterator>(iterator_class_name.c_str(), bp::no_init)
-				.def("__iter__", &Iterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+				.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 				.def(
 						"__next__",
 						&Iterator::next)
@@ -674,6 +661,13 @@ namespace GPlatesApi
 					if (slice_step != bp::object() &&
 						bp::extract<long>(slice_step)() != 1)
 					{
+						// As for a Python list, assigning an empty sequence to an empty extended slice
+						// does nothing (eg, 'a[2:2:2] = []').
+						if (new_elements.empty())
+						{
+							return;
+						}
+
 						// Note the step size has already been checked for zero by 'get_slice_range()'.
 						std::stringstream error_string_stream;
 						error_string_stream << "attempt to assign sequence of size "
@@ -1129,28 +1123,20 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
+			// As for Python's 'list.index()', an element of the wrong type is just not found.
 			bp::extract<element_type> extract_element(element_object);
 			if (!extract_element.check())
 			{
-				PyErr_SetString(PyExc_TypeError, "Invalid type");
+				PyErr_SetString(PyExc_ValueError, "Value not found");
 				bp::throw_error_already_set();
 			}
 			element_type element = extract_element();
 
-			// A zero value for 'j' indicates one past the last element.
-			if (j == 0)
-			{
-				j += revisioned_vector->size();
-			}
-
-			if (i >= j)
-			{
-				PyErr_SetString(PyExc_IndexError, "Invalid index range");
-				bp::throw_error_already_set();
-			}
-
-			i = get_index(revisioned_vector, i);
-			j = get_index(revisioned_vector, j, true/*allow_index_to_last_element_plus_one*/);
+			// As for Python's 'list.index()', 'i' and 'j' are interpreted like slice indices:
+			// a negative index counts from the end, and an index still out of range is clamped
+			// to the start or end (so an empty or out-of-range search is just "not found").
+			i = get_clamped_slice_index(revisioned_vector, i);
+			j = get_clamped_slice_index(revisioned_vector, j);
 
 			// Search the specified index range for the specified element.
 			for (long k = i; k < j; ++k)
@@ -1217,32 +1203,32 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
-			typedef std::pair<bp::object/*key*/, element_type> key_element_type;
-			std::vector<key_element_type> sorted_keys;
-
-			// Decorate the elements with their keys...
-			// Extract the existing elements and associate with their key
-			// provided by the python 'key_callable' function.
+			// Let Python's 'sorted()' do the sorting, so that it behaves exactly like 'list.sort()':
+			// it's stable (also with 'reverse=True'), it compares keys with Python's own comparison
+			// (eg, mixed 'int' and 'float' keys, which calling '__lt__' directly can't compare), and
+			// a key that raises leaves this list unchanged (nothing is assigned until it returns).
+			bp::list elements;
 			BOOST_FOREACH(element_type element, *revisioned_vector)
 			{
-				// Convert the element to its key.
-				boost::python::object key = key_callable(element);
-				sorted_keys.push_back(key_element_type(key, element));
+				elements.append(element);
 			}
 
-			// Sort the elements by their key.
-			std::stable_sort(sorted_keys.begin(), sorted_keys.end(), SortKey());
+			bp::dict sorted_keyword_args;
+			sorted_keyword_args["key"] = key_callable;
+			sorted_keyword_args["reverse"] = reverse_;
+			const bp::object sorted_function = bp::import("builtins").attr("sorted");
+			const bp::object sorted_elements_object(
+					bp::handle<>(
+							PyObject_Call(
+									sorted_function.ptr(),
+									bp::make_tuple(elements).ptr(),
+									sorted_keyword_args.ptr())));
 
-			// Un-decorate the elements (remove the keys).
 			std::vector<element_type> sorted_elements;
-			BOOST_FOREACH(const key_element_type &key, sorted_keys)
+			const long num_elements = bp::len(sorted_elements_object);
+			for (long n = 0; n < num_elements; ++n)
 			{
-				sorted_elements.push_back(key.second);
-			}
-
-			if (reverse_)
-			{
-				std::reverse(sorted_elements.begin(), sorted_elements.end());
+				sorted_elements.push_back(bp::extract<element_type>(sorted_elements_object[n]));
 			}
 
 			// Assign the sorted elements in one go (in one revision update).
@@ -1258,6 +1244,17 @@ namespace GPlatesApi
 				revisioned_vector_non_null_ptr_type revisioned_vector,
 				boost::python::slice slice)
 		{
+			namespace bp = boost::python;
+
+			// A zero step raises ValueError, as for a Python list
+			// (boost::python::slice::get_indicies() would raise IndexError).
+			if (slice.step() != bp::object()/*Py_None*/ &&
+				bp::extract<long>(slice.step())() == 0)
+			{
+				PyErr_SetString(PyExc_ValueError, "slice step cannot be zero");
+				bp::throw_error_already_set();
+			}
+
 			// Use boost::python::slice to manage index variations such as negative indices or
 			// indices that are None.
 			try
@@ -1299,6 +1296,31 @@ namespace GPlatesApi
 			{
 				PyErr_SetString(PyExc_IndexError, "Index out of range");
 				bp::throw_error_already_set();
+			}
+
+			return index;
+		}
+
+
+		template <class RevisionableType, class TypeTag>
+		long
+		RevisionedVectorWrapper<RevisionableType, TypeTag>::get_clamped_slice_index(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				long index)
+		{
+			const long size = revisioned_vector->size();
+
+			if (index < 0)
+			{
+				index += size;
+				if (index < 0)
+				{
+					index = 0;
+				}
+			}
+			else if (index > size)
+			{
+				index = size;
 			}
 
 			return index;
@@ -1370,7 +1392,7 @@ namespace GPlatesApi
 
 				// Note: We don't docstring this - it's not an interface the python user needs to know about.
 				bp::class_<iterator_type>(iterator_class_name.c_str(), bp::no_init)
-					.def("__iter__", &iterator_type::self, bp::return_value_policy<bp::copy_non_const_reference>())
+					.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 					.def(
 							"__next__",
 							&iterator_type::next)
@@ -1561,8 +1583,8 @@ namespace GPlatesApi
 					boost::python::object element_object,
 					// Defaults to first element...
 					long i = 0,
-					// Defaults to one past last element...
-					long j = 0)
+					// Defaults to one past last element (clamped to the size)...
+					long j = (std::numeric_limits<long>::max)())
 			{
 				return revisioned_vector_wrapper_type::index(
 						GetRevisionedVectorFunction(class_instance), element_object, i, j);

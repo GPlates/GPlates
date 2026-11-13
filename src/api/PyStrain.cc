@@ -83,6 +83,36 @@ namespace GPlatesApi
 
 	const GPlatesAppLogic::DeformationStrain identity_strain;
 
+	/**
+	 * This is called directly from Python via 'Strain.__init__()'.
+	 */
+	boost::shared_ptr<GPlatesAppLogic::DeformationStrain>
+	strain_create(
+			const double &deformation_gradient_theta_theta,
+			const double &deformation_gradient_theta_phi,
+			const double &deformation_gradient_phi_theta,
+			const double &deformation_gradient_phi_phi)
+	{
+		// det(F) is the ratio of deformed to original area, so it's always positive physically.
+		// Note: '!(x > 0)' also rejects NaN.
+		const double deformation_gradient_determinant =
+				deformation_gradient_theta_theta * deformation_gradient_phi_phi -
+					deformation_gradient_theta_phi * deformation_gradient_phi_theta;
+		if (!(deformation_gradient_determinant > 0))
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"The determinant of the deformation gradient (the ratio of deformed to original area) must be positive");
+			bp::throw_error_already_set();
+		}
+
+		return boost::shared_ptr<GPlatesAppLogic::DeformationStrain>(
+				new GPlatesAppLogic::DeformationStrain(
+						deformation_gradient_theta_theta,
+						deformation_gradient_theta_phi,
+						deformation_gradient_phi_theta,
+						deformation_gradient_phi_phi));
+	}
+
 	bp::tuple
 	strain_get_principal_strain(
 			const GPlatesAppLogic::DeformationStrain &strain,
@@ -571,8 +601,12 @@ export_strain()
 							"    identity_strain = pygplates.Strain()\n"
 							"\n"
 							"  .. note:: Alternatively you can use ``identity_strain = pygplates.Strain.identity``.\n"))
-		.def(bp::init<double,double,double,double>(
-				(bp::arg("deformation_gradient_theta_theta"), bp::arg("deformation_gradient_theta_phi"), bp::arg("deformation_gradient_phi_theta"), bp::arg("deformation_gradient_phi_phi")),
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::strain_create,
+						bp::default_call_policies(),
+						(bp::arg("deformation_gradient_theta_theta"), bp::arg("deformation_gradient_theta_phi"),
+							bp::arg("deformation_gradient_phi_theta"), bp::arg("deformation_gradient_phi_phi"))),
 				// Specific overload signature...
 				"__init__(deformation_gradient_theta_theta,, deformation_gradient_theta_phi, deformation_gradient_phi_theta, deformation_gradient_phi_phi)\n"
 				"  Create from the deformation gradient :math:`\\boldsymbol F` in spherical polar coordinates (ignoring radial dimension).\n"
@@ -589,11 +623,16 @@ export_strain()
 				"  :type deformation_gradient_phi_theta: float\n"
 				"  :param deformation_gradient_phi_phi: :math:`F_{\\phi\\phi}`\n"
 				"  :type deformation_gradient_phi_phi: float\n"
+				"  :raises ValueError: if :math:`\\det \\boldsymbol F` is not positive (it is the ratio of deformed to original "
+				"area, so it is always positive physically)\n"
 				"\n"
 				"  .. seealso:: :meth:`get_deformation_gradient`\n"
 				"\n"
 				"  .. note:: Typically you wouldn't need this since you can start with no deformation (``pygplates.Strain.identity``) at the initial time "
-				"and use :meth:`accumulate` to incrementally update strain over time using your own calculations of :class:`strain rate <StrainRate>`.\n"))
+				"and use :meth:`accumulate` to incrementally update strain over time using your own calculations of :class:`strain rate <StrainRate>`.\n"
+				"\n"
+				"  .. versionchanged:: 1.1\n"
+				"     Raises ``ValueError`` if :math:`\\det \\boldsymbol F` is not positive.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -618,6 +657,10 @@ export_strain()
 				"  .. math::\n"
 				"\n"
 				"     \\frac{\\Delta A}{A} = \\det \\boldsymbol F - 1\n"
+				"\n"
+				"  .. note:: This actually returns :math:`|\\det \\boldsymbol F| - 1`, which is the same since :math:`\\det \\boldsymbol F` "
+				"is positive physically (and always is for a strain :meth:`created <__init__>`, or :meth:`accumulated <accumulate>` "
+				"with a small enough strain rate and time increment).\n"
 				"\n"
 				"  .. seealso::\n"
 				"\n"
@@ -663,6 +706,9 @@ export_strain()
 				"     e_{(2)} &= \\Lambda_{(2)} - 1 &= \\frac{1}{\\sqrt{\\hat{\\boldsymbol n}_{(2)} \\cdot \\boldsymbol c \\cdot \\hat{\\boldsymbol n}_{(2)}}} - 1\n"
 				"\n"
 				"  .. note:: This function returns principal *strains*. To get the principal *stretches* simply add one since :math:`\\Lambda_{(i)} = 1 + e_{(i)}` (see :class:`Strain`).\n"
+				"\n"
+				"  .. note:: If :math:`\\det \\boldsymbol F` is not positive (which can only happen if strain was :meth:`accumulated <accumulate>` "
+				"with too large a strain rate and time increment) then ``(0, 0, 0)`` is returned.\n"
 				"\n"
 				"  To get the principal *stretches* (ie, *strains* plus one) with the angle (in degrees) of the major principal axis clockwise relative to North (ie, azimuth):\n"
 				"  ::\n"
@@ -744,7 +790,12 @@ export_strain()
 				"\n"
 				"  ...where :math:`\\Delta t` is *time_increment*, "
 				":math:`\\boldsymbol{L}_{t}` is *previous_strain_rate*, :math:`\\boldsymbol{L}_{t + \\Delta t}` is *current_strain_rate*, "
-				":math:`\\boldsymbol{F}_{t}` is *previous_strain* and :math:`\\boldsymbol{F}_{t + \\Delta t}` is returned by this function.\n")
+				":math:`\\boldsymbol{F}_{t}` is *previous_strain* and :math:`\\boldsymbol{F}_{t + \\Delta t}` is returned by this function.\n"
+				"\n"
+				"  .. note:: The strain rates multiplied by *time_increment* must stay small (well below one). This scheme multiplies "
+				":math:`\\det \\boldsymbol F` by :math:`\\det(\\boldsymbol I + \\boldsymbol{L}_{t} \\frac{\\Delta t}{2}) / "
+				"\\det(\\boldsymbol I - \\boldsymbol{L}_{t + \\Delta t} \\frac{\\Delta t}{2})`, which changes sign once a strain rate times "
+				":math:`\\frac{\\Delta t}{2}` passes about one, giving a non-physical strain (with :math:`\\det \\boldsymbol F` not positive).\n")
 		.staticmethod("accumulate")
 		// Comparisons...
 		// Due to the numerical tolerance in comparisons we cannot make hashable.

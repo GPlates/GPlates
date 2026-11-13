@@ -901,7 +901,7 @@ export_plate_partitioner()
 				"\n"
 				"    plate_partitioner = pygplates.PlatePartitioner('static_polygons.gpml', 'rotations.rot')\n"
 				"    partitioned_inside_geometries = []\n"
-				"    if plate_partitioner.partition(polyline_to_partition, partitioned_inside_geometries):\n"
+				"    if plate_partitioner.partition_geometry(polyline_to_partition, partitioned_inside_geometries):\n"
 				"        for partitioning_recon_geom, inside_geometries in partitioned_inside_geometries:\n"
 				"            for inside_geometry in inside_geometries:\n"
 				"                polyline_inside_length += inside_geometry.get_arc_length()\n"

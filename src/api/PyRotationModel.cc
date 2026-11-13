@@ -137,6 +137,8 @@ namespace GPlatesApi
 				bool extend_total_reconstruction_poles_to_distant_past,
 				GPlatesModel::integer_plate_id_type default_anchor_plate_id)
 		{
+			raise_value_error_if_zero_cache_size(reconstruction_tree_cache_size, "reconstruction_tree_cache_size");
+
 			return RotationModel::create(
 					rotation_features,
 					reconstruction_tree_cache_size,
@@ -171,6 +173,8 @@ namespace GPlatesApi
 				unsigned int reconstruction_tree_cache_size,
 				bool clone_rotation_features)
 		{
+			raise_value_error_if_zero_cache_size(reconstruction_tree_cache_size, "reconstruction_tree_cache_size");
+
 			// Ignore deprecated 'clone_rotation_features' argument.
 			return RotationModel::create(
 					rotation_features,
@@ -193,6 +197,8 @@ namespace GPlatesApi
 				unsigned int reconstruction_tree_cache_size,
 				boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id)
 		{
+			raise_value_error_if_zero_cache_size(reconstruction_tree_cache_size, "reconstruction_tree_cache_size");
+
 			return RotationModel::create(
 					rotation_model,
 					reconstruction_tree_cache_size,
@@ -683,6 +689,7 @@ export_rotation_model()
 			"  :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. "
 			"Defaults to " << GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE << ".\n"
 			"  :type reconstruction_tree_cache_size: int\n"
+			"  :raises ValueError: if *reconstruction_tree_cache_size* is zero\n"
 			"  :param extend_total_reconstruction_poles_to_distant_past: extend each moving plate "
 			"sequence back infinitely far into the distant past such that reconstructed geometries will "
 			"not snap back to their present day positions when the reconstruction time is older than "
@@ -798,6 +805,7 @@ export_rotation_model()
 			"likely already has a sizeable cache anyway - and if you are leaving this at its default value then "
 			"you are presumably only interested in changing the default anchor plate ID (not increasing the cache size).\n"
 			"  :type reconstruction_tree_cache_size: int\n"
+			"  :raises ValueError: if *reconstruction_tree_cache_size* is zero\n"
 			"  :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` "
 			"and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. "
 			"Defaults to the default anchor plate of *rotation_model*. \n"

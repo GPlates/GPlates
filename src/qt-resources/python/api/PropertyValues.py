@@ -278,6 +278,10 @@ def gpml_piecewise_aggregation_get_time_window_containing_time(gpml_piecewise_ag
     Returns ``None`` if *time* is outside the time ranges of all time windows.
     """
     
+    # Use GeoTimeInstant to compare (within epsilon) floating point time values
+    # (so a 'float' time compares the same way as a 'GeoTimeInstant' time).
+    time = GeoTimeInstant(time)
+
     # Find the time window containing the time.
     for window in gpml_piecewise_aggregation.get_time_windows():
         # Time period includes begin time and end time.
@@ -297,10 +301,11 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
     :param time: the time to extract value (defaults to present day)
     :type time: float or GeoTimeInstant
     :rtype: PropertyValue or None
-    :raises InterpolationError: if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
-    :meth:`distant future<GeoTimeInstant.is_distant_future>`
+    :raises InterpolationError: if a :meth:`time sample<get_time_samples>` bounding *time* has a time that is \
+    :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
-    Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`.
+    Returns ``None`` if *time* is outside the time range of the :meth:`time samples<get_time_samples>`
+    (including a *time* that is itself distant past or distant future).
     
     Note that the extracted property value is interpolated (at reconstruction *time*) if property
     value can be interpolated (currently only :class:`GpmlFiniteRotation` and :class:`XsDouble`),
@@ -350,7 +355,7 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     :type time: float or GeoTimeInstant
     :param description: description of the time sample
     :type description: str or None
-    :param is_enabled: whether time sample is enabled
+    :param is_enabled: whether time sample is enabled (defaults to ``True``, as does ``None``)
     :type is_enabled: bool or None
     :returns: the time sample that is modified, or inserted into the time sequence
     :rtype: GpmlTimeSample
@@ -365,8 +370,19 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     ordered by time from most recent to least recent.
     
     Note that *time* can be outside the time range of existing :meth:`time samples<get_time_samples>`.
+
+    .. note:: *is_enabled* set to ``None`` means enabled (the default), not disabled.
+       A disabled time sample is ignored when interpolating (eg, a disabled sample of a total reconstruction pole
+       is ignored when calculating rotations).
+
+    .. versionchanged:: 1.1
+       *is_enabled* set to ``None`` means enabled (previously it disabled the time sample).
     """
     
+    # 'None' means the default (enabled), rather than being converted to 'False' (disabled).
+    if is_enabled is None:
+        is_enabled = True
+
     # Use GeoTimeInstant to compare (within epsilon) floating point time values.
     time = GeoTimeInstant(time)
     
@@ -439,9 +455,10 @@ def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampli
     # (the time sample times are 'float' and so is *time*, if not already a GeoTimeInstant).
     time = GeoTimeInstant(time)
 
-    # GpmlIrregularSampling should already be sorted most recent to least recent
-    # (ie, backwards in time from present to past times).
-    # But create a reversed list if need be.
+    # The time samples are ordered most recent to least recent (ie, backwards in time from present
+    # to past times): GpmlIrregularSampling sorts them when created, and documents that they must stay so.
+    # But a sampling reordered since then can be least recent first (eg, after 'reverse()', or unpickled from
+    # pyGPlates 1.0, which kept the order given), so accept that too (as before) rather than silently finding none.
     if time_samples[0].get_time() > time_samples[-1].get_time():
         time_samples = list(reversed(time_samples))
     

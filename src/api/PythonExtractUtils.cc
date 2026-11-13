@@ -75,8 +75,10 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 			bp::throw_error_already_set();
 		}
 
+		// NOTE: Use the extracted pair rather than indexing the original object, which might not be
+		// indexable (eg, an iterator), or might index differently (eg, a 'dict' is indexed by key).
 		key_value_map.push_back(
-				std::make_pair(key_value_object[0], key_value_object[1]));
+				std::make_pair(key_value_pair[0], key_value_pair[1]));
 	}
 }
 
@@ -94,4 +96,47 @@ GPlatesApi::PythonExtractUtils::Implementation::raise_type_error_if_iterator(
 
 		boost::python::throw_error_already_set();
 	}
+}
+
+
+bool
+GPlatesApi::PythonExtractUtils::is_true(
+		const bp::object &object)
+{
+	const int is_true_result = PyObject_IsTrue(object.ptr());
+	if (is_true_result < 0)
+	{
+		bp::throw_error_already_set();
+	}
+
+	return is_true_result != 0;
+}
+
+
+void
+GPlatesApi::PythonExtractUtils::raise_type_error_if_not_callable(
+		const bp::object &object,
+		const char *type_error_string)
+{
+	if (!PyCallable_Check(object.ptr()))
+	{
+		PyErr_SetString(PyExc_TypeError, type_error_string);
+		bp::throw_error_already_set();
+	}
+}
+
+
+bp::handle<>
+GPlatesApi::PythonExtractUtils::Implementation::get_next_item(
+		const bp::handle<> &iterator)
+{
+	bp::handle<> item(bp::allow_null(PyIter_Next(iterator.get())));
+
+	// PyIter_Next() returns NULL both at the end of the iteration and when the iteration raised.
+	if (!item && PyErr_Occurred())
+	{
+		bp::throw_error_already_set();
+	}
+
+	return item;
 }

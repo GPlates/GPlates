@@ -17,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
+#include <limits>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -47,6 +49,22 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	/**
+	 * Raises Python 'ValueError' if @a time_interval is not positive and finite
+	 * (a rotation over zero, a negative, an infinite or a NaN time interval has no rotation rate).
+	 */
+	void
+	raise_value_error_if_invalid_time_interval(
+			const double &time_interval)
+	{
+		if (!(time_interval > 0) ||
+			!std::isfinite(time_interval))
+		{
+			PyErr_SetString(PyExc_ValueError, "time_interval must be positive and finite");
+			bp::throw_error_already_set();
+		}
+	}
+
 	GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
 	net_rotation_create_sample_from_finite_rotation(
 			const GPlatesMaths::PointOnSphere &point,
@@ -54,8 +72,32 @@ namespace GPlatesApi
 			const GPlatesMaths::FiniteRotation &finite_rotation,
 			const double &time_interval)
 	{
+		raise_value_error_if_invalid_time_interval(time_interval);
+
 		return GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 				point, sample_area, finite_rotation, time_interval);
+	}
+
+	GPlatesMaths::Vector3D
+	net_rotation_convert_finite_rotation_to_rotation_rate_vector(
+			const GPlatesMaths::FiniteRotation &finite_rotation,
+			const double &time_interval)
+	{
+		raise_value_error_if_invalid_time_interval(time_interval);
+
+		return GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_finite_rotation_to_rotation_rate_vector(
+				finite_rotation, time_interval);
+	}
+
+	GPlatesMaths::FiniteRotation
+	net_rotation_convert_rotation_rate_vector_to_finite_rotation(
+			const GPlatesMaths::Vector3D &rotation_rate_vector,
+			const double &time_interval)
+	{
+		raise_value_error_if_invalid_time_interval(time_interval);
+
+		return GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_rotation_rate_vector_to_finite_rotation(
+				rotation_rate_vector, time_interval);
 	}
 
 	GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
@@ -160,10 +202,13 @@ namespace GPlatesApi
 		//
 		// First see if point distribution is an integer.
 		//
-		bp::extract<unsigned int> extract_num_samples_along_meridian(point_distribution_object);
+		//
+		// NOTE: Extract a signed 64-bit integer (not 'unsigned int') so that zero and negative values
+		// get our 'ValueError' (rather than 'OverflowError' from the conversion to 'unsigned int').
+		bp::extract<long long> extract_num_samples_along_meridian(point_distribution_object);
 		if (extract_num_samples_along_meridian.check())
 		{
-			const unsigned int num_samples_along_meridian = extract_num_samples_along_meridian();
+			const long long num_samples_along_meridian = extract_num_samples_along_meridian();
 
 			// Num samples must be positive.
 			if (num_samples_along_meridian <= 0)
@@ -172,7 +217,13 @@ namespace GPlatesApi
 				bp::throw_error_already_set();
 			}
 
-			point_distribution = num_samples_along_meridian;
+			if (num_samples_along_meridian > (std::numeric_limits<unsigned int>::max)())
+			{
+				PyErr_SetString(PyExc_OverflowError, "Number of samples along meridian is too large.");
+				bp::throw_error_already_set();
+			}
+
+			point_distribution = static_cast<unsigned int>(num_samples_along_meridian);
 			return;
 		}
 
@@ -815,6 +866,7 @@ export_net_rotation()
 				"  :type finite_rotation: FiniteRotation\n"
 				"  :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).\n"
 				"  :type time_interval: float\n"
+				"  :raises ValueError: if *time_interval* is not positive and finite\n"
 				"  :rtype: NetRotation\n"
 				"\n"
 				"  In this contrived example we calculate the net rotation of a single plate. "
@@ -860,7 +912,7 @@ export_net_rotation()
 				"  .. seealso:: :meth:`create_sample_from_finite_rotation`\n")
 		.staticmethod("create_sample_from_rotation_rate")
 		.def("convert_finite_rotation_to_rotation_rate_vector",
-				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_finite_rotation_to_rotation_rate_vector,
+				&GPlatesApi::net_rotation_convert_finite_rotation_to_rotation_rate_vector,
 				(bp::arg("finite_rotation"),
 					bp::arg("time_interval") = 1.0),
 				"convert_finite_rotation_to_rotation_rate_vector(finite_rotation, [time_interval=1.0])\n"
@@ -870,6 +922,7 @@ export_net_rotation()
 				"  :type finite_rotation: FiniteRotation\n"
 				"  :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).\n"
 				"  :type time_interval: float\n"
+				"  :raises ValueError: if *time_interval* is not positive and finite\n"
 				"  :rtype: Vector3D\n"
 				"\n"
 				"  To convert a finite rotation over 10Myr to a rotation rate vector (in radians per Myr):"
@@ -878,7 +931,7 @@ export_net_rotation()
 				"    net_rotation_rate_vector = pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector(net_finite_rotation_over_10myr, 10)\n")
 		.staticmethod("convert_finite_rotation_to_rotation_rate_vector")
 		.def("convert_rotation_rate_vector_to_finite_rotation",
-				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_rotation_rate_vector_to_finite_rotation,
+				&GPlatesApi::net_rotation_convert_rotation_rate_vector_to_finite_rotation,
 				(bp::arg("rotation_rate_vector"),
 					bp::arg("time_interval") = 1.0),
 				"convert_rotation_rate_vector_to_finite_rotation(rotation_rate_vector, [time_interval=1.0])\n"
@@ -888,6 +941,7 @@ export_net_rotation()
 				"  :type rotation_rate_vector: Vector3D\n"
 				"  :param time_interval: The time interval of the returned finite rotation (defaults to 1Myr).\n"
 				"  :type time_interval: float\n"
+				"  :raises ValueError: if *time_interval* is not positive and finite\n"
 				"  :rtype: FiniteRotation\n"
 				"\n"
 				"  To convert a rotation rate vector (in radians per Myr) to a finite rotation over 10Myr (ie, having the same pole but with an angle multiplied by 10):"
@@ -931,7 +985,7 @@ export_net_rotation()
 			"` uniformly spaced latitude-longitude points.\n"
 			"  :type point_distribution: int, or sequence of tuple (point, float) where point is a "
 			"PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-			"  :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.\n"
+			"  :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.\n"
 			"\n"
 			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
 			"\n"
@@ -1155,7 +1209,7 @@ export_net_rotation()
 			"` uniformly spaced latitude-longitude points.\n"
 			"  :type point_distribution: int, or sequence of tuple (point, float) where point is a "
 			"PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
-			"  :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or an empty sequence.\n"
+			"  :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.\n"
 			"\n"
 			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:\n"
 			"\n"

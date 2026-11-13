@@ -3368,15 +3368,19 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::get_or_create_velo
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type) const
 {
-	// Only cache stage rotations for a specific reconstruction time.
-	// We clear it when we move onto a different reconstruction time.
+	// Only cache stage rotations for a specific reconstruction time, velocity delta time and type.
+	// We clear it when we move onto a different one.
 	if (!d_velocity_stage_rotation_calculator ||
-		reconstruction_time != d_velocity_stage_rotation_time)
+		reconstruction_time != d_velocity_stage_rotation_time ||
+		velocity_delta_time != d_velocity_stage_rotation_delta_time ||
+		velocity_delta_time_type != d_velocity_stage_rotation_delta_time_type)
 	{
 		d_velocity_stage_rotation_calculator = PlateVelocityUtils::StageRotationCalculator(
 				reconstruction_time, velocity_delta_time, velocity_delta_time_type);
 
 		d_velocity_stage_rotation_time = reconstruction_time;
+		d_velocity_stage_rotation_delta_time = velocity_delta_time;
+		d_velocity_stage_rotation_delta_time_type = velocity_delta_time_type;
 	}
 
 	return d_velocity_stage_rotation_calculator->calculate_stage_rotation(

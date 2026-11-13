@@ -61,9 +61,18 @@ namespace GPlatesApi
 
 			// Unpickle a Python 'bytes' object back into a C++ 'Bytes' object.
 			Bytes::Bytes(
-					boost::python::object bytes_object) :
-				bytes(QByteArray(PyBytes_AsString(bytes_object.ptr()), PyBytes_Size(bytes_object.ptr())))
-			{  }
+					boost::python::object bytes_object)
+			{
+				// Check first, since PyBytes_AsString() on anything else returns NULL with a 'TypeError'
+				// left pending (which surfaced later as 'SystemError').
+				if (!PyBytes_Check(bytes_object.ptr()))
+				{
+					PyErr_SetString(PyExc_TypeError, "Expected a 'bytes' object");
+					boost::python::throw_error_already_set();
+				}
+
+				bytes = QByteArray(PyBytes_AsString(bytes_object.ptr()), PyBytes_Size(bytes_object.ptr()));
+			}
 		}
 	}
 }

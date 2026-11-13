@@ -173,12 +173,6 @@ namespace GPlatesApi
 				d_edges_end(edges_end)
 			{  }
 
-			Iterator &
-			self()
-			{
-				return *this;
-			}
-
 			ReconstructionTreeEdge
 			next()
 			{
@@ -651,6 +645,10 @@ namespace GPlatesApi
 		// build trees for different reconstruction times (as done by the ReconstructionTreeCreator)
 		// but it needs to be handled in a different way to account for the fact that poles can
 		// come from different sources (not just rotation features).
+		//
+		// NOTE: Building the graph empties the builder (it consumes the poles), so a second call gives an
+		// empty tree. That is intended for this deprecated (and undocumented) class, and is pinned by
+		// 'test_app_logic/test.py' ('ReconstructionTreeCase.test_build').
 		const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
 				reconstruction_graph_builder.build_graph();
 
@@ -686,9 +684,7 @@ export_reconstruction_tree()
 			GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator>(
 					"ReconstructionTreeEdgesViewIterator",
 					bp::no_init)
-		.def("__iter__",
-				&GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator::self,
-				bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::reconstruction_tree_edge_vector_view_type::Iterator::next)
@@ -715,9 +711,7 @@ export_reconstruction_tree()
 			GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator>(
 					"AllReconstructionTreeEdgesViewIterator",
 					bp::no_init)
-		.def("__iter__",
-				&GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator::self,
-				bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("__iter__", &GPlatesApi::PythonConverterUtils::get_iterator_self)
 		.def(
 				"__next__",
 				&GPlatesApi::reconstruction_tree_edge_map_view_type::Iterator::next)

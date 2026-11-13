@@ -4,6 +4,7 @@ Unit tests for the pygplates property values.
 
 import os
 import pickle
+import tempfile
 import unittest
 import pygplates
 
@@ -250,6 +251,14 @@ class GmlDataBlockCase(unittest.TestCase):
         self.gml_data_block.set(pygplates.ScalarType.create_gpml('TestType'), [100,200,300,400])
         self.assertTrue(len(self.gml_data_block) == 3)
         self.assertTrue(self.gml_data_block.get_scalar_values(pygplates.ScalarType.create_gpml('TestType')) == [100,200,300,400])
+        # Replacing a scalar type keeps its place in the order of scalar types.
+        scalar_types = list(self.gml_data_block)
+        self.gml_data_block.set(self.velocity_colat_type, [1,2,3,4])
+        self.assertTrue(list(self.gml_data_block) == scalar_types)
+        # The only scalar type can change its number of scalar values (there's nothing else to match).
+        gml_data_block = pygplates.GmlDataBlock([(self.velocity_colat_type, [1,2])])
+        gml_data_block.set(self.velocity_colat_type, [1,2,3])
+        self.assertTrue(gml_data_block.get_scalar_values(self.velocity_colat_type) == [1,2,3])
 
     def test_remove(self):
         self.assertTrue(len(self.gml_data_block) == 2)
@@ -267,6 +276,32 @@ class GmlDataBlockCase(unittest.TestCase):
 
     def test_pickle(self):
         self.assertTrue(self.gml_data_block == pickle.loads(pickle.dumps(self.gml_data_block)))
+
+
+class IteratorCase(unittest.TestCase):
+    def test_iterate_temporary(self):
+        # Iterating over a temporary keeps it alive (previously its iterator could read freed memory).
+        scalar_type = pygplates.ScalarType.create_gpml('VelocityColat')
+        for _ in range(20):
+            self.assertEqual(sorted(key for key in pygplates.GpmlKeyValueDictionary({'a': 1, 'b': 2})), ['a', 'b'])
+            self.assertEqual([st for st in pygplates.GmlDataBlock([(scalar_type, [1, 2])])], [scalar_type])
+
+    def test_iter_returns_self(self):
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(pygplates.XsDouble(n), n) for n in range(4)])
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary({'a': 1, 'b': 2, 'c': 3, 'd': 4})
+        gml_data_block = pygplates.GmlDataBlock([
+                (pygplates.ScalarType.create_gpml('VelocityColat'), [1, 2]),
+                (pygplates.ScalarType.create_gpml('VelocityLon'), [1, 2])])
+        for iterable in (gpml_irregular_sampling, gpml_irregular_sampling.get_time_samples(),
+                         gpml_key_value_dictionary, gml_data_block):
+            iterator = iter(iterable)
+            self.assertIs(iter(iterator), iterator)
+            # So 'zip' over the same iterator groups consecutive items (rather than pairing each item with itself).
+            pairs = list(zip(*[iter(iterable)] * 2))
+            self.assertEqual(len(pairs), len(iterable) // 2)
+            for item1, item2 in pairs:
+                self.assertFalse(item1 is item2 or item1 == item2)
 
 
 class GmlLineStringCase(unittest.TestCase):
@@ -578,6 +613,65 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         self.assertTrue(list(self.gpml_irregular_sampling) == self.original_time_samples)
         self.assertTrue([time_sample for time_sample in self.gpml_irregular_sampling] == self.original_time_samples)
 
+    def test_sorted_at_creation(self):
+        # The constructor sorts the time samples from most recent to least recent
+        # (keeping time samples with equal times in the order given).
+        time_samples = [pygplates.GpmlTimeSample(pygplates.XsDouble(value), time)
+                        for value, time in ((1, 10), (2, 0), (3, 5), (4, 0))]
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [0, 0, 5, 10])
+        self.assertEqual([time_sample.get_value().get_double() for time_sample in gpml_irregular_sampling], [2, 4, 3, 1])
+        self.assertAlmostEqual(gpml_irregular_sampling.get_value(7.5).get_double(), 2)
+        # Reordered least recent first afterwards (eg, reversed), it still interpolates.
+        gpml_irregular_sampling.reverse()
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [10, 5, 0, 0])
+        self.assertAlmostEqual(gpml_irregular_sampling.get_value(7.5).get_double(), 2)
+        self.assertEqual(len(gpml_irregular_sampling.get_time_samples_bounding_time(7.5)), 2)
+        # So a sampling given least recent first works too (previously its samples were kept in that order).
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(list(reversed(time_samples[:3])))
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [0, 5, 10])
+
+    def test_sorted_when_read(self):
+        # A sampling written out of time order (by changing the list directly) is sorted when read.
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 0), time)), time)
+                 for time in (0, 5, 10)])
+        gpml_irregular_sampling[:] = list(reversed(gpml_irregular_sampling))
+        self.assertEqual([time_sample.get_time() for time_sample in gpml_irregular_sampling], [10, 5, 0])
+        feature = pygplates.Feature.create_total_reconstruction_sequence(0, 801, gpml_irregular_sampling)
+        filename = os.path.join(tempfile.mkdtemp(), 'sorted_when_read.gpml')
+        try:
+            pygplates.FeatureCollection([feature]).write(filename)
+            read_feature = next(iter(pygplates.FeatureCollection(filename)))
+        finally:
+            os.remove(filename)
+            os.rmdir(os.path.dirname(filename))
+        _, _, read_gpml_irregular_sampling = read_feature.get_total_reconstruction_pole()
+        self.assertEqual([time_sample.get_time() for time_sample in read_gpml_irregular_sampling], [0, 5, 10])
+
+    def test_get_value_distant_times(self):
+        # A time sample bounding 'time' at distant past raises InterpolationError...
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(1), 0),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(2), pygplates.GeoTimeInstant.create_distant_past())])
+        self.assertRaises(pygplates.InterpolationError, gpml_irregular_sampling.get_value, 10)
+        # ...but a distant past (or future) 'time' is just outside the time range of the time samples.
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.XsDouble(1), 0),
+                pygplates.GpmlTimeSample(pygplates.XsDouble(2), 10)])
+        self.assertTrue(gpml_irregular_sampling.get_value(pygplates.GeoTimeInstant.create_distant_past()) is None)
+        self.assertTrue(gpml_irregular_sampling.get_value(float('-inf')) is None)
+
+    def test_set_value_is_enabled(self):
+        # 'is_enabled=None' means enabled (the default), both for a new and an existing time sample.
+        self.gpml_irregular_sampling.set_value(pygplates.XsInteger(10), 10, is_enabled=None)
+        self.assertTrue(self.gpml_irregular_sampling[-1].is_enabled())
+        self.gpml_irregular_sampling[0].set_disabled()
+        self.gpml_irregular_sampling.set_value(pygplates.XsInteger(10), 0, None, None)
+        self.assertTrue(self.gpml_irregular_sampling[0].is_enabled())
+        self.gpml_irregular_sampling.set_value(pygplates.XsInteger(10), 0, is_enabled=False)
+        self.assertTrue(self.gpml_irregular_sampling[0].is_disabled())
+
     def test_set(self):
         gpml_time_sample_list = self.gpml_irregular_sampling.get_time_samples()
         reversed_time_samples = list(reversed(self.original_time_samples))
@@ -642,6 +736,15 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         self.assertTrue(len(gpml_key_value_dictionary) == 2)
         self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
         self.assertTrue(gpml_key_value_dictionary.get('id') == 23)
+
+        # Each (key, value) pair can be any 2-element iterable (eg, an iterator).
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(
+                [iter(('name', 'Test')), (x for x in ('id', 23))])
+        self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
+        self.assertTrue(gpml_key_value_dictionary.get('id') == 23)
+        # Even a 'dict' with two keys (iterating a 'dict' gives its keys).
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary([{'name' : 1, 'Test' : 2}])
+        self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
 
     def test_len(self):
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
@@ -899,6 +1002,38 @@ class GpmlPropertyDelegateCase(unittest.TestCase):
         self.assertTrue(self.gpml_property_delegate == pickle.loads(pickle.dumps(self.gpml_property_delegate)))
 
 
+class SetValueTypeCase(unittest.TestCase):
+    def test_set_value_of_another_type(self):
+        # A time sample, time window or constant value wrapper only accepts a value of its own type,
+        # and a rejected value changes nothing.
+        for wrapper in (pygplates.GpmlTimeSample(pygplates.GpmlPlateId(701), 10),
+                        pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(701), 20, 10),
+                        pygplates.GpmlConstantValue(pygplates.GpmlPlateId(701))):
+            self.assertRaises(ValueError, wrapper.set_value, pygplates.XsInteger(801))
+            self.assertEqual(wrapper.get_value(), pygplates.GpmlPlateId(701))
+            wrapper.set_value(pygplates.GpmlPlateId(801))
+            self.assertEqual(wrapper.get_value(), pygplates.GpmlPlateId(801))
+
+    def test_set_value_round_trip(self):
+        # A rotation sample replaced with 'set_value()' reads back from a file as a rotation.
+        total_reconstruction_pole = pygplates.GpmlIrregularSampling([
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation.create_identity_rotation()), 0),
+                pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 0), 0.1)), 10)])
+        total_reconstruction_pole[1].set_value(pygplates.GpmlFiniteRotation(pygplates.FiniteRotation((0, 0), 0.2)))
+        feature = pygplates.Feature.create_total_reconstruction_sequence(0, 801, total_reconstruction_pole)
+        filename = os.path.join(tempfile.mkdtemp(), 'set_value_round_trip.gpml')
+        try:
+            pygplates.FeatureCollection([feature]).write(filename)
+            read_feature = next(iter(pygplates.FeatureCollection(filename)))
+        finally:
+            os.remove(filename)
+            os.rmdir(os.path.dirname(filename))
+        _, _, read_total_reconstruction_pole = read_feature.get_total_reconstruction_pole()
+        self.assertTrue(read_total_reconstruction_pole.get_value_type() == pygplates.GpmlFiniteRotation)
+        self.assertTrue(read_total_reconstruction_pole[1].get_value().get_finite_rotation() == (
+                pygplates.FiniteRotation((0, 0), 0.2)))
+
+
 class GpmlTimeSampleCase(unittest.TestCase):
     def setUp(self):
         self.property_value1 = pygplates.GpmlPlateId(701)
@@ -941,6 +1076,11 @@ class GpmlTimeSampleCase(unittest.TestCase):
         self.gpml_time_sample1.set_enabled()
         self.assertTrue(self.gpml_time_sample1.is_enabled())
         self.assertTrue(not self.gpml_time_sample1.is_disabled())
+        # The documented keyword works.
+        self.gpml_time_sample1.set_enabled(is_enabled=False)
+        self.assertTrue(self.gpml_time_sample1.is_disabled())
+        self.gpml_time_sample1.set_enabled(is_enabled=True)
+        self.assertTrue(self.gpml_time_sample1.is_enabled())
         
         self.gpml_time_sample1.set_description()
         self.assertTrue(self.gpml_time_sample1.get_description() is None)
@@ -1408,6 +1548,8 @@ def suite():
             PropertyValueCase,
             EnumerationCase,
             GeoTimeInstantCase,
+            IteratorCase,
+            SetValueTypeCase,
             GmlDataBlockCase,
             GmlLineStringCase,
             GmlMultiPointCase,

@@ -16,6 +16,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
+from collections.abc import Iterator as _Iterator
+
 
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
 def _plate_partitioning_set_keeping_unpartitioned(feature, set_function, property_names):
@@ -49,13 +51,17 @@ def _plate_partitioning_set_geometry(feature, geometries, geometry_property_name
         raise AssertionError('A partitioned coverage has {0} scalars for a geometry of {1} points.'.format(
                 num_scalars, len(geometry.get_points())))
 
+    # Set without checking the information model: the feature already held this property (with a geometry of this
+    # type), whether or not its feature type allows it (eg, if it was created without checking), and
+    # the caller sets one coverage per feature, so there is no multiplicity to check either.
     def set_geometries():
         if any(isinstance(geometry, tuple) and is_exterior_ring_only(geometry) for geometry in geometries):
-            feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name)
+            feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name,
+                                 verify_information_model=VerifyInformationModel.no)
             for geometry, scalars in geometries:
                 feature.add(range_property_name, GmlDataBlock(scalars), VerifyInformationModel.no)
         else:
-            feature.set_geometry(geometries, geometry_property_name)
+            feature.set_geometry(geometries, geometry_property_name, verify_information_model=VerifyInformationModel.no)
 
     _plate_partitioning_set_keeping_unpartitioned(
             feature, set_geometries,
@@ -90,18 +96,26 @@ def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grou
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
         # If so then try again by cloning one feature per extra geometry.
+        # Or it could be that the feature's type doesn't allow the property at all (eg, a feature created without
+        # checking the information model), even though the feature already held it: then the pieces are set
+        # without checking (there is then no multiplicity to keep to).
         # ('set_geometry()' without coverages also replaces every property of the range name.)
-        def set_geometry(feature, geometry_or_geometries):
+        def set_geometry(feature, geometry_or_geometries, verify_information_model=VerifyInformationModel.yes):
             _plate_partitioning_set_keeping_unpartitioned(
                     feature,
-                    lambda: feature.set_geometry(geometry_or_geometries, geometry_property_name),
+                    lambda: feature.set_geometry(geometry_or_geometries, geometry_property_name,
+                                                 verify_information_model=verify_information_model),
                     [name for name in (geometry_property_name, range_property_name) if name is not None])
         try:
             set_geometry(feature_for_geometries, geometries)
         except InformationModelError:
-            set_geometry(feature_for_geometries, geometries[0])
-            for geometry_index in range(1, len(geometries)):
-                set_geometry(new_feature(), geometries[geometry_index])
+            try:
+                set_geometry(feature_for_geometries, geometries[0])
+            except InformationModelError:
+                set_geometry(feature_for_geometries, geometries, VerifyInformationModel.no)
+            else:
+                for geometry_index in range(1, len(geometries)):
+                    set_geometry(new_feature(), geometries[geometry_index])
 
     # Return sequence of features.
     return features
@@ -140,9 +154,12 @@ def _plate_partitioning_copy_partition_properties(partitioning_feature, feature,
                         valid_time_end = valid_time_begin
                     feature.set_valid_time(valid_time_begin, valid_time_end)
                 else: # 'property_to_copy' is a PropertyName...
+                    # Copy each property's whole value (time-dependent or not), not its value at present day
+                    # (which a time-dependent value might not even have).
                     properties = partitioning_feature.get(property_to_copy, PropertyReturn.all)
                     if properties:
-                        feature.set(property_to_copy, (property.get_value().clone() for property in properties))
+                        feature.set(property_to_copy,
+                                    (property.get_time_dependent_value().clone() for property in properties))
             except InformationModelError:
                 pass
     
@@ -183,6 +200,7 @@ def plate_partitioner_partition_features(
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
+    :raises TypeError: if *properties_to_copy* is an iterator (rather than a sequence such as a list)
     
     The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
@@ -232,7 +250,7 @@ def plate_partitioner_partition_features(
     
     *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
     
-    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
+    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it). A property is copied whole, including a time-dependent value (such as a :class:`GpmlPiecewiseAggregation`).
     
     .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
     
@@ -321,6 +339,12 @@ def plate_partitioner_partition_features(
        *PartitionMethod.most_overlapping_plate* measures polygons by area. :class:`PartitionError` is raised if a cut
        is inconsistent.
     """
+
+    # The properties are copied to each partitioned feature, so an iterator (which can be iterated only once)
+    # would copy them to the first feature only.
+    if isinstance(properties_to_copy, _Iterator):
+        raise TypeError('properties_to_copy must be a sequence (eg, list or tuple), not an iterator, '
+                        'since it is used for each partitioned feature')
 
     # Turn function argument into something more convenient for extracting features.
     features = FeaturesFunctionArgument(features)
@@ -587,6 +611,7 @@ def partition_into_plates(
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or \
         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
+    :raises TypeError: if *properties_to_copy* is an iterator (rather than a sequence such as a list)
     
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
@@ -647,7 +672,7 @@ def partition_into_plates(
     
     *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
     
-    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
+    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it). A property is copied whole, including a time-dependent value (such as a :class:`GpmlPiecewiseAggregation`).
     
     .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
     

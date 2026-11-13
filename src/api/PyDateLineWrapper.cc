@@ -23,9 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <limits>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "PyGreatCircleArc.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
@@ -57,17 +60,30 @@ namespace GPlatesApi
 		{
 			double tessellate_radians = GPlatesMaths::convert_deg_to_rad(tessellate_degrees.get());
 
-			// Clamp to the range [0, PI].
-			if (tessellate_radians < 0)
-			{
-				tessellate_radians = 0;
-			}
-			else if (tessellate_radians > GPlatesMaths::PI)
-			{
-				tessellate_radians = GPlatesMaths::PI;
-			}
+			// The smallest threshold used: below this the number of tessellated segments wouldn't fit
+			// the integer counting them, either for a great circle arc or (the larger limit) for the
+			// 180 degree line along the dateline that wrapping can add. That count is one more than
+			// '180 / threshold', so the divisor is one less than the largest unsigned integer.
+			const double minimum_tessellate_radians = (std::max)(
+					get_minimum_tessellate_radians(),
+					180.0 / ((std::numeric_limits<unsigned int>::max)() - 1.0));
 
-			tessellate = GPlatesMaths::AngularExtent::create_from_angle(tessellate_radians);
+			// Not positive (including NaN) means no tessellation, as documented. This leaves 'tessellate'
+			// as none rather than a zero threshold, which the DateLineWrapper would divide by.
+			// Otherwise clamp to the range [minimum, PI].
+			if (tessellate_radians > 0)
+			{
+				if (tessellate_radians < minimum_tessellate_radians)
+				{
+					tessellate_radians = minimum_tessellate_radians;
+				}
+				else if (tessellate_radians > GPlatesMaths::PI)
+				{
+					tessellate_radians = GPlatesMaths::PI;
+				}
+
+				tessellate = GPlatesMaths::AngularExtent::create_from_angle(tessellate_radians);
+			}
 		}
 
 		const GPlatesMaths::GeometryType::Value geometry_type =
@@ -391,7 +407,7 @@ export_date_line_wrapper()
 				"  :param geometry: the geometry to wrap\n"
 				"  :type geometry: GeometryOnSphere\n"
 				"  :param tessellate_degrees: optional tessellation threshold (in degrees) - "
-				"threshold is clamped to the range [0, 180] if specified\n"
+				"threshold is clamped to the range [0, 180] if specified (zero, negative or NaN means no tessellation)\n"
 				"  :type tessellate_degrees: float or None\n"
 				// Note: The ', or' separators are required - 'list of A or list of B' parses as
 				//       'list of (A or list of B)' in pygplates/stub/generate_stub.py.

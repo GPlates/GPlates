@@ -2667,6 +2667,24 @@ namespace GPlatesApi
 			d_boundary_sub_segments.push_back(
 					ResolvedTopologicalGeometrySubSegmentWrapper(boundary_sub_segment));
 		}
+
+		// The interior geometries (which include the rigid blocks, but also include the rigid blocks
+		// explicitly in case that ever changes).
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::interior_source_geometry_seq_type &
+				interior_source_geometries = resolved_topological_network->get_interior_source_geometries();
+		for (const auto &interior_source_geometry : interior_source_geometries)
+		{
+			d_interior_geometries_keep_alive.push_back(
+					KeepReconstructionGeometryFeatureAndPropertyAlive(*interior_source_geometry));
+		}
+		const GPlatesAppLogic::ResolvedTriangulation::Network::rigid_block_seq_type &rigid_blocks =
+				resolved_topological_network->get_triangulation_network().get_rigid_blocks();
+		for (const auto &rigid_block : rigid_blocks)
+		{
+			d_interior_geometries_keep_alive.push_back(
+					KeepReconstructionGeometryFeatureAndPropertyAlive(
+							*rigid_block.get_reconstructed_feature_geometry()));
+		}
 	}
 
 	bp::object

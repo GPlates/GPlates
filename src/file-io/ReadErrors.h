@@ -62,6 +62,7 @@ namespace GPlatesFileIO
 			SamePlateIdsButDuplicateGeoTime,
 			SamePlateIdsButEarlierGeoTime,
 			PoleTakesLongRotationPathRelativeToPrevPole,
+			PolesNotInTimeOrder,
 
 			// The following are specific to PLATES line-format reading.
 			InvalidPlatesRegionNumber,
@@ -237,6 +238,7 @@ namespace GPlatesFileIO
 			NewOverlappingSequenceBegun,
 			PoleDiscarded,
 			PoleAdjustedToShortRotationPathRelativeToPrevPole,
+			PolesSortedByTime,
 
 			// The following are specific to PLATES line-format reading.
 			UnclassifiedFeatureCreated,

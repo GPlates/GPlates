@@ -21,6 +21,17 @@ FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
 class DateLineWrapperCase(unittest.TestCase):
+    def test_wrap_tessellate_degrees(self):
+        date_line_wrapper = pygplates.DateLineWrapper()
+        polyline = pygplates.PolylineOnSphere([(0, 170), (0, 170.01)])
+        # A threshold that is not positive (or NaN) means no tessellation, as documented.
+        for tessellate_degrees in (None, 0, -1, float('nan')):
+            wrapped_polylines = date_line_wrapper.wrap(polyline, tessellate_degrees)
+            self.assertEqual(len(wrapped_polylines[0].get_points()), 2)
+        # A tiny positive threshold is clamped up to a minimum (rather than exhausting memory).
+        wrapped_polylines = date_line_wrapper.wrap(polyline, 1e-12)
+        self.assertTrue(2 < len(wrapped_polylines[0].get_points()) < 100000)
+
     def test_wrap(self):
         date_line_wrapper = pygplates.DateLineWrapper()
         date_line_wrapper_90 = pygplates.DateLineWrapper(90)
@@ -299,6 +310,14 @@ class FiniteRotationCase(unittest.TestCase):
         # Rotating along small circle arc.
         self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((45,0)), math.sin(math.radians(45)) * 0.5 * math.pi)
         self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((-45,0)), math.sin(math.radians(45)) * 0.5 * math.pi)
+        # A distance is never negative (eg, for a negative angle, or an inverse or interpolated rotation).
+        self.assertAlmostEqual(pygplates.FiniteRotation((90,0), -0.5).get_rotation_distance((0,0)), 0.5)
+        self.assertAlmostEqual(pygplates.FiniteRotation((90,0), 0.5).get_inverse().get_rotation_distance((0,0)), 0.5)
+        self.assertAlmostEqual(
+                pygplates.FiniteRotation.interpolate(
+                        pygplates.FiniteRotation.create_identity_rotation(), pygplates.FiniteRotation((90,0), -1.0), 0, 1, 0.5)
+                .get_rotation_distance((0,0)),
+                0.5)
     
     def test_identity(self):
         # Create identity rotation explicitly.
@@ -334,6 +353,19 @@ class FiniteRotationCase(unittest.TestCase):
         self.assertFalse(pygplates.FiniteRotation.are_equal(
                 pygplates.FiniteRotation((10,20), math.radians(30)),
                 pygplates.FiniteRotation((10.5,20.4), math.radians(29.6))))
+        # Pole longitudes compare across the dateline.
+        self.assertTrue(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,180), math.radians(30)),
+                pygplates.FiniteRotation((10,-180), math.radians(30)),
+                0.01))
+        self.assertTrue(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,179.9), math.radians(30)),
+                pygplates.FiniteRotation((10,-179.9), math.radians(30)),
+                1))
+        self.assertFalse(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,170), math.radians(30)),
+                pygplates.FiniteRotation((10,-170), math.radians(30)),
+                1))
     
     def test_equivalent(self):
         pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())
@@ -441,6 +473,9 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertRaises(pygplates.IndeterminateGreatCircleArcDirectionError, zero_length_gca.get_arc_direction, 0.5)
     
     def test_tessellate(self):
+        # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
+        for tessellate_radians in (0, -1, float('nan'), 1e-12):
+            self.assertRaises(ValueError, self.gca.to_tessellated, tessellate_radians)
         tessellation_points = self.gca.to_tessellated(math.radians(91))
         self.assertTrue(len(tessellation_points) == 2)
         self.assertTrue(tessellation_points[0] == self.gca.get_start_point())

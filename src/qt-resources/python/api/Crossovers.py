@@ -151,7 +151,7 @@ class CrossoverTypeFunction(object):
 
 # An enumeration (class with static integers) of crossover results (whether and how they were processed).
 class CrossoverResult(object):
-    error = 0             # Crossover was not processed due to an error (eg, crossover type was unknown).
+    error = 0             # Crossover was not processed due to an error (eg, crossover type was unknown, or no plate circuit).
     synchronised = 1      # Crossover was synchronised.
     not_synchronised = 2  # Crossover did not need synchronisation (was already in-synch).
     ignored = 3           # Crossover was ignored (since crossover type was 'ignore').
@@ -522,12 +522,15 @@ def synchronise_crossovers(
         *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or \
         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or \
         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of \
-        *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
+        *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate \
+        at the crossover time) - the list is sorted by crossover time - default is None
     :type crossover_results: list[tuple[Crossover, int]], or None
     
-    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown* (which \
-        generates a *CrossoverResult.error* in *crossover_results*, if specified, due to inability to \
-        process crossover). Also returns False if unable to synchronise all crossovers due to an infinite \
+    :returns: True on success. False if the type of any crossover is *CrossoverType.unknown*, or if there is \
+        no plate circuit from the moving plate of any crossover to its synchronised crossover's fixed plate at the \
+        crossover time (either of which generates a *CrossoverResult.error* in *crossover_results*, if specified, \
+        due to inability to process crossover, whose time samples are then left unchanged). \
+        Also returns False if unable to synchronise all crossovers due to an infinite \
         cycle between crossovers. In all cases (success or failure) as many crossovers as possible will be \
         processed and results saved to rotation features (and rotation files, if any).
     :rtype: bool
@@ -678,7 +681,8 @@ def synchronise_crossovers(
     *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or
     *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or
     *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of
-    *CrossoverType.unknown*). The appended list elements are sorted by crossover time.
+    *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate
+    at the crossover time). The appended list elements are sorted by crossover time.
     
     Synchronise all crossovers found in a rotation file (and save modifications back to the same rotation file)
     where crossover types are determined by '\\@xo_' tags in the young crossover description/comment:
@@ -914,12 +918,25 @@ def synchronise_crossovers(
                 crossover_info.crossover.moving_plate_id,
                 # Note: Setting anchor plate instead of fixed plate in case there's no plate circuit path
                 # from plate zero (default anchor plate) to moving or fixed plates (see pygplates API docs)...
-                anchor_plate_id=crossover_info.synchronised_fixed_plate_id)
+                anchor_plate_id=crossover_info.synchronised_fixed_plate_id,
+                # No plate circuit from the moving plate to the synchronised-crossover fixed plate at the
+                # crossover time gives None (rather than an identity rotation, which would then be written
+                # as the synchronised-crossover rotation).
+                use_identity_for_missing_plate_ids=False)
             
             # Now that we've obtained the current synchronised-crossover rotation we can re-enable the
             # sample(s) at the crossover time that we disabled above.
             for time_sample in crossover_info.disabled_samples_at_crossover_time:
                 time_sample.set_enabled()
+
+            # If there's no plate circuit then leave this crossover's time samples untouched and record an error
+            # (eg, the preserved-crossover sequence has only one enabled time sample, which the rotation model ignores).
+            if current_synchronised_crossover_moving_fixed_relative_rotation is None:
+                success = False
+                if crossover_results is not None:
+                    crossover_results[crossover_results_first_index + crossover_info.crossover_index] = (
+                        crossover_info.crossover, CrossoverResult.error)
+                continue
             
             # The previous synchronised-crossover rotation.
             previous_synchronised_crossover_moving_fixed_relative_rotation = (

@@ -2,6 +2,7 @@
 Unit tests for the pygplates property values.
 """
 
+import numpy
 import os
 import unittest
 import pygplates
@@ -259,7 +260,8 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         # Value not in limited range.
         self.assertRaises(ValueError, self.gpml_time_sample_list.index, self.original_time_samples[2], 1, 2)
         # Indices of limited range are incorrect.
-        self.assertRaises(IndexError, self.gpml_time_sample_list.index, self.original_time_samples[2], 2, 1)
+        # An empty search range is just "not found" (as for a Python list).
+        self.assertRaises(ValueError, self.gpml_time_sample_list.index, self.original_time_samples[2], 2, 1)
 
     def test_count(self):
         self.assertTrue(self.gpml_time_sample_list.count(self.original_time_samples[1]) == 1)
@@ -272,6 +274,78 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.gpml_time_sample_list.reverse()
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(list(self.gpml_time_sample_list) == list(reversed(self.original_time_samples)))
+
+    def test_sort_like_list(self):
+        def strings(array):
+            return [element.get_string() for element in array]
+        # Sorting is stable, also in reverse (equal keys keep their order, as for a Python list).
+        values = ['a1', 'b1', 'a2', 'b2', 'a3']
+        array = pygplates.GpmlArray([pygplates.XsString(value) for value in values])
+        array.sort(key=lambda element: element.get_string()[0], reverse=True)
+        self.assertEqual(strings(array), sorted(values, key=lambda value: value[0], reverse=True))
+        self.assertEqual(strings(array), ['b1', 'b2', 'a1', 'a2', 'a3'])
+        # Mixed 'int' and 'float' keys (and NumPy numbers) compare as in Python.
+        mixed_keys = {'a1': 2, 'b1': 1.5, 'a2': numpy.int64(1), 'b2': numpy.float64(0.5), 'a3': 0}
+        array.sort(key=lambda element: mixed_keys[element.get_string()])
+        self.assertEqual(strings(array), ['a3', 'b2', 'a2', 'b1', 'a1'])
+        # A key that raises leaves the list unchanged.
+        def raising_key(element):
+            if element.get_string() == 'a2':
+                raise ValueError('raised by the key')
+            return element.get_string()
+        self.assertRaises(ValueError, array.sort, key=raising_key)
+        self.assertEqual(strings(array), ['a3', 'b2', 'a2', 'b1', 'a1'])
+
+    def test_matches_list(self):
+        # 'index()', 'remove()' and slice assignment behave like a Python list.
+        values = [0, 1, 2, 1, 3]
+        def make():
+            return pygplates.GpmlArray([pygplates.XsInteger(value) for value in values]), list(values)
+        def contents(array):
+            return [element.get_integer() for element in array]
+        def outcome(function):
+            try:
+                return 'returned', function()
+            except Exception as exc:
+                return 'raised', type(exc)
+
+        index_cases = [
+                (1,), (1, 2), (1, -3), (1, 0, 0), (1, 2, 1), (1, -100, 100), (1, 4, 2), (1, 100),
+                (9,), (3, -1), (3, -2, -1), (0, 0, -5), (1, 3, 100)]
+        for args in index_cases:
+            array, list_ = make()
+            self.assertEqual(
+                    outcome(lambda: array.index(pygplates.XsInteger(args[0]), *args[1:])),
+                    outcome(lambda: list_.index(args[0], *args[1:])),
+                    args)
+        # Not found, including in an empty list (and an element of the wrong type).
+        array, list_ = make()
+        self.assertRaises(ValueError, array.index, pygplates.XsDouble(1))
+        del array[:]
+        self.assertRaises(ValueError, array.index, pygplates.XsInteger(1))
+        self.assertRaises(ValueError, array.remove, pygplates.XsInteger(1))
+
+        slices = [slice(2, 2, 2), slice(2, 2), slice(None, None, -1), slice(1, 4, 2), slice(0, 0, -1), slice(None, None, 0)]
+        new_values_cases = [[], [7], [7, 8], [7, 8, 9, 10, 11]]
+        for slice_ in slices:
+            for new_values in new_values_cases:
+                array, list_ = make()
+                array_outcome = outcome(lambda: array.__setitem__(slice_, [pygplates.XsInteger(value) for value in new_values]))
+                list_outcome = outcome(lambda: list_.__setitem__(slice_, new_values))
+                self.assertEqual(array_outcome, list_outcome, (slice_, new_values))
+                self.assertEqual(contents(array), list_, (slice_, new_values))
+        # A zero step raises ValueError (as for a list), whether getting, setting or deleting.
+        array, list_ = make()
+        self.assertRaises(ValueError, array.__getitem__, slice(None, None, 0))
+        self.assertRaises(ValueError, array.__delitem__, slice(None, None, 0))
+
+    def test_empty(self):
+        # Operations that replace all elements also work on an empty list (previously AssertionFailureError).
+        del self.gpml_time_sample_list[:]
+        self.gpml_time_sample_list.reverse()
+        self.gpml_time_sample_list.sort(key = lambda x: x.get_time())
+        del self.gpml_time_sample_list[:]
+        self.assertTrue(len(self.gpml_time_sample_list) == 0)
 
     def test_sort(self):
         # Change the time of one element so the sequence is no longer ordered by time.

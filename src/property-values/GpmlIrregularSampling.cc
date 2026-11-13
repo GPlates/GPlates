@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <iostream>
 
 #include "GpmlIrregularSampling.h"
@@ -68,6 +69,28 @@ namespace
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlIrregularSampling::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("IrregularSampling");
+
+
+bool
+GPlatesPropertyValues::GpmlIrregularSampling::sort_time_samples(
+		std::vector<GpmlTimeSample::non_null_ptr_type> &time_samples)
+{
+	// Whether time sample 'a' is more recent (younger) than time sample 'b'.
+	const auto is_more_recent =
+			[](const GpmlTimeSample::non_null_ptr_type &a, const GpmlTimeSample::non_null_ptr_type &b)
+			{
+				return a->valid_time()->get_time_position().is_strictly_later_than(
+						b->valid_time()->get_time_position());
+			};
+
+	if (std::is_sorted(time_samples.begin(), time_samples.end(), is_more_recent))
+	{
+		return false;
+	}
+
+	std::stable_sort(time_samples.begin(), time_samples.end(), is_more_recent);
+	return true;
+}
 
 
 const boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_to_const_type>

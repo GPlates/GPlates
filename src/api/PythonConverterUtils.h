@@ -207,6 +207,24 @@ namespace GPlatesApi
 		template <class T>
 		void
 		register_all_conversions_for_non_null_intrusive_ptr();
+
+
+		/**
+		 * The '__iter__' method of a custom Python iterator class: returns the iterator object itself.
+		 *
+		 * Use as '.def("__iter__", &PythonConverterUtils::get_iterator_self)'.
+		 *
+		 * Returning a copy instead (eg, with 'bp::return_value_policy<bp::copy_non_const_reference>')
+		 * makes 'iter(it) is it' false, and splits the iteration position between two Python objects
+		 * (eg, 'zip(*[iter(seq)] * 2)' then pairs each item with itself).
+		 */
+		inline
+		boost::python::object
+		get_iterator_self(
+				boost::python::object iterator)
+		{
+			return iterator;
+		}
 	}
 }
 

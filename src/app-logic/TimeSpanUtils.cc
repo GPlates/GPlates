@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <limits>
+
 #include "TimeSpanUtils.h"
 
 
@@ -226,8 +228,14 @@ GPlatesAppLogic::TimeSpanUtils::TimeRange::calc_num_time_slots(
 	// For example, for begin_time = 12.1 and end_time = 10.0 and time_increment = 1.0,
 	// we get four time slots which are at times 13.0, 12.0, 11.0 and 10.0 and they are
 	// bound by the three time intervals [13.0, 12.0], [12.0, 11.0] and [11.0, 10.0].
-	const unsigned int num_time_slots = 1 + static_cast<int>(
-			(1 - round_threshold) + (begin_time - end_time) / time_increment);
+	//
+	// Check that the number of time slots fits an 'int' before casting (casting a double that doesn't
+	// fit is undefined behaviour, eg, a tiny time increment).
+	const double num_time_intervals = (1 - round_threshold) + (begin_time - end_time) / time_increment;
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			num_time_intervals < (std::numeric_limits<int>::max)(),
+			GPLATES_ASSERTION_SOURCE);
+	const unsigned int num_time_slots = 1 + static_cast<int>(num_time_intervals);
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			num_time_slots >= 2,
