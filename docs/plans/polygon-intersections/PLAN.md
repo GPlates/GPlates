@@ -1157,9 +1157,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
     `plans/done/` rather than only deleting it (step 9 of *PR C*).
 
 - **Resume here** (updated 2026-11-13): **PR C under way**, in the steps of section *PR C* below
-  (steps 0 to 7 done, 2026-11-13: the four methods are `26351dba6`; next, step 8, verification:
-  the Linux Docker run, then step 9, the distillation, with its two Fable agents at explicit
-  xHigh). PR C ends with the final Fable distillation of this directory, then archives it in the
+  (steps 0 to 8 done, 2026-11-13: the four methods are `26351dba6`; Linux, Ubuntu 22.04 at
+  `746d26882`: pyGPlates 7 of 7, GPlates 218 of 218. Next, step 9, the distillation and the two
+  overviews, then the claim check, then step 10's final review: each a Fable agent at explicit
+  xHigh, one at a time, pausing for the developer between them). PR C ends with the final Fable distillation of this directory, then archives it in the
   planning repository and deletes it here (step 9).
   After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
   overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
