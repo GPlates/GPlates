@@ -1764,7 +1764,19 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
      repository keeps only the distilled content; the archive is the complete record of the effort.
    - Update the roadmap row in the planning repository. Also note, against the docs E PR
      (primer, partitioning section), that it should mention the Boolean methods.
-10. **The PR** when the developer asks. Then comes the `partition_features` rework.
+10. **A final Fable review, then the PR** (developer, 2026-11-13).
+   - After step 9's distillation and claim check, and **before its archive and deletion** (so that
+     the review's report, `prC-review-final.md` here, is archived with the rest): a fresh Fable
+     agent at explicit xHigh reviews the whole pull request against `main` (`git diff
+     $(git merge-base HEAD public/main)`): the overlay's cut at a chain and join (written and
+     reviewed by Fable agents, so an independent read matters most there), the entry point, the
+     bindings and docstrings, the tests, and the distilled pages and overviews against the code.
+     A self-contained brief: what PR C does, where the evidence is (`prC-symdiff-twist.md`), and
+     findings to be verified (a finding's run or reading named), not inferred.
+   - Fixes to its findings, as `fixup!` commits where they amend a commit of this PR; the developer
+     decides any finding that changes a design. Then the archive and deletion (step 9's last
+     bullet), the roadmap, and the PR when the developer asks (description drafted for the
+     developer first). Then comes the `partition_features` rework.
 
 Commits: the overlay fix (the cut at a chain and the symmetric difference's join, with their tests
 and the design page's account of them, step 1); the entry point; the Python methods (docstrings,
