@@ -1692,6 +1692,54 @@ plate partitioning*, follows; so does the roadmap's "revisit the exact parity ar
    - Run a fresh Fable agent (`model: "fable"`) with a self-contained prompt: what PR A and PR B
      already distilled (`prA-distillation.md`, `prB-distillation.md`), where each kind of content
      goes, and the rule that every statement must be checked against the code.
+   - **Two overviews** (developer, 2026-11-13), part of the same distillation, written by Fable
+     from the code, a few hundred lines each, beside their reference in
+     `docs/design/architecture/foundation/`:
+     - `polygon-overlay-overview.md`, for `spherical-geometry.md` section 5. Rewritten from
+       `overlay-walkthrough.md`, which predates the code and is out of date (repair, the bundle
+       and one-passage rules, the grouping of crossing rings, the sliver filter, the cut at a chain
+       and the symmetric difference's join all came later), keeping its approach: the five steps,
+       pieces, classifying a piece, common pieces and the sector rule, the keep table that gives
+       every Boolean operation, pairing, the split and the grouping, each with an ASCII diagram.
+       The generic case only: each part of the degenerate machinery (the thickness band, record
+       identity, bundles, repair, the cut at a chain, spike walls) is named in a sentence, with a
+       link to the reference section that has it.
+     - `point-in-polygon-overview.md`, for section 3, the same way. Sources: the code, section 3,
+       and the planning repository's point-in-polygon plan in `plans/done/` (#106, #107).
+     - Each opens by naming its reference and saying that the reference and the code govern where
+       they differ; the reference's section links back to it. Claim-checked with the rest. Not a
+       simplified copy of the reference: an explainer may leave things out and give a page to one
+       worked example, which the reference (complete and exact, for agents and maintainers) must
+       not.
+   - **The overview convention**, in this PR, since it brings the first overviews:
+     - `AGENTS.md`, *Planning documents*: an explainer written for the developer while a branch is
+       in progress (as `overlay-walkthrough.md` was) is a plan document. At distillation it is
+       rewritten from the code into the design's overview where the reference has become too
+       detailed to learn the design from (most of it degenerate-case handling, or a core idea that
+       needs worked examples), and is otherwise archived with the plan. The developer may also ask
+       for an overview of existing code, written from the code and claim-checked like an area
+       page. *Architecture pages*: a pull request that changes a design with an overview checks
+       the overview in the same pull request (the overview's narrow scope keeps that cheap).
+     - `docs/design/architecture/README.md`: a short *How to read these documents* near the top
+       (an area's page first; then a design's overview, where it has one, before its reference;
+       the reference and the code are the authority); the three kinds of document (area pages,
+       overviews, references); the naming (`<design>-overview.md` beside its reference, never a
+       separate tree, so that whoever edits the reference sees it); and a list of the overviews.
+     - The root `README.md`: one line pointing developers at `docs/design/architecture/README.md`
+       (today it links only the versioning design).
+     - Each area page lists its design documents with their kind. `foundation/README.md` exists
+       only on `feature/architecture-diagrams`, so its links are made on whichever of the two
+       branches reaches `main` second (open: the order, below).
+     - Not now: splitting section 5 into its own `polygon-overlay.md`, which would pair the
+       overview one to one but repoint the code's 270-odd citations of "section 5.x" again.
+       Revisit if the page grows (eg `DateLineWrapper` onto the overlay).
+   - **Open (developer): `feature/architecture-diagrams` before or after this PR.** Its pages
+     (every area's but the model's) await the developer's review, and it last merged `main` at #103:
+     #104 to #110 changed `maths/` (39 files), `app-logic/` (24, plate partitioning), `api/` (8) and
+     `opengl/` (6), so its `foundation` page (2026-10-18) still describes `PolylineIntersections`
+     and polygons partitioned into polylines, and its `topologies`, `python-bindings` and
+     `opengl` pages need checking. Never merge it into this branch directly: this PR would then
+     carry its pages.
    - I review its output. Then a Fable claim check of the new text runs, serially, with a pause
      for the 5-hour limit between Fable agents.
    - **Archive, then delete** (developer, 2026-11-13): copy the whole of
