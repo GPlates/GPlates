@@ -3639,12 +3639,15 @@ namespace GPlatesApi
 		return uniform_points_list;
 	}
 
-	GPlatesMaths::PolygonPartitioner::Result
-	polygon_on_sphere_partition(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
-			bp::object partitioned_geometries_inside_object,
-			bp::object partitioned_geometries_outside_object,
+	/**
+	 * The sliver filter's width (spherical-geometry.md section 5.5) from the
+	 * *sliver_width_threshold_radians* argument of PolygonOnSphere's partition and Boolean
+	 * methods: none if the filter is off (zero keeps every piece).
+	 *
+	 * @throws ValueError (to Python) if the argument is negative or NaN.
+	 */
+	boost::optional<double>
+	get_sliver_min_width(
 			boost::optional<double> sliver_width_threshold_radians_argument)
 	{
 		// None: the default width, the overlay's thickness h (about 9 metres on the Earth), under
@@ -3659,6 +3662,22 @@ namespace GPlatesApi
 			PyErr_SetString(PyExc_ValueError, "The sliver width threshold cannot be negative or NaN.");
 			bp::throw_error_already_set();
 		}
+
+		return (sliver_width_threshold_radians > 0)
+				? boost::optional<double>(sliver_width_threshold_radians)
+				: boost::none;
+	}
+
+	GPlatesMaths::PolygonPartitioner::Result
+	polygon_on_sphere_partition(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+			bp::object partitioned_geometries_inside_object,
+			bp::object partitioned_geometries_outside_object,
+			boost::optional<double> sliver_width_threshold_radians_argument)
+	{
+		const boost::optional<double> sliver_min_width =
+				get_sliver_min_width(sliver_width_threshold_radians_argument);
 
 		// Partitioned inside/outside lists may or may not get used.
 		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type> partitioned_geometries_inside_storage;
@@ -3698,14 +3717,11 @@ namespace GPlatesApi
 		// Partition the geometry.
 		//
 
-		// The sliver filter, off at zero.
 		GPlatesMaths::PolygonPartitioner::non_null_ptr_type polygon_partitioner =
 				GPlatesMaths::PolygonPartitioner::create(
 						polygon_on_sphere,
 						GPlatesMaths::PolygonOnSphere::ADAPTIVE,
-						(sliver_width_threshold_radians > 0)
-								? boost::optional<double>(sliver_width_threshold_radians)
-								: boost::none);
+						sliver_min_width);
 		const GPlatesMaths::PolygonPartitioner::Result partition_result =
 				polygon_partitioner->partition_geometry(
 						geometry,
@@ -3737,6 +3753,103 @@ namespace GPlatesApi
 		}
 
 		return partition_result;
+	}
+
+	//! A Python list of polygons.
+	template <class PolygonSequence>
+	bp::list
+	to_polygon_list(
+			const PolygonSequence &polygons)
+	{
+		bp::list polygon_list;
+		for (const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon : polygons)
+		{
+			polygon_list.append(polygon);
+		}
+		return polygon_list;
+	}
+
+	/**
+	 * PolygonOnSphere.intersection: partitioning's inside, this polygon cut by @a other_polygon,
+	 * so that it is exactly what 'other_polygon.partition(polygon, inside)' adds (this polygon
+	 * itself where it lies whole inside).
+	 */
+	bp::list
+	polygon_on_sphere_intersection(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type other_polygon,
+			boost::optional<double> sliver_width_threshold_radians_argument)
+	{
+		GPlatesMaths::PolygonPartitioner::partitioned_polygon_seq_type inside;
+		GPlatesMaths::PolygonPartitioner::create(
+				other_polygon,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				get_sliver_min_width(sliver_width_threshold_radians_argument))
+						->partition_polygon(polygon_on_sphere, inside);
+		return to_polygon_list(inside);
+	}
+
+	//! PolygonOnSphere.difference: partitioning's outside, as @a polygon_on_sphere_intersection.
+	bp::list
+	polygon_on_sphere_difference(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type other_polygon,
+			boost::optional<double> sliver_width_threshold_radians_argument)
+	{
+		GPlatesMaths::PolygonPartitioner::partitioned_polygon_seq_type outside;
+		GPlatesMaths::PolygonPartitioner::create(
+				other_polygon,
+				GPlatesMaths::PolygonOnSphere::ADAPTIVE,
+				get_sliver_min_width(sliver_width_threshold_radians_argument))
+						->partition_polygon(polygon_on_sphere, boost::none, outside);
+		return to_polygon_list(outside);
+	}
+
+	/**
+	 * PolygonOnSphere.union and symmetric_difference: the overlay's own operation, which merges
+	 * the two polygons across the edges they share (spherical-geometry.md section 5.2).
+	 */
+	bp::list
+	polygon_on_sphere_overlay(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type other_polygon,
+			boost::optional<double> sliver_width_threshold_radians_argument,
+			GPlatesMaths::PolygonOverlay::Operation operation)
+	{
+		GPlatesMaths::PolygonOverlay::Options options;
+		options.sliver_min_width = get_sliver_min_width(sliver_width_threshold_radians_argument);
+		return to_polygon_list(
+				GPlatesMaths::PolygonOverlay::extract_polygons(
+						*polygon_on_sphere,
+						*other_polygon,
+						operation,
+						options));
+	}
+
+	bp::list
+	polygon_on_sphere_union(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type other_polygon,
+			boost::optional<double> sliver_width_threshold_radians_argument)
+	{
+		return polygon_on_sphere_overlay(
+				polygon_on_sphere,
+				other_polygon,
+				sliver_width_threshold_radians_argument,
+				GPlatesMaths::PolygonOverlay::UNION);
+	}
+
+	bp::list
+	polygon_on_sphere_symmetric_difference(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type other_polygon,
+			boost::optional<double> sliver_width_threshold_radians_argument)
+	{
+		return polygon_on_sphere_overlay(
+				polygon_on_sphere,
+				other_polygon,
+				sliver_width_threshold_radians_argument,
+				GPlatesMaths::PolygonOverlay::SYMMETRIC_DIFFERENCE);
 	}
 }
 
@@ -4517,7 +4630,9 @@ export_polygon_on_sphere()
 				"  A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, "
 				"with interior rings where the pieces need them. The interior rings of both polygons take part in the "
 				"cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region "
-				"*inside* and, *outside*, the polygon geometry with a hole where this polygon is.\n"
+				"*inside* and, *outside*, the polygon geometry with a hole where this polygon is. For a polygon "
+				"*geometry*, ``geometry.intersection(polygon)`` and ``geometry.difference(polygon)`` return the "
+				"polygons this adds *inside* and *outside* (see :meth:`intersection` and :meth:`difference`).\n"
 				"\n"
 				"  Where either polygon's rings cross each other or themselves (an invalid polygon, which "
 				":meth:`is_point_in_polygon` reads by parity), the pieces follow that reading: rings of a piece "
@@ -4525,7 +4640,10 @@ export_polygon_on_sphere()
 				"hundred metres of where the rings meet). An interior ring of such a piece can then lie partly or "
 				"wholly outside its exterior ring, its :meth:`get_area` is its exterior ring's area less its "
 				"interior rings' (not the area :meth:`is_point_in_polygon` covers; for a ring that crosses "
-				"itself, a bow-tie say, the lobes' areas cancel), and it is not dropped as a sliver (below).\n"
+				"itself, a bow-tie say, the lobes' areas cancel), and it is not dropped as a sliver (below). The "
+				"same can happen, for now, where either polygon's rings touch each other (an interior ring's tip on "
+				"the exterior ring) at a point on the other polygon's outline: every point is still on the right "
+				"side, but a piece's rings may cross and its :meth:`get_area` may be wrong.\n"
 				"\n"
 				"  A cut polygon's pieces narrower than *sliver_width_threshold_radians* are dropped, as a "
 				":meth:`PlatePartitioner<PlatePartitioner.__init__>` drops them: a piece's width is twice its "
@@ -4574,6 +4692,147 @@ export_polygon_on_sphere()
 				"            continental_polygon.partition(current_oceanic_polyline, partitioned_geometries_outside=oceanic_polylines)\n"
 				"\n"
 				"    # The final result is in 'oceanic_polylines'.\n")
+		.def("intersection",
+				&GPlatesApi::polygon_on_sphere_intersection,
+				(bp::arg("other_polygon"),
+						bp::arg("sliver_width_threshold_radians") = boost::optional<double>()),
+				"intersection(other_polygon, [sliver_width_threshold_radians])\n"
+				"  Return the region inside both this polygon and *other_polygon*, as polygons.\n"
+				"\n"
+				"  :param other_polygon: the polygon to intersect with this polygon\n"
+				"  :type other_polygon: PolygonOnSphere\n"
+				"  :param sliver_width_threshold_radians: pieces narrower than this are dropped (see below); "
+				"defaults to about 9 metres on the Earth, and zero keeps every piece\n"
+				"  :type sliver_width_threshold_radians: float, or None\n"
+				"  :returns: the polygons covering the region inside both polygons, or an empty list if there is "
+				"none\n"
+				"  :rtype: list of PolygonOnSphere\n"
+				"  :raises PartitionError: if overlaying the two polygons finds no consistent result\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN\n"
+				"\n"
+				"  The polygons returned have interior rings where the region needs them, and do not overlap each "
+				"other (they can touch at points). The interior rings of both polygons take part: for example, the "
+				"intersection of a polygon with a hole and a smaller polygon inside it that covers the hole is the "
+				"smaller polygon with the same hole.\n"
+				"\n"
+				"  This is partitioning: ``other_polygon.partition(polygon, inside, outside)`` adds the polygons "
+				"returned by ``polygon.intersection(other_polygon)`` to *inside*, and those returned by "
+				"``polygon.difference(other_polygon)`` to *outside* (see :meth:`partition` and :meth:`difference`). So "
+				"two polygons that only touch (along an edge, or at points) do not intersect, and if this polygon "
+				"lies entirely inside *other_polygon* (or only touches its outline from inside) then this polygon "
+				"itself is returned.\n"
+				"\n"
+				"  Where either polygon's rings cross each other or themselves (an invalid polygon, which "
+				":meth:`is_point_in_polygon` reads by parity), the polygons returned follow that reading, as in "
+				":meth:`partition`: rings of a returned polygon can then cross each other, and its :meth:`get_area` "
+				"is not the area :meth:`is_point_in_polygon` covers. The same can happen, for now, where a "
+				"polygon's rings touch each other (an interior ring's tip on the exterior ring) at a point on the "
+				"other polygon's outline: every point is still inside the right polygons, but a returned polygon's "
+				"rings may cross and its :meth:`get_area` may be wrong.\n"
+				"\n"
+				"  Pieces narrower than *sliver_width_threshold_radians* are dropped, as in :meth:`partition`: a "
+				"piece's width is twice its area over its perimeter (on a sphere of unit radius), and a sliver hole "
+				"is dropped and its polygon fills it. The default is ``1.4142e-6`` radians (about 9 metres on the "
+				"Earth), the distance within which two outlines count as touching.\n"
+				"\n"
+				"  Print the area of a continental polygon on each plate it overlaps:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    for plate_polygon in plate_polygons:\n"
+				"        area = sum(piece.get_area() for piece in continental_polygon.intersection(plate_polygon))\n"
+				"        if area > 0:\n"
+				"            print(area * pygplates.Earth.mean_radius_in_kms**2)\n"
+				"\n"
+				"  .. versionadded:: 1.1\n")
+		.def("union",
+				&GPlatesApi::polygon_on_sphere_union,
+				(bp::arg("other_polygon"),
+						bp::arg("sliver_width_threshold_radians") = boost::optional<double>()),
+				"union(other_polygon, [sliver_width_threshold_radians])\n"
+				"  Return the region inside this polygon or *other_polygon* (or both), as polygons.\n"
+				"\n"
+				"  :param other_polygon: the polygon to unite with this polygon\n"
+				"  :type other_polygon: PolygonOnSphere\n"
+				"  :param sliver_width_threshold_radians: pieces and holes narrower than this are dropped (see "
+				"below); defaults to about 9 metres on the Earth, and zero keeps every piece\n"
+				"  :type sliver_width_threshold_radians: float, or None\n"
+				"  :returns: the polygons covering the region inside either polygon\n"
+				"  :rtype: list of PolygonOnSphere\n"
+				"  :raises PartitionError: if an outer ring of the union would enclose more than a hemisphere, or "
+				"if overlaying the two polygons finds no consistent result\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN\n"
+				"\n"
+				"  Polygons that overlap, or share an edge, are merged into one polygon; polygons apart from each "
+				"other, or touching only at points, are returned separately. Where the merged polygon encloses a "
+				"gap between the two (a hole) narrower than *sliver_width_threshold_radians*, that sliver hole is "
+				"dropped and the polygon fills it; a gap that is not enclosed is never closed.\n"
+				"\n"
+				"  Each ring of a polygon bounds its smaller side (see :meth:`is_point_in_polygon`), so a ring "
+				"cannot enclose more than a hemisphere. A union whose outer ring would (two large polygons that "
+				"overlap, say) raises :class:`PartitionError`.\n"
+				"\n"
+				"  See :meth:`intersection` for polygons whose rings cross, and for slivers.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    merged_polygons = polygon.union(other_polygon)\n"
+				"\n"
+				"  .. versionadded:: 1.1\n")
+		.def("difference",
+				&GPlatesApi::polygon_on_sphere_difference,
+				(bp::arg("other_polygon"),
+						bp::arg("sliver_width_threshold_radians") = boost::optional<double>()),
+				"difference(other_polygon, [sliver_width_threshold_radians])\n"
+				"  Return the region inside this polygon but outside *other_polygon*, as polygons.\n"
+				"\n"
+				"  :param other_polygon: the polygon to remove from this polygon\n"
+				"  :type other_polygon: PolygonOnSphere\n"
+				"  :param sliver_width_threshold_radians: pieces narrower than this are dropped; defaults to about 9 "
+				"metres on the Earth, and zero keeps every piece\n"
+				"  :type sliver_width_threshold_radians: float, or None\n"
+				"  :returns: the polygons covering the region inside this polygon and outside *other_polygon*, or "
+				"an empty list if there is none\n"
+				"  :rtype: list of PolygonOnSphere\n"
+				"  :raises PartitionError: if overlaying the two polygons finds no consistent result\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN\n"
+				"\n"
+				"  Together with :meth:`intersection`, this partitions this polygon by *other_polygon*: "
+				"``other_polygon.partition(polygon, inside, outside)`` adds the polygons returned by "
+				"``polygon.difference(other_polygon)`` to *outside*. So if the two polygons are apart, or only "
+				"touch, this polygon itself is returned. Where *other_polygon* lies inside this polygon, the "
+				"difference has a hole.\n"
+				"\n"
+				"  See :meth:`intersection` for polygons whose rings cross, and for slivers.\n"
+				"\n"
+				"  .. versionadded:: 1.1\n")
+		.def("symmetric_difference",
+				&GPlatesApi::polygon_on_sphere_symmetric_difference,
+				(bp::arg("other_polygon"),
+						bp::arg("sliver_width_threshold_radians") = boost::optional<double>()),
+				"symmetric_difference(other_polygon, [sliver_width_threshold_radians])\n"
+				"  Return the region inside exactly one of this polygon and *other_polygon*, as polygons.\n"
+				"\n"
+				"  :param other_polygon: the other polygon\n"
+				"  :type other_polygon: PolygonOnSphere\n"
+				"  :param sliver_width_threshold_radians: pieces and holes narrower than this are dropped; "
+				"defaults to about 9 metres on the Earth, and zero keeps every piece\n"
+				"  :type sliver_width_threshold_radians: float, or None\n"
+				"  :returns: the polygons covering the region inside one polygon and outside the other, or an "
+				"empty list if there is none\n"
+				"  :rtype: list of PolygonOnSphere\n"
+				"  :raises PartitionError: if an outer ring of the result would enclose more than a hemisphere, or "
+				"if overlaying the two polygons finds no consistent result\n"
+				"  :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN\n"
+				"\n"
+				"  The region is the two differences, ``polygon.difference(other_polygon)`` and "
+				"``other_polygon.difference(polygon)``, merged where they share an edge: two polygons that share "
+				"an edge without overlapping give one polygon, their union. As for :meth:`union`, a result whose "
+				"outer ring would enclose more than a hemisphere raises :class:`PartitionError`.\n"
+				"\n"
+				"  See :meth:`intersection` for polygons whose rings cross, and for slivers.\n"
+				"\n"
+				"  .. versionadded:: 1.1\n")
 		.def("get_boundary_centroid",
 				&GPlatesApi::polygon_on_sphere_get_boundary_centroid,
 				"get_boundary_centroid()\n"

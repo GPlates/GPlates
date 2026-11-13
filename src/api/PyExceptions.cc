@@ -482,14 +482,23 @@ export_exceptions()
 	GPlatesApi::PartitionError =
 			export_exception<GPlatesMaths::PolygonOverlay::InconsistentOverlayException>(
 					"PartitionError",
-					"A geometry could not be partitioned consistently by a partitioning polygon.\n"
+					"A geometry could not be partitioned consistently by a partitioning polygon, or two polygons could "
+					"not be overlaid.\n"
 					"\n"
 					"  Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, "
 					":meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by "
-					"a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This "
-					"is rare: the only case found is two polygons that each have an interior ring crossing their exterior "
-					"ring, with outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along "
-					"many closely spaced vertices. Nothing is partitioned when it is raised.\n"
+					"a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet, and "
+					"likewise by :meth:`PolygonOnSphere.intersection`, :meth:`PolygonOnSphere.union`, "
+					":meth:`PolygonOnSphere.difference` and :meth:`PolygonOnSphere.symmetric_difference`. This "
+					"is rare. Cases found: two polygons that each have an interior ring crossing their exterior ring, with "
+					"outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along many closely "
+					"spaced vertices; and two polygons whose rings touch each other (an interior ring's tip on the exterior "
+					"ring) at different points of an edge they share. Nothing is partitioned or returned when it is "
+					"raised.\n"
+					"\n"
+					"  :meth:`PolygonOnSphere.union` and :meth:`PolygonOnSphere.symmetric_difference` also raise it when an "
+					"outer ring of the result would enclose more than a hemisphere, which a polygon's ring cannot (each "
+					"ring bounds its smaller side).\n"
 					"\n"
 					"  .. versionadded:: 1.1\n",
 					GPlatesApi::MathematicalError);
