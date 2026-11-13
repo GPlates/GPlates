@@ -60,12 +60,13 @@
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
 // Python implementation in exact rational arithmetic, kept outside this repository) on its
 // catalogue of configurations with several records at or near one point. The prototype ran the
-// chosen configuration ('r5p': identity vertices with the loop rule and the spike rule where the
-// other input passes the tip at most once, self-touch cuts, the LL rule, the one-passage rule,
-// midpoint tests in order of margin, the bundle rule where both inputs pass more than once with
-// cones that count a ray's offsets off its segment, option 3 for anchorless chains; for a polyline
-// subject, the spike rule on the clip's rings only, and a polyline single arc that a clip single
-// arc also joins along; 'r5o' for a polygon subject differs in nothing), and the file
+// chosen configuration ('r5q': identity vertices with the loop rule and the spike rule where the
+// other input passes the tip at most once, self-touch cuts, the LL rule, the one-passage rule with
+// its built order nearer the measured one, midpoint tests in order of margin, the bundle rule where
+// both inputs pass more than once with cones that count a ray's offsets off its segment, option 3
+// for anchorless chains; for a polyline subject, the spike rule on the clip's rings only, and a
+// polyline single arc that a clip single arc also joins along; the snapshots were exported under
+// 'r5p', which takes the first built order, and the cases that change re-exported), and the file
 // holds every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect
 // orders records along a segment by a cosine in
 // doubles, so records whose cosines agree within a few ulps come out in either order. Format, per
@@ -1655,7 +1656,9 @@ TEST(PolygonOverlayPrototypeTest, File)
 // order got wrong (run 2's residue was cleared by the bundle rule, the chain cases by nothing
 // before run 4). Each is now consistent, and the counts are the prototype's, which are the same in
 // every tie order: one-passage vertices, those whose built order is not the measured one, and no
-// bundle (both inputs pass more than once nowhere here).
+// bundle (both inputs pass more than once nowhere here). The one exception is shared#28, whose
+// band pieces (five with the other class) put a different ray inside the once-passing input at
+// one vertex, and so nearer the measured order the other built order there.
 TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 {
 	class Expected
@@ -1666,13 +1669,13 @@ TEST(PolygonOverlayPrototypeTest, OnePassageRule)
 		unsigned int one_passage_moved;
 	};
 	const Expected expected[] = {
-			{ "shared#28 seed 1", 3, 3 },
+			{ "shared#28 seed 1", 3, 2 },  // the prototype 1 (below)
 			{ "shared#169 seed 1", 5, 2 },  // 3 before the self-touch cuts
 			{ "shared#234 seed 1", 1, 1 },
-			{ "shared#247 seed 1", 2, 1 },
-			{ "six#5 seed 7", 2, 2 },
-			{ "six#188 seed 7", 2, 2 },
-			{ "chain#41 seed 1", 2, 2 },
+			{ "shared#247 seed 1", 2, 0 },
+			{ "six#5 seed 7", 2, 1 },
+			{ "six#188 seed 7", 2, 1 },
+			{ "chain#41 seed 1", 2, 1 },
 			{ "chain#182 seed 1", 1, 1 } };
 
 	const std::vector<PrototypeCase> cases =

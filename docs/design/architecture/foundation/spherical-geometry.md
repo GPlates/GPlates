@@ -1263,8 +1263,8 @@ measured in the prototype, the order in doubles agreed with the exact order at e
 it was used, down to rays `1.8e-15` radians apart, and a swap of two rays that close changes neither
 the memberships between them nor the pairing. For classification the order is consulted only at
 six or more ends where neither input passes exactly once (below): at four ends it is not used, and
-where one input passes once neither; the one-passage rule's linking order keeps the measured
-relative order of the rays inside (below).
+where one input passes once neither; the one-passage rule's linking order is the one of its two
+built orders nearer the measured order (below).
 
 Each ray also carries the quantities of the bundle rule: `delta`, the angle from the vertex's output
 position to the arc's start plus how far the arc's start and far end lie off the segment's great
@@ -1325,19 +1325,27 @@ gives `0`.
      The one relation is `m_in(b) = m_in(a) xor n`, where `a` and `b` are the passing input's two
      ends, `m_in(e)` the other input's membership on the inside side of end `e` (its class for a
      plain ray; same-side for a common ray) and `n` the parity of the other input's rays inside.
-     One unknown term follows; all known and false is a check failure. For the linking an order is
-     built from the classes, `a`, the rays inside in their measured relative order, `b`, the rays
-     outside, or its mirror if the walk finds no placement on the first (a safety net: when the
-     relation holds the first has one). The rays' relative order within a half is the other
-     input's own arrangement, which decides only which kept rays pair with which (the ring
-     structure), never the point set. The rule deduces strictly less than the sector walk would
-     on some order, so it cannot make a consistent vertex fail. Before this rule the
-     sector walk ran on the measured order at such vertices, where the order is exact but carries
-     no information, and failed 19 of 2393 random `chain` cases in three ways (a crossing counted at
-     both ends of a band arc, a long ray inside a `2 h` common ray's direction gap, a corner cut off
-     by the spike rule). Valid inputs reach them: the second was reproduced in the prototype with a
-     polygon that does not cross itself, and each needs only an input within `h` of itself at the
-     vertex (a neck narrower than `h`, or a hole within `h` of its exterior).
+     One unknown term follows; all known and false is a check failure. For the linking two orders
+     are built from the classes, `a`, the rays inside taken in the measured order from `a`, `b`,
+     the rays outside, and its mirror image, and the walk uses the consistent one with the fewer
+     inversions against the measured order, as the bundle rule chooses (ties to the first). The
+     rays' relative order within a half is the other input's own arrangement, which decides only
+     which kept rays pair with which (the ring structure), never the point set; but it is kept only
+     if the order is read the right way round. Where the rays inside lie from `b` round to `a`, the
+     first order reverses them, and where the other input passes twice inside `X` (it touches
+     itself on `X`'s outline: a hole's tip on its own exterior) consecutive kept rays then pair
+     crosswise. One such vertex heals in the split, but two on the same two rings leave two rings
+     that cross at both, put into one polygon as a crossing group, with a `get_area()` near zero
+     for an intersection of two pieces three grid squares each (PR C's final review). Using the
+     first order whenever it had a placement, 194 of the 196 intersections with a wrong area in a
+     fuzz of 24,000 pairs of small grid polygons came from this. The rule deduces strictly less
+     than the sector walk would on some order, so it cannot make a consistent vertex fail. Before
+     this rule the sector walk ran on the measured order at such vertices, where the order is
+     exact but carries no information, and failed 19 of 2393 random `chain` cases in three ways (a
+     crossing counted at both ends of a band arc, a long ray inside a `2 h` common ray's direction
+     gap, a corner cut off by the spike rule). Valid inputs reach them: the second was reproduced in
+     the prototype with a polygon that does not cross itself, and each needs only an input within
+     `h` of itself at the vertex (a neck narrower than `h`, or a hole within `h` of its exterior).
    - **Otherwise the sector walk**, on the measured order, or on every admissible order under the
      bundle rule below. Each classified ray constrains the two sectors beside it: a subject ray of
      class `c` fixes `in Q = c`, a clip ray fixes `in P`, a common ray fixes `in P xor in Q`
@@ -2691,9 +2699,10 @@ seen), and each floating-point operation is rounded on its own, so the build tur
 of `a * b + c` into one fused instruction off (`-ffp-contract=off`, `src/CMakeLists.txt`); with it
 on, as Clang has it by default on arm64, records tie and sign tests fall differently and the
 comparison fails. The prototype, its generators and its exporter
-are kept outside this repository (its configuration name is `r5p`, which mirrors for polylines the
+are kept outside this repository (its configuration name is `r5q`, which mirrors for polylines the
 spike rule's restriction to polygon rings and the along rule for a hairpin along the clip's edge,
-section 5.2); a larger export is run through
+section 5.2, and takes the one-passage rule's built order nearer the measured one); a larger
+export is run through
 `GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES`. The hunt at scale ran 119,198 generated cases, and is
 what set the grouping margin and the cone's offsets (section 5.2); 9 polygon cases differ, none in a
 partition's geometry: 4 with coincident rings (at least two of them rings of no area), 4
@@ -2726,6 +2735,13 @@ cases stand beside the comparison, each with the inputs as exported and swapped:
   (the 10 valid cases of section 5.2; and, of the cases whose input rings cross, 59 as exported in
   the intersection or the difference, each with one ring more). The symmetric difference's rings
   are made another way and differ in most cases, in their order and start if nothing else.
+
+With the one-passage rule's order nearer the measured one, against the prototype changed to match
+(`r5q`, on a fresh export), the same ten differ, and five more in ring structure alone, each with
+one ring more than the prototype's (three differences and two unions of the `shared` generator,
+four of them with input rings that cross); the committed snapshot's three cases whose rings
+changed were re-exported, and in one more (`shared#28 seed 1`) the C++'s band classes put a
+different ray inside at one vertex, so it moves one more vertex than the prototype.
 
 The partition layer's tests (`PolygonPartitionerTest.cc`) cover the three old no-intersection bugs
 (a partitioner inside the subject, a subject across a partitioner's hole, a partitioner across the
@@ -2818,11 +2834,6 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   on its own exterior, valid under OGC rules, at a point that lies on the other input's outline).
   Every point is still read right by parity, which is why the oracle and the hunt (whose
   self-touching generators work at the thickness scale) never saw it, but the rings can be wrong:
-  - The one-passage rule's linking order: the order built for a vertex where one input passes once
-    can reverse rays within a half, so that two such vertices leave two crossing rings in one
-    polygon, with a `get_area()` near zero for an intersection that has area (the classes are
-    right; only the pairing uses the order). Making `once` choose, like the bundle rule, the built
-    order nearest the measured one fixes the cases found, but changes the prototype comparison.
   - A self-touch point inside the other input's edge is two overlay vertices, not one, since the
     records name different vertices: rings through it are not cut and coincident pieces do not
     pair, so a union can return one ring through the point twice, with the wrong area, and the

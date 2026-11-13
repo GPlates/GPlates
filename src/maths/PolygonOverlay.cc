@@ -2287,8 +2287,13 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 			return solution;
 		}
 
-		// Every class known and consistent: the order for the linking, and its mirror (the other
-		// realisation, if the walk finds no placement on the first).
+		// Every class known and consistent: the two orders for the linking, a, the rays inside X
+		// in their measured relative order, b, the rays outside, and its mirror image. Which one
+		// keeps the other input's arrangement depends on which way round the inside rays lie
+		// from a, so the walk below takes the consistent one nearer the measured order: the first
+		// read the other way round reverses the inside rays, and where the other input passes
+		// twice inside X (an input touching itself on X's outline) the kept rays then pair
+		// crosswise, and two such vertices on two rings leave two rings that cross.
 		std::vector<unsigned int> inside, outside;
 		for (unsigned int i = 0; i < num_rays; ++i)
 		{
@@ -2386,7 +2391,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 	//
 	// The order used for pairing, among the consistent ones: the one with the fewest inversions
 	// (Kendall distance) against the measured order, ties by enumeration order (the bundle
-	// rule, section 5.2). Unbundled, the measured order is the only one.
+	// rule and the one-passage rule, section 5.2). Otherwise the measured order is the only one.
 	//
 	std::vector<unsigned int> consistent_orders;
 	for (const OrderSolution &order_solution : solutions)
@@ -2414,7 +2419,7 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		return count;
 	};
 	unsigned int chosen = consistent_orders.front();
-	if (!once && vertex.bundle && consistent_orders.size() > 1)
+	if ((once || vertex.bundle) && consistent_orders.size() > 1)
 	{
 		unsigned int fewest = inversions(orders[chosen]);
 		for (unsigned int o : consistent_orders)
