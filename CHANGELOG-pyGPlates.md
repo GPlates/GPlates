@@ -35,6 +35,9 @@ Changes since 1.0.0:
 * A scalar coverage on a polygon with interior rings has a scalar value for every point of every ring, in the order of `PolygonOnSphere.get_points()`. `Feature.set_geometry()` already required that, but `Feature.get_geometry()` (with `CoverageReturn.geometry_and_scalars`) then didn't find the coverage, since it expected values for the exterior ring only.
   * Files from earlier versions with values for the exterior ring only can still be read: `Feature.get_geometry()` returns that coverage's geometry as a polygon of the exterior ring alone.
 * Fixed `Feature.set_geometry()` with a coverage that has the wrong number of scalar values, a property name that doesn't support coverages, or two coverages with the same number of points: it raises without changing the feature (previously the new geometry was set first, leaving it with the old scalar values).
+* Added `PolygonOnSphere.intersection()`, `union()`, `difference()` and `symmetric_difference()`, which return a list of polygons (with interior rings where needed).
+  * `intersection()` and `difference()` give the polygons that `partition()` puts inside and outside.
+  * `union()` and `symmetric_difference()` merge polygons that share an edge, and raise `PartitionError` if an outer ring of the result would enclose more than a hemisphere.
 * `PolygonOnSphere.partition()`, `PlatePartitioner.partition_geometry()`, `PlatePartitioner.partition_features()` and `partition_into_plates()`:
   * A polygon that intersects a partitioning polygon or plate is now partitioned into polygons (with interior rings where needed), not polylines.
   * The interior rings of both polygons take part (previously only exterior rings were intersected). For example, a partitioning polygon wholly inside a polygon is now its own piece inside, leaving a hole in the piece outside (previously the whole polygon was outside).

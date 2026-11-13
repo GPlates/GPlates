@@ -9413,9 +9413,11 @@ class OpenFileForWritingError(GPlatesError):
     """
 
 class PartitionError(MathematicalError):
-    """A geometry could not be partitioned consistently by a partitioning polygon.
+    """A geometry could not be partitioned consistently by a partitioning polygon, or two polygons could not be overlaid.
 
-      Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet. This is rare: the only case found is two polygons that each have an interior ring crossing their exterior ring, with outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along many closely spaced vertices. Nothing is partitioned when it is raised.
+      Raised by :meth:`PolygonOnSphere.partition`, :meth:`PlatePartitioner.partition_geometry`, :meth:`PlatePartitioner.partition_features` and :func:`partition_into_plates` when cutting a geometry by a partitioning polygon finds no consistent arrangement of the pieces where their outlines meet, and likewise by :meth:`PolygonOnSphere.intersection`, :meth:`PolygonOnSphere.union`, :meth:`PolygonOnSphere.difference` and :meth:`PolygonOnSphere.symmetric_difference`. This is rare. Cases found: two polygons that each have an interior ring crossing their exterior ring, with outlines running within about 1.4e-6 radians (9 metres on the Earth) of each other along many closely spaced vertices; and two polygons whose rings touch each other (an interior ring's tip on the exterior ring) at different points of an edge they share. Nothing is partitioned or returned when it is raised.
+
+      :meth:`PolygonOnSphere.union` and :meth:`PolygonOnSphere.symmetric_difference` also raise it when an outer ring of the result would enclose more than a hemisphere, which a polygon's ring cannot (each ring bounds its smaller side).
 
       .. versionadded:: 1.1
     """
@@ -10917,6 +10919,25 @@ class PolygonOnSphere(GeometryOnSphere):
 
     def __setstate__(self, state: Any) -> None: ...
 
+    def difference(self, other_polygon: PolygonOnSphere, sliver_width_threshold_radians: float | None = ...) -> list[PolygonOnSphere]:
+        """Return the region inside this polygon but outside *other_polygon*, as polygons.
+
+        :param other_polygon: the polygon to remove from this polygon
+        :type other_polygon: PolygonOnSphere
+        :param sliver_width_threshold_radians: pieces narrower than this are dropped; defaults to about 9 metres on the Earth, and zero keeps every piece
+        :type sliver_width_threshold_radians: float, or None
+        :returns: the polygons covering the region inside this polygon and outside *other_polygon*, or an empty list if there is none
+        :rtype: list of PolygonOnSphere
+        :raises PartitionError: if overlaying the two polygons finds no consistent result
+        :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN
+
+        Together with :meth:`intersection`, this partitions this polygon by *other_polygon*: ``other_polygon.partition(polygon, inside, outside)`` adds the polygons returned by ``polygon.difference(other_polygon)`` to *outside*. So if the two polygons are apart, or only touch, this polygon itself is returned. Where *other_polygon* lies inside this polygon, the difference has a hole.
+
+        See :meth:`intersection` for polygons whose rings cross, and for slivers.
+
+        .. versionadded:: 1.1
+        """
+
     def get_arc_length(self) -> float:
         """Returns the total arc length of this polygon (in radians) including the exterior ring and all interiors rings (if any).
 
@@ -11213,6 +11234,38 @@ class PolygonOnSphere(GeometryOnSphere):
            The signed area of the polygon's smaller side, even if it wraps round the globe (see :meth:`is_point_in_polygon`).
         """
 
+    def intersection(self, other_polygon: PolygonOnSphere, sliver_width_threshold_radians: float | None = ...) -> list[PolygonOnSphere]:
+        """Return the region inside both this polygon and *other_polygon*, as polygons.
+
+        :param other_polygon: the polygon to intersect with this polygon
+        :type other_polygon: PolygonOnSphere
+        :param sliver_width_threshold_radians: pieces narrower than this are dropped (see below); defaults to about 9 metres on the Earth, and zero keeps every piece
+        :type sliver_width_threshold_radians: float, or None
+        :returns: the polygons covering the region inside both polygons, or an empty list if there is none
+        :rtype: list of PolygonOnSphere
+        :raises PartitionError: if overlaying the two polygons finds no consistent result
+        :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN
+
+        The polygons returned have interior rings where the region needs them, and do not overlap each other (they can touch at points). The interior rings of both polygons take part: for example, the intersection of a polygon with a hole and a smaller polygon inside it that covers the hole is the smaller polygon with the same hole.
+
+        This is partitioning: ``other_polygon.partition(polygon, inside, outside)`` adds the polygons returned by ``polygon.intersection(other_polygon)`` to *inside*, and those returned by ``polygon.difference(other_polygon)`` to *outside* (see :meth:`partition` and :meth:`difference`). So two polygons that only touch (along an edge, or at points) do not intersect, and if this polygon lies entirely inside *other_polygon* (or only touches its outline from inside) then this polygon itself is returned.
+
+        Where either polygon's rings cross each other or themselves (an invalid polygon, which :meth:`is_point_in_polygon` reads by parity), the polygons returned follow that reading, as in :meth:`partition`: rings of a returned polygon can then cross each other, and its :meth:`get_area` is not the area :meth:`is_point_in_polygon` covers. The same can happen, for now, where a polygon's rings touch each other (an interior ring's tip on the exterior ring) at a point on the other polygon's outline: every point is still inside the right polygons, but a returned polygon's rings may cross and its :meth:`get_area` may be wrong.
+
+        Pieces narrower than *sliver_width_threshold_radians* are dropped, as in :meth:`partition`: a piece's width is twice its area over its perimeter (on a sphere of unit radius), and a sliver hole is dropped and its polygon fills it. The default is ``1.4142e-6`` radians (about 9 metres on the Earth), the distance within which two outlines count as touching.
+
+        Print the area of a continental polygon on each plate it overlaps:
+
+        ::
+
+          for plate_polygon in plate_polygons:
+              area = sum(piece.get_area() for piece in continental_polygon.intersection(plate_polygon))
+              if area > 0:
+                  print(area * pygplates.Earth.mean_radius_in_kms**2)
+
+        .. versionadded:: 1.1
+        """
+
     def is_point_in_polygon(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> bool:
         """Determines whether the specified point lies within the interior of this polygon.
 
@@ -11268,9 +11321,9 @@ class PolygonOnSphere(GeometryOnSphere):
 
         If a partitioned :class:`multi-point<MultiPointOnSphere>` contains points both inside and outside this polygon then *PolygonOnSphere.PartitionResult.intersecting* is returned. In this case the points *inside* are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_inside* (if specified) and the points *outside* are added as a single :class:`MultiPointOnSphere` to *partitioned_geometries_outside* (if specified).
 
-        A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, with interior rings where the pieces need them. The interior rings of both polygons take part in the cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region *inside* and, *outside*, the polygon geometry with a hole where this polygon is.
+        A :class:`polygon<PolygonOnSphere>` geometry that intersects this polygon is cut into polygons, with interior rings where the pieces need them. The interior rings of both polygons take part in the cut: for example, a polygon geometry surrounding this polygon is partitioned into this polygon's region *inside* and, *outside*, the polygon geometry with a hole where this polygon is. For a polygon *geometry*, ``geometry.intersection(polygon)`` and ``geometry.difference(polygon)`` return the polygons this adds *inside* and *outside* (see :meth:`intersection` and :meth:`difference`).
 
-        Where either polygon's rings cross each other or themselves (an invalid polygon, which :meth:`is_point_in_polygon` reads by parity), the pieces follow that reading: rings of a piece that cross each other are kept in one polygon, so no two pieces overlap (but, rarely, within a few hundred metres of where the rings meet). An interior ring of such a piece can then lie partly or wholly outside its exterior ring, its :meth:`get_area` is its exterior ring's area less its interior rings' (not the area :meth:`is_point_in_polygon` covers; for a ring that crosses itself, a bow-tie say, the lobes' areas cancel), and it is not dropped as a sliver (below).
+        Where either polygon's rings cross each other or themselves (an invalid polygon, which :meth:`is_point_in_polygon` reads by parity), the pieces follow that reading: rings of a piece that cross each other are kept in one polygon, so no two pieces overlap (but, rarely, within a few hundred metres of where the rings meet). An interior ring of such a piece can then lie partly or wholly outside its exterior ring, its :meth:`get_area` is its exterior ring's area less its interior rings' (not the area :meth:`is_point_in_polygon` covers; for a ring that crosses itself, a bow-tie say, the lobes' areas cancel), and it is not dropped as a sliver (below). The same can happen, for now, where either polygon's rings touch each other (an interior ring's tip on the exterior ring) at a point on the other polygon's outline: every point is still on the right side, but a piece's rings may cross and its :meth:`get_area` may be wrong.
 
         A cut polygon's pieces narrower than *sliver_width_threshold_radians* are dropped, as a :meth:`PlatePartitioner<PlatePartitioner.__init__>` drops them: a piece's width is twice its area over its perimeter (on a sphere of unit radius), a sliver hole is dropped and its piece fills it, and if this leaves nothing on one side then *geometry* is entirely on the other (and *geometry* itself is added to that list). The default is ``1.4142e-6`` radians (about 9 metres on the Earth), the distance within which two outlines count as touching, so that only pieces thinner than the cut can resolve are dropped; :class:`PlatePartitioner`'s default is ten times that. Zero keeps every piece, so that the pieces cover the polygon exactly however thin some are:
         ::
@@ -11305,6 +11358,25 @@ class PolygonOnSphere(GeometryOnSphere):
                   continental_polygon.partition(current_oceanic_polyline, partitioned_geometries_outside=oceanic_polylines)
 
           # The final result is in 'oceanic_polylines'.
+        """
+
+    def symmetric_difference(self, other_polygon: PolygonOnSphere, sliver_width_threshold_radians: float | None = ...) -> list[PolygonOnSphere]:
+        """Return the region inside exactly one of this polygon and *other_polygon*, as polygons.
+
+        :param other_polygon: the other polygon
+        :type other_polygon: PolygonOnSphere
+        :param sliver_width_threshold_radians: pieces and holes narrower than this are dropped; defaults to about 9 metres on the Earth, and zero keeps every piece
+        :type sliver_width_threshold_radians: float, or None
+        :returns: the polygons covering the region inside one polygon and outside the other, or an empty list if there is none
+        :rtype: list of PolygonOnSphere
+        :raises PartitionError: if an outer ring of the result would enclose more than a hemisphere, or if overlaying the two polygons finds no consistent result
+        :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN
+
+        The region is the two differences, ``polygon.difference(other_polygon)`` and ``other_polygon.difference(polygon)``, merged where they share an edge: two polygons that share an edge without overlapping give one polygon, their union. As for :meth:`union`, a result whose outer ring would enclose more than a hemisphere raises :class:`PartitionError`.
+
+        See :meth:`intersection` for polygons whose rings cross, and for slivers.
+
+        .. versionadded:: 1.1
         """
 
     def to_tessellated(self, tessellate_radians: float) -> PolygonOnSphere:
@@ -11372,6 +11444,31 @@ class PolygonOnSphere(GeometryOnSphere):
         .. seealso:: :meth:`to_tessellated`
 
         .. versionadded:: 0.47
+        """
+
+    def union(self, other_polygon: PolygonOnSphere, sliver_width_threshold_radians: float | None = ...) -> list[PolygonOnSphere]:
+        """Return the region inside this polygon or *other_polygon* (or both), as polygons.
+
+        :param other_polygon: the polygon to unite with this polygon
+        :type other_polygon: PolygonOnSphere
+        :param sliver_width_threshold_radians: pieces and holes narrower than this are dropped (see below); defaults to about 9 metres on the Earth, and zero keeps every piece
+        :type sliver_width_threshold_radians: float, or None
+        :returns: the polygons covering the region inside either polygon
+        :rtype: list of PolygonOnSphere
+        :raises PartitionError: if an outer ring of the union would enclose more than a hemisphere, or if overlaying the two polygons finds no consistent result
+        :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN
+
+        Polygons that overlap, or share an edge, are merged into one polygon; polygons apart from each other, or touching only at points, are returned separately. Where the merged polygon encloses a gap between the two (a hole) narrower than *sliver_width_threshold_radians*, that sliver hole is dropped and the polygon fills it; a gap that is not enclosed is never closed.
+
+        Each ring of a polygon bounds its smaller side (see :meth:`is_point_in_polygon`), so a ring cannot enclose more than a hemisphere. A union whose outer ring would (two large polygons that overlap, say) raises :class:`PartitionError`.
+
+        See :meth:`intersection` for polygons whose rings cross, and for slivers.
+
+        ::
+
+          merged_polygons = polygon.union(other_polygon)
+
+        .. versionadded:: 1.1
         """
 
 class PolygonOnSphereOrientation(int):

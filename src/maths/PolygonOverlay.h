@@ -631,6 +631,8 @@ namespace GPlatesMaths
 			unsigned int unresolved_vertices = 0;     // a vertex with an unclassified piece end
 			unsigned int keep_mismatches = 0;         // kept by the sectors, not by the classes
 			unsigned int rings_split = 0;             // cuts of a ring passing a vertex twice
+			unsigned int rings_cut_at_chains = 0;     // cuts of a ring twisted at an unkept chain
+			unsigned int spike_walls = 0;             // symmetric difference: walls left unjoined
 			unsigned int repeated_positions_removed = 0;
 			unsigned int collapsed_rings_dropped = 0; // fewer than three distinct positions
 
@@ -1024,8 +1026,7 @@ namespace GPlatesMaths
 			 * exterior, an odd depth a hole of the ring containing it, and an island in a hole an
 			 * exterior of its own), each oriented with the output on its left, and slivers dropped
 			 * if Options::sliver_min_width is set. Rings that cross each other (where an input's
-			 * rings cross, do_rings_cross; also the symmetric difference's, at a vertex whose four
-			 * kept ends pair crosswise) go into one polygon, read by parity, so that no two
+			 * rings cross, do_rings_cross) go into one polygon, read by parity, so that no two
 			 * polygons overlap (Diagnostics::crossing_ring_groups); their orientation is arbitrary
 			 * (no orientation has the output on the left all round). Appended to @a polygons.
 			 *
@@ -1050,8 +1051,11 @@ namespace GPlatesMaths
 			/**
 			 * The rings of one operation's output (section 5.2): the
 			 * kept ends paired at every vertex and walked into rings, rings passing a vertex twice
-			 * cut there, repeated positions removed and collapsed rings dropped. Appended to
-			 * @a rings. Not grouped into polygons, and in the direction walked (arbitrary).
+			 * cut there (and a ring twisted between two vertices of a common chain the operation
+			 * does not keep, at the two), repeated positions removed and collapsed rings dropped.
+			 * The symmetric difference's rings are the two differences', joined across the common
+			 * pieces between them. Appended to @a rings. Not grouped into polygons, and in the
+			 * direction walked (arbitrary).
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if a vertex's ends
 			 * cannot be paired (which consistent classes rule out), unless
@@ -1188,6 +1192,134 @@ namespace GPlatesMaths
 					const Piece &piece,
 					Operation operation) const;
 
+			/**
+			 * One point of a ring as walked (section 5.2, linking): an overlay vertex, where a
+			 * piece is left, or an original vertex inside a piece.
+			 */
+			class WalkedPoint
+			{
+			public:
+				//! The overlay vertex, or none for a piece's interior stop.
+				boost::optional<unsigned int> vertex;
+
+				PointOnSphere position;
+
+				//! At a vertex: the walked piece's stop here; else the stop itself (for
+				//! provenance).
+				unsigned int stop;
+
+				//! At a vertex: the walked piece's stop at its other end (where the next point of a
+				//! vertex arrives).
+				unsigned int far_stop;
+
+				//! The piece walked (a common pair: the subject's), and whether from its end.
+				unsigned int piece;
+				bool at_end;
+
+				Provenance provenance;
+			};
+
+			typedef std::vector<WalkedPoint> walked_ring_type;
+
+			/**
+			 * The rings of one operation as walked and split (section 5.2, linking and split),
+			 * before clean-up, in walk order; each ring with a vertex starts at one. The symmetric
+			 * difference's are the two differences' rings joined (@a join_difference_rings) and
+			 * split again, so the diagnostics count the differences' cuts with its own.
+			 */
+			void
+			walk_rings(
+					Operation operation,
+					std::vector<walked_ring_type> &rings,
+					unsigned int &num_pairing_failures) const;
+
+			//! The kept ends of an operation paired at every vertex and walked into rings, and its
+			//! kept closed pieces (section 5.2, linking).
+			void
+			pair_and_walk_rings(
+					Operation operation,
+					std::vector<walked_ring_type> &walked,
+					unsigned int &num_pairing_failures) const;
+
+			/**
+			 * The symmetric difference's rings before its split: the split rings of the
+			 * difference and of the reverse difference, joined across the opposite-sides common
+			 * pieces that both walk and the symmetric difference does not keep (a wall between the
+			 * two outputs), but for a wall that either walks as a spike
+			 * (Diagnostics::spike_walls).
+			 */
+			void
+			join_difference_rings(
+					const std::vector<walked_ring_type> &difference,
+					const std::vector<walked_ring_type> &reverse_difference,
+					std::vector<walked_ring_type> &joined) const;
+
+			/**
+			 * The split (section 5.2): a ring passing an overlay vertex twice is cut there, and a
+			 * ring passing two vertices of a common chain that @a operation does not keep, and
+			 * crossing itself between them, is cut at the two, each part closed along the chain
+			 * (Diagnostics::rings_cut_at_chains). @a walked becomes the cut rings, in walk order.
+			 */
+			void
+			split_walked_rings(
+					Operation operation,
+					std::vector<walked_ring_type> &walked) const;
+
+			/**
+			 * The first arc of a piece from one of its ends, on its segment's great circle: the
+			 * plane in doubles, and the arc's extent along it (the measures of
+			 * @a find_self_touch_cuts), for asking whether the arc passes an overlay vertex it has
+			 * no stop at: one of its own input's (section 5.2, split and linking).
+			 */
+			class FirstArc
+			{
+			public:
+				//! The unit normal of the segment's plane, and the segment's start point.
+				double axis[3];
+				double start[3];
+
+				//! The arc's extent: signed angles along the great circle from the segment's start.
+				double along_min;
+				double along_max;
+
+				//! 1 if the arc leaves its piece's end along the segment's direction, else -1:
+				//! times @a signed_distance, positive for a point to the left of the arc as it
+				//! leaves.
+				double leaving_sign;
+
+				//! The overlay vertex the arc ends at, if it ends at one.
+				boost::optional<unsigned int> far_vertex;
+
+				//! The sine of a point's signed distance from the plane.
+				double
+				signed_distance(
+						const PointOnSphere &point) const;
+
+				//! The signed angle along the great circle, from the segment's start, of a point's
+				//! projection onto it.
+				double
+				along(
+						const PointOnSphere &point) const;
+
+				//! Whether a point's projection is inside the arc, by more than rounding.
+				bool
+				is_strictly_along(
+						const PointOnSphere &point) const
+				{
+					const double ALONG_ROUNDING = 1e-12;  // radians, as find_self_touch_cuts
+					const double along_point = along(point);
+					return along_point > along_min + ALONG_ROUNDING &&
+							along_point < along_max - ALONG_ROUNDING;
+				}
+			};
+
+			//! The first arc of a piece, from its start or (@a at_end) back from its end; none
+			//! if its segment's end points coincide.
+			boost::optional<FirstArc>
+			get_first_arc(
+					unsigned int piece_index,
+					bool at_end) const;
+
 			//! Steps (a) to (e) of classification (section 5.2, its steps 1 to 5).
 			void
 			classify_pieces();
@@ -1293,6 +1425,32 @@ namespace GPlatesMaths
 			build_bundle(
 					const Vertex &vertex);
 		};
+
+
+		//! An output polygon as a PolygonOnSphere: its exterior ring, then its interior rings.
+		PolygonOnSphere::non_null_ptr_to_const_type
+		create_polygon(
+				const OutputPolygon &output_polygon);
+
+
+		/**
+		 * The output of one Boolean operation of two polygons, as polygons (section 5.1): an
+		 * overlay of @a subject with @a clip, classified (Overlay::classify) and extracted
+		 * (Overlay::extract), with @a options (the sliver filter, say). Empty if the output has no
+		 * area. A whole input is returned as the overlay outputs it, rings oriented with the
+		 * output on their left (partitioning's whole results, the input itself, come from
+		 * PolygonPartitioner instead).
+		 *
+		 * @throws InconsistentOverlayException as Overlay::classify and Overlay::extract do, among
+		 * them for a union or symmetric difference that would exceed a hemisphere (section 5.6),
+		 * unless Options::throw_if_inconsistent is false.
+		 */
+		std::vector<PolygonOnSphere::non_null_ptr_to_const_type>
+		extract_polygons(
+				const PolygonOnSphere &subject,
+				const PolygonOnSphere &clip,
+				Operation operation,
+				const Options &options = Options());
 	}
 }
 

@@ -138,7 +138,9 @@ namespace GPlatesMaths
 			/**
 			 * The most floating rays at one vertex whose placements are enumerated (more keep the
 			 * measured order; reached by one generated case, 'shared#2240 seed 12', which the
-			 * prototype comparison's BundleRule test pins).
+			 * prototype comparison's BundleRule test pins). It bounds the floating rays only: m of
+			 * them among k anchored rays are enumerated as (k + m - 1)! / (k - 1)! orders before
+			 * the admissibility test (build_bundle), 5040 for six among two.
 			 */
 			const unsigned int BUNDLE_CAP = 6;
 
@@ -407,6 +409,7 @@ GPlatesMaths::PolygonOverlay::has_points_on_both_sides(
 		const PolygonOnSphere &b,
 		const AngularExtent &margin)
 {
+	// (Not NEAR, INSIDE and OUTSIDE: <windows.h> defines NEAR, and FAR, as empty macros.)
 	enum PointSide { SIDE_NEAR, SIDE_INSIDE, SIDE_OUTSIDE };
 	const double probe_distance = PROBE_DISTANCE_IN_MARGINS * margin.get_angle().dval();
 	const auto side_of = [&](const PointOnSphere &point)
@@ -2131,6 +2134,11 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 	// memberships of the two sectors beside it: a subject ray of class c fixes 'in clip = c', a
 	// clip ray fixes 'in subject', a common ray 'in subject xor in clip' (0 same side, 1 opposite).
 	//
+	// Also at a vertex where only one input has ends left (the other's were a loop or a spike):
+	// the other input's membership is constant round it, so the classes either side must be
+	// equal. Deducing and checking nothing there was tried and is wrong (section 5.7): a band
+	// piece between two such vertices then takes a midpoint class its neighbours contradict.
+	//
 	enum ConstraintKind { NONE, IN_SUBJECT, IN_CLIP, XOR };
 	std::vector<std::pair<ConstraintKind, bool>> constraints(num_rays, std::make_pair(NONE, false));
 	for (unsigned int i = 0; i < num_rays; ++i)
@@ -3646,7 +3654,9 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	// circle only at the arc's test point (its midpoint, below), well away from both ends.
 	//
 	// Prefer an arc whose clip partner has a direction too, so that each input's test point can be
-	// put on its own segment's great circle (below); failing that, any arc with a direction.
+	// put on its own segment's great circle (below); failing that, any arc with a direction, and
+	// the clip's parity is then counted to the subject's projection (its partner, a segment
+	// GreatCircleArc calls zero length, has no great circle of its own to project onto).
 	const auto segment_of = [this](const Piece &piece) -> const GreatCircleArc &
 	{
 		return d_rings[piece.ring].segments[*piece.single_arc_segment];
@@ -3711,6 +3721,13 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	// circle is below about 1e-6 radians (where the crossing arc could meet that great circle
 	// twice), or it is within that of the test point or its antipode, the polygon's second
 	// reference point is used, with its cached status.
+	//
+	// Two limits, for neither of which a test was built. The second reference point is not tested
+	// against the great circle in its turn (it is 60 to 120 degrees from the outside point, so
+	// both on one great circle of the chain is unlikely, not excluded). And X is the midpoint of
+	// the subject piece's stops: the clip piece's stops at the same two vertices can lie up to
+	// the vertices' cluster width along the chain from them, so the clip's test point can still
+	// fall past the end of a clip segment no longer than that width.
 	//
 	const auto membership = [&](
 			const PolygonOnSphere &polygon,
@@ -4011,15 +4028,11 @@ GPlatesMaths::PolygonOverlay::Overlay::is_kept(
 
 
 void
-GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
+GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 		Operation operation,
-		std::vector<OutputRing> &rings) const
+		std::vector<walked_ring_type> &walked,
+		unsigned int &num_pairing_failures) const
 {
-	// A polyline subject's output is extract_polylines' (a dangling end has no ray).
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_subject_polygon,
-			GPLATES_ASSERTION_SOURCE);
-
 	// A ray, as (vertex, index into its rays).
 	typedef std::pair<unsigned int, unsigned int> ray_ref_type;
 	const ray_ref_type no_ray((std::numeric_limits<unsigned int>::max)(), 0);
@@ -4052,7 +4065,6 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	// Pair the kept ends at every vertex (section 5.2, linking).
 	//
 	std::vector<std::vector<boost::optional<unsigned int>>> partner(d_vertices.size());
-	unsigned int num_pairing_failures = 0;
 	for (unsigned int v = 0; v < d_vertices.size(); ++v)
 	{
 		const Vertex &vertex = d_vertices[v];
@@ -4123,6 +4135,13 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			{
 				// A crossing: the sector (mP, mQ) in the output is bounded by the subject ray whose
 				// class is mQ and the clip ray whose class is mP; pair those.
+				//
+				// No operation reaches here today. The intersection, the union and both
+				// differences each keep one class of each input's pieces, so exactly two ends of
+				// a crossing, which pair above; only the symmetric difference keeps all four, and
+				// it is not paired by its own keep-rule (walk_rings). The rule is the general one,
+				// for an operation with one or two of the four sectors in its output: with three
+				// (which no operation has with four kept ends) the loop would pair a ray twice.
 				for (bool m_subject : { false, true })
 				{
 					for (bool m_clip : { false, true })
@@ -4294,21 +4313,6 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	// reversed when leaving from the piece's end), to the ray at the piece's other end, then to
 	// that ray's partner; until back at the start. Deterministic: rays in vertex and ray order.
 	//
-	class Entry
-	{
-	public:
-		boost::optional<unsigned int> vertex;   // an overlay vertex, or an interior stop's point
-		PointOnSphere position;
-
-		//! At a vertex: the walked piece's stop here; else the stop itself (for provenance).
-		unsigned int stop;
-
-		//! At a vertex: the walked piece's stop at its other end (where the next entry arrives).
-		unsigned int far_stop;
-
-		Provenance provenance;
-	};
-	std::vector<std::vector<Entry>> walked;
 	std::vector<std::vector<bool>> used(d_vertices.size());
 	for (unsigned int v = 0; v < d_vertices.size(); ++v)
 	{
@@ -4323,7 +4327,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				continue;
 			}
 
-			std::vector<Entry> ring;
+			walked_ring_type ring;
 			ray_ref_type ray(v0, i0);
 			bool closed = false;
 			for (unsigned int guard = 0; guard <= 2 * d_pieces.size(); ++guard)
@@ -4331,11 +4335,13 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				used[ray.first][ray.second] = true;
 				const End end = ray_end(ray);
 				const Piece &piece = d_pieces[end.piece];
-				ring.push_back(Entry{
+				ring.push_back(WalkedPoint{
 						ray.first,
 						d_vertices[ray.first].position,
 						end.at_end ? piece.end_stop : piece.start_stop,
 						end.at_end ? piece.start_stop : piece.end_stop,
+						end.piece,
+						end.at_end,
 						Provenance() });
 
 				// The piece's interior stops, in the direction walked.
@@ -4356,7 +4362,9 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 				}
 				for (unsigned int s : stops)
 				{
-					ring.push_back(Entry{ boost::none, d_stops[s].position, s, s, Provenance() });
+					ring.push_back(WalkedPoint{
+							boost::none, d_stops[s].position, s, s, end.piece, end.at_end,
+							Provenance() });
 				}
 
 				const ray_ref_type arrive = ray_of_end[2 * end.piece + (end.at_end ? 0 : 1)];
@@ -4384,33 +4392,506 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 	}
 
 	// A kept closed piece (a ring with no record) is a ring on its own.
-	for (const Piece &piece : d_pieces)
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
 	{
+		const Piece &piece = d_pieces[p];
 		if (piece.closed &&
 			d_rings[piece.ring].closed &&
 			is_kept(piece, operation).get_value_or(false))
 		{
-			std::vector<Entry> ring;
+			walked_ring_type ring;
 			const RingView &ring_view = d_rings[piece.ring];
 			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
 			{
-				ring.push_back(Entry{ boost::none, d_stops[s].position, s, s, Provenance() });
+				ring.push_back(WalkedPoint{
+						boost::none, d_stops[s].position, s, s, p, false, Provenance() });
 			}
 			walked.push_back(ring);
 		}
 	}
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::walk_rings(
+		Operation operation,
+		std::vector<walked_ring_type> &rings,
+		unsigned int &num_pairing_failures) const
+{
+	if (operation == SYMMETRIC_DIFFERENCE)
+	{
+		//
+		// The symmetric difference is the difference and the reverse difference side by side: it
+		// keeps the pieces either keeps but the opposite-sides common pieces, which both keep
+		// (the two outputs meet along them). So its rings are theirs, joined across those pieces
+		// (section 5.2, linking).
+		//
+		// Not paired and walked by its own keep-rule. It keeps all four ends of every crossing,
+		// so a walk of its pairs passes most vertices twice, and the split below cuts at whichever
+		// it meets first. That is right only while no passage crosses another. Where two rays of
+		// one input leave a vertex parallel, a thickness apart, their measured order is noise,
+		// and the pairs made from it can cross: a cut at that vertex undoes them, but a cut made
+		// first at a crossing of the inputs between its two passages leaves two rings that each
+		// pass the vertex once, crossing there and at the crossing (12 of the hunt's 39,313
+		// cases with valid inputs, all from its 'six' generator; another order of cuts moved
+		// the fault to other cases). A difference keeps two ends of a crossing, so its walk
+		// comes back to the vertex with nothing doubled in between, and its cut there undoes
+		// the noise. Joined, the two differences' rings repeat a vertex only where the two
+		// outputs touch, and touches can be cut in any order (the hunt has no crossing rings
+		// with the cuts made first to last or last to first).
+		//
+		std::vector<walked_ring_type> difference, reverse_difference;
+		walk_rings(DIFFERENCE, difference, num_pairing_failures);
+		walk_rings(REVERSE_DIFFERENCE, reverse_difference, num_pairing_failures);
+		join_difference_rings(difference, reverse_difference, rings);
+	}
+	else
+	{
+		pair_and_walk_rings(operation, rings, num_pairing_failures);
+	}
+
+	split_walked_rings(operation, rings);
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::join_difference_rings(
+		const std::vector<walked_ring_type> &difference,
+		const std::vector<walked_ring_type> &reverse_difference,
+		std::vector<walked_ring_type> &joined) const
+{
+	//
+	// A step is one piece walked from a vertex to the next: the vertex's point and the piece's
+	// interior points. Its two ends (2 * step for its first vertex, 2 * step + 1 for its last) are
+	// each linked to the end of the step the ring passes to there, at the same vertex.
+	//
+	class Step
+	{
+	public:
+		walked_ring_type points;
+		unsigned int to_vertex;
+		bool removed;
+	};
+	std::vector<Step> steps;
+	std::vector<unsigned int> link;
+	std::vector<walked_ring_type> closed_rings;
+
+	// Per piece: its step in a ring of the difference, and of the reverse difference.
+	std::vector<boost::optional<unsigned int>> piece_steps[2];
+	piece_steps[0].resize(d_pieces.size());
+	piece_steps[1].resize(d_pieces.size());
+
+	for (unsigned int output = 0; output < 2; ++output)
+	{
+		for (const walked_ring_type &ring : (output == 0) ? difference : reverse_difference)
+		{
+			if (ring.empty() || !ring.front().vertex)
+			{
+				// A closed piece (a ring with no record); either difference keeps it, not both.
+				closed_rings.push_back(ring);
+				continue;
+			}
+
+			const unsigned int first_step = steps.size();
+			for (const WalkedPoint &point : ring)
+			{
+				if (point.vertex)
+				{
+					if (steps.size() != first_step)
+					{
+						steps.back().to_vertex = *point.vertex;
+					}
+					steps.push_back(Step{ walked_ring_type(), 0, false });
+					piece_steps[output][point.piece] = steps.size() - 1;
+				}
+				steps.back().points.push_back(point);
+			}
+			steps.back().to_vertex = *ring.front().vertex;
+
+			const unsigned int num_ring_steps = steps.size() - first_step;
+			link.resize(2 * steps.size());
+			for (unsigned int k = 0; k < num_ring_steps; ++k)
+			{
+				const unsigned int step = first_step + k;
+				const unsigned int next = first_step + (k + 1) % num_ring_steps;
+				link[2 * step + 1] = 2 * next;
+				link[2 * next] = 2 * step + 1;
+			}
+		}
+	}
 
 	//
-	// Split (section 5.2, split and clean-up): a ring passing an overlay
-	// vertex twice (by identity) is v, A, v, B; it is cut into v, A and v, B, until no ring repeats
-	// a vertex.
+	// The opposite-sides common pieces both differences walk: the difference with its output on
+	// one side and the reverse difference with its output on the other.
 	//
-	std::vector<std::vector<Entry>> split;
+	std::vector<unsigned int> wall_pieces;
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	{
+		const Piece &piece = d_pieces[p];
+		if (!piece.common || piece.common_class != COMMON_OPPOSITE_SIDES)
+		{
+			continue;
+		}
+		if (!piece_steps[0][p] || !piece_steps[1][p])
+		{
+			// A clip piece of a common pair is never walked (the walk follows the subject's); or
+			// a difference did not walk it because its pairing failed, which was counted there.
+			continue;
+		}
+		wall_pieces.push_back(p);
+	}
+
+	// The end, at a vertex, of a difference's step along a piece.
+	const auto step_end_at = [&](unsigned int output, unsigned int p, unsigned int vertex)
+	{
+		const unsigned int step = *piece_steps[output][p];
+		return 2 * step + (*steps[step].points.front().vertex == vertex ? 0 : 1);
+	};
+	// Whether a step is a difference's step along a wall piece.
+	const auto is_wall_step = [&](unsigned int output, unsigned int step)
+	{
+		const unsigned int p = steps[step].points.front().piece;
+		return piece_steps[0][p] &&
+				piece_steps[1][p] &&
+				*piece_steps[output][p] == step &&
+				d_pieces[p].common &&
+				d_pieces[p].common_class == COMMON_OPPOSITE_SIDES;
+	};
+
+	// The walls: runs of those pieces that both differences walk one after the other.
+	std::vector<unsigned int> wall_root(d_pieces.size());
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	{
+		wall_root[p] = p;
+	}
+	for (unsigned int p : wall_pieces)
+	{
+		for (unsigned int vertex : { *d_pieces[p].start_vertex, *d_pieces[p].end_vertex })
+		{
+			const unsigned int next[2] = {
+					link[step_end_at(0, p, vertex)] / 2,
+					link[step_end_at(1, p, vertex)] / 2 };
+			const unsigned int q = steps[next[0]].points.front().piece;
+			if (q != p &&
+				is_wall_step(0, next[0]) &&
+				is_wall_step(1, next[1]) &&
+				steps[next[1]].points.front().piece == q)
+			{
+				wall_root[find_root(wall_root, p)] = find_root(wall_root, q);
+			}
+		}
+	}
+	std::map<unsigned int, std::vector<unsigned int>> walls;
+	for (unsigned int p : wall_pieces)
+	{
+		walls[find_root(wall_root, p)].push_back(p);
+	}
+
+	//
+	// A wall is joined across only where both outputs lie along it: not where an arc by which
+	// either difference's ring reaches one of its ends, or leaves it, passes its other end
+	// (within the thickness of the arc's plane and strictly inside the arc, as
+	// find_self_touch_cuts measures an input's touch of itself). That ring then comes back along
+	// the whole wall within the thickness, a spike, and its output has no width there: an edge
+	// of an input that doubles back along the edge before it, of any length, or a wall so short
+	// that its far end lies within the thickness of whatever arc comes next.
+	//
+	// Such a wall separates nothing. In the hunt's 'zero' cases it lies at a crossing of the two
+	// inputs, where one has an edge under the thickness long: the pair that edge makes with the
+	// other input's is classified as any other, from pieces of the band whose classes are
+	// arbitrary, and the two outputs, opposite sectors of the crossing that touch at it, both
+	// walk it. Joined across it, they are the two inputs' boundaries passing straight through
+	// the crossing, two rings that cross (25 of the hunt's 39,313 cases with valid inputs).
+	// Left alone, the two rings touch along it, as at a vertex. Not by the wall's length, which
+	// would be a second tolerance, and a spike can be of any length. And only an arc that
+	// passes the whole wall: a spike along part of one (the hunt's 'shared' cases have them
+	// thousands of thicknesses long) leaves the rest a wall between the two outputs, and the
+	// joined ring then runs along the spike.
+	//
+	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+	std::vector<unsigned int> joined_pieces;
+	for (const auto &wall : walls)
+	{
+		const std::vector<unsigned int> &pieces = wall.second;
+
+		// The wall's two ends (none if it is closed): the vertices of one of its pieces only,
+		// each with that piece.
+		std::map<unsigned int, std::vector<unsigned int>> vertex_pieces;
+		for (unsigned int p : pieces)
+		{
+			vertex_pieces[*d_pieces[p].start_vertex].push_back(p);
+			vertex_pieces[*d_pieces[p].end_vertex].push_back(p);
+		}
+		std::vector<std::pair<unsigned int, unsigned int>> ends;
+		for (const auto &vertex : vertex_pieces)
+		{
+			if (vertex.second.size() == 1)
+			{
+				ends.push_back(std::make_pair(vertex.first, vertex.second.front()));
+			}
+		}
+
+		bool is_spike = false;
+		for (unsigned int output = 0; ends.size() == 2 && output < 2; ++output)
+		{
+			for (unsigned int e = 0; e < 2; ++e)
+			{
+				// The ring's step beside the wall at this end, and its arc there.
+				const unsigned int beside =
+						link[step_end_at(output, ends[e].second, ends[e].first)];
+				const WalkedPoint &start = steps[beside / 2].points.front();
+				const boost::optional<FirstArc> arc = get_first_arc(
+						start.piece,
+						(beside % 2 == 0) ? start.at_end : !start.at_end);
+				const unsigned int other_end = ends[1 - e].first;
+				const PointOnSphere &position = d_vertices[other_end].position;
+				is_spike = is_spike ||
+						(arc &&
+							!(arc->far_vertex && *arc->far_vertex == other_end) &&
+							std::fabs(arc->signed_distance(position)) <= h &&
+							arc->is_strictly_along(position));
+			}
+		}
+		if (is_spike)
+		{
+			++d_diagnostics.spike_walls;
+		}
+		else
+		{
+			joined_pieces.insert(joined_pieces.end(), pieces.begin(), pieces.end());
+		}
+	}
+
+	//
+	// Join: at each of a piece's two vertices, the ends its two steps were linked to are linked
+	// to each other instead, and the piece's two steps are dropped. With one output on each side
+	// of the wall that is the outline of the two together.
+	//
+	for (unsigned int p : joined_pieces)
+	{
+		for (unsigned int vertex : { *d_pieces[p].start_vertex, *d_pieces[p].end_vertex })
+		{
+			const unsigned int difference_end = step_end_at(0, p, vertex);
+			const unsigned int reverse_difference_end = step_end_at(1, p, vertex);
+			const unsigned int difference_link = link[difference_end];
+			const unsigned int reverse_difference_link = link[reverse_difference_end];
+			// (Where two joined pieces meet, the first has linked the second's two ends to each
+			// other already, and this links them again.)
+			link[difference_link] = reverse_difference_link;
+			link[reverse_difference_link] = difference_link;
+		}
+		steps[*piece_steps[0][p]].removed = steps[*piece_steps[1][p]].removed = true;
+	}
+
+	// Walk the links into rings; a step entered at its last vertex is walked backwards.
+	std::vector<bool> visited(steps.size(), false);
+	for (unsigned int first = 0; first < steps.size(); ++first)
+	{
+		if (visited[first] || steps[first].removed)
+		{
+			continue;
+		}
+		walked_ring_type ring;
+		unsigned int entered = 2 * first;
+		do
+		{
+			const Step &step = steps[entered / 2];
+			visited[entered / 2] = true;
+			if (entered % 2 == 0)
+			{
+				ring.insert(ring.end(), step.points.begin(), step.points.end());
+			}
+			else
+			{
+				const WalkedPoint &start = step.points.front();
+				ring.push_back(WalkedPoint{
+						step.to_vertex,
+						d_vertices[step.to_vertex].position,
+						start.far_stop,
+						start.stop,
+						start.piece,
+						!start.at_end,
+						Provenance() });
+				for (unsigned int k = step.points.size(); k-- > 1; )
+				{
+					ring.push_back(step.points[k]);
+					ring.back().at_end = !start.at_end;
+				}
+			}
+			entered = link[entered ^ 1];
+		}
+		while (entered != 2 * first);
+		joined.push_back(ring);
+	}
+
+	joined.insert(joined.end(), closed_rings.begin(), closed_rings.end());
+}
+
+
+boost::optional<GPlatesMaths::PolygonOverlay::Overlay::FirstArc>
+GPlatesMaths::PolygonOverlay::Overlay::get_first_arc(
+		unsigned int piece_index,
+		bool at_end) const
+{
+	const Piece &piece = d_pieces[piece_index];
+	const RingView &ring_view = d_rings[piece.ring];
+
+	// The arc's two stops, and its segment (arriving at the piece's end, the arc before a stop
+	// lies on that stop's arriving segment).
+	const unsigned int near_stop = at_end ? piece.end_stop : piece.start_stop;
+	const unsigned int far_stop = at_end
+			? (near_stop == ring_view.first_stop ? ring_view.end_stop - 1 : near_stop - 1)
+			: (near_stop + 1 == ring_view.end_stop ? ring_view.first_stop : near_stop + 1);
+	const GreatCircleArc &segment = ring_view.segments[
+			at_end ? d_stops[near_stop].segment_in : d_stops[near_stop].segment_out];
+
+	// The segment's own plane, in doubles, even for a segment GreatCircleArc calls zero length
+	// (which has no rotation axis), as find_self_touch_cuts.
+	const UnitVector3D &segment_start = segment.start_point().position_vector();
+	const Vector3D normal = cross(segment_start, segment.end_point().position_vector());
+	const double normal_length = std::sqrt(normal.magSqrd().dval());
+	if (!(normal_length > 0))
+	{
+		return boost::none;
+	}
+
+	FirstArc arc;
+	arc.axis[0] = normal.x().dval() / normal_length;
+	arc.axis[1] = normal.y().dval() / normal_length;
+	arc.axis[2] = normal.z().dval() / normal_length;
+	arc.start[0] = segment_start.x().dval();
+	arc.start[1] = segment_start.y().dval();
+	arc.start[2] = segment_start.z().dval();
+	const double along_near = arc.along(d_stops[near_stop].position);
+	const double along_far = arc.along(d_stops[far_stop].position);
+	arc.along_min = (std::min)(along_near, along_far);
+	arc.along_max = (std::max)(along_near, along_far);
+	arc.leaving_sign = (along_far > along_near) ? 1.0 : -1.0;
+	if (d_stops[far_stop].kind == Stop::RECORD)
+	{
+		arc.far_vertex = d_stops[far_stop].vertex;
+	}
+	return arc;
+}
+
+
+double
+GPlatesMaths::PolygonOverlay::Overlay::FirstArc::signed_distance(
+		const PointOnSphere &point) const
+{
+	const UnitVector3D &x = point.position_vector();
+	return axis[0] * x.x().dval() + axis[1] * x.y().dval() + axis[2] * x.z().dval();
+}
+
+
+double
+GPlatesMaths::PolygonOverlay::Overlay::FirstArc::along(
+		const PointOnSphere &point) const
+{
+	// atan2(axis . (start x point), start . point).
+	const UnitVector3D &x = point.position_vector();
+	const double px = x.x().dval(), py = x.y().dval(), pz = x.z().dval();
+	const double cross_x = start[1] * pz - start[2] * py;
+	const double cross_y = start[2] * px - start[0] * pz;
+	const double cross_z = start[0] * py - start[1] * px;
+	return std::atan2(
+			axis[0] * cross_x + axis[1] * cross_y + axis[2] * cross_z,
+			start[0] * px + start[1] * py + start[2] * pz);
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::split_walked_rings(
+		Operation operation,
+		std::vector<walked_ring_type> &walked) const
+{
+	//
+	// The common chains the operation does not keep (section 5.2, split): vertices joined by
+	// their pieces are in one chain. The output is the same on both sides of such a piece, so
+	// no ring walks it, but a ring can pass both its ends.
+	//
+	std::vector<bool> is_unkept_chain_piece(d_pieces.size(), false);
+	std::vector<unsigned int> chain_root(d_vertices.size());
+	for (unsigned int v = 0; v < d_vertices.size(); ++v)
+	{
+		chain_root[v] = v;
+	}
+	bool any_unkept_chain = false;
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	{
+		const Piece &piece = d_pieces[p];
+		const boost::optional<bool> keep = is_kept(piece, operation);
+		if (piece.common &&
+			!piece.internal &&
+			d_rings[piece.ring].side == SUBJECT &&
+			piece.start_vertex &&
+			piece.end_vertex &&
+			keep &&
+			!*keep)
+		{
+			is_unkept_chain_piece[p] = true;
+			any_unkept_chain = true;
+			chain_root[find_root(chain_root, *piece.start_vertex)] =
+					find_root(chain_root, *piece.end_vertex);
+		}
+	}
+
+	// The points of a walk along unkept chain pieces from one vertex to another of its chain,
+	// without the last vertex's (a breadth-first search: a chain can branch where an input
+	// touches itself).
+	const auto chain_path = [&](unsigned int from, unsigned int to)
+	{
+		std::map<unsigned int, End> arrived_by;  // vertex -> the piece end left to reach it
+		std::vector<unsigned int> queue(1, from);
+		for (unsigned int q = 0;
+			q < queue.size() && arrived_by.find(to) == arrived_by.end();
+			++q)
+		{
+			for (const End &end : d_vertices[queue[q]].ends)
+			{
+				if (!is_unkept_chain_piece[end.piece])
+				{
+					continue;
+				}
+				const Piece &piece = d_pieces[end.piece];
+				const unsigned int next = end.at_end ? *piece.start_vertex : *piece.end_vertex;
+				if (next != from && arrived_by.insert(std::make_pair(next, end)).second)
+				{
+					queue.push_back(next);
+				}
+			}
+		}
+		walked_ring_type path;
+		for (unsigned int v = to; v != from; )
+		{
+			const End end = arrived_by.at(v);
+			const Piece &piece = d_pieces[end.piece];
+			v = end.at_end ? *piece.end_vertex : *piece.start_vertex;
+			path.push_back(WalkedPoint{
+					v,
+					d_vertices[v].position,
+					end.at_end ? piece.end_stop : piece.start_stop,
+					end.at_end ? piece.start_stop : piece.end_stop,
+					end.piece,
+					end.at_end,
+					Provenance() });
+		}
+		std::reverse(path.begin(), path.end());
+		return path;
+	};
+
+	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+
+	std::vector<walked_ring_type> split;
 	while (!walked.empty())
 	{
-		std::vector<Entry> ring = walked.back();
+		walked_ring_type ring = walked.back();
 		walked.pop_back();
 
+		//
+		// A ring passing an overlay vertex twice (by identity) is v, A, v, B; it is cut into
+		// v, A and v, B, until no ring repeats a vertex.
+		//
 		std::vector<int> first_seen(d_vertices.size(), -1);
 		boost::optional<std::pair<unsigned int, unsigned int>> cut;
 		for (unsigned int j = 0; j < ring.size(); ++j)
@@ -4426,25 +4907,255 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			}
 			first_seen[*ring[j].vertex] = j;
 		}
-		if (!cut)
+		if (cut)
 		{
-			split.push_back(ring);
+			++d_diagnostics.rings_split;
+			walked.push_back(
+					walked_ring_type(ring.begin() + cut->first, ring.begin() + cut->second));
+			walked_ring_type rest(ring.begin() + cut->second, ring.end());
+			rest.insert(rest.end(), ring.begin(), ring.begin() + cut->first);
+			walked.push_back(rest);
 			continue;
 		}
-		++d_diagnostics.rings_split;
-		walked.push_back(std::vector<Entry>(ring.begin() + cut->first, ring.begin() + cut->second));
-		std::vector<Entry> rest(ring.begin() + cut->second, ring.end());
-		rest.insert(rest.end(), ring.begin(), ring.begin() + cut->first);
-		walked.push_back(rest);
+
+		//
+		// A ring passing two vertices u and w of one chain the operation does not keep, and
+		// crossing itself between them, is u, A, w, B: it is cut into u, A, w and w, B, u, each
+		// closed along the chain.
+		//
+		// How it comes to cross itself: GeometryIntersect never intersects an input with itself,
+		// so an arc T of the ring that leaves u between the two boundaries of a common pair has
+		// no stop where it passes the pair's far end w, between the rays that continue the two
+		// there. (It cannot cross either on the way: a crossing of the other input's is a record,
+		// and an input whose rings do not cross does not cross its own.) The pair is one ray at
+		// each end, with T on one side of it, so no order of the rays at u or at w has T between
+		// the two, and no pairing there is wrong: but a ring that leaves u along T and passes w
+		// from one of the two boundaries to the other is twisted between u and w, its two parts
+		// wound opposite ways. Parity reads it right, point for point, but its signed area is
+		// the difference of the parts, and it has no orientation with the output on its left.
+		// (The catalogue's 'd4 hole-between' cases: a hole's tip on its own exterior's short
+		// edge, on the clip's edge. The hole's edge leaves the tip between the two, and the
+		// reverse difference's ring comes back along the clip's edge to the short edge's far end
+		// and leaves along the exterior. Partitioning's difference does the same with the
+		// inputs swapped.) Cut at u and w as at one vertex, the ring is its two parts, which
+		// touch along the chain.
+		//
+		// The test is the crossing GeometryIntersect would have recorded had it intersected the
+		// ring with itself, with the same thickness: w lies on T (within the thickness of its
+		// plane and strictly inside the arc, and T does not end at w), and the ring passes w
+		// from beyond the thickness on one side of the ring's passage at u to beyond it on the
+		// other. Not the chain's length, which would be a second tolerance, and T can run along
+		// a chain of any length. And not T's passing w alone: a ring that passes both ends of
+		// an unkept chain without crossing itself is left whole (a notch along a shared edge),
+		// and so is one that only touches itself there (beside a tiny hole, or along a dense
+		// shared edge, a ring comes back within the thickness of itself without being twisted:
+		// a cut at every touch changed 362 of the hunt's intersections and differences from
+		// valid inputs, where this cuts 10).
+		//
+		boost::optional<std::pair<unsigned int, unsigned int>> chain_cut;
+		if (any_unkept_chain)
+		{
+			// The ring's vertex points, and those on each chain.
+			std::vector<unsigned int> at;
+			std::map<unsigned int, std::vector<unsigned int>> on_chain;
+			for (unsigned int j = 0; j < ring.size(); ++j)
+			{
+				if (ring[j].vertex)
+				{
+					on_chain[find_root(chain_root, *ring[j].vertex)].push_back(at.size());
+					at.push_back(j);
+				}
+			}
+			const unsigned int num_at = at.size();
+			const unsigned int num_points = ring.size();
+			// Whether the ring walks nothing but the chain from vertex point a round to b.
+			const auto walks_chain = [&](unsigned int a, unsigned int b)
+			{
+				for (unsigned int k = a; k != b; k = (k + 1) % num_at)
+				{
+					if (!is_unkept_chain_piece[ring[at[k]].piece])
+					{
+						return false;
+					}
+				}
+				return true;
+			};
+			//
+			// Whether the ring's passage at its vertex point 'through' crosses its passage at its
+			// vertex point 'arc_vertex', where the vertex of 'through' lies on 'arc', one of that
+			// passage's two arcs ('other_arc' the other).
+			//
+			const auto crosses_arc = [&](
+					unsigned int arc_vertex,
+					const boost::optional<FirstArc> &arc,
+					const boost::optional<FirstArc> &other_arc,
+					unsigned int through)
+			{
+				if (!arc || !other_arc)
+				{
+					return false;
+				}
+				// An arc that ends at the vertex does not pass it. By identity: the vertex's
+				// output position is not the arc's own stop there (it is the subject's vertex,
+				// the stop can be the clip's), and can project inside the arc.
+				const unsigned int vertex = *ring[through].vertex;
+				const PointOnSphere &position = d_vertices[vertex].position;
+				if ((arc->far_vertex && *arc->far_vertex == vertex) ||
+					std::fabs(arc->signed_distance(position)) > h ||
+					!arc->is_strictly_along(position))
+				{
+					return false;
+				}
+
+				// The ring's first point beyond the thickness of the arc's plane, each way from
+				// the vertex; none if it first reaches the other passage (it runs into it, a
+				// spike along it, and does not cross it), or runs within the thickness past the
+				// arc's end.
+				const unsigned int passage_begin = (arc_vertex + num_points - 1) % num_points;
+				const unsigned int passage_end = (arc_vertex + 1) % num_points;
+				unsigned int beyond[2];
+				for (unsigned int direction = 0; direction < 2; ++direction)
+				{
+					for (unsigned int k = through; ; )
+					{
+						k = (direction == 0)
+								? (k + 1) % num_points
+								: (k + num_points - 1) % num_points;
+						if (k == passage_begin || k == arc_vertex || k == passage_end)
+						{
+							return false;
+						}
+						if (std::fabs(arc->signed_distance(ring[k].position)) > h)
+						{
+							beyond[direction] = k;
+							break;
+						}
+						if (!arc->is_strictly_along(ring[k].position))
+						{
+							return false;
+						}
+					}
+				}
+
+				//
+				// The two cross if those points are on different sides of the other passage: its
+				// two arcs as rays from its vertex, one point in the sector anticlockwise from
+				// the arc to the other arc and one not. (Not the two sides of the arc's plane
+				// alone: the vertices are within the thickness of each other when the chain is
+				// short, and the passage is then a corner, not a line.) The sector is less than
+				// half a turn if the other arc leaves to the arc's left. A point within the
+				// thickness of the other arc's plane, where that decides, decides nothing.
+				//
+				const UnitVector3D &corner = ring[arc_vertex].position.position_vector();
+				const double *const a = arc->axis;
+				const double *const b = other_arc->axis;
+				// (The two tangents' cross product, along the corner: [a, b, corner].)
+				const double other_arc_to_left = arc->leaving_sign * other_arc->leaving_sign * (
+						(a[1] * b[2] - a[2] * b[1]) * corner.x().dval() +
+						(a[2] * b[0] - a[0] * b[2]) * corner.y().dval() +
+						(a[0] * b[1] - a[1] * b[0]) * corner.z().dval());
+				bool in_sector[2];
+				for (unsigned int direction = 0; direction < 2; ++direction)
+				{
+					const PointOnSphere &point = ring[beyond[direction]].position;
+					const bool left_of_arc = arc->leaving_sign * arc->signed_distance(point) > 0;
+					const double left_of_other_arc =
+							other_arc->leaving_sign * other_arc->signed_distance(point);
+					const auto sector = [&](bool left_of_other)
+					{
+						return (other_arc_to_left > 0)
+								? (left_of_arc && !left_of_other)
+								: (left_of_arc || !left_of_other);
+					};
+					if (std::fabs(left_of_other_arc) <= h && sector(true) != sector(false))
+					{
+						return false;
+					}
+					in_sector[direction] = sector(left_of_other_arc > 0);
+				}
+				return in_sector[0] != in_sector[1];
+			};
+			// Whether the ring's passage at vertex point b crosses its passage at vertex point a.
+			const auto crosses_at = [&](unsigned int a, unsigned int b)
+			{
+				const WalkedPoint &leaving = ring[at[a]];
+				const WalkedPoint &arriving = ring[at[(a + num_at - 1) % num_at]];
+				const boost::optional<FirstArc> leaving_arc =
+						get_first_arc(leaving.piece, leaving.at_end);
+				const boost::optional<FirstArc> arriving_arc =
+						get_first_arc(arriving.piece, !arriving.at_end);
+				return crosses_arc(at[a], leaving_arc, arriving_arc, at[b]) ||
+						crosses_arc(at[a], arriving_arc, leaving_arc, at[b]);
+			};
+			for (const auto &chain : on_chain)
+			{
+				const std::vector<unsigned int> &points = chain.second;
+				for (unsigned int i = 0; !chain_cut && i < points.size(); ++i)
+				{
+					for (unsigned int j = i + 1; !chain_cut && j < points.size(); ++j)
+					{
+						const unsigned int a = points[i];
+						const unsigned int b = points[j];
+						if (!walks_chain(a, b) &&
+							!walks_chain(b, a) &&
+							(crosses_at(a, b) || crosses_at(b, a)))
+						{
+							chain_cut = std::make_pair(at[a], at[b]);
+						}
+					}
+				}
+				if (chain_cut)
+				{
+					break;
+				}
+			}
+		}
+		if (chain_cut)
+		{
+			++d_diagnostics.rings_cut_at_chains;
+			const unsigned int u = *ring[chain_cut->first].vertex;
+			const unsigned int w = *ring[chain_cut->second].vertex;
+			walked_ring_type first(
+					ring.begin() + chain_cut->first, ring.begin() + chain_cut->second);
+			const walked_ring_type back = chain_path(w, u);
+			first.insert(first.end(), back.begin(), back.end());
+			walked.push_back(first);
+
+			walked_ring_type rest(ring.begin() + chain_cut->second, ring.end());
+			rest.insert(rest.end(), ring.begin(), ring.begin() + chain_cut->first);
+			const walked_ring_type forth = chain_path(u, w);
+			rest.insert(rest.end(), forth.begin(), forth.end());
+			walked.push_back(rest);
+			continue;
+		}
+
+		split.push_back(ring);
 	}
 	std::reverse(split.begin(), split.end());  // in walk order
+	walked.swap(split);
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
+		Operation operation,
+		std::vector<OutputRing> &rings) const
+{
+	// A polyline subject's output is extract_polylines' (a dangling end has no ray).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_subject_polygon,
+			GPLATES_ASSERTION_SOURCE);
+
+	unsigned int num_pairing_failures = 0;
+	std::vector<walked_ring_type> split;
+	walk_rings(operation, split, num_pairing_failures);
 
 	//
 	// Clean-up (section 5.2), last and counted: consecutive repeated positions (exact: they come
 	// from one stored position) and a last position equal to the first are removed; a ring with
 	// fewer than three distinct positions (a region the records had already collapsed) is dropped.
 	//
-	for (std::vector<Entry> &ring : split)
+	for (walked_ring_type &ring : split)
 	{
 		// Provenance after the split (section 5.4): at a vertex, from the stops of the pieces
 		// this ring arrives and leaves along; a vertex entry arrives at the previous one's far
@@ -4452,14 +5163,14 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		if (d_options.want_provenance)
 		{
 			boost::optional<unsigned int> arriving_stop;
-			for (const Entry &entry : ring)
+			for (const WalkedPoint &entry : ring)
 			{
 				if (entry.vertex)
 				{
 					arriving_stop = entry.far_stop;
 				}
 			}
-			for (Entry &entry : ring)
+			for (WalkedPoint &entry : ring)
 			{
 				if (entry.vertex)
 				{
@@ -4476,7 +5187,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 
 		std::vector<PointOnSphere> points;
 		provenance_seq_type provenances;
-		for (const Entry &entry : ring)
+		for (const WalkedPoint &entry : ring)
 		{
 			if (!points.empty() && is_same_position(points.back(), entry.position))
 			{
@@ -4604,8 +5315,7 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 
 	//
 	// Grouping (section 5.2): by containment with parity depth, as the output is read. Rings that
-	// cross (where an input's rings cross each other, do_rings_cross; also the symmetric
-	// difference's, at a vertex whose four kept ends pair crosswise) are first joined into groups,
+	// cross (where an input's rings cross each other, do_rings_cross) are first joined into groups,
 	// and all of a group's rings go into one polygon: two polygons are read as their union, so
 	// crossing rings in separate polygons would overlap, while one polygon reads by parity as the
 	// output does. Groups do not cross each other, so a group lies wholly inside or wholly outside
@@ -5310,4 +6020,43 @@ GPlatesMaths::PolygonOverlay::Overlay::ring_piece_range(
 		++end;
 	}
 	return std::make_pair(first, end);
+}
+
+
+GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PolygonOverlay::create_polygon(
+		const OutputPolygon &output_polygon)
+{
+	std::vector<std::vector<PointOnSphere>> interiors;
+	interiors.reserve(output_polygon.interiors.size());
+	for (const OutputRing &interior : output_polygon.interiors)
+	{
+		interiors.push_back(interior.points);
+	}
+	return PolygonOnSphere::create(
+			output_polygon.exterior.points,
+			interiors.begin(),
+			interiors.end());
+}
+
+
+std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+GPlatesMaths::PolygonOverlay::extract_polygons(
+		const PolygonOnSphere &subject,
+		const PolygonOnSphere &clip,
+		Operation operation,
+		const Options &options)
+{
+	Overlay overlay(subject, clip, options);
+	overlay.classify();
+	std::vector<OutputPolygon> outputs;
+	overlay.extract(operation, outputs);
+
+	std::vector<PolygonOnSphere::non_null_ptr_to_const_type> polygons;
+	polygons.reserve(outputs.size());
+	for (const OutputPolygon &output : outputs)
+	{
+		polygons.push_back(create_polygon(output));
+	}
+	return polygons;
 }

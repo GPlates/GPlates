@@ -903,6 +903,11 @@ GPlatesAppLogic::PartitionFeatureUtils::GeometrySizeMetric::operator<(
 {
 	// Area (polygons) first, then arc length (polylines), then the number of points: so a feature
 	// with polygons is decided by them (section 5.4).
+	//
+	// The area and the arc length are real_t, whose '!=' is "differ by more than its epsilon", and
+	// equality within a tolerance is not transitive: this is not a strict weak ordering. It serves
+	// the running maximum of 'find_partition_containing_most_geometry()' and must not be given to
+	// a sort.
 	if (d_area != rhs.d_area)
 	{
 		return d_area < rhs.d_area;

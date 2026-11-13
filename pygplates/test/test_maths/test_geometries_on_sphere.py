@@ -1931,6 +1931,147 @@ class PolygonOnSphereCase(unittest.TestCase):
             self.assertTrue(len(inside) == 1 and len(outside) == 1)
             self.assertAlmostEqual(outside[0].get_area(), 2 * math.pi - box.get_area(), places=9)
 
+    # The Boolean methods, each with the function of a point's memberships of the two polygons it outputs.
+    _BOOLEAN_OPERATIONS = (
+            ('intersection', lambda in_p, in_q: in_p and in_q),
+            ('union', lambda in_p, in_q: in_p or in_q),
+            ('difference', lambda in_p, in_q: in_p and not in_q),
+            ('symmetric_difference', lambda in_p, in_q: in_p != in_q))
+
+    def _check_boolean_operations(self, p, q):
+        # Each method's polygons cover exactly the points its function of the inputs' memberships says, each
+        # point once (they do not overlap), on a grid of samples offset half a degree from the boxes' corners.
+        # The areas agree (intersection and difference make up p; union and intersection make up p and q; the
+        # symmetric difference is the union less the intersection), and the intersection and the difference are
+        # what partition() puts inside and outside. Returns the number of holes of each method's polygons.
+        samples = [pygplates.PointOnSphere(lat + 0.5, lon + 0.5) for lat in range(-25, 25) for lon in range(-10, 40)]
+        results = {}
+        for name, f in self._BOOLEAN_OPERATIONS:
+            result = getattr(p, name)(q)
+            results[name] = result
+            self.assertTrue(isinstance(result, list))
+            self.assertTrue(all(isinstance(polygon, pygplates.PolygonOnSphere) for polygon in result))
+            for point in samples:
+                expected = f(p.is_point_in_polygon(point), q.is_point_in_polygon(point))
+                covered = sum(1 for polygon in result if polygon.is_point_in_polygon(point))
+                self.assertEqual(covered, 1 if expected else 0, msg='{} at {}'.format(name, point.to_lat_lon()))
+        area = lambda polygons: sum(polygon.get_area() for polygon in polygons)
+        self.assertAlmostEqual(area(results['intersection']) + area(results['difference']), p.get_area(), places=9)
+        self.assertAlmostEqual(area(results['union']) + area(results['intersection']),
+                               p.get_area() + q.get_area(), places=9)
+        self.assertAlmostEqual(area(results['symmetric_difference']),
+                               area(results['union']) - area(results['intersection']), places=9)
+        inside, outside = [], []
+        q.partition(p, inside, outside)
+        self.assertTrue(results['intersection'] == inside)
+        self.assertTrue(results['difference'] == outside)
+        return dict((name, sorted(polygon.get_number_of_interior_rings() for polygon in results[name]))
+                    for name in results)
+
+    def test_boolean_operations(self):
+        # Overlapping polygons, each with a hole: p's lies outside q, so the union keeps it; q's lies inside p, so
+        # the union covers it, the intersection keeps it, and it is an island of the difference.
+        p = pygplates.PolygonOnSphere(self._box(-10, 10, 0, 20), [self._box(-3, 3, 4, 8)])
+        q = pygplates.PolygonOnSphere(self._box(-5, 15, 10, 30), [self._box(0, 5, 14, 18)])
+        holes = self._check_boolean_operations(p, q)
+        self.assertEqual(holes, {'intersection': [1], 'union': [1], 'difference': [0, 1],
+                                 'symmetric_difference': [0, 0, 1]})
+        holes = self._check_boolean_operations(q, p)
+        self.assertEqual(holes, {'intersection': [1], 'union': [1], 'difference': [0],
+                                 'symmetric_difference': [0, 0, 1]})
+
+    def test_boolean_operations_apart_nested_touching(self):
+        square = pygplates.PolygonOnSphere(self._box(-10, 10, 0, 10))
+        # Apart: the difference is the polygon itself.
+        apart = pygplates.PolygonOnSphere(self._box(-10, 10, 20, 30))
+        self.assertEqual(self._check_boolean_operations(square, apart),
+                         {'intersection': [], 'union': [0, 0], 'difference': [0], 'symmetric_difference': [0, 0]})
+        self.assertTrue(square.difference(apart) == [square])
+        # Nested: the inner polygon is its intersection itself; the outer polygon's difference has a hole.
+        inner = pygplates.PolygonOnSphere(self._box(-3, 3, 3, 6))
+        self.assertEqual(self._check_boolean_operations(inner, square),
+                         {'intersection': [0], 'union': [0], 'difference': [], 'symmetric_difference': [1]})
+        self.assertTrue(inner.intersection(square) == [inner])
+        self.assertEqual(self._check_boolean_operations(square, inner),
+                         {'intersection': [0], 'union': [0], 'difference': [1], 'symmetric_difference': [1]})
+        # Sharing an edge: no intersection; the union and the symmetric difference are one polygon.
+        beside = pygplates.PolygonOnSphere(self._box(-10, 10, 10, 20))
+        self.assertEqual(self._check_boolean_operations(square, beside),
+                         {'intersection': [], 'union': [0], 'difference': [0], 'symmetric_difference': [0]})
+        self.assertTrue(square.difference(beside) == [square])
+        # Touching at a corner: two polygons.
+        corner = pygplates.PolygonOnSphere(self._box(10, 20, 10, 20))
+        self.assertEqual(self._check_boolean_operations(square, corner),
+                         {'intersection': [], 'union': [0, 0], 'difference': [0], 'symmetric_difference': [0, 0]})
+        # Identical.
+        self.assertEqual(self._check_boolean_operations(square, pygplates.PolygonOnSphere(self._box(-10, 10, 0, 10))),
+                         {'intersection': [0], 'union': [0], 'difference': [], 'symmetric_difference': []})
+
+    def _cap(self, lat, lon, radius_degrees, num_points=72):
+        # A polygon of points round a small circle.
+        centre = pygplates.PointOnSphere(lat, lon).to_xyz()
+        other = (0.0, 0.0, 1.0) if abs(centre[2]) < 0.9 else (1.0, 0.0, 0.0)
+        cross = lambda a, b: (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+        u = cross(centre, other)
+        u_length = math.sqrt(sum(c * c for c in u))
+        u = tuple(c / u_length for c in u)
+        v = cross(centre, u)
+        r = math.radians(radius_degrees)
+        points = []
+        for i in range(num_points):
+            t = 2 * math.pi * i / num_points
+            points.append(pygplates.PointOnSphere(tuple(
+                    math.cos(r) * centre[k] + math.sin(r) * (math.cos(t) * u[k] + math.sin(t) * v[k])
+                    for k in range(3))))
+        return pygplates.PolygonOnSphere(points)
+
+    def test_boolean_operations_over_a_hemisphere(self):
+        # The union of two 80-degree caps 100 degrees apart has an outer ring enclosing more than a hemisphere, which
+        # a polygon's ring cannot bound (each bounds its smaller side): PartitionError. Their intersection and
+        # differences are returned.
+        p = self._cap(math.degrees(0.1), 0, 80)
+        q = self._cap(-math.degrees(0.1), 100, 80)
+        self.assertRaises(pygplates.PartitionError, p.union, q)
+        self.assertTrue(len(p.intersection(q)) == 1 and len(p.difference(q)) == 1)
+        # Under a hemisphere, the union is returned.
+        p = self._cap(math.degrees(0.1), 0, 50)
+        q = self._cap(-math.degrees(0.1), 60, 50)
+        self.assertTrue(len(p.union(q)) == 1)
+        # Two polygons sharing an edge, together over a hemisphere: the symmetric difference joins them across it,
+        # so it raises too.
+        p = pygplates.PolygonOnSphere([(-60, 0), (-60, 120), (60, 120), (60, 0)])
+        q = pygplates.PolygonOnSphere([(60, 0), (60, -120), (-60, -120), (-60, 0)])
+        self.assertRaises(pygplates.PartitionError, p.union, q)
+        self.assertRaises(pygplates.PartitionError, p.symmetric_difference, q)
+        self.assertTrue(p.intersection(q) == [] and p.difference(q) == [p])
+
+    def test_boolean_operations_arguments(self):
+        p = pygplates.PolygonOnSphere(self._box(-10, 10, 0, 10))
+        q = pygplates.PolygonOnSphere(self._box(-10, 10, 5, 15))
+        for name, _ in self._BOOLEAN_OPERATIONS:
+            method = getattr(p, name)
+            self.assertTrue(method(q, sliver_width_threshold_radians=0) == method(q))
+            self.assertTrue(method(q, None) == method(q))
+            self.assertRaises(ValueError, method, q, sliver_width_threshold_radians=-1e-6)
+            self.assertRaises(ValueError, method, q, sliver_width_threshold_radians=float('nan'))
+            # Not a polygon (Boost.Python's ArgumentError is a TypeError).
+            self.assertRaises(TypeError, method, pygplates.PointOnSphere(0, 0))
+        # A polygon reaching 5e-6 radians (about 32 metres) into p: their intersection is kept by default and
+        # dropped at ten times the default width, which leaves p's difference p itself, as partition() does.
+        sliver = math.degrees(5e-6)
+        q = pygplates.PolygonOnSphere([(-5, 10 - sliver), (-5, 15), (5, 15), (5, 10 - sliver)])
+        self.assertTrue(len(p.intersection(q)) == 1)
+        self.assertTrue(p.intersection(q, sliver_width_threshold_radians=1.4142e-5) == [])
+        self.assertTrue(p.difference(q, sliver_width_threshold_radians=1.4142e-5) == [p])
+        # The union of two polygons with a gap of the same width between them along a stretch: the gap is a hole,
+        # kept by default and dropped as a sliver at ten times the default width.
+        q = pygplates.PolygonOnSphere([(-10, 10), (-10, 20), (10, 20), (10, 10), (5, 10), (5, 10 + sliver),
+                                       (-5, 10 + sliver), (-5, 10)])
+        self.assertTrue([u.get_number_of_interior_rings() for u in p.union(q, sliver_width_threshold_radians=0)] ==
+                        [1])
+        self.assertTrue([u.get_number_of_interior_rings() for u in p.union(q, sliver_width_threshold_radians=1.4142e-5)] ==
+                        [0])
+
     def test_partition(self):
         inv_sqrt_two = 1.0 / math.sqrt(2.0)
         

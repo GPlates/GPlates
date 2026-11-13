@@ -413,6 +413,11 @@ namespace
 	//! Ring sets not compared because their decomposition is ambiguous (see compare_rings).
 	unsigned int num_ambiguous_ring_sets = 0;
 
+	//! Ring sets not compared because the overlay cut a ring at a common chain it does not keep
+	//! (section 5.2, split): the prototype has no such cut, and its ring there crosses itself.
+	//! (Counted, and pinned for the committed files, so that a cut that should not be made shows.)
+	unsigned int num_chain_cut_ring_sets = 0;
+
 	//! Cases whose prototype rings depend on the tie order, whose rings are not compared.
 	unsigned int num_tie_dependent_ring_sets = 0;
 
@@ -491,7 +496,15 @@ namespace
 			}
 
 			std::vector<Overlay::OutputRing> rings;
+			const unsigned int rings_cut_at_chains_before =
+					overlay.get_diagnostics().rings_cut_at_chains;
 			overlay.extract_rings(operations[o], rings);
+			if (overlay.get_diagnostics().rings_cut_at_chains != rings_cut_at_chains_before)
+			{
+				// The prototype's ring is twisted there; the oracle checks the overlay's.
+				++num_chain_cut_ring_sets;
+				continue;
+			}
 
 			std::vector<bool> used(rings.size(), false);
 			unsigned int num_unmatched = 0;
@@ -1156,14 +1169,12 @@ namespace
 						oracle_report << "operation " << operation << ": over a hemisphere; ";
 						continue;
 					}
-					// Output rings cross only where an input's rings cross, but for the symmetric
-					// difference's, which can cross at a vertex whose four kept ends pair crosswise
-					// (section 5.2): otherwise a touch was taken for a crossing.
+					// Output rings cross only where an input's rings cross: otherwise a touch was
+					// taken for a crossing.
 					const unsigned int crossing_ring_groups =
 							overlay.get_diagnostics().crossing_ring_groups -
 								crossing_ring_groups_before;
-					if (!input_rings_cross && crossing_ring_groups != 0 &&
-						operation != Overlay::SYMMETRIC_DIFFERENCE)
+					if (!input_rings_cross && crossing_ring_groups != 0)
 					{
 						oracle_report << "operation " << operation << ": " << crossing_ring_groups
 								<< " crossing ring groups from inputs whose rings do not cross; ";
@@ -1440,6 +1451,7 @@ namespace
 		unsigned int num_prototype_failures = 0;
 		unsigned int num_oracle_failures = 0;
 		num_ambiguous_ring_sets = 0;
+		num_chain_cut_ring_sets = 0;
 		num_crossing_inputs = 0;
 		num_crossing_polygon_failures = 0;
 		num_tie_dependent_ring_sets = 0;
@@ -1483,6 +1495,7 @@ namespace
 		std::cout << cases.size() << " prototype cases, " << num_failures << " differ ("
 				<< num_oracle_failures << " in output only; " << num_ambiguous_ring_sets
 				<< " ring sets not compared, touching at two vertices; "
+				<< num_chain_cut_ring_sets << " not compared, cut at a chain; "
 				<< num_tie_dependent_ring_sets
 				<< " cases whose prototype rings depend on the tie order; "
 				<< num_crossing_inputs << " with crossing input rings, "
@@ -1497,6 +1510,8 @@ namespace
 TEST(PolygonOverlayPrototypeTest, Catalogue)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-catalogue.txt", 400);
+	// (Its rings cut at a chain are the reverse difference's, which is not compared as rings.)
+	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
 }
 
 
@@ -1505,11 +1520,17 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 // ring all of whose vertices lie on another ring (grouping decides by an edge midpoint), the four
 // cases that alone show the sector walk's phase and the four-kept bounce pairing
 // (six#27, #207, near#48, #277), 20 of the 'holes' generator (holes and islands in both inputs,
-// no ring crossing another: the grouping's parent choice), and chain#146 seed 2, whose chain vertex
-// at a segment's end needs the self-touch cuts' rounding margin.
+// no ring crossing another: the grouping's parent choice), chain#146 seed 2, whose chain vertex
+// at a segment's end needs the self-touch cuts' rounding margin, and three for the linking's two
+// rules for an input's touch of itself (CutsAtChainsAndSpikeWalls, below): shared#541 seed 2, a
+// dense shared edge on which the walk of the crossing test, from a vertex along the ring, must stop
+// at the other passage (without the stop it does not end), zero#563 seed 11 and shared#31 seed 14.
 TEST(PolygonOverlayPrototypeTest, Hunt)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);
+	// The difference of chain#108 seed 5, whose input rings cross, and the intersection of
+	// zero#563 seed 11.
+	EXPECT_EQ(num_chain_cut_ring_sets, 2u);
 }
 
 
@@ -1528,6 +1549,7 @@ TEST(PolygonOverlayPrototypeTest, Polyline)
 TEST(PolygonOverlayPrototypeTest, Anchorless)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-anchorless.txt", 40);
+	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
 }
 
 
@@ -1536,6 +1558,83 @@ TEST(PolygonOverlayPrototypeTest, Anchorless)
 TEST(PolygonOverlayPrototypeTest, Bundle)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-bundle.txt", 15);
+	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
+}
+
+
+// The linking's two rules for what an input's touch of itself hides (section 5.2), counted over the
+// catalogue and the hunt's sample, with the inputs as exported and swapped: the cases with a ring
+// cut at a chain, by operation, and the walls the symmetric difference does not join across.
+// The cuts are the catalogue's 13 'd4 hole-between' cases (the reverse difference; swapped, the
+// difference, which is partitioning's outside) and two of the hunt's: chain#108 seed 5, whose
+// input rings cross, and zero#563 seed 11 (the intersection, either way round; valid inputs, a
+// sliver about 1.5 h^2 wound backwards, whose crossing shows only from the arcs of the second of
+// the chain's two vertices on the ring, so the pair must be tested both ways round); the symmetric
+// difference is made of the two differences, so it counts theirs. The walls not joined are the
+// catalogue's 'd4' short edges of up to about two thicknesses (4 of the 'lone' cases and 9 of
+// 'hole-between') and 10 of the hunt's. The wall of shared#31 seed 14 is joined: the arc beside it
+// ends at its far end, and an arc that ends at a vertex does not pass it. A rule that
+// cut at a touch, not at a crossing, or joined across every wall, would change these counts; that
+// each output is right is the comparison's and the oracle's to say (above).
+TEST(PolygonOverlayPrototypeTest, CutsAtChainsAndSpikeWalls)
+{
+	class Expected
+	{
+	public:
+		const char *filename;
+		unsigned int num_cut_cases[2][5];  // as exported and swapped, by operation
+		unsigned int num_spike_walls[2];
+	};
+	const Expected expected[] = {
+			{
+				GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-catalogue.txt",
+				{ { 0, 0, 13, 0, 13 }, { 0, 13, 0, 0, 13 } },
+				{ 13, 13 }
+			},
+			{
+				GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt",
+				{ { 1, 1, 0, 0, 1 }, { 1, 0, 1, 0, 1 } },
+				{ 10, 10 }
+			} };
+	for (const Expected &e : expected)
+	{
+		SCOPED_TRACE(e.filename);
+		std::vector<PrototypeCase> cases = read_cases(e.filename);
+		for (unsigned int swap = 0; swap < 2; ++swap)
+		{
+			SCOPED_TRACE(swap);
+			unsigned int num_cut_cases[5] = { 0, 0, 0, 0, 0 };
+			unsigned int num_spike_walls = 0;
+			for (PrototypeCase &prototype_case : cases)
+			{
+				if (prototype_case.polyline)
+				{
+					continue;
+				}
+				const CaseInputs inputs(prototype_case);
+				Overlay::Options options;
+				options.throw_if_inconsistent = false;
+				Overlay::Overlay overlay(
+						swap ? *inputs.Q : *inputs.P, swap ? *inputs.P : *inputs.Q, options);
+				overlay.classify();
+				for (unsigned int o = 0; o < 5; ++o)
+				{
+					const Overlay::Diagnostics before = overlay.get_diagnostics();
+					std::vector<Overlay::OutputRing> rings;
+					overlay.extract_rings(static_cast<Overlay::Operation>(o), rings);
+					const Overlay::Diagnostics &after = overlay.get_diagnostics();
+					num_cut_cases[o] +=
+							(after.rings_cut_at_chains != before.rings_cut_at_chains) ? 1 : 0;
+					num_spike_walls += after.spike_walls - before.spike_walls;
+				}
+			}
+			for (unsigned int o = 0; o < 5; ++o)
+			{
+				EXPECT_EQ(num_cut_cases[o], e.num_cut_cases[swap][o]) << "operation " << o;
+			}
+			EXPECT_EQ(num_spike_walls, e.num_spike_walls[swap]);
+		}
+	}
 }
 
 

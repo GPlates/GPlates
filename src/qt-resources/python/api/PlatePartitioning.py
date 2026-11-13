@@ -433,6 +433,9 @@ def plate_partitioner_partition_features(
             # not partitioned (partitioning one window would leave the others undefined): it stays, unchanged, on every
             # feature returned. (Before pyGPlates 1.1 the window at present day was partitioned, and the property's
             # other windows were lost.)
+            #
+            # The positions were counted over 'feature' (by '_partition_feature_geometries'): they index its clone
+            # because a clone iterates its properties in the same order.
             feature_without_geometry = feature.clone()
             partitioned_property_indices = set(partitioned_property_indices)
             properties_to_remove = [property for index, property in enumerate(feature_without_geometry)

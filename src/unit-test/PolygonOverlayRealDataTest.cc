@@ -135,18 +135,6 @@ namespace
 				subject.is_outside_bounding_small_circle_outside_polygon(subject_bounds);
 	}
 
-	PolygonOnSphere::non_null_ptr_to_const_type
-	create_polygon(
-			const Overlay::OutputPolygon &output)
-	{
-		std::vector<ring_type> interiors;
-		for (const Overlay::OutputRing &interior : output.interiors)
-		{
-			interiors.push_back(interior.points);
-		}
-		return PolygonOnSphere::create(output.exterior.points, interiors.begin(), interiors.end());
-	}
-
 	std::vector<ring_type>
 	rings_of(
 			const PolygonOnSphere &polygon)
@@ -372,11 +360,11 @@ namespace
 		was_cut = true;
 		for (const Overlay::OutputPolygon &output : intersection)
 		{
-			inside.push_back(create_polygon(output));
+			inside.push_back(Overlay::create_polygon(output));
 		}
 		for (const Overlay::OutputPolygon &output : difference)
 		{
-			outside.push_back(create_polygon(output));
+			outside.push_back(Overlay::create_polygon(output));
 		}
 	}
 }

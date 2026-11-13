@@ -121,11 +121,15 @@ working-directory independent, `GPLATES_UNIT_TEST_DATA_DIR`, `QTemporaryDir`, an
 ## Architecture pages
 
 `docs/design/architecture/` maps the code by *area* (a subject such as reconstruction, not a
-directory). Its `README.md` is the overview and lists the areas; each area with a page has its
+directory). Its `README.md` is the map of `src/` and lists the areas; each area with a page has its
 own directory there. **Before changing an area, read its page. A pull request that changes an
 area's structure updates its page in the same pull request.** The layer diagrams in
 `dependency-matrix.md` are generated; the layer groups they measure against are `LAYERS` in
 `cmake/pygplates_source_closure.py`, described in the README.
+
+Some designs also have an overview (`<design>-overview.md`, beside the design document it
+explains; the README lists them and says how the kinds of document are read). A pull request that
+changes a design with an overview checks the overview in the same pull request.
 
 ## The pyGPlates module boundary
 
@@ -377,6 +381,14 @@ of it:
   the code;
 - traps go into comments at the code where they bite;
 - user-visible changes go into the changelog.
+
+An explainer written for the developer while a branch is in progress is a plan document too. At
+distillation it becomes the design's overview, rewritten from the code, where the design document
+has become too detailed to learn the design from (most of it is degenerate-case handling, or a core
+idea needs worked examples); otherwise it goes the way of the plan: what lasts in it is distilled,
+and it is deleted with the plan. The developer may also ask for an overview of existing code: it is
+written from the code, and every statement in it is checked against the code, as an area page's
+are.
 
 Where the plan lives depends on the branch:
 
