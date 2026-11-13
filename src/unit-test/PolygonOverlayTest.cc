@@ -2854,6 +2854,98 @@ TEST(PolygonOverlayTest, UnionOverHemisphereThrows)
 }
 
 
+// extract_polygons, the entry point of pyGPlates' union and symmetric difference: an overlay
+// classified and extracted, as polygons (create_polygon: the exterior ring, then the interiors),
+// the same as Overlay::extract gives, point for point. Overlapping inputs with a hole each, inputs
+// apart, and one inside the other: each operation's polygons and their holes. And it throws as
+// extract does, for a union over a hemisphere, unless told not to.
+TEST(PolygonOverlayTest, ExtractPolygons)
+{
+	// The holes of each polygon, in order, of extract_polygons' output, after checking it against
+	// Overlay::extract's.
+	const auto holes = [](
+			const PolygonOnSphere &P,
+			const PolygonOnSphere &Q,
+			Overlay::Operation operation)
+	{
+		SCOPED_TRACE(operation);
+		const std::vector<PolygonOnSphere::non_null_ptr_to_const_type> polygons =
+				Overlay::extract_polygons(P, Q, operation);
+		Overlay::Overlay overlay(P, Q);
+		overlay.classify();
+		std::vector<Overlay::OutputPolygon> outputs;
+		overlay.extract(operation, outputs);
+		std::vector<unsigned int> num_holes;
+		EXPECT_EQ(polygons.size(), outputs.size());
+		for (unsigned int i = 0; i < polygons.size() && i < outputs.size(); ++i)
+		{
+			std::vector<ring_type> expected{ outputs[i].exterior.points };
+			for (const Overlay::OutputRing &interior : outputs[i].interiors)
+			{
+				expected.push_back(interior.points);
+			}
+			const std::vector<ring_type> rings = polygon_rings(*polygons[i]);
+			EXPECT_EQ(rings.size(), expected.size());
+			for (unsigned int r = 0; r < rings.size() && r < expected.size(); ++r)
+			{
+				EXPECT_TRUE(std::equal(
+						rings[r].begin(), rings[r].end(),
+						expected[r].begin(), expected[r].end(),
+						same));
+			}
+			num_holes.push_back(polygons[i]->number_of_interior_rings());
+		}
+		std::sort(num_holes.begin(), num_holes.end());
+		return num_holes;
+	};
+	typedef std::vector<unsigned int> holes_type;
+
+	const auto P = polygon(square(0.0, 0.0, 0.04, 0.04), { square(0.005, 0.005, 0.015, 0.015) });
+	{
+		SCOPED_TRACE("overlapping");
+		const auto Q = polygon(
+				square(0.02, 0.02, 0.06, 0.06),
+				{ square(0.045, 0.045, 0.055, 0.055) });
+		EXPECT_EQ(holes(*P, *Q, Overlay::INTERSECTION), (holes_type{ 0 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::DIFFERENCE), (holes_type{ 1 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::REVERSE_DIFFERENCE), (holes_type{ 1 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::UNION), (holes_type{ 2 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::SYMMETRIC_DIFFERENCE), (holes_type{ 1, 1 }));
+	}
+	{
+		SCOPED_TRACE("apart");
+		const auto Q = polygon(square(0.1, 0.0, 0.12, 0.02));
+		EXPECT_EQ(holes(*P, *Q, Overlay::INTERSECTION), holes_type());
+		EXPECT_EQ(holes(*P, *Q, Overlay::DIFFERENCE), (holes_type{ 1 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::REVERSE_DIFFERENCE), (holes_type{ 0 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::UNION), (holes_type{ 0, 1 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::SYMMETRIC_DIFFERENCE), (holes_type{ 0, 1 }));
+	}
+	{
+		SCOPED_TRACE("nested");
+		const auto Q = polygon(square(0.025, 0.025, 0.035, 0.035));
+		EXPECT_EQ(holes(*P, *Q, Overlay::INTERSECTION), (holes_type{ 0 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::DIFFERENCE), (holes_type{ 2 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::REVERSE_DIFFERENCE), holes_type());
+		EXPECT_EQ(holes(*P, *Q, Overlay::UNION), (holes_type{ 1 }));
+		EXPECT_EQ(holes(*P, *Q, Overlay::SYMMETRIC_DIFFERENCE), (holes_type{ 2 }));
+	}
+	{
+		SCOPED_TRACE("a union over a hemisphere");
+		const double radius = 80.0 * GPlatesMaths::PI / 180.0;
+		const auto A = polygon(cap(lat_lon_radians(0.1, 0.0), radius, 72));
+		const double longitude = 100.0 * GPlatesMaths::PI / 180.0;
+		const auto B = polygon(cap(lat_lon_radians(-0.1, longitude), radius, 72));
+		EXPECT_THROW(
+				Overlay::extract_polygons(*A, *B, Overlay::UNION),
+				Overlay::InconsistentOverlayException);
+		Overlay::Options options;
+		options.throw_if_inconsistent = false;
+		EXPECT_FALSE(Overlay::extract_polygons(*A, *B, Overlay::UNION, options).empty());
+	}
+}
+
+
 //
 // Self-touching inputs (section 5.2), and pairings that only a rare vertex shows.
 //

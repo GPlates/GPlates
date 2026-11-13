@@ -1425,6 +1425,32 @@ namespace GPlatesMaths
 			build_bundle(
 					const Vertex &vertex);
 		};
+
+
+		//! An output polygon as a PolygonOnSphere: its exterior ring, then its interior rings.
+		PolygonOnSphere::non_null_ptr_to_const_type
+		create_polygon(
+				const OutputPolygon &output_polygon);
+
+
+		/**
+		 * The output of one Boolean operation of two polygons, as polygons (section 5.1): an
+		 * overlay of @a subject with @a clip, classified (Overlay::classify) and extracted
+		 * (Overlay::extract), with @a options (the sliver filter, say). Empty if the output has no
+		 * area. A whole input is returned as the overlay outputs it, rings oriented with the
+		 * output on their left (partitioning's whole results, the input itself, come from
+		 * PolygonPartitioner instead).
+		 *
+		 * @throws InconsistentOverlayException as Overlay::classify and Overlay::extract do, among
+		 * them for a union or symmetric difference that would exceed a hemisphere (section 5.6),
+		 * unless Options::throw_if_inconsistent is false.
+		 */
+		std::vector<PolygonOnSphere::non_null_ptr_to_const_type>
+		extract_polygons(
+				const PolygonOnSphere &subject,
+				const PolygonOnSphere &clip,
+				Operation operation,
+				const Options &options = Options());
 	}
 }
 

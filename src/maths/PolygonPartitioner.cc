@@ -231,23 +231,6 @@ namespace
 	}
 
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-	create_polygon(
-			const Overlay::OutputPolygon &output_polygon)
-	{
-		std::vector<std::vector<GPlatesMaths::PointOnSphere>> interiors;
-		interiors.reserve(output_polygon.interiors.size());
-		for (const Overlay::OutputRing &interior : output_polygon.interiors)
-		{
-			interiors.push_back(interior.points);
-		}
-		return GPlatesMaths::PolygonOnSphere::create(
-				output_polygon.exterior.points,
-				interiors.begin(),
-				interiors.end());
-	}
-
-
 	//! An output polygon's provenance, in the order of its points (exterior, then interiors).
 	provenance_ptr_type
 	get_polygon_provenance(
@@ -415,7 +398,7 @@ namespace
 				{
 					list->push_back(
 							PolygonPartitioner::PartitionedGeometry(
-									create_polygon(output),
+									Overlay::create_polygon(output),
 									d_cascade_provenance
 											? get_polygon_provenance(output)
 											: provenance_ptr_type()));
@@ -719,14 +702,14 @@ GPlatesMaths::PolygonPartitioner::partition_polygon(
 	{
 		for (const PolygonOverlay::OutputPolygon &output : inside)
 		{
-			partitioned_polygons_inside->push_back(create_polygon(output));
+			partitioned_polygons_inside->push_back(PolygonOverlay::create_polygon(output));
 		}
 	}
 	if (partitioned_polygons_outside)
 	{
 		for (const PolygonOverlay::OutputPolygon &output : outside)
 		{
-			partitioned_polygons_outside->push_back(create_polygon(output));
+			partitioned_polygons_outside->push_back(PolygonOverlay::create_polygon(output));
 		}
 	}
 	return result;

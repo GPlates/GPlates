@@ -5997,3 +5997,42 @@ GPlatesMaths::PolygonOverlay::Overlay::ring_piece_range(
 	}
 	return std::make_pair(first, end);
 }
+
+
+GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PolygonOverlay::create_polygon(
+		const OutputPolygon &output_polygon)
+{
+	std::vector<std::vector<PointOnSphere>> interiors;
+	interiors.reserve(output_polygon.interiors.size());
+	for (const OutputRing &interior : output_polygon.interiors)
+	{
+		interiors.push_back(interior.points);
+	}
+	return PolygonOnSphere::create(
+			output_polygon.exterior.points,
+			interiors.begin(),
+			interiors.end());
+}
+
+
+std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+GPlatesMaths::PolygonOverlay::extract_polygons(
+		const PolygonOnSphere &subject,
+		const PolygonOnSphere &clip,
+		Operation operation,
+		const Options &options)
+{
+	Overlay overlay(subject, clip, options);
+	overlay.classify();
+	std::vector<OutputPolygon> outputs;
+	overlay.extract(operation, outputs);
+
+	std::vector<PolygonOnSphere::non_null_ptr_to_const_type> polygons;
+	polygons.reserve(outputs.size());
+	for (const OutputPolygon &output : outputs)
+	{
+		polygons.push_back(create_polygon(output));
+	}
+	return polygons;
+}
