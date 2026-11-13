@@ -87,6 +87,8 @@ Instructions for installing the [dependencies](#dependencies) and compiling GPla
 - `BUILD-macOS.md` (on macOS)
 - `BUILD-Windows.md` (on Windows)
 
+Developers will find a map of the source code, and the design documents for its parts, in [docs/design/architecture/README.md](docs/design/architecture/README.md).
+
 GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw.html) (also known as [open-source](https://opensource.org/docs/definition.php) software), licensed for distribution under the GNU [General Public License](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) (GPL) version 2 (see `COPYING`).
 
 #### Dependencies

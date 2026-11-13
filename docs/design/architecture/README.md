@@ -2,7 +2,7 @@
 
 GPlates (the Qt desktop application) and pyGPlates (the Boost.Python extension module) are
 built from this one source tree, selected by the CMake option `GPLATES_BUILD_GPLATES`
-(see `AGENTS.md` at the repository root for the build mechanics). This document is the overview
+(see `AGENTS.md` at the repository root for the build mechanics). This document is the map
 of `src/`: its areas, its intended layering, and the boundary between what the two products
 compile.
 
@@ -33,6 +33,27 @@ its page in the same pull request.
 A page describes the code as it is: known weaknesses are stated as facts about the current
 design, never as proposals, plans or progress. It links only to material a public reader can
 open (other pages, source files, public issues).
+
+## How to read these documents
+
+Three kinds of document describe an area, read in this order:
+
+1. **The area's page** (its `README.md`, where the area has one yet) says what the area is for and
+   how its parts fit together. Start there.
+2. **An overview** explains one design's ideas, with pictures and worked examples of the ordinary
+   case. It leaves things out on purpose. A design has one only where its reference has become too
+   detailed to learn the design from. Read it before the reference, or instead of it.
+3. **A reference** (a design document) is complete and exact: every rule, every tolerance, the
+   degenerate cases, the alternatives rejected. It is what a change to the code is checked against.
+
+The reference and the code are the authority: where an overview differs from them, the overview is
+wrong. An overview is named `<design>-overview.md` and sits beside its reference, never in a
+directory of its own, so that whoever edits the reference sees it. The overviews:
+
+- [`foundation/point-in-polygon-overview.md`](foundation/point-in-polygon-overview.md), for
+  section 3 of [`foundation/spherical-geometry.md`](foundation/spherical-geometry.md);
+- [`foundation/polygon-overlay-overview.md`](foundation/polygon-overlay-overview.md), for section 5
+  of the same page (partitioning and the Boolean operations on polygons).
 
 ## Overview
 
