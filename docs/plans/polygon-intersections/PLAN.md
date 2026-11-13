@@ -1162,8 +1162,15 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   `53bedf3a9` the page, comments and two overviews, `f1a545b5e` the overview convention, report
   `prC-distillation.md`), reviewed by Opus. The exact-hemisphere union accepted as a tie
   (developer; section 7, `b4a3b6108`). Claim check done (Fable, xHigh; `prC-claim-check.md`: 0
-  high, 1 medium, 11 low, all applied, `412c850be` and two `fixup!` commits). Next: step 10's
-  final review, a Fable agent at explicit xHigh, after the developer's pause.) PR C ends with the final Fable distillation of this directory, then archives it in the
+  high, 1 medium, 11 low, all applied, `412c850be` and two `fixup!` commits). Final review done
+  (Fable, xHigh; `prC-review-final.md`: 0 high, 6 medium, 5 low). The PR's own code is sound;
+  findings 1 to 3 and 5 predate it (self-touching inputs on the other's outline; quadratic
+  classification) and go to a follow-up PR before 1.1 (developer, 2026-11-14; 1.1 checklist and
+  roadmap, planning `172cfb1`; the review's fuzz in the planning repository's
+  `plans/polygon-intersection-tools/cpp/prC/final-review/`), recorded meanwhile in section 7
+  and the docstrings (`b5941d598`, `fixup!`s); lows 7 and 8 fixed. Next: fold the `fixup!`s,
+  reword `3ea862783`'s pointer to the plan, archive and delete the plan (step 9's last bullet),
+  then the PR when the developer asks.) PR C ends with the final Fable distillation of this directory, then archives it in the
   planning repository and deletes it here (step 9).
   After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
   overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
