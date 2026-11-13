@@ -2539,6 +2539,49 @@ class PlatePartitionerTestCase(unittest.TestCase):
             self.assertTrue(not partitioned and len(unpartitioned) == 1)
             self.assertTrue(unpartitioned[0].get_name() == 'no geometry')
 
+    def test_partition_features_properties_to_copy(self):
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        feature = pygplates.Feature()
+        feature.set_geometry(pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)]))
+
+        # The properties are copied to every partitioned feature, so they can't be an iterator (it would copy them to
+        # the first feature only).
+        self.assertRaises(TypeError, plate_partitioner.partition_features,
+                          [feature], iter([pygplates.PartitionProperty.reconstruction_plate_id]))
+        self.assertRaises(TypeError, pygplates.partition_into_plates,
+                          self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)])), pygplates.RotationModel([]),
+                          [feature],
+                          properties_to_copy=(p for p in [pygplates.PartitionProperty.reconstruction_plate_id]))
+        partitioned = plate_partitioner.partition_features([feature], (pygplates.PartitionProperty.reconstruction_plate_id,))
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+
+        # A property copied by name is copied whole: here a time-dependent subduction polarity with no value at present
+        # day (it raised an error, and a time-dependent value was copied only at present day).
+        polarity = pygplates.PropertyName.create_gpml('subductionPolarity')
+        partitioning_features = self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)]))
+        for plate_id, partitioning_feature in enumerate(partitioning_features, start=1):
+            partitioning_feature.add(
+                    polarity,
+                    pygplates.GpmlPiecewiseAggregation([
+                            pygplates.GpmlTimeWindow(
+                                    pygplates.Enumeration(pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration'),
+                                                          'Left' if plate_id == 1 else 'Right'),
+                                    50, 10)]),
+                    pygplates.VerifyInformationModel.no)
+        feature = pygplates.Feature(pygplates.FeatureType.gpml_subduction_zone)
+        feature.set_geometry(pygplates.PolylineOnSphere([(0, -10), (0, 10)]))
+        partitioned = pygplates.PlatePartitioner(partitioning_features, pygplates.RotationModel([])).partition_features(
+                [feature], [pygplates.PartitionProperty.reconstruction_plate_id, polarity])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            self.assertTrue(partitioned_feature.get_value(polarity) is None)
+            self.assertTrue(partitioned_feature.get_value(polarity, 30).get_content() ==
+                            ('Left' if partitioned_feature.get_reconstruction_plate_id() == 1 else 'Right'))
+
     def test_partition_sliver_width_threshold(self):
         # A polygon reaching 5e-6 radians (about 32 metres) into plate 1 from plate 2: the sliver it leaves in
         # plate 1 is dropped by default (narrower than about 90 metres), so the polygon is whole in plate 2; a

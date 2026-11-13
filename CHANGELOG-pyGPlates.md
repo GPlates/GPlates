@@ -188,6 +188,8 @@ Changes since 1.0.0:
   * `NetRotation.create_sample_from_finite_rotation()`, `convert_finite_rotation_to_rotation_rate_vector()` and `convert_rotation_rate_vector_to_finite_rotation()` raise `ValueError` for a `time_interval` that is zero, negative, infinite or NaN. Previously zero, infinity or NaN gave a sample with an area but no rotation (which halved a summed net rotation), a negative interval reversed the rotation, and converting with zero raised `PreconditionViolationError`.
   * `Strain()` raises `ValueError` for a deformation gradient whose determinant (the ratio of deformed to original area) is not positive. The docs of `Strain.accumulate()`, `get_dilatation()` and `get_principal_strain()` say what happens when accumulating with too large a strain rate and time increment gives such a strain (previously the principal strains were `(0, 0, 0)` and the dilatation disagreed with its documented formula, without explanation).
   * Writing a GPML file no longer prints "Popping namespace stack." (a leftover debug message) for each element that declares a namespace.
+  * Fixed `PlatePartitioner.partition_features()` and `partition_into_plates()` copying a property named in `properties_to_copy` as its value at present day: the whole property is now copied, so a time-dependent one keeps its other times. Previously one with no value at present day raised `AttributeError`.
+  * `PlatePartitioner.partition_features()` and `partition_into_plates()` raise `TypeError` for a `properties_to_copy` that is an iterator (eg, a generator), which copied the properties to the first partitioned feature only.
 
 pyGPlates 1.0.0
 ===============

@@ -10296,6 +10296,7 @@ class PlatePartitioner:
         :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features*)
         :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
         :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
+        :raises TypeError: if *properties_to_copy* is an iterator (rather than a sequence such as a list)
 
         The features in *features* are tested for overlap/intersection with the partitioning plates using the partition method
         specified by *partition_method*. With *PartitionMethod.split_into_plates*, a geometry's scalar coverage is carried to
@@ -10345,7 +10346,7 @@ class PlatePartitioner:
 
         *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
 
-        *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
+        *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it). A property is copied whole, including a time-dependent value (such as a :class:`GpmlPiecewiseAggregation`).
 
         .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
 
@@ -18567,6 +18568,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     :returns: the partitioned and unpartitioned features, in the format specified by *partition_return*         (see :class:`PartitionReturn`)         (**note:** new features are always returned, never the originals passed in via *features_to_partition*)
     :rtype: list[Feature], or tuple[list[Feature], list[Feature]], or         tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]
     :raises PartitionError: if cutting a feature's geometry by a partitioning plate finds no consistent result
+    :raises TypeError: if *properties_to_copy* is an iterator (rather than a sequence such as a list)
 
     The features in *features_to_partition* are tested for overlap/intersection with the partitioning plates using the partition method
     specified by *partition_method*. Properties are copied from the partitioning plate features to the
@@ -18627,7 +18629,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
 
     *properties_to_copy* specifies the properties to copy from the partitioning features to the features that are being partitioned.
 
-    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it).
+    *properties_to_copy* is a sequence whose entries are any of the :class:`PartitionProperty` values, or a :class:`PropertyName` (any property of the partitioning feature with that name is copied to the partitioned feature, provided the partitioned feature's :class:`feature type<FeatureType>` supports it). A property is copied whole, including a time-dependent value (such as a :class:`GpmlPiecewiseAggregation`).
 
     .. note:: If a property cannot copied into a feature (eg, because the property is not supported the feature's type) then that copy is silently ignored.
 
