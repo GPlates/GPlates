@@ -1160,10 +1160,10 @@ Areas: foundation, plate partitioning (app-logic `GeometryCookieCutter`), python
   (steps 0 to 8 done, 2026-11-13: the four methods are `26351dba6`; Linux, Ubuntu 22.04 at
   `746d26882`: pyGPlates 7 of 7, GPlates 218 of 218. Step 9's distillation done (Fable, xHigh;
   `53bedf3a9` the page, comments and two overviews, `f1a545b5e` the overview convention, report
-  `prC-distillation.md`), reviewed by Opus. Next: step 9's claim check, then step 10's final
-  review, each a Fable agent at explicit xHigh, pausing for the developer between them. Open for
-  the developer: the exact-hemisphere union, now documented in section 5.2 as returned or refused
-  by the inputs' order and directions.) PR C ends with the final Fable distillation of this directory, then archives it in the
+  `prC-distillation.md`), reviewed by Opus. The exact-hemisphere union accepted as a tie
+  (developer; section 7, `b4a3b6108`). Claim check done (Fable, xHigh; `prC-claim-check.md`: 0
+  high, 1 medium, 11 low, all applied, `412c850be` and two `fixup!` commits). Next: step 10's
+  final review, a Fable agent at explicit xHigh, after the developer's pause.) PR C ends with the final Fable distillation of this directory, then archives it in the
   planning repository and deletes it here (step 9).
   After PR C: the `partition_features` rework (its own PR; it should also make pyGPlates' most
   overlapping plate match Assign Plate IDs, review 9's 1.2), then `DateLineWrapper` onto the
