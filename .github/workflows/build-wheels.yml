@@ -228,11 +228,14 @@ jobs:
           # The macOS runners are pinned to the oldest non-deprecated image per architecture
           # (macos-latest is much newer) - not that the runner version matters much, since the
           # wheels target the macOS 11 of MACOSX_DEPLOYMENT_TARGET in pyproject.toml.
+          # GitHub retires an image after a few brownouts, and a job pinned to a retired image is
+          # rejected, not queued ("The configuration 'macos-14-arm64-us-default' is not supported"
+          # after macos-14 was retired on 2026-11-02), so move a pin on when its image is deprecated.
           - id: macos-x86_64
             os: macos-15-intel
             deps-path: ~/pygplates-wheel-deps
           - id: macos-arm64
-            os: macos-14
+            os: macos-15
             deps-path: ~/pygplates-wheel-deps
           # Visual Studio 2022 (windows-latest has moved on to VS 2026, which nothing here has
           # been built against). The deps path is the 'C:/' form: git-bash and actions/cache
