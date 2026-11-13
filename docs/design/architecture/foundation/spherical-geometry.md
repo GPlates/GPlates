@@ -2814,6 +2814,31 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   supercontinent-era model could cross the limit.
 - **An output of exactly a hemisphere** (a union of two quarter spheres, say) is returned or refused
   by the inputs' order and directions (section 5.2, the hemisphere check); accepted as a tie.
+- **An input that touches itself on the other's outline**, above the thickness scale (a hole's tip
+  on its own exterior, valid under OGC rules, at a point that lies on the other input's outline).
+  Every point is still read right by parity, which is why the oracle and the hunt (whose
+  self-touching generators work at the thickness scale) never saw it, but the rings can be wrong:
+  - The one-passage rule's linking order: the order built for a vertex where one input passes once
+    can reverse rays within a half, so that two such vertices leave two crossing rings in one
+    polygon, with a `get_area()` near zero for an intersection that has area (the classes are
+    right; only the pairing uses the order). Making `once` choose, like the bundle rule, the built
+    order nearest the measured one fixes the cases found, but changes the prototype comparison.
+  - A self-touch point inside the other input's edge is two overlay vertices, not one, since the
+    records name different vertices: rings through it are not cut and coincident pieces do not
+    pair, so a union can return one ring through the point twice, with the wrong area, and the
+    answer depends on rounding.
+  - Two inputs that each have such a touch at different points of a shared edge get self-touch
+    cuts that interleave and do not pair, and the overlay throws `InconsistentOverlayException`.
+  Found by a fuzz of small grid polygons against an independent library (2026-11-14), affecting
+  partitioning as well as the Boolean methods; to be fixed before pyGPlates 1.1, with a generator
+  of such inputs for the hunt.
+- **Classification is quadratic in the length of a shared edge.** `deduce_to_fixed_point` sweeps
+  every vertex until a sweep changes nothing, and along a common chain the number of sweeps grows
+  with its length: two polygons sharing 10,000 vertices take about 8 seconds, 20,000 about 33. A
+  work list of the vertices at the other ends of newly classified pieces, or classifying a whole
+  common chain once one piece has a class, would make it linear. The grouping is likewise quadratic
+  in the number of output rings (every pair is tested), which a union with thousands of holes can
+  reach (5,000 holes, about 2 seconds); a bounding-circle filter would do.
 - **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
   edge where an input folds back on itself along all of it, or a short one (its far end within the
   thickness of the arc beside it), the two differences' rings are left sharing the edge, unless
@@ -2883,7 +2908,8 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   leaves unjoined, section 5.2); what those leave is the band's noise, such as a sliver under half a
   thickness wide wound backwards on a ring. (The cut looks only between two vertices of one unkept
   chain: a ring twisted where an arc passes a vertex of its own input with no common piece between
-  them is not looked for, and no valid input of the hunt gives one wider than a thickness.) After
+  them is not looked for; no valid input of the hunt gives one wider than a thickness, but the hunt
+  has no input touching itself above that scale, see *An input that touches itself* above.) After
   it every output ring would be simple, and so oriented with the output on its left all round, which an output ring that crosses itself where an
   input ring does is not today (section 5.2), in partitioning as in the Boolean methods.
   A segment must never be tested against itself: its start coincides with its own start, which is

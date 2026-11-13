@@ -338,8 +338,9 @@ most of the reference, is about that. In the order the reference takes them, all
   edge, which the intersection of `P` with `Q` never reports.
 - **The rotational order, the one-passage rule and bundles.** Where a polygon passes twice through
   one vertex, the order of the pieces round the vertex matters, and near a shared edge that order
-  can be noise. Where one polygon passes once the order is not needed at all (*the one-passage
-  rule*); where both pass twice, the pieces whose direction is uncertain are tried in every order
+  can be noise. Where one polygon passes once its classes need no order (*the one-passage rule*),
+  though the linking still uses one, which is not yet right where the polygon touches itself
+  there ([section 7](spherical-geometry.md#7-deferred-work)); where both pass twice, the pieces whose direction is uncertain are tried in every order
   their uncertainty allows (*the bundle rule*).
 - **Chains with no end.** Two rings that coincide all the way round (a polygon partitioned by
   itself) have common pieces and nothing else, so section 4's rule has no end to start from; one
