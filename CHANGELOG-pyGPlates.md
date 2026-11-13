@@ -190,6 +190,7 @@ Changes since 1.0.0:
   * Writing a GPML file no longer prints "Popping namespace stack." (a leftover debug message) for each element that declares a namespace.
   * Fixed `PlatePartitioner.partition_features()` and `partition_into_plates()` copying a property named in `properties_to_copy` as its value at present day: the whole property is now copied, so a time-dependent one keeps its other times. Previously one with no value at present day raised `AttributeError`.
   * `PlatePartitioner.partition_features()` and `partition_into_plates()` raise `TypeError` for a `properties_to_copy` that is an iterator (eg, a generator), which copied the properties to the first partitioned feature only.
+  * Fixed `PlatePartitioner.partition_features()` and `partition_into_plates()` (with `PartitionMethod.split_into_plates`) raising `InformationModelError` for a feature holding a geometry property that its feature type doesn't allow (eg, one created with `VerifyInformationModel.no`): its pieces are set under the same property name.
 
 pyGPlates 1.0.0
 ===============

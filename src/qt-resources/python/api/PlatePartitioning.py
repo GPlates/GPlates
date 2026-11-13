@@ -51,13 +51,17 @@ def _plate_partitioning_set_geometry(feature, geometries, geometry_property_name
         raise AssertionError('A partitioned coverage has {0} scalars for a geometry of {1} points.'.format(
                 num_scalars, len(geometry.get_points())))
 
+    # Set without checking the information model: the feature already held this property (with a geometry of this
+    # type), whether or not its feature type allows it (eg, if it was created without checking), and
+    # the caller sets one coverage per feature, so there is no multiplicity to check either.
     def set_geometries():
         if any(isinstance(geometry, tuple) and is_exterior_ring_only(geometry) for geometry in geometries):
-            feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name)
+            feature.set_geometry([geometry for geometry, scalars in geometries], geometry_property_name,
+                                 verify_information_model=VerifyInformationModel.no)
             for geometry, scalars in geometries:
                 feature.add(range_property_name, GmlDataBlock(scalars), VerifyInformationModel.no)
         else:
-            feature.set_geometry(geometries, geometry_property_name)
+            feature.set_geometry(geometries, geometry_property_name, verify_information_model=VerifyInformationModel.no)
 
     _plate_partitioning_set_keeping_unpartitioned(
             feature, set_geometries,
@@ -92,18 +96,26 @@ def _plate_partitioning_set_geometries(feature_without_geometry, geometries_grou
         # If we fail to set geometry(s) it could be that there are multiple geometries and
         # that multiple geometries are not allowed for the property name (according to information model).
         # If so then try again by cloning one feature per extra geometry.
+        # Or it could be that the feature's type doesn't allow the property at all (eg, a feature created without
+        # checking the information model), even though the feature already held it: then the pieces are set
+        # without checking (there is then no multiplicity to keep to).
         # ('set_geometry()' without coverages also replaces every property of the range name.)
-        def set_geometry(feature, geometry_or_geometries):
+        def set_geometry(feature, geometry_or_geometries, verify_information_model=VerifyInformationModel.yes):
             _plate_partitioning_set_keeping_unpartitioned(
                     feature,
-                    lambda: feature.set_geometry(geometry_or_geometries, geometry_property_name),
+                    lambda: feature.set_geometry(geometry_or_geometries, geometry_property_name,
+                                                 verify_information_model=verify_information_model),
                     [name for name in (geometry_property_name, range_property_name) if name is not None])
         try:
             set_geometry(feature_for_geometries, geometries)
         except InformationModelError:
-            set_geometry(feature_for_geometries, geometries[0])
-            for geometry_index in range(1, len(geometries)):
-                set_geometry(new_feature(), geometries[geometry_index])
+            try:
+                set_geometry(feature_for_geometries, geometries[0])
+            except InformationModelError:
+                set_geometry(feature_for_geometries, geometries, VerifyInformationModel.no)
+            else:
+                for geometry_index in range(1, len(geometries)):
+                    set_geometry(new_feature(), geometries[geometry_index])
 
     # Return sequence of features.
     return features

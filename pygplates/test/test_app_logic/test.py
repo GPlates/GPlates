@@ -2539,6 +2539,37 @@ class PlatePartitionerTestCase(unittest.TestCase):
             self.assertTrue(not partitioned and len(unpartitioned) == 1)
             self.assertTrue(unpartitioned[0].get_name() == 'no geometry')
 
+    def test_partition_features_property_not_allowed_by_feature_type(self):
+        # A feature can hold a geometry property that its type doesn't allow (if it was created, or read, without
+        # checking the information model). Its pieces are set without checking (InformationModelError was raised).
+        plate_partitioner = pygplates.PlatePartitioner(
+                self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
+                                    (2, [(-20, -20), (-20, 0), (20, 0), (20, -20)])),
+                pygplates.RotationModel([]))
+        polygon = pygplates.PolygonOnSphere([(-5, -10), (-5, 10), (5, 10), (5, -10)])
+        scalar_type = pygplates.ScalarType.create_gpml('TestScalar')
+        for geometry in (polygon, (polygon, {scalar_type: [1, 2, 3, 4]})):
+            feature = pygplates.Feature(pygplates.FeatureType.gpml_coastline)
+            feature.set_geometry(geometry, pygplates.PropertyName.gpml_outline_of,
+                                 verify_information_model=pygplates.VerifyInformationModel.no)
+            self.assertRaises(pygplates.InformationModelError, pygplates.Feature(pygplates.FeatureType.gpml_coastline).set_geometry,
+                              geometry, pygplates.PropertyName.gpml_outline_of)
+            partitioned = plate_partitioner.partition_features([feature])
+            self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+            for partitioned_feature in partitioned:
+                self.assertTrue(isinstance(partitioned_feature.get_geometry(pygplates.PropertyName.gpml_outline_of),
+                                           pygplates.PolygonOnSphere))
+
+        # A multipoint in a property that can occur only once in a feature (allowed by its type): partitioned into one
+        # multipoint per plate, each in a feature of its own (as before).
+        multi_position = pygplates.PropertyName.create_gpml('multiPosition')
+        feature = pygplates.Feature(pygplates.FeatureType.gpml_hot_spot)
+        feature.set_geometry(pygplates.MultiPointOnSphere([(0, 5), (0, 10), (0, -5), (0, -10)]), multi_position)
+        partitioned = plate_partitioner.partition_features([feature])
+        self.assertTrue(sorted(f.get_reconstruction_plate_id() for f in partitioned) == [1, 2])
+        for partitioned_feature in partitioned:
+            self.assertTrue(len(partitioned_feature.get_geometries(multi_position)) == 1)
+
     def test_partition_features_properties_to_copy(self):
         plate_partitioner = pygplates.PlatePartitioner(
                 self._static_plates((1, [(-20, 0), (-20, 40), (20, 40), (20, 0)]),
