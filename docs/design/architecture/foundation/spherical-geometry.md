@@ -41,6 +41,14 @@ is the polygon's boundary centroid (`R = -C` for an ordinary polygon, section 3.
 second reference point (section 3.8), `s` is the point-on-outline threshold, and "epsilon" is
 `GPlatesMaths::EPSILON`.
 
+This page is the reference: complete and exact, and most of it is the handling of degenerate
+cases. Two overviews give the ideas first, each for one section: the
+[point-in-polygon overview](point-in-polygon-overview.md) for section 3 and the
+[polygon overlay overview](polygon-overlay-overview.md) for section 5. Comments in the code cite
+this page's sections by number (`spherical-geometry.md section 5.2`, or `section 5.2` alone; about
+180 of them cite section 5), so no section or subsection is renumbered: new material goes into the
+section it belongs to, or at the end of one.
+
 ## 1. Tolerances
 
 The one table of every tolerance in this code. "Exact" means a plain `double` comparison (through
@@ -170,6 +178,10 @@ not depend on whether closest positions were requested: inside an arc's lune the
 from the sine whether or not the closest point is calculated.
 
 ## 3. Point-in-polygon
+
+The [point-in-polygon overview](point-in-polygon-overview.md) explains the ideas of this section
+with pictures and worked examples; read it first for the concepts, and this section for what the
+code does exactly.
 
 ### 3.1 Definition
 
@@ -1034,6 +1046,11 @@ section `P` is the geometry being cut (the *subject*: a polygon or a polyline), 
 cutting it (the *clip*, or partitioning polygon), and `h` the thickness of `GeometryIntersect`,
 which is `s` (section 4.4): about `1.414e-6` radians, 9 metres on the Earth.
 
+The [polygon overlay overview](polygon-overlay-overview.md) explains the overlay's generic case
+with pictures and worked examples (pieces, classes, the keep table, pairing, the split and the
+grouping); read it first for the concepts. This section is what the code does exactly, and most of
+it is what the overview leaves out: the cases where several records lie at or near one point.
+
 ### 5.1 The layers
 
 - **`GeometryCookieCutter`** (`src/app-logic/GeometryCookieCutter.{h,cc}`) holds one
@@ -1074,11 +1091,15 @@ polylines, takes `GeometryIntersect::intersect`'s first record directly.
 **The Boolean methods.** pyGPlates' `PolygonOnSphere.intersection()`, `union()`, `difference()`
 and `symmetric_difference()` (`src/api/PyGeometriesOnSphere.cc`) each take another polygon and the
 sliver width of section 5.5 (`sliver_width_threshold_radians`, as `partition()`'s), and return a
-list of polygons. `intersection` and `difference` are partitioning's two outputs: they cut this
+list of polygons, empty when the result has no area. They are named as Python's `set` methods and
+Shapely's are. There are no `&`, `|`, `-` and `^` operators: a result is a list of polygons and not
+a polygon (there is no multi-polygon geometry), so an operator's result could not be an operand.
+`intersection` and `difference` are partitioning's two outputs: they cut this
 polygon with a `PolygonPartitioner` of the other (`polygon_on_sphere_intersection`,
 `polygon_on_sphere_difference`, through `partition_polygon`), so they return exactly what
 `other.partition(polygon)` puts inside and outside, under the result contract below: this polygon
-itself, the input object, where it is whole. `union` and `symmetric_difference` call the overlay
+itself where it is whole (the same `PolygonOnSphere`; in Python a new wrapper of it, equal to the
+input and not identical to it). `union` and `symmetric_difference` call the overlay
 directly, through `PolygonOverlay::extract_polygons` (one `Overlay`, classified and extracted, its
 output polygons made `PolygonOnSphere`s by `PolygonOverlay::create_polygon`, which the partitioner
 uses too); there is no bounding-circle shortcut before it, and a whole input comes back as the
@@ -1099,10 +1120,26 @@ lie along the boundary it shares with plate `N`: the common-chain case of sectio
 cascade's normal case. A network's rigid blocks are holes of the network's partitioning polygon, so
 the network never claims a block's area, in whichever order the sort leaves them.
 
+Feeding rounded pieces back in is safe because of the thickness. Rounding an intersection point can
+in general put it on the wrong side of the edge it was computed on, and so make a crossing that is
+not there when the piece meets that edge again (Hobby 1999, on segment intersection with
+finite-precision output). Here a computed crossing lies within rounding of both its planes (at most
+about `2.4e-11` radians in a dense shared edge, section 5.2), far inside the thick plane, so where
+the piece meets that edge again (the next plate's copy of a shared boundary) the vertex is a touch
+on it, never a crossing beside it. Nor does anything accumulate from step to step: each cut is an
+overlay of its own, which sees the previous output's vertices as ordinary vertices. Measured in the
+prototype over 157 cascade steps with shared edges jittered by up to `2 h`, neither the identity
+groups nor the widest cluster of records grew from the first step to the fourth, and no step
+failed.
+
 **The result contract** (`PolygonPartitioner::Result`). `GEOMETRY_INSIDE` means the difference (`P`
 less `Q`) is empty, `GEOMETRY_OUTSIDE` that the intersection is, and `GEOMETRY_INTERSECTING` that
 both have a ring, each judged after the overlay's clean-up and the sliver filter
-(`overlay_polygon`). So a geometry that only touches the partitioning polygon, from either side, or
+(`overlay_polygon`). The classes alone do not give it (`Overlay::classify`'s own result can be
+intersecting where an output comes out empty): a kept piece can bound nothing once cleaned up, even
+one with a vertex test of its own, such as a tip just over the thickness long that leaves an overlay
+vertex and comes back to it, a ring of two positions. So a geometry that only touches the
+partitioning polygon, from either side, or
 runs along its outline, or is identical to it, comes back whole, as the input object itself, with
 `INSIDE` or `OUTSIDE`; pieces are made only when both sides have one. A multi-point wholly on one
 side is returned itself too. A polyline is `INSIDE` when no run is outside and some run is inside,
@@ -1180,7 +1217,9 @@ prototype, grouping by identity without this rule failed every case.
 
 **Common pairs** (`find_common_pairs`). A subject single arc and a clip single arc between the same
 two distinct vertices run together within the thickness (about `h / cos(L / 2)` for arcs of
-length `L`): an original vertex of either inside the
+length `L`, which is `1.4 h` at 90 degrees and has no bound as `L` nears a half circle, where two
+arcs between the same nearly antipodal end points can lie on quite different great circles; nothing
+tests the length, and real segments are far shorter): an original vertex of either inside the
 stretch would itself be a record. They are a *common pair*, one piece of each, and leave each vertex
 as one ray. Any other mix between one pair of vertices (two subject arcs and one clip arc, say)
 pairs nothing and is counted (`Diagnostics::common_ambiguous`). A run of common pairs through
@@ -1289,11 +1328,16 @@ gives `0`.
      One unknown term follows; all known and false is a check failure. For the linking an order is
      built from the classes, `a`, the rays inside in their measured relative order, `b`, the rays
      outside, or its mirror if the walk finds no placement on the first (a safety net: when the
-     relation holds the first has one). Before this rule the
+     relation holds the first has one). The rays' relative order within a half is the other
+     input's own arrangement, which decides only which kept rays pair with which (the ring
+     structure), never the point set. The rule deduces strictly less than the sector walk would
+     on some order, so it cannot make a consistent vertex fail. Before this rule the
      sector walk ran on the measured order at such vertices, where the order is exact but carries
      no information, and failed 19 of 2393 random `chain` cases in three ways (a crossing counted at
      both ends of a band arc, a long ray inside a `2 h` common ray's direction gap, a corner cut off
-     by the spike rule).
+     by the spike rule). Valid inputs reach them: the second was reproduced in the prototype with a
+     polygon that does not cross itself, and each needs only an input within `h` of itself at the
+     vertex (a neck narrower than `h`, or a hole within `h` of its exterior).
    - **Otherwise the sector walk**, on the measured order, or on every admissible order under the
      bundle rule below. Each classified ray constrains the two sectors beside it: a subject ray of
      class `c` fixes `in Q = c`, a clip ray fixes `in P`, a common ray fixes `in P xor in Q`
@@ -1322,7 +1366,15 @@ gives `0`.
    piece order, let a `1.2 h` band piece in a neck of `Q` fix, through a four-end vertex, a piece
    `10^4 h` long, wrongly, in 9 of 300 random cases. With the LL rule as well, the midpoint tests
    that remain are band pieces (1 in 300 cases of one generator, 24 in another, up to 250 in dense
-   shared edges), and inverting every one of them changed only slivers under `0.5 h` wide.
+   shared edges), and inverting every one of them changed only slivers under `0.5 h` wide, in every
+   generator but the dense shared edges. There, inverting them all gave a wrong output in 10 of
+   1,155 cases of the prototype, with repair at its round cap. Rounding cannot do that: of the 69
+   midpoints inverted in the broken cases examined, 64 lay `0.05 h` to `0.8 h` from the other
+   outline, where an exact test cannot flip, and inverting only the 5 within rounding of it
+   (about `3e-15` radians, arcs running along the other outline) broke nothing. So a midpoint
+   test is a coin toss only for an arc within rounding of the other outline; elsewhere in the band
+   it is exact for its own point, though the topology the records have snapped can still disagree
+   with it (the inconsistent cut of section 5.6).
 4. **Anchorless chains** (`get_common_chain`, `classify_anchorless_chain`). A common pair still
    unclassified belongs to a chain no non-common piece reaches: a whole ring of `P` coinciding with
    a whole ring of `Q` within the thickness, as when static polygons are partitioned by themselves,
@@ -1342,10 +1394,15 @@ gives `0`.
    polygon partitioned by a near-copy of itself came back wholly outside it.) An arc whose clip
    partner has a direction is preferred, so that both projections are defined; failing that (every
    such partner a segment `GreatCircleArc` calls zero length), the clip's parity is counted to the
-   subject's projection instead. If `R` is within
+   subject's projection instead. `X` is the midpoint of the *subject* piece's stops, and the clip
+   piece's stops at the same two vertices can lie up to the vertices' cluster width along the chain
+   from them, so `X`'s projection can still fall past the end of a clip segment no longer than
+   that width; no such input has been built. If `R` is within
    about `1e-6` radians of the great circle (where the arc could meet it twice) or of `X_i` or its
    antipode, the input's second reference point `R2` with its cached status is used instead
-   (section 3.8). If the two reference points are on opposite sides of their inputs' great circles
+   (section 3.8); `R2` is not tested against the great circle in turn (it is 60 to 120 degrees
+   from `R`, so both lying on one great circle of the chain is unlikely, not excluded), and no
+   committed test was built to reach the fallback. If the two reference points are on opposite sides of their inputs' great circles
    (the two within the thickness of each other, their axes aligned by sign), one membership is
    flipped, since crossing the chain flips both; the chain is same-side iff the memberships on one
    side are equal. Deduction then carries the class along the chain. Nothing is offset beyond the
@@ -1382,7 +1439,10 @@ inversions (Kendall distance) against the measured order, ties by enumeration or
 measured order first (it is swapped with the first enumerated order; gaps in anchored order,
 floating rays in certainty order, permutations lexicographic, so that the C++ and the prototype
 agree). More than six floating rays (`BUNDLE_CAP`) keeps the measured order alone and counts the
-vertex; with every ray floating there is no frame, and the measured order is kept. The criterion is
+vertex; with every ray floating there is no frame, and the measured order is kept. The cap bounds
+the floating rays only: `m` of them among `k` anchored rays are enumerated as `(k + m - 1)! / (k -
+1)!` orders (5,040 for six among two) before the admissibility test, and the sector walk then runs
+on each admissible one. The criterion is
 geometric but threshold-free: the cone is the bound on how far the arc's direction seen from the
 output position can differ from its tangent, and `h` enters only through the data. Either side of
 separability nothing jumps: a barely separable pair keeps its measured order; barely inseparable,
@@ -1394,7 +1454,12 @@ long single arc's order is real geometry, and a short arc with an original verte
 one neighbouring vertex bundle (misses the misplaced common ray); bundle everything and solve by
 parity (two frames with no anchor); and deducing from the tie-break's order alone, which left two
 cases failing, since committing early to what a noisy order implies is what made those vertices
-inconsistent. The rule is reached in about one vertex in 3,500 random cases.
+inconsistent. The rule is reached in about one vertex in 3,500 random cases. What the cones do not
+cover is the gap between a common ray's two tangents (the subject's and the clip's, tens of degrees
+apart for a common arc a few `h` long, while the ray's cone is `0` when both arcs start at the
+output position): a third ray inside that gap is ordered by the subject's tangent alone. Where one
+input passes once the order is not consulted (the one-passage rule, whose second failure this was);
+where both pass more than once the exposure remains, and no case of it has been seen.
 
 **Checks and repair** (`check_and_repair`, `repair`). Two properties hold by construction and are
 not checked on their own: every input has an even number of ends at every vertex (nothing counts
@@ -1409,7 +1474,10 @@ or anchorless, repaired, then vertex test) and then shortest first, and the firs
 the vertex consistent is flipped (a common piece's flip flips its partner); at a chain's end one
 more candidate flips every piece of the chain at once, ranked with the sector classes and tried
 before any single piece of that rank, since flipping a chain piece by piece fails the chain's
-interior vertices on the next round and runs into the cap. Every repair is counted (`repairs`,
+interior vertices on the next round and runs into the cap. The whole-chain candidate is offered
+only at a vertex with a ray that is not common (the chain's end); a failure that first shows at a
+vertex inside a chain has single flips alone, each moving it one vertex along. Every repair is
+counted (`repairs`,
 `whole_chain_repairs`, and `trusted_flipped` when a vertex-tested class went). No normal input needs
 repair: the prototype's runs of the design needed none, and the prototype
 comparison fails a case on any repair of generated data. A vertex still failing after repair, or a
@@ -1434,7 +1502,8 @@ of kept ends, is a pairing failure (impossible with consistent classes, and coun
 two kept ends pair, with no geometry; at a four-end vertex of the free rule, at a crossing the
 output sector `(mP, mQ)` is bounded by the subject piece whose class is `mQ` and the clip piece
 whose class is `mP`, and at a bounce `P`'s two ends pair and `Q`'s two pair (the *split pairing*,
-so that the two rings touch at the vertex and no cut is needed there); where only one input has ends
+so that the two rings touch at the vertex and no cut is needed there, unless one ring comes back to
+the vertex by way of other vertices, which the split below then cuts); where only one input has ends
 left (the other's were a loop or a spike) each kept end pairs with the end, at this vertex, of its
 ring's next non-internal piece (a neighbour that is elsewhere or not kept is a pairing failure), the
 ring passing straight through (*ring continuity*, which no
@@ -1444,7 +1513,11 @@ the walk knows the memberships only up to swapping both, so consecutive kept ray
 used, in either phase, and the split below decomposes the result; otherwise the sector walk,
 without the free rule, on the order used: the output membership of each sector is `f`, a ray is
 kept iff the output differs across it (counted as `keep_mismatches` if that disagrees with the
-keep-rule), and consecutive kept rays pair across the output sectors. The walk then starts at any
+keep-rule), and consecutive kept rays pair across the output sectors. Of the free rule's two cases
+only the bounce is reached with four kept ends today: a crossing keeps exactly two ends in the
+intersection, the union and both differences (each keeps one class of each input's pieces), which
+pair as two kept ends, and the symmetric difference, which keeps all four, is no longer paired by
+its own row (below). The walk then starts at any
 unused paired ray, appends its vertex's position and the piece's interior stop positions (reversed
 when leaving from the piece's end), arrives at the piece's other ray, takes its partner, and so on
 until back at the start. A kept closed piece (a ring with no record) is a ring on its own. Along a
@@ -1485,7 +1558,11 @@ same 25 if every wall is joined across).
 Joined but for the spikes, the two differences' rings repeat a vertex only where the two outputs
 touch, and touches can be cut in any order: the hunt then has no crossing group from such inputs in
 any operation, the inputs either way round, and the same with the split's cuts made in the other
-order.
+order. The cost is two walks, two splits, the join and a third split: measured on three sets of
+generated cases, the symmetric difference's rings take 2 to 2.8 times as long as its own pairs did,
+and its whole `extract`, with the grouping, 10% to 26% longer. (The same measurement put the cost to
+partitioning of keeping the walked rings for the join, and of the test for a ring twisted at a
+chain below, at 2% to 5% of its `extract`.)
 
 The spike rule leaves more walls than it must, since leaving one is always right (the two
 differences' rings, sharing the wall, read as the output does) and joining one is right only if it
@@ -1647,7 +1724,10 @@ hemisphere, and not every one that does reads as a complement (one whose rings e
 output on their smaller side, a parity output of several rings, reads right); an intersection or a
 difference cannot, since each of its rings' inside lies within one input ring's smaller side. It
 throws for every operation (section 5.6); no point clear of both outlines (never seen) is counted
-(`hemisphere_check_skipped`).
+(`hemisphere_check_skipped`). The check reads the rings as walked, before they are oriented, so an
+output ring within the tie tolerance of halving the sphere (section 3.1, where the side to a ring's
+left is its interior) is read by a direction that is arbitrary: the union of two quarter spheres,
+exactly a hemisphere, is returned or refused according to the inputs' order and directions.
 
 A whole answer (`classify()` finding the subject wholly inside or outside, which the partitioner
 returns without extracting) has the same check at one point (`check_whole_result`): the first
@@ -1780,7 +1860,11 @@ entry arrives at the previous entry's far stop, cyclically), so that each half o
 its own; filled before the split, a split ring's vertex lost its subject location or took the other
 passage's in 611 of 4,192 generated cases. A polyline's points are its stops', and a record's clip
 location is the stop's own record's, not its identity vertex's, which along a dense run of touches
-can name a clip vertex up to `12 h` away.
+can name a clip vertex up to `12 h` away. An overlay vertex holding several subject vertices (a
+chained group, or a vertex of the exterior and one of a hole joined through a clip vertex, section
+5.2) is output at one of them, the first its records name (`Vertex::subject_vertex`), whichever
+ring walks through it: the others are not output, and a coverage's values at them are not carried
+(they lie within the group's extent).
 
 **Composition through the cascade.** `GeometryCookieCutter::partition_geometry(...,
 want_provenance)` makes every piece a `PartitionedGeometry` carrying its table, and the next
@@ -1829,7 +1913,9 @@ valued point at all (an output made wholly of the clip's points: `Q` inside `P`,
 intersection) takes, at each point, the value at the nearest point of the original's outline
 (`minimum_distance`, no threshold), at the ratio of the point's projection onto the nearest segment,
 clamped (the old fallback used the distance to the point itself, which is the ratio of no point on
-the segment). Per-tuple scalars are interpolated independently; a point or multi-point's point
+the segment). The nearest outline value was chosen (by the developer) over dropping the coverage
+from such a piece, or a fixed value such as NaN at each point, so that every piece of a geometry
+with a coverage has one. Per-tuple scalars are interpolated independently; a point or multi-point's point
 takes its own index's scalars. A coverage that an older file gives for the exterior ring only
 (`Coverage::exterior_ring_only`, `ScalarCoverageFeatureProperties.h`) stays in that form. The
 polygon is cut whole, and each piece has scalars for its exterior ring alone: a hole the cut opens
@@ -1846,7 +1932,11 @@ round from the first valued point rather than applying a polyline's end rule.
 compares a plate's pieces by area for polygons, then arc length for polylines, then the number of
 points, lexicographically (in C++ with `real_t`'s comparisons; pyGPlates compares the floats
 exactly), so that a feature with polygons is decided by
-them: arc length, the old measure, is inflated by a polygon's cuts. The first plate with any piece
+them: arc length, the old measure, is inflated by a polygon's cuts. (Keeping the old measure's
+meaning, the length of the input's own outline within each plate, which provenance could give, was
+the alternative: area is what overlapping the most means for a region.) The C++ comparison is not a
+strict weak ordering, since equality within `real_t`'s tolerance is not transitive; it serves a
+running maximum and must not be handed to a sort. The first plate with any piece
 is taken whatever its size, so that a geometry of no measure (a polygon whose edges are all too
 short for an area, a polyline at one position) still gets a plate, in both products. pyGPlates
 measures what splitting would partition (`_partition_feature_geometries`), so a time-dependent
@@ -1945,7 +2035,9 @@ arrangement after repair, or a piece left unclassified, throw
 `PolygonOverlay::InconsistentOverlayException` from `classify()` (a `MathematicalException` carrying
 the `Diagnostics` and a position: the first failing vertex's, with its latitude, longitude and
 record kinds in the message, or a hemisphere check's reference point), and on a whole answer's
-hemisphere check; `extract` throws it on a hemisphere failure and a pairing failure. A grouping
+hemisphere check; `extract` throws it on a hemisphere failure and a pairing failure. The symmetric
+difference is made of the two differences' rings (section 5.2), so its pairing failures are theirs
+together, and it throws wherever either difference would. A grouping
 failure (above, rings whose overlap the crossing test misses) and coincident rings
 (`coincident_rings`: rings of no area that clean-up missed, or a ring an invalid input repeats,
 section 7) are counted only.
@@ -2005,7 +2097,23 @@ for polylines, where one classification serves every operation and polylines; an
 documented failure, a twist of `P` lying on `Q`, is two ordinary vertices here, where the tracing
 would need `P` split into simple rings first. Its case table for the intersection phase was the
 starting specification of what partitioning needs from `GeometryIntersect`, its chain reasoning defines the common pieces,
-and its split-candidate clean-up is what the pairing and the split achieve.
+and its split-candidate clean-up is what the pairing and the split achieve. Classifying the
+stretches between intersections by point tests is close to Kim and Kim's alternative, which Foster,
+Hormann and Popa set aside as costing a point test for each of `k` intersections, `O(k n)`; with
+point-in-polygon's bounds and lune tree (sections 3.7 and 3.9) the tests are `O(n + k log n)`, the
+order of the intersection phase. The nearest published relative is Martínez, Rueda and Feito's
+planar sweep (2009), which also subdivides both polygons' edges at every intersection, labels each
+sub-edge on its own and joins the kept ones into rings afterwards, with a separate rule for
+overlapping edges ("same transition" or "different transition"); the sector rule of section 5.2 is
+that rule's reasoning applied at a vertex, and is not itself from a paper. Tracing by the labels and
+checking each traced piece by a point
+test, with the overlay as the fallback, was also rejected: two algorithms to maintain for the
+robustness of one.
+
+**Exact arithmetic** (an exact arrangement of geodesic arcs, as CGAL's, robust at every degeneracy).
+It would not change the answers that matter here: plate boundaries that should coincide agree only
+within epsilon (section 3.5), so an exact overlay would compute, faithfully, the slivers between
+them. The thickness is what makes two such boundaries one.
 
 **Every record its own vertex** (no grouping). Zero-length pieces between records at one point can
 only be deduced, never tested; the most midpoint tests of any variant; the only variant whose
@@ -2032,7 +2140,13 @@ the unsnapped one; under about `2 h` they disagree, and 10 catalogue cases faile
 
 **The sector walk where one input passes once** (section 5.2, the one-passage rule), **and one
 local rule per mechanism** found there: an along rule, a gap cone (a common ray's cone at least its
-two tangents' angle), and vertices where one input is silent. Each fixes one mechanism only.
+two tangents' angle), and vertices where one input is silent. The first two each fix one mechanism
+only. The third, deducing and checking nothing at a vertex where only one input has ends left, is
+wrong: where a tiny hole of `Q` inside `P`'s band is removed whole by the loop and spike rules, the
+two such vertices it leaves on `P`'s ring are where the sector walk makes `P`'s pieces either side
+take one class (`in Q` is constant round a vertex with no end of `Q`), and without that the band
+piece between them took an arbitrary midpoint class that its exact neighbours contradicted. So
+`solve_vertex` runs at every vertex, whatever ends it has.
 
 **No spike rule**: as clean, but 77 degenerate rings dropped in the catalogue against 48, and 10 to
 40 more midpoint tests per 300 dense shared-edge cases.
@@ -2056,7 +2170,11 @@ cross, in 37 of the hunt's 39,313 such cases, with every point of the output rig
 it were rejected with it. An order for the split's cuts: the vertex to cut first is the one whose
 pairs cross, which is what is not known, and each of the two orders tried fails somewhere (37 cases
 one way, 47 the other). And joining the two differences' rings across every wall: the 25 cases
-where a wall separates nothing remain.
+where a wall separates nothing remain. A third was not tried: a better order for two parallel rays
+of one input (an input whose rings do not cross has no two passages of its own crossing at a
+vertex, which picks the right order where two holes' edges leave a vertex side by side). It changes
+the order `solve_vertex` uses, which the prototype comparison pins, and does nothing for a wall
+that separates nothing.
 
 **The symmetric difference as the two differences side by side**, unjoined
 (`polygon.difference(other) + other.difference(polygon)`): always as robust as the differences, and
@@ -2076,7 +2194,16 @@ two ends*, with no geometry: the measured orders do not show the twist (in the c
 ring turns the same way about the chain at both ends). The common ray is measured where the
 subject's boundary is, and the arc is beside that, between it and the clip's. *The chain's length*
 (cut when the two vertices are within some distance): a second tolerance, and the arc runs along a
-chain of any length. *A stop for the arc at the vertex it passes*, before classification: untried.
+chain of any length. *Another margin for the far points* than the thickness: with half a thickness
+one more of the hunt's valid differences is cut (a part of `0.77 h^2`), and the grouping's `10 h`
+would by construction leave a twist up to `10 h` wide; the thickness is the scale at which the
+records themselves decide a crossing. *A cut at the passed vertex alone* (the arc given a stop
+there, and each part closed at it): both parts would then be simple as drawn, where the part that
+keeps the arc now keeps a sliver wound backwards (section 5.2); but the part cut off would run from
+the passed vertex and not along the arc, moving that edge by up to `h` over its whole length, and
+its first point would be at a vertex its piece has no stop at, which provenance and the symmetric
+difference's join both assume it has. Not built. *A stop for the arc at the vertex it passes*,
+before classification: untried.
 It is what the self-intersection mode of section 7 would give, and it changes the pieces
 themselves, which the prototype comparison pins record for record (three pieces would then join
 the two vertices where the pair does, which the common-pair rule does not pair).
@@ -2090,7 +2217,29 @@ across three consumers; the table travels in `PartitionedGeometry` instead.
 the developer's requirement is never a silent wrong answer.
 
 **Partitioning by all plates in one overlay**: a different algorithm, for a spatial index of many
-polygons.
+polygons. Cutting the original geometry by every plate independently, so that no rounded piece is
+fed back, and giving each piece to the first plate that contains it, is sound only where plates do
+not overlap, which topological plates satisfy and static polygons do not: the part of a piece
+inside an earlier, overlapping plate has to be removed, a difference against the earlier plates,
+which is the cascade again. A full arrangement of the geometry with every plate boundary, each face
+labelled by the plates containing it, would need the plates overlaid with each other, where every
+shared boundary is a common chain, and serves no present caller better than the cascade, which is
+safe as it is (section 5.1).
+
+**A side rule for a polyline piece along the clip's outline** (inside when the clip's interior is
+to its left, say, where the code gives every such piece one fixed class, section 5.2). Decided by a
+test point offset to one side, it fails in a face thinner than the offset, as the offset point did
+for anchorless chains, and it would be asked exactly where such pieces occur, thin faces and dense
+shared edges. The fixed class has no test and no failure mode, matches the inclusive threshold of a
+point query, and was measured to change nothing but the along pieces themselves.
+
+**Asking once whether each input's rings cross**, and running the crossing tests of the grouping
+(section 5.2) only on the output of an input whose rings do: output rings can cross only then, a
+plate could be asked once for every feature it cuts, and a cascade's later steps cut pieces whose
+rings cannot cross if the feature's do not. Not built: on the coastline data of section 6
+`partition_features` took the same time with the tests as without, to within a few percent, and
+the question needs a form of the self-intersection mode of section 7 that stops at the first
+crossing, to see a ring that crosses itself.
 
 **A coverage form of a geometry-level entry point**: `PlatePartitioner.partition_geometry`,
 `PolygonOnSphere.partition()` or the Boolean methods taking `(geometry, scalars)` and returning each
@@ -2519,12 +2668,14 @@ keys see no tie); a sample of every generator, with the second run's residue and
 alone show a pairing; polylines from the prototype's polyline generators and opened rings;
 anchorless chains; and the bundle vertices, whose counts of floating rays, admissible orders and
 consistent placements are pinned. Classes compare exactly except a band piece's (and a common
-pair's where a band piece's class reaches it through the sector walk); output rings compare by the
+pair's in any case where a band piece's differs, since a chain's class can follow a band piece's
+through the sector walk; the comparison does not trace that it did); output rings compare by the
 oracle for every operation, and as rings for the intersection, the difference and the union where
 the prototype's did not depend on the tie order, no band piece differs, and the rings do not touch at
 two vertices (which decompose either way), and the overlay did not cut a ring at a chain, which the
 prototype does not do (those ring sets are counted, and the count pinned for each committed file:
-one, a difference of inputs whose rings cross); the reverse difference's and the symmetric
+two, both in the generators' sample, a difference of inputs whose rings cross and an intersection
+of valid inputs); the reverse difference's and the symmetric
 difference's rings are checked by the oracle only. Output polygons compare by the oracle for every
 operation, and for inputs whose rings do not cross also by orientation and by having no crossing
 group of rings, in any operation (a touch taken for a crossing, or rings paired or joined across
@@ -2532,8 +2683,13 @@ what does not separate them). Any repair of generated
 data fails the case, and the one-passage rule's and the result contract's cases are pinned
 (`OnePassageRule`, `PartitionerCollapsedRegion`), as are the cases with a ring cut at a chain, by
 operation, and the walls the symmetric difference leaves unjoined, with the inputs as exported and
-swapped (`CutsAtChainsAndSpikeWalls`: the catalogue's 13 `d4 hole-between` cases and one of the
-hunt's sample; 13 walls and 8). The prototype, its generators and its exporter
+swapped (`CutsAtChainsAndSpikeWalls`: the catalogue's 13 `d4 hole-between` cases and two of the
+generators' sample; 13 walls and 10). The comparison relies on the overlay being deterministic: no
+unordered container's order reaches a result (`find_common_pairs` keeps its keys in the order first
+seen), and each floating-point operation is rounded on its own, so the build turns the contraction
+of `a * b + c` into one fused instruction off (`-ffp-contract=off`, `src/CMakeLists.txt`); with it
+on, as Clang has it by default on arm64, records tie and sign tests fall differently and the
+comparison fails. The prototype, its generators and its exporter
 are kept outside this repository (its configuration name is `r5p`, which mirrors for polylines the
 spike rule's restriction to polygon rings and the along rule for a hairpin along the clip's edge,
 section 5.2); a larger export is run through
@@ -2614,15 +2770,20 @@ when its parent is an exterior, the same-crossing test of two arcs, the order of
 self-crossing test's two-margin arms, or the count of a node far from the other ring as outside (a
 ring with a point inside the other has a point outside it in a near node too). The linking's two
 rules (the cut of a ring twisted at a chain, and the symmetric difference's join) were mutated 35
-ways against the committed tests, and 25 of the mutations fail one. No committed test holds, in the
-cut: the sectors of the passage against the two sides of the arc's plane; the three conditions under
-which a doubtful walk decides nothing (an arc that ends at the vertex, a point within the thickness
-past the arc's end, or within it of the other arc's plane); the walk's stop at the other passage
-(without it the walk does not end, in the hunt's dense shared edges); one of the two directions in
-which a pair of vertices is tested; that the chain is one the operation does not keep, and that the
-ring does not walk it; and the thickness as the far points' margin. Nor, in the join, that an arc
-ending at the wall's far end is no spike. Run over the hunt, only the direction, the margin and the
-join's condition change an output of valid inputs.
+ways against the committed tests, and 28 of the mutations fail one: 25 at first, and three more
+since three of the hunt's cases were committed to hold them (the walk's stop at the other passage,
+without which the walk does not end in a dense shared edge; one of the two directions in which a
+pair of vertices is tested; and, in the join, that an arc ending at the wall's far end is no
+spike). No committed test holds, in the cut: the sectors of the passage against the two sides of the
+arc's plane; the three conditions under which a doubtful walk decides nothing (an arc that ends at
+the vertex, a point within the thickness past the arc's end, or within it of the other arc's
+plane); that the chain is one the operation does not keep, and that the ring does not walk it; and
+the thickness as the far points' margin. Run over the hunt, of these only the margin changes an
+output of valid inputs (at half a thickness one more difference is cut), and two change nothing at
+all (the arc that ends at the vertex, which is the identity rule, and the ring that walks the
+chain, which states what the cut assumes and saves the arcs' arithmetic). No pyGPlates test raises
+`PartitionError` through `PlatePartitioner` or `partition_features`; the C++ test of Assign Plate
+IDs' skipped feature covers the code they share.
 
 **Real data** (`PolygonOverlayRealDataTest.Coastlines`, skipped unless
 `GPLATES_POLYGON_OVERLAY_REAL_DATA` names a plate model's directory, and optionally the times in
@@ -2663,7 +2824,10 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   their exterior ring. Untried: a rule for pieces running along the other outline, or a
   repair candidate that flips a chain of band pieces. Also open from the hunt: 4 generated cases
   whose second cascade step loses a subject location (no point's provenance wrong), and 4 with
-  coincident rings (at least two of them rings of no area).
+  coincident rings (at least two of them rings of no area). For a location lost at an input's
+  corner (a point within `h` of both its segments that names one, section 5.4) a geometric fallback
+  is possible and not built: the composition has the original geometry, and so the segments'
+  lengths, to tell which of the two the edge runs along.
 - **Invalid inputs with rings in common.** From random probes of polygons with several crossing
   rings: two coincident rings with area (an interior ring repeating its exterior, empty by parity)
   are not grouped, so they come out as two polygons over the same area; and inputs snapped to a
@@ -2686,7 +2850,22 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   serve); classifying the arc's pieces, without classes for `P`'s pieces, by parity along the arc,
   flipping where an odd number of `P`'s non-common rays leave on one side of the arc's thick plane;
   and a linking by faces in which an arc ray inside `P` carries one node per side, where the pairing
-  is keyed by ray today (`extract_rings`).
+  is keyed by ray today (`pair_and_walk_rings`). In the prototype's linking a piece of `P` needs no
+  direction: on arriving, the walk takes whichever side of the `P` ray is inside `P` (a first
+  version that left along the previous ray assumed `P` has one left side, and failed on inputs that
+  cross themselves); the side of a ray against the arc is the thick decision `GeometryIntersect`
+  made for its records; and a ring of `P` with no record is attached to the face that contains it.
+  What the prototype did not run: it took the arc's two dangling end pieces as outside `P` by
+  construction, and the dateline arc ends at the poles, so a polygon round a pole, the dateline's
+  own case, is untried; no vertex of six or more ends arose (one ring of `P` near a simple arc); and
+  its only failures, 13 of 600 cuts, were invalid inputs (an exterior ring that crosses itself, or a
+  hole outside its exterior). The port would cure what
+  section 5.8 lists as dateline-only (a hole that crosses the dateline merged into an exterior, the
+  guess when both poles are touched, the ring run backwards at a touch, the grouping of the other
+  rings by an epsilon distance) and keep, as a thin layer, the latitude and longitude output, the
+  snapping to the dateline and the poles, the central meridian, the tessellation and the per-point
+  provenance. It would change the map views' and exports' wrapped polygons and pyGPlates'
+  `DateLineWrapper` output (holes stay holes, rings keep their direction).
 - **Time-dependent geometry** is partitioned only in a single time window containing the
   reconstruction time (section 5.4); what partitioning should do with several windows, or an
   irregular sampling, is undecided.
@@ -2699,7 +2878,9 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   own input, which the overlay now finds only in three places, each with the thickness again (the
   self-touch cuts, the cut of a ring twisted at a chain and the walls the symmetric difference
   leaves unjoined, section 5.2); what those leave is the band's noise, such as a sliver under half a
-  thickness wide wound backwards on a ring. After it every output ring would be simple, and so
+  thickness wide wound backwards on a ring. (The cut looks only between two vertices of one unkept
+  chain: a ring twisted where an arc passes a vertex of its own input with no common piece between
+  them is not looked for, and the hunt has none wider than a thickness.) After it every output ring would be simple, and so
   oriented with the output on its left all round, which an output ring that crosses itself where an
   input ring does is not today (section 5.2), in partitioning as in the Boolean methods.
   A segment must never be tested against itself: its start coincides with its own start, which is

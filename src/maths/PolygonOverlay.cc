@@ -138,7 +138,9 @@ namespace GPlatesMaths
 			/**
 			 * The most floating rays at one vertex whose placements are enumerated (more keep the
 			 * measured order; reached by one generated case, 'shared#2240 seed 12', which the
-			 * prototype comparison's BundleRule test pins).
+			 * prototype comparison's BundleRule test pins). It bounds the floating rays only: m of
+			 * them among k anchored rays are enumerated as (k + m - 1)! / (k - 1)! orders before
+			 * the admissibility test (build_bundle), 5040 for six among two.
 			 */
 			const unsigned int BUNDLE_CAP = 6;
 
@@ -407,6 +409,7 @@ GPlatesMaths::PolygonOverlay::has_points_on_both_sides(
 		const PolygonOnSphere &b,
 		const AngularExtent &margin)
 {
+	// (Not NEAR, INSIDE and OUTSIDE: <windows.h> defines NEAR, and FAR, as empty macros.)
 	enum PointSide { SIDE_NEAR, SIDE_INSIDE, SIDE_OUTSIDE };
 	const double probe_distance = PROBE_DISTANCE_IN_MARGINS * margin.get_angle().dval();
 	const auto side_of = [&](const PointOnSphere &point)
@@ -2131,6 +2134,11 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 	// memberships of the two sectors beside it: a subject ray of class c fixes 'in clip = c', a
 	// clip ray fixes 'in subject', a common ray 'in subject xor in clip' (0 same side, 1 opposite).
 	//
+	// Also at a vertex where only one input has ends left (the other's were a loop or a spike):
+	// the other input's membership is constant round it, so the classes either side must be
+	// equal. Deducing and checking nothing there was tried and is wrong (section 5.7): a band
+	// piece between two such vertices then takes a midpoint class its neighbours contradict.
+	//
 	enum ConstraintKind { NONE, IN_SUBJECT, IN_CLIP, XOR };
 	std::vector<std::pair<ConstraintKind, bool>> constraints(num_rays, std::make_pair(NONE, false));
 	for (unsigned int i = 0; i < num_rays; ++i)
@@ -3646,7 +3654,9 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	// circle only at the arc's test point (its midpoint, below), well away from both ends.
 	//
 	// Prefer an arc whose clip partner has a direction too, so that each input's test point can be
-	// put on its own segment's great circle (below); failing that, any arc with a direction.
+	// put on its own segment's great circle (below); failing that, any arc with a direction, and
+	// the clip's parity is then counted to the subject's projection (its partner, a segment
+	// GreatCircleArc calls zero length, has no great circle of its own to project onto).
 	const auto segment_of = [this](const Piece &piece) -> const GreatCircleArc &
 	{
 		return d_rings[piece.ring].segments[*piece.single_arc_segment];
@@ -3711,6 +3721,13 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_anchorless_chain(
 	// circle is below about 1e-6 radians (where the crossing arc could meet that great circle
 	// twice), or it is within that of the test point or its antipode, the polygon's second
 	// reference point is used, with its cached status.
+	//
+	// Two limits, for neither of which a test was built. The second reference point is not tested
+	// against the great circle in its turn (it is 60 to 120 degrees from the outside point, so
+	// both on one great circle of the chain is unlikely, not excluded). And X is the midpoint of
+	// the subject piece's stops: the clip piece's stops at the same two vertices can lie up to
+	// the vertices' cluster width along the chain from them, so the clip's test point can still
+	// fall past the end of a clip segment no longer than that width.
 	//
 	const auto membership = [&](
 			const PolygonOnSphere &polygon,
@@ -4118,6 +4135,13 @@ GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 			{
 				// A crossing: the sector (mP, mQ) in the output is bounded by the subject ray whose
 				// class is mQ and the clip ray whose class is mP; pair those.
+				//
+				// No operation reaches here today. The intersection, the union and both
+				// differences each keep one class of each input's pieces, so exactly two ends of
+				// a crossing, which pair above; only the symmetric difference keeps all four, and
+				// it is not paired by its own keep-rule (walk_rings). The rule is the general one,
+				// for an operation with one or two of the four sectors in its output: with three
+				// (which no operation has with four kept ends) the loop would pair a ray twice.
 				for (bool m_subject : { false, true })
 				{
 					for (bool m_clip : { false, true })
