@@ -423,6 +423,12 @@ namespace
 	//! (Counted, and pinned for the committed files, so that a cut that should not be made shows.)
 	unsigned int num_chain_cut_ring_sets = 0;
 
+	//! Ring sets not compared because the overlay made a ring simple where an input touches
+	//! itself away from the other's outline (section 5.2, rings made simple: a touch point
+	//! inserted, or a cut at a repeated position), which the prototype does not. (Counted, and
+	//! pinned at zero for the committed files, none of whose inputs touches itself so.)
+	unsigned int num_made_simple_ring_sets = 0;
+
 	//! Cases whose prototype rings depend on the tie order, whose rings are not compared.
 	unsigned int num_tie_dependent_ring_sets = 0;
 
@@ -432,6 +438,16 @@ namespace
 
 	//! Of those, the cases whose output read as polygons is wrong (polygons overlapping, say).
 	unsigned int num_crossing_polygon_failures = 0;
+
+	//! The cases in which the polygons of some operation were relinked, a relinking discarded or
+	//! refused (section 5.2, rings made simple; Diagnostics::polygons_relinked and the rest).
+	unsigned int num_relinked_cases = 0;
+	unsigned int num_relink_discarded_cases = 0;
+	unsigned int num_relink_refused_cases = 0;
+
+	//! The outputs not simple features (PolygonOverlayOracle::simple_features_failure), of inputs
+	//! whose rings do not cross: pinned at zero for the committed files.
+	unsigned int num_simple_features_failures = 0;
 
 
 	std::string
@@ -501,13 +517,20 @@ namespace
 			}
 
 			std::vector<Overlay::OutputRing> rings;
-			const unsigned int rings_cut_at_chains_before =
-					overlay.get_diagnostics().rings_cut_at_chains;
+			const Overlay::Diagnostics before = overlay.get_diagnostics();
 			overlay.extract_rings(operations[o], rings);
-			if (overlay.get_diagnostics().rings_cut_at_chains != rings_cut_at_chains_before)
+			const Overlay::Diagnostics &after = overlay.get_diagnostics();
+			if (after.rings_cut_at_chains != before.rings_cut_at_chains)
 			{
 				// The prototype's ring is twisted there; the oracle checks the overlay's.
 				++num_chain_cut_ring_sets;
+				continue;
+			}
+			if (after.own_touch_points_inserted != before.own_touch_points_inserted ||
+				after.rings_split_at_positions != before.rings_split_at_positions)
+			{
+				// The prototype's ring touches itself there; the oracle checks the overlay's.
+				++num_made_simple_ring_sets;
 				continue;
 			}
 
@@ -1120,6 +1143,7 @@ namespace
 				}
 				std::stringstream oracle_report;
 				bool crossing_polygon_failure = false;
+				const Overlay::Diagnostics diagnostics_before = overlay.get_diagnostics();
 				for (Overlay::Operation operation : {
 						Overlay::INTERSECTION, Overlay::DIFFERENCE, Overlay::REVERSE_DIFFERENCE,
 						Overlay::UNION, Overlay::SYMMETRIC_DIFFERENCE })
@@ -1199,11 +1223,25 @@ namespace
 								<< " samples wrong as polygons, " << misoriented
 								<< " rings misoriented; ";
 					}
+					// Simple features (section 5.2, rings made simple), counted: an input at the
+					// thickness scale, or one whose ring touches itself, can fail them.
+					if (!input_rings_cross &&
+						!PolygonOverlayOracle::simple_features_failure(polygons).empty())
+					{
+						++num_simple_features_failures;
+					}
 				}
 				if (crossing_polygon_failure)
 				{
 					++num_crossing_polygon_failures;
 				}
+				const Overlay::Diagnostics &diagnostics_after = overlay.get_diagnostics();
+				num_relinked_cases += (diagnostics_after.polygons_relinked !=
+						diagnostics_before.polygons_relinked) ? 1 : 0;
+				num_relink_discarded_cases += (diagnostics_after.relinks_discarded !=
+						diagnostics_before.relinks_discarded) ? 1 : 0;
+				num_relink_refused_cases += (diagnostics_after.relinks_refused !=
+						diagnostics_before.relinks_refused) ? 1 : 0;
 				if (PolygonOverlayOracle::is_area_sum_applicable(*P, *Q))
 				{
 					const double area_error = PolygonOverlayOracle::area_sum_error(*P, overlay);
@@ -1477,9 +1515,14 @@ namespace
 		unsigned int num_oracle_failures = 0;
 		num_ambiguous_ring_sets = 0;
 		num_chain_cut_ring_sets = 0;
+		num_made_simple_ring_sets = 0;
 		num_crossing_inputs = 0;
 		num_crossing_polygon_failures = 0;
 		num_tie_dependent_ring_sets = 0;
+		num_relinked_cases = 0;
+		num_relink_discarded_cases = 0;
+		num_relink_refused_cases = 0;
+		num_simple_features_failures = 0;
 		for (PrototypeCase &prototype_case : cases)
 		{
 			// A case the prototype itself fails in every tie order (a check failure, or repair) is
@@ -1521,12 +1564,16 @@ namespace
 				<< num_oracle_failures << " in output only; " << num_ambiguous_ring_sets
 				<< " ring sets not compared, touching at two vertices; "
 				<< num_chain_cut_ring_sets << " not compared, cut at a chain; "
+				<< num_made_simple_ring_sets << " not compared, made simple; "
 				<< num_tie_dependent_ring_sets
 				<< " cases whose prototype rings depend on the tie order; "
 				<< num_crossing_inputs << " with crossing input rings, "
 				<< num_crossing_polygon_failures << " of them wrong as polygons); "
 				<< num_band_differences << " band pieces have the other class; "
-				<< num_prototype_failures << " skipped (the prototype fails)" << std::endl;
+				<< num_prototype_failures << " skipped (the prototype fails); relinked in "
+				<< num_relinked_cases << " cases, discarded in " << num_relink_discarded_cases
+				<< ", refused in " << num_relink_refused_cases << "; "
+				<< num_simple_features_failures << " outputs not simple features" << std::endl;
 	}
 }
 
@@ -1539,6 +1586,11 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-catalogue.txt", 400);
 	// (Its rings cut at a chain are the reverse difference's, which is not compared as rings.)
 	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
+	EXPECT_EQ(num_made_simple_ring_sets, 0u);
+	EXPECT_EQ(num_relinked_cases, 0u);
+	EXPECT_EQ(num_relink_discarded_cases, 0u);
+	EXPECT_EQ(num_relink_refused_cases, 0u);
+	EXPECT_EQ(num_simple_features_failures, 0u);
 }
 
 
@@ -1571,6 +1623,11 @@ TEST(PolygonOverlayPrototypeTest, Hunt)
 	// The difference of chain#108 seed 5, whose input rings cross, and the intersection of
 	// zero#563 seed 11.
 	EXPECT_EQ(num_chain_cut_ring_sets, 2u);
+	EXPECT_EQ(num_made_simple_ring_sets, 0u);
+	EXPECT_EQ(num_relinked_cases, 8u);
+	EXPECT_EQ(num_relink_discarded_cases, 8u);
+	EXPECT_EQ(num_relink_refused_cases, 0u);
+	EXPECT_EQ(num_simple_features_failures, 0u);
 }
 
 
@@ -1581,6 +1638,7 @@ TEST(PolygonOverlayPrototypeTest, Hunt)
 TEST(PolygonOverlayPrototypeTest, Polyline)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-polyline.txt", 150);
+	EXPECT_EQ(num_relinked_cases, 0u);
 }
 
 
@@ -1590,6 +1648,11 @@ TEST(PolygonOverlayPrototypeTest, Anchorless)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-anchorless.txt", 40);
 	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
+	EXPECT_EQ(num_made_simple_ring_sets, 0u);
+	EXPECT_EQ(num_relinked_cases, 0u);
+	EXPECT_EQ(num_relink_discarded_cases, 0u);
+	EXPECT_EQ(num_relink_refused_cases, 0u);
+	EXPECT_EQ(num_simple_features_failures, 0u);
 }
 
 
@@ -1599,6 +1662,11 @@ TEST(PolygonOverlayPrototypeTest, Bundle)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-bundle.txt", 15);
 	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
+	EXPECT_EQ(num_made_simple_ring_sets, 0u);
+	EXPECT_EQ(num_relinked_cases, 2u);
+	EXPECT_EQ(num_relink_discarded_cases, 3u);
+	EXPECT_EQ(num_relink_refused_cases, 0u);
+	EXPECT_EQ(num_simple_features_failures, 0u);
 }
 
 
@@ -1613,6 +1681,27 @@ TEST(PolygonOverlayPrototypeTest, SelfTouching)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-self-touching.txt", 20);
 	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
+	EXPECT_EQ(num_made_simple_ring_sets, 0u);
+	EXPECT_EQ(num_relinked_cases, 1u);
+	EXPECT_EQ(num_relink_discarded_cases, 0u);
+	EXPECT_EQ(num_relink_refused_cases, 0u);
+	EXPECT_EQ(num_simple_features_failures, 0u);
+}
+
+
+// The two guards of the relinking of disconnected interiors (section 5.2, rings made simple), from
+// the hunt, all three of inputs whose rings cross: shared#469 seed 15, whose relinking the second
+// nesting discards (beside a wall the symmetric difference leaves unjoined, the exchange leaves a
+// ring of collinear positions crossing the merged one: kept, 22 samples were wrong as polygons),
+// and shared#868 seed 10 and shared#301 seed 7, whose rays at a shared position do not alternate
+// (relinked by that order, 4 and 6 samples were wrong). Found by the final review of the change.
+TEST(PolygonOverlayPrototypeTest, RelinkGuards)
+{
+	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-relink-guards.txt", 3);
+	EXPECT_EQ(num_relinked_cases, 2u);
+	EXPECT_EQ(num_relink_discarded_cases, 1u);
+	EXPECT_EQ(num_relink_refused_cases, 2u);
+	EXPECT_EQ(num_made_simple_ring_sets, 0u);
 }
 
 

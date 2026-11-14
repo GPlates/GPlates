@@ -28,7 +28,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <random>
+#include <sstream>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include "maths/GeometryDistance.h"
@@ -983,6 +987,150 @@ namespace PolygonOverlayOracle
 			}
 		}
 		return 4 * h * perimeter;
+	}
+
+
+	/**
+	 * The first way @a polygons, one output of an overlay, breaks OGC simple features (section
+	 * 5.2, rings made simple), described; empty if none. Over all the output's polygons:
+	 *
+	 * 1. no ring has two points at one position (exactly);
+	 * 2. no vertex of any ring is within @a touch_distance of the plane of an edge of any ring
+	 *    and inside it by more than that from both ends (rings touch only at shared positions);
+	 * 3. each polygon's graph of its rings and the positions two or more of them share is a forest
+	 *    (its interior is connected: a hole touching its exterior at two points is a cycle).
+	 *
+	 * Not for a subject returned whole (a hole's vertex may lie inside its exterior's edge, valid
+	 * as the input is).
+	 */
+	inline
+	std::string
+	simple_features_failure(
+			const std::vector<GPlatesMaths::PolygonOverlay::OutputPolygon> &polygons,
+			double touch_distance = 1e-12)
+	{
+		using namespace GPlatesMaths;
+
+		typedef std::tuple<double, double, double> key_type;
+		const auto key = [](const PointOnSphere &point)
+		{
+			const UnitVector3D &u = point.position_vector();
+			return key_type(u.x().dval(), u.y().dval(), u.z().dval());
+		};
+		const auto describe = [](const PointOnSphere &point)
+		{
+			std::ostringstream os;
+			os.precision(17);
+			os << "(" << point.position_vector().x().dval() << ", "
+					<< point.position_vector().y().dval() << ", "
+					<< point.position_vector().z().dval() << ")";
+			return os.str();
+		};
+
+		std::vector<const std::vector<PointOnSphere> *> all_rings;
+		for (const PolygonOverlay::OutputPolygon &polygon : polygons)
+		{
+			all_rings.push_back(&polygon.exterior.points);
+			for (const PolygonOverlay::OutputRing &interior : polygon.interiors)
+			{
+				all_rings.push_back(&interior.points);
+			}
+		}
+
+		// 1. Each ring simple by position.
+		for (unsigned int r = 0; r < all_rings.size(); ++r)
+		{
+			std::map<key_type, unsigned int> seen;
+			for (const PointOnSphere &point : *all_rings[r])
+			{
+				if (++seen[key(point)] == 2)
+				{
+					return "a ring passes " + describe(point) + " twice";
+				}
+			}
+		}
+
+		// 2. No vertex strictly inside an edge.
+		for (const std::vector<PointOnSphere> *edge_ring : all_rings)
+		{
+			const unsigned int n = edge_ring->size();
+			for (unsigned int e = 0; e < n; ++e)
+			{
+				const Vector3D start((*edge_ring)[e].position_vector());
+				const Vector3D end((*edge_ring)[(e + 1) % n].position_vector());
+				const Vector3D normal = cross(start, end);
+				const double normal_length = std::sqrt(normal.magSqrd().dval());
+				if (!(normal_length > 0))
+				{
+					continue;
+				}
+				const Vector3D axis = (1.0 / normal_length) * normal;
+				const double length = std::atan2(normal_length, dot(start, end).dval());
+				for (const std::vector<PointOnSphere> *vertex_ring : all_rings)
+				{
+					for (const PointOnSphere &vertex : *vertex_ring)
+					{
+						const Vector3D x(vertex.position_vector());
+						if (std::fabs(dot(axis, x).dval()) > touch_distance)
+						{
+							continue;
+						}
+						const double along =
+								std::atan2(dot(axis, cross(start, x)).dval(), dot(start, x).dval());
+						if (along > touch_distance && along < length - touch_distance)
+						{
+							return "the vertex " + describe(vertex) + " is inside an edge";
+						}
+					}
+				}
+			}
+		}
+
+		// 3. Each polygon's interior connected.
+		for (const PolygonOverlay::OutputPolygon &polygon : polygons)
+		{
+			std::vector<const std::vector<PointOnSphere> *> rings(1, &polygon.exterior.points);
+			for (const PolygonOverlay::OutputRing &interior : polygon.interiors)
+			{
+				rings.push_back(&interior.points);
+			}
+			std::map<key_type, std::vector<unsigned int>> rings_at;
+			for (unsigned int r = 0; r < rings.size(); ++r)
+			{
+				for (const PointOnSphere &point : *rings[r])
+				{
+					rings_at[key(point)].push_back(r);
+				}
+			}
+			std::vector<unsigned int> root(rings.size());
+			for (unsigned int r = 0; r < rings.size(); ++r)
+			{
+				root[r] = r;
+			}
+			const auto find = [&root](unsigned int r)
+			{
+				while (root[r] != r)
+				{
+					r = root[r] = root[root[r]];
+				}
+				return r;
+			};
+			for (const auto &position_rings : rings_at)
+			{
+				const std::vector<unsigned int> &at = position_rings.second;
+				for (unsigned int k = 1; k < at.size(); ++k)
+				{
+					const unsigned int a = find(at[0]);
+					const unsigned int b = find(at[k]);
+					if (a == b)
+					{
+						return "a polygon's interior is disconnected (rings touch in a cycle)";
+					}
+					root[b] = a;
+				}
+			}
+		}
+		return std::string();
 	}
 }
 

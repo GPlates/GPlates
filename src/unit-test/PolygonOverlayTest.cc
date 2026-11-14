@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <map>
 #include <random>
 #include <sstream>
 #include <string>
@@ -2202,10 +2203,30 @@ namespace
 
 
 	/**
-	 * Checks the overlay of two polygons both ways round: its classification, the oracle and
-	 * the area identities. Returns the vertices joined and the pieces cut at passages, with the
-	 * inputs as given. An exception fails that way round and no more, so that a test of several
-	 * cases goes on, and reports every case that fails and not only the first to throw.
+	 * OGC simple features (section 5.2, rings made simple) on the output of every operation: no
+	 * ring touching itself, rings touching only at shared positions, every polygon's interior
+	 * connected (PolygonOverlayOracle::simple_features_failure).
+	 */
+	void
+	check_simple_features(
+			const Overlay::Overlay &overlay)
+	{
+		for (unsigned int o = 0; o < 5; ++o)
+		{
+			std::vector<Overlay::OutputPolygon> polygons;
+			overlay.extract(static_cast<Overlay::Operation>(o), polygons);
+			EXPECT_EQ(PolygonOverlayOracle::simple_features_failure(polygons), "")
+					<< "operation " << o;
+		}
+	}
+
+
+	/**
+	 * Checks the overlay of two polygons both ways round: its classification, the oracle, the
+	 * area identities and simple features. Returns the vertices joined and the pieces cut at
+	 * passages, with the inputs as given. An exception fails that way round and no more, so that a
+	 * test of several cases goes on, and reports every case that fails and not only the first to
+	 * throw.
 	 */
 	std::pair<unsigned int, unsigned int>
 	check_both_ways(
@@ -2230,6 +2251,7 @@ namespace
 				classify_and_check(overlay);
 				check_oracle(subject, clip, overlay);
 				check_areas(subject, clip, overlay);
+				check_simple_features(overlay);
 			}
 			catch (const Overlay::InconsistentOverlayException &exception)
 			{
@@ -2548,6 +2570,355 @@ TEST(PolygonOverlayTest, SelfTouchingGridPairs)
 		check_both_ways(*P, *Q);
 	}
 	EXPECT_EQ(num_cases, 338u);
+}
+
+
+// Inputs that touch themselves away from the other's outline, from the grid fuzz of section 6,
+// one or more for each way an output was not simple before (section 5.2, rings made simple): a
+// ring passing a position twice (two vertices of one input at one point), a vertex on an edge
+// (of its own ring, of another ring of its polygon, of another polygon), and an interior
+// disconnected (a hole touching its exterior twice, a chain of holes, a clip without holes
+// sharing two of the subject's vertices, three rings at one point). And five from the final
+// review's fuzz of unions of grid triangles ('region-1-...'), where three or four rings meet at
+// one point, so that the relinking orders rays by angle. Each both ways round and mirrored (so
+// that rays at a point come in both rotational orders), with the checks of check_both_ways, and as
+// given with the structure of shapely's answer (each polygon's holes).
+TEST(PolygonOverlayTest, SimpleOutputRings)
+{
+	// The rule each case is chosen for, as given: its counter must be non-zero.
+	const std::map<std::string, std::string> rule_of{
+			{ "holes-1-6", "split" },
+			{ "holes-1-17", "touch" },
+			{ "holes-2-1824", "touch" },
+			{ "holes-transform-1-1957", "touch" },
+			{ "holes-transform-4-1176", "touch" },
+			{ "holes-transform-5-680", "touch" },
+			{ "star-1-153", "relink" },
+			{ "holes-1-9", "relink" },
+			{ "holes-1-110", "relink" },
+			{ "holes-transform-1-751", "relink" },
+			{ "polyomino-3-481", "relink" },
+			{ "holes-2-279", "relink" },
+			{ "holes-transform-1-1066", "relink" },
+			{ "region-1-25", "relink" },
+			{ "region-1-41", "relink" },
+			{ "region-1-59", "relink" },
+			{ "region-1-82", "relink" },
+			{ "region-1-155", "relink" } };
+	const std::map<std::string, Overlay::Operation> operation_of{
+			{ "intersection", Overlay::INTERSECTION },
+			{ "union", Overlay::UNION },
+			{ "difference", Overlay::DIFFERENCE },
+			{ "symmetric_difference", Overlay::SYMMETRIC_DIFFERENCE } };
+
+	std::ifstream file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/simple-rings-grid-cases.txt");
+	ASSERT_TRUE(file.good());
+	unsigned int num_cases = 0;
+	std::string line;
+	while (std::getline(file, line))
+	{
+		std::istringstream case_line(line);
+		std::string word, name;
+		case_line >> word >> name;
+		ASSERT_EQ(word, "case");
+		unsigned int grid_size = 0;
+		ASSERT_TRUE(std::getline(file, line));
+		std::istringstream(line) >> word >> grid_size;
+		ASSERT_EQ(word, "grid");
+
+		typedef std::vector<std::vector<std::pair<double, double>>> grid_rings_type;
+		grid_rings_type rings[2];  // P's, then Q's
+		std::vector<std::pair<Overlay::Operation, std::vector<unsigned int>>> expected;
+		while (std::getline(file, line) && line != "endcase")
+		{
+			std::istringstream item(line);
+			item >> word;
+			if (word == "expect")
+			{
+				std::string operation;
+				item >> operation;
+				std::vector<unsigned int> holes;
+				for (unsigned int num_holes; item >> num_holes; )
+				{
+					holes.push_back(num_holes);
+				}
+				expected.push_back(std::make_pair(operation_of.at(operation), holes));
+				continue;
+			}
+			ASSERT_EQ(word, "ring");
+			std::string polygon_name;
+			unsigned int num_points = 0;
+			item >> polygon_name >> num_points;
+			rings[polygon_name == "P" ? 0 : 1].emplace_back();
+			for (unsigned int i = 0; i < num_points; ++i)
+			{
+				ASSERT_TRUE(std::getline(file, line));
+				double x, y;
+				std::istringstream(line) >> x >> y;
+				rings[polygon_name == "P" ? 0 : 1].back().push_back(std::make_pair(x, y));
+			}
+		}
+		ASSERT_EQ(expected.size(), 4u) << name;
+		++num_cases;
+
+		for (bool mirror : { false, true })
+		{
+			SCOPED_TRACE(name + (mirror ? " mirrored" : ""));
+			const double centre = 0.5 * grid_size;
+			const auto input = [&](const grid_rings_type &input_rings)
+			{
+				std::vector<ring_type> points;
+				for (const std::vector<std::pair<double, double>> &input_ring : input_rings)
+				{
+					points.emplace_back();
+					for (const std::pair<double, double> &xy : input_ring)
+					{
+						points.back().push_back(grid(
+								mirror ? centre - xy.first : xy.first - centre,
+								xy.second - centre));
+					}
+				}
+				return polygon(
+						points.front(),
+						std::vector<ring_type>(points.begin() + 1, points.end()));
+			};
+			const auto P = input(rings[0]);
+			const auto Q = input(rings[1]);
+			check_both_ways(*P, *Q);
+
+			Overlay::Overlay overlay(*P, *Q);
+			classify_and_check(overlay);
+			for (const auto &operation_holes : expected)
+			{
+				EXPECT_EQ(polygon_holes(overlay, operation_holes.first), operation_holes.second)
+						<< "operation " << operation_holes.first;
+			}
+			// (Mirrored, a walk can come out simple without the rule: 'holes-1-9' needs no
+			// relinking that way round.)
+			const Overlay::Diagnostics &diagnostics = overlay.get_diagnostics();
+			const std::string &rule = rule_of.at(name);
+			if (!mirror)
+			{
+				EXPECT_GT(
+						rule == "split" ? diagnostics.rings_split_at_positions
+								: rule == "touch" ? diagnostics.own_touch_points_inserted
+								: diagnostics.polygons_relinked,
+						0u) << rule;
+			}
+			EXPECT_EQ(diagnostics.relinks_refused, 0u);
+			EXPECT_EQ(diagnostics.relinks_discarded, 0u);
+
+			// Every point's provenance resolves to it, and a point on the subject's outline has
+			// its subject location (section 5.4): touch points, and points of rings cut at a
+			// repeated position or relinked, among them.
+			Overlay::Options options;
+			options.want_provenance = true;
+			Overlay::Overlay with_provenance(*P, *Q, options);
+			classify_and_check(with_provenance);
+			const std::vector<ring_type> subject_rings = polygon_rings(*P);
+			const std::vector<std::vector<ring_type>> clip_rings(1, polygon_rings(*Q));
+			for (unsigned int o = 0; o < 5; ++o)
+			{
+				std::vector<Overlay::OutputPolygon> polygons;
+				with_provenance.extract(static_cast<Overlay::Operation>(o), polygons);
+				for (const Overlay::OutputPolygon &polygon : polygons)
+				{
+					for (unsigned int r = 0; r <= polygon.interiors.size(); ++r)
+					{
+						const Overlay::OutputRing &ring =
+								(r == 0) ? polygon.exterior : polygon.interiors[r - 1];
+						EXPECT_EQ(PolygonOverlayOracle::count_provenance_failures(
+								subject_rings,
+								clip_rings,
+								ring.points,
+								ring.provenances,
+								1e-12), 0u) << "operation " << o;
+						EXPECT_EQ(PolygonOverlayOracle::count_missing_subject_locations(
+								*P, *Q, ring.points, ring.provenances), 0u)
+								<< "operation " << o;
+					}
+				}
+			}
+		}
+	}
+	EXPECT_EQ(num_cases, 18u);
+}
+
+
+// A touch point's provenance (section 5.4): the union of 'holes-2-1824' (SimpleOutputRings),
+// whose exterior gains the vertex (1, 4) of the subject's hole, on the subject's exterior edge
+// from (3, 2) to (0, 5). Its location is on that edge, of the exterior ring (not the hole's
+// vertex, on another ring: a coverage would take that vertex's value).
+TEST(PolygonOverlayTest, SimpleOutputRingsProvenance)
+{
+	const double c = 2.5;  // the grid's centre
+	const auto at = [c](double x, double y) { return grid(x - c, y - c); };
+	const auto P = polygon(
+			{ at(0, 0), at(1, 0), at(2, 0), at(2, 1), at(4, 0), at(3, 2), at(0, 5), at(0, 4) },
+			{ { at(1, 2), at(2, 2), at(1, 4) } });
+	const auto Q = polygon({ at(0, 1), at(2, 1), at(3, 2), at(3, 5), at(2, 5) });
+	Overlay::Options options;
+	options.want_provenance = true;
+	Overlay::Overlay overlay(*P, *Q, options);
+	classify_and_check(overlay);
+
+	std::vector<Overlay::OutputPolygon> polygons;
+	overlay.extract(Overlay::UNION, polygons);
+	ASSERT_EQ(polygons.size(), 1u);
+	const Overlay::OutputRing &exterior = polygons.front().exterior;
+	const PointOnSphere touch = at(1, 4);
+	unsigned int num_found = 0;
+	for (unsigned int i = 0; i < exterior.points.size(); ++i)
+	{
+		if (!PolygonOverlayOracle::same_position(exterior.points[i], touch))
+		{
+			continue;
+		}
+		++num_found;
+		const Overlay::Provenance &provenance = exterior.provenances[i];
+		ASSERT_TRUE(provenance.subject);
+		EXPECT_EQ(provenance.subject->ring, 0u);
+		EXPECT_EQ(provenance.subject->index, 5u);
+		EXPECT_TRUE(provenance.subject->ratio);
+	}
+	EXPECT_EQ(num_found, 1u);
+	EXPECT_EQ(overlay.get_diagnostics().own_touch_points_inserted, 1u);
+
+	const std::vector<std::vector<PointOnSphere>> subject_rings{
+			{ at(0, 0), at(1, 0), at(2, 0), at(2, 1), at(4, 0), at(3, 2), at(0, 5), at(0, 4) },
+			{ at(1, 2), at(2, 2), at(1, 4) } };
+	const std::vector<std::vector<std::vector<PointOnSphere>>> clip_rings{
+			{ { at(0, 1), at(2, 1), at(3, 2), at(3, 5), at(2, 5) } } };
+	for (const Overlay::OutputPolygon &polygon : polygons)
+	{
+		EXPECT_EQ(PolygonOverlayOracle::count_provenance_failures(
+				subject_rings, clip_rings, polygon.exterior.points, polygon.exterior.provenances,
+				1e-12), 0u);
+		for (const Overlay::OutputRing &interior : polygon.interiors)
+		{
+			EXPECT_EQ(PolygonOverlayOracle::count_provenance_failures(
+					subject_rings, clip_rings, interior.points, interior.provenances, 1e-12), 0u);
+		}
+	}
+}
+
+
+// A relinked polygon's touch on no cycle keeps each ring's own point (sections 5.2 and 5.4): a
+// triangle inside the subject touching its outline at three points divides the difference, which
+// is relinked, and in its top piece the subject's hole touches the exterior at one point, once at
+// the exterior's vertex (4, 4) and once (a vertex on an edge) at the hole's vertex (3, 3) on the
+// exterior's edge from (3, 2) to (3, 4). The exterior's point there names the exterior and the
+// hole's the hole (a cut that gave each the other's, as first built, exchanged a coverage's values
+// there: the final review of the change, from the grid fuzz's 'holes-5-2129').
+TEST(PolygonOverlayTest, SimpleOutputRingsRelinkedProvenance)
+{
+	const auto at = [](double x, double y) { return grid(x - 2, y - 2); };
+	const auto Q = polygon({ at(1, 0), at(3, 2), at(0, 3) });
+	for (bool on_edge : { false, true })
+	{
+		SCOPED_TRACE(on_edge ? "on an edge" : "at a vertex");
+		const auto P = on_edge
+				? polygon(
+						{ at(0, 0), at(4, 0), at(4, 1), at(3, 2), at(3, 4), at(1, 4), at(0, 4) },
+						{ { at(1, 3), at(2, 2.5), at(3, 3) } })
+				: polygon(
+						{
+							at(0, 0), at(4, 0), at(4, 1), at(3, 2), at(4, 4), at(3, 4), at(1, 4),
+							at(0, 4)
+						},
+						{ { at(1, 3), at(3, 3), at(4, 4) } });
+		const PointOnSphere touch = on_edge ? at(3, 3) : at(4, 4);
+		Overlay::Options options;
+		options.want_provenance = true;
+		Overlay::Overlay overlay(*P, *Q, options);
+		classify_and_check(overlay);
+		std::vector<Overlay::OutputPolygon> polygons;
+		overlay.extract(Overlay::DIFFERENCE, polygons);
+		EXPECT_EQ(polygons.size(), 3u);
+		EXPECT_GT(overlay.get_diagnostics().polygons_relinked, 0u);
+
+		unsigned int num_exterior_points = 0;
+		unsigned int num_hole_points = 0;
+		for (const Overlay::OutputPolygon &polygon : polygons)
+		{
+			for (unsigned int r = 0; r <= polygon.interiors.size(); ++r)
+			{
+				const Overlay::OutputRing &ring =
+						(r == 0) ? polygon.exterior : polygon.interiors[r - 1];
+				for (unsigned int i = 0; i < ring.points.size(); ++i)
+				{
+					if (!PolygonOverlayOracle::same_position(ring.points[i], touch))
+					{
+						continue;
+					}
+					const boost::optional<Overlay::Location> &location =
+							ring.provenances[i].subject;
+					ASSERT_TRUE(location);
+					if (r == 0)
+					{
+						++num_exterior_points;
+						EXPECT_EQ(location->ring, 0u);  // the exterior's: its vertex, or its edge
+						EXPECT_EQ(location->index, on_edge ? 3u : 4u);
+						EXPECT_EQ(bool(location->ratio), on_edge);
+					}
+					else
+					{
+						++num_hole_points;
+						EXPECT_EQ(location->ring, 1u);  // the hole's vertex
+						EXPECT_EQ(location->index, 2u);
+						EXPECT_FALSE(location->ratio);
+					}
+				}
+			}
+		}
+		EXPECT_EQ(num_exterior_points, 1u);
+		EXPECT_EQ(num_hole_points, 1u);
+	}
+}
+
+
+// The sliver filter sees each connected piece (section 5.5): a clip triangle inside the subject,
+// its base sharing the subject's two bottom corners, which a vertex 0.05 units (1e-3 radians)
+// below the base bends into a crescent. The difference is the crescent and the rest, two polygons
+// with the filter off; with it at 1e-3 radians the crescent (mean width about 5e-4) is dropped,
+// where it was part of one polygon whose interior the triangle divided. And a clip with holes
+// searches for its touches only where its pieces are kept (section 5.2): not for a subject
+// apart from it or inside it away from its holes.
+TEST(PolygonOverlayTest, SimpleOutputRingsFilterAndCost)
+{
+	const auto P = polygon(grid_ring({ { -2, -2 }, { 0, -2.05 }, { 2, -2 }, { 2, 2 }, { -2, 2 } }));
+	const auto Q = polygon(grid_ring({ { -2, -2 }, { 2, -2 }, { 0, 0 } }));
+	{
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		check_simple_features(overlay);
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 0, 0 }));
+		EXPECT_GT(overlay.get_diagnostics().polygons_relinked, 0u);
+	}
+	{
+		Overlay::Options options;
+		options.sliver_min_width = 1e-3;
+		Overlay::Overlay overlay(*P, *Q, options);
+		classify_and_check(overlay);
+		EXPECT_EQ(polygon_holes(overlay, Overlay::DIFFERENCE), (std::vector<unsigned int>{ 0 }));
+		EXPECT_EQ(overlay.get_diagnostics().sliver_exteriors_dropped, 1u);
+	}
+
+	const auto clip_with_holes = polygon(
+			grid_ring({ { -10, -10 }, { 10, -10 }, { 10, 10 }, { -10, 10 } }),
+			{ grid_ring({ { 4, 4 }, { 6, 4 }, { 6, 6 }, { 4, 6 } }) });
+	const auto apart = polygon(grid_ring({ { 20, 20 }, { 22, 20 }, { 22, 22 }, { 20, 22 } }));
+	const auto inside = polygon(grid_ring({ { -4, -4 }, { -2, -4 }, { -2, -2 }, { -4, -2 } }));
+	const auto round_hole = polygon(grid_ring({ { 3, 3 }, { 7, 3 }, { 7, 7 }, { 3, 7 } }));
+	for (const auto *subject : { &apart, &inside, &round_hole })
+	{
+		Overlay::Overlay overlay(**subject, *clip_with_holes);
+		classify_and_check(overlay);
+		std::vector<Overlay::OutputPolygon> polygons;
+		overlay.extract(Overlay::INTERSECTION, polygons);
+		// Only the hole's four vertices, kept where the subject surrounds the hole.
+		EXPECT_EQ(overlay.get_diagnostics().own_touch_queries, (subject == &round_hole) ? 4u : 0u);
+	}
 }
 
 

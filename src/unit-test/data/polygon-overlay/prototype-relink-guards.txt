@@ -1,0 +1,721 @@
+case shared#469 seed 15
+ring P 10
+-0.15196343142778698 0.43238558933733473 0.8887912115013842
+-0.15395391681714463 0.44103535083067763 0.8841866379980649
+-0.16453342403826693 0.4383089387030437 0.8836368182841045
+-0.16601145547749752 0.43792426241578986 0.8835510947522103
+-0.16813370233509245 0.43736420796144126 0.8834271943591933
+-0.16832394820853808 0.43731468993257194 0.8834154800707694
+-0.1696178243975973 0.43697676625188714 0.8833352134963655
+-0.17036117415789767 0.4367801787500749 0.883289389606031
+-0.17328069546527516 0.4360094471840024 0.8831022378781357
+-0.17128924390606423 0.4273599369418731 0.8877068655919742
+ring P 5
+-0.16448514270155362 0.43924229839823903 0.8831822241917474
+-0.1663420887042774 0.43809133152879226 0.8834060758025316
+-0.1661031725639614 0.43582277134614084 0.8845723531969311
+-0.16345952010757517 0.4359305931223074 0.8850115836904253
+-0.16247006882120682 0.43726692318314203 0.8845344055644079
+ring Q 6
+-0.15395391681714463 0.44103535083067763 0.8841866379980649
+-0.15592900950853308 0.44964101650567806 0.8794936613014493
+-0.17525482198681033 0.4446153641102164 0.8784093153920394
+-0.17327908432308667 0.43600987419308584 0.8831023431869504
+-0.16093212623385783 0.43924286189347556 0.8838362738773957
+-0.16453231620448094 0.43830829292745027 0.8836373448850003
+ring Q 4
+-0.1648910465650051 0.4400164011335721 0.8827210825035032
+-0.16337743729909918 0.4383082736227068 0.8838516109933053
+-0.16189872646931153 0.4397163389969948 0.8834242149650953
+-0.16311460818472262 0.44206766441115375 0.8820259659889906
+records 14
+SS 1 0
+LS 1 4
+LL 1 6
+LL 1 7
+SL 2 3
+SS 2 5
+LL 3 3
+SL 6 3
+SL 7 3
+LS 7 3
+LL 11 3
+LL 14 3
+LL 14 4
+LL 14 5
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 12
+piece P 1 0 0 0 in deduced 12 11
+piece P 1 0 0 0 out deduced 11 13
+piece P 1 0 0 0 in vertex 13 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 11 1 12
+ringout 2 4 P0.3 6 10 P1.1 P1.0 13 0 1 3 Q1.1
+output diff 2
+ringout 2 3 Q1.1
+ringout 8 7 P0.5 P0.4 6 10 P1.2 P1.3 P1.4 12 1 11 13 0 P0.0 P0.9 P0.8 9
+output or 5
+ringout 6 P0.4 P0.5 7
+ringout 9 P0.8 P0.9 P0.0 0 Q0.1 Q0.2
+ringout 4 13 11
+ringout 4 10 P1.2 P1.3 P1.4 12
+ringout 2 3 Q1.2 Q1.3 Q1.0
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 12
+piece P 1 0 0 0 in deduced 12 13
+piece P 1 0 0 0 out deduced 13 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 11 P1.0 P1.1 10 6 P0.3 4 2 Q1.1 3
+ringout 1 0 13 12
+output diff 2
+ringout 12 P1.4 P1.3 P1.2 10 6 P0.4 P0.5 7 8 9 P0.8 P0.9 P0.0 0 13 11 1
+ringout 2 Q1.1 3
+output or 5
+ringout 6 P0.4 P0.5 7
+ringout 2 Q1.0 Q1.3 Q1.2 3
+ringout 9 P0.8 P0.9 P0.0 0 Q0.1 Q0.2
+ringout 4 10 P1.2 P1.3 P1.4 12
+ringout 4 13 11
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in deduced 11 12
+piece P 1 0 0 0 out deduced 12 13
+piece P 1 0 0 0 in vertex 13 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 12 1 11
+ringout 3 1 0 13 P1.0 P1.1 10 6 P0.3 4 2 Q1.1
+output diff 2
+ringout 3 2 Q1.1
+ringout 12 1 11 P1.4 P1.3 P1.2 10 6 P0.4 P0.5 7 8 9 P0.8 P0.9 P0.0 0 13
+output or 5
+ringout 12 4 13
+ringout 3 2 Q1.0 Q1.3 Q1.2
+ringout 10 P1.2 P1.3 P1.4 11 4
+ringout 0 Q0.1 Q0.2 9 P0.8 P0.9 P0.0
+ringout 6 P0.4 P0.5 7
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in deduced 11 13
+piece P 1 0 0 0 out deduced 13 12
+piece P 1 0 0 0 in vertex 12 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 0 13 11
+ringout 1 12 P1.0 P1.1 10 6 P0.3 4 2 Q1.1 3
+output diff 2
+ringout 2 3 Q1.1
+ringout 6 10 P1.2 P1.3 P1.4 11 1 12 13 0 P0.0 P0.9 P0.8 9 8 7 P0.5 P0.4
+output or 5
+ringout 9 P0.8 P0.9 P0.0 0 Q0.1 Q0.2
+ringout 10 4 11 P1.4 P1.3 P1.2
+ringout 7 P0.5 P0.4 6
+ringout 13 12 4
+ringout 3 Q1.2 Q1.3 Q1.0 2
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 13
+piece P 1 0 0 0 in deduced 13 12
+piece P 1 0 0 0 out deduced 12 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 0 13 12
+ringout 1 11 P1.0 P1.1 10 6 P0.3 4 2 Q1.1 3
+output diff 3
+ringout 2 3 Q1.1
+ringout 1 11 12
+ringout 7 8 9 P0.8 P0.9 P0.0 0 13 P1.4 P1.3 P1.2 10 6 P0.4 P0.5
+output or 5
+ringout 9 P0.8 P0.9 P0.0 0 Q0.1 Q0.2
+ringout 2 3 Q1.2 Q1.3 Q1.0
+ringout 7 6 P0.4 P0.5
+ringout 4 11 12
+ringout 4 13 P1.4 P1.3 P1.2 10
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 13
+piece P 1 0 0 0 in deduced 13 11
+piece P 1 0 0 0 out deduced 11 12
+piece P 1 0 0 0 in vertex 12 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 3 Q1.1 2 4 P0.3 6 10 P1.1 P1.0 12
+ringout 1 11 13 0
+output diff 3
+ringout 1 12 11
+ringout 2 Q1.1 3
+ringout 0 P0.0 P0.9 P0.8 9 8 7 P0.5 P0.4 6 10 P1.2 P1.3 P1.4 13
+output or 5
+ringout 2 3 Q1.2 Q1.3 Q1.0
+ringout 7 P0.5 P0.4 6
+ringout 4 13 P1.4 P1.3 P1.2 10
+ringout 4 11 12
+ringout 0 P0.0 P0.9 P0.8 9 Q0.2 Q0.1
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 12
+piece P 1 0 0 0 in deduced 12 11
+piece P 1 0 0 0 out deduced 11 13
+piece P 1 0 0 0 in vertex 13 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 4 2 Q1.1 3 1 0 13 P1.0 P1.1 10 6 P0.3
+ringout 12 1 11
+output diff 2
+ringout 2 Q1.1 3
+ringout 12 1 11 13 0 P0.0 P0.9 P0.8 9 8 7 P0.5 P0.4 6 10 P1.2 P1.3 P1.4
+output or 5
+ringout 9 P0.8 P0.9 P0.0 0 Q0.1 Q0.2
+ringout 2 Q1.0 Q1.3 Q1.2 3
+ringout 4 13 11
+ringout 4 10 P1.2 P1.3 P1.4 12
+ringout 6 7 P0.5 P0.4
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 12
+piece P 1 0 0 0 in deduced 12 13
+piece P 1 0 0 0 out deduced 13 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 3 Q1.1 2 4 P0.3 6 10 P1.1 P1.0 11
+ringout 1 12 13 0
+output diff 2
+ringout 0 P0.0 P0.9 P0.8 9 8 7 P0.5 P0.4 6 10 P1.2 P1.3 P1.4 12 1 11 13
+ringout 3 Q1.1 2
+output or 5
+ringout 7 6 P0.4 P0.5
+ringout 4 11 13
+ringout 4 12 P1.4 P1.3 P1.2 10
+ringout 0 P0.0 P0.9 P0.8 9 Q0.2 Q0.1
+ringout 2 3 Q1.2 Q1.3 Q1.0
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in deduced 11 12
+piece P 1 0 0 0 out deduced 12 13
+piece P 1 0 0 0 in vertex 13 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 12 11
+ringout 13 0 1 3 Q1.1 2 4 P0.3 6 10 P1.1 P1.0
+output diff 2
+ringout 3 Q1.1 2
+ringout 13 0 P0.0 P0.9 P0.8 9 8 7 P0.5 P0.4 6 10 P1.2 P1.3 P1.4 11 1 12
+output or 5
+ringout 0 Q0.1 Q0.2 9 P0.8 P0.9 P0.0
+ringout 3 Q1.2 Q1.3 Q1.0 2
+ringout 7 P0.5 P0.4 6
+ringout 4 13 12
+ringout 10 4 11 P1.4 P1.3 P1.2
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 11
+piece P 1 0 0 0 in deduced 11 13
+piece P 1 0 0 0 out deduced 13 12
+piece P 1 0 0 0 in vertex 12 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 3 Q1.1 2 4 P0.3 6 10 P1.1 P1.0 12
+ringout 1 11 13 0
+output diff 2
+ringout 3 2 Q1.1
+ringout 6 10 P1.2 P1.3 P1.4 11 1 12 13 0 P0.0 P0.9 P0.8 9 8 7 P0.5 P0.4
+output or 5
+ringout 4 13 12
+ringout 7 P0.5 P0.4 6
+ringout 10 4 11 P1.4 P1.3 P1.2
+ringout 3 2 Q1.0 Q1.3 Q1.2
+ringout 0 Q0.1 Q0.2 9 P0.8 P0.9 P0.0
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 13
+piece P 1 0 0 0 in deduced 13 12
+piece P 1 0 0 0 out deduced 12 11
+piece P 1 0 0 0 in vertex 11 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 12 13 0
+ringout 1 3 Q1.1 2 4 P0.3 6 10 P1.1 P1.0 11
+output diff 3
+ringout 2 3 Q1.1
+ringout 11 12 1
+ringout 8 9 P0.8 P0.9 P0.0 0 13 P1.4 P1.3 P1.2 10 6 P0.4 P0.5 7
+output or 5
+ringout 3 Q1.2 Q1.3 Q1.0 2
+ringout 7 P0.5 P0.4 6
+ringout 4 10 P1.2 P1.3 P1.4 13
+ringout 4 12 11
+ringout 0 Q0.1 Q0.2 9 P0.8 P0.9 P0.0
+endorder
+order 0 0
+piece P 0 0 0 0 in deduced 0 1
+piece P 0 0 0 0 in deduced 1 3
+piece P 0 0 0 0 out deduced 3 2
+piece P 0 0 0 0 in midpoint 2 4,5
+piece P 0 0 0 0 in vertex 4,5 6
+piece P 0 0 0 0 out vertex 6 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 1 opposite sector 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 0 0 0 out vertex 10 13
+piece P 1 0 0 0 in deduced 13 11
+piece P 1 0 0 0 out deduced 11 12
+piece P 1 0 0 0 in vertex 12 10
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 1 opposite sector 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 0 out deduced 7 6
+piece Q 0 0 0 0 in deduced 6 10
+piece Q 0 0 0 0 out deduced 10 4
+piece Q 0 0 0 0 out deduced 4 11
+piece Q 0 0 0 0 in deduced 11 1
+piece Q 0 0 0 0 in deduced 1 12
+piece Q 0 0 0 0 out midpoint 12 5
+piece Q 0 0 0 0 out midpoint 5 13
+piece Q 0 0 0 0 in deduced 13 0
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 2
+ringout 1 12 P1.0 P1.1 10 6 P0.3 4 2 Q1.1 3
+ringout 1 0 13 11
+output diff 3
+ringout 11 1 12
+ringout 3 Q1.1 2
+ringout 8 7 P0.5 P0.4 6 10 P1.2 P1.3 P1.4 13 0 P0.0 P0.9 P0.8 9
+output or 5
+ringout 6 P0.4 P0.5 7
+ringout 9 P0.8 P0.9 P0.0 0 Q0.1 Q0.2
+ringout 2 Q1.0 Q1.3 Q1.2 3
+ringout 4 12 11
+ringout 4 10 P1.2 P1.3 P1.4 13
+endorder
+endcase
+case shared#868 seed 10
+ring P 6
+0.22553143457992583 -0.4739916663750369 -0.8511565497740922
+0.22627218394885434 -0.4825929854457449 -0.8461116410791067
+0.21614806525175512 -0.48440785653564505 -0.8477199079970136
+0.2127296747764732 -0.48500775327299117 -0.8482414542655772
+0.2068023066486075 -0.4860330348266898 -0.8491199532586509
+0.206062530603213 -0.47743154378360775 -0.8541647115643453
+ring P 4
+0.21366049794457878 -0.48391572601600996 -0.8486311105141461
+0.2145926428014559 -0.4811775994873406 -0.8499518312275627
+0.2175304406952023 -0.4815497055460296 -0.8489937505420657
+0.21607067097654853 -0.4841437719328506 -0.8478904842268111
+ring Q 7
+0.22627373143332594 -0.482592703701241 -0.8461113879375254
+0.22699031005844417 -0.4911460536617777 -0.8409821360243234
+0.2075214060817313 -0.49458593107034854 -0.8439902978145765
+0.2068023066486075 -0.4860330348266898 -0.8491199532586509
+0.22282020380858758 -0.4832181676042779 -0.8466707502163183
+0.22383013591239725 -0.48303822508057354 -0.8465070249965129
+0.21614799253983083 -0.4844074041939391 -0.8477201850157225
+ring Q 3
+0.22225038080941684 -0.4836932717337157 -0.8465492230872362
+0.22010710183297993 -0.48578160213121124 -0.8459131744768607
+0.218766476276816 -0.48342520745029127 -0.8476091656294592
+records 8
+LS 1 4
+SL 1 6
+LL 1 8
+LL 1 9
+SL 2 3
+SS 2 6
+SL 3 3
+SS 4 3
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out deduced 0 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 in deduced 2 4,5
+piece P 0 0 0 1 opposite sector 4,5 6
+piece P 0 0 0 1 opposite sector 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 1 opposite sector 7 6
+piece Q 0 0 0 1 opposite sector 6 4
+piece Q 0 0 0 0 out midpoint 4 ~2
+piece Q 0 0 0 0 in midpoint ~2 ~3
+piece Q 0 0 0 0 out midpoint ~3 0
+piece Q 0 0 0 0 out vertex 0 5
+piece Q 0 0 0 0 in midpoint 5 ~2
+piece Q 0 0 0 0 in midpoint ~2 ~3
+piece Q 0 0 0 0 out midpoint ~3 ~0
+piece Q 0 0 0 1 opposite sector ~0 1
+piece Q 0 0 0 0 out vertex 1 7
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 2 Q1.2 3
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 7 6 4 2 Q1.2 3 0 1 P0.0 P0.5
+output or 3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 3 0 Q0.5 4 2 Q1.1 Q1.0
+ringout 1 Q0.0 Q0.1 Q0.2 7 P0.5 P0.0
+endorder
+order 0 0
+piece P 0 0 0 1 opposite sector 1 0
+piece P 0 0 0 0 out deduced 0 3
+piece P 0 0 0 0 in deduced 3 2
+piece P 0 0 0 0 in deduced 2 4,5
+piece P 0 0 0 1 opposite sector 4,5 6
+piece P 0 0 0 1 opposite sector 6 7
+piece P 0 0 0 0 out vertex 7 1
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 1 opposite sector 7 6
+piece Q 0 0 0 1 opposite sector 6 4
+piece Q 0 0 0 0 out midpoint 4 ~2
+piece Q 0 0 0 0 in midpoint ~2 ~3
+piece Q 0 0 0 0 out midpoint ~3 0
+piece Q 0 0 0 0 out vertex 0 5
+piece Q 0 0 0 0 in midpoint 5 ~2
+piece Q 0 0 0 0 in midpoint ~2 ~3
+piece Q 0 0 0 0 out midpoint ~3 ~0
+piece Q 0 0 0 1 opposite sector ~0 1
+piece Q 0 0 0 0 out vertex 1 7
+piece Q 1 0 0 0 in vertex 2 3
+piece Q 1 0 0 0 out vertex 3 2
+output and 1
+ringout 2 Q1.2 3
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 4 6 7 P0.5 P0.0 1 0 3 Q1.2 2
+output or 3
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 7 Q0.2 Q0.1 Q0.0 1 P0.0 P0.5
+ringout 3 0 Q0.5 4 2 Q1.1 Q1.0
+endorder
+endcase
+case shared#301 seed 7
+ring P 8
+0.02215605135548958 -0.9456780922451962 0.324348663070806
+0.012659565276286477 -0.9448156185002978 0.3273578812934173
+0.008728339217478375 -0.9486995984062344 0.31605836182318364
+0.008263367906706275 -0.949148810056593 0.3147193243494781
+0.0074411032401796974 -0.9499344285866427 0.31236070714534125
+0.007249030522473246 -0.9501209433750789 0.31179744148490757
+0.006406045739646021 -0.9509203641538387 0.3093693967016005
+0.015902844440117424 -0.9517825327148614 0.3063610777458477
+ring P 4
+0.010946515390642382 -0.9501516421339453 0.3115959414866783
+0.013534631071688124 -0.9500110561506356 0.31192275799195396
+0.012582103376982016 -0.9491966601999472 0.3144318542067212
+0.009684904751782793 -0.9491385094048835 0.3147098546036087
+ring Q 9
+0.01265939999631743 -0.9448157849092004 0.32735740739770175
+0.003161813462058587 -0.9438586797248708 0.3303343694556394
+-0.0030913934533135638 -0.949963120194536 0.31234678413068107
+0.0064051633883058815 -0.9509211985072604 0.3093668503758675
+0.007432043593523896 -0.9499445003412652 0.3123302915175024
+0.007682213240029453 -0.9497049703027609 0.3130518375316892
+0.007838597339747778 -0.9495546279453767 0.3135036920663973
+0.009794725110563746 -0.9476598258151369 0.3191315056462352
+0.008728556329085245 -0.9486991980717693 0.3160595574925585
+ring Q 3
+0.009511207253602058 -0.9483615748886063 0.3170486716757877
+0.007655736877607981 -0.9474865942447356 0.31970383704199196
+0.006332645421920286 -0.9484037569592897 0.3170019107000223
+records 10
+SS 1 0
+LS 1 7
+LL 1 9
+LL 1 11
+SS 2 8
+LS 3 5
+LS 3 6
+SL 4 4
+LS 4 4
+SL 6 3
+order 0 0
+piece P 0 0 0 1 opposite sector 0 1
+piece P 0 0 0 0 out deduced 1 2
+piece P 0 0 0 0 in midpoint 2 3
+piece P 0 0 0 0 out deduced 3 4
+piece P 0 0 0 0 out vertex 4 6
+piece P 0 0 0 1 opposite sector 6 5
+piece P 0 0 0 1 opposite sector 5 7
+piece P 0 0 0 1 opposite sector 7 8
+piece P 0 0 0 0 out vertex 8 9
+piece P 0 0 0 0 out vertex 9 0
+piece P 1 1 0 0 out vertex - -
+piece Q 0 0 0 0 out vertex 0 9
+piece Q 0 0 0 0 out deduced 9 8
+piece Q 0 0 0 1 opposite sector 8 7
+piece Q 0 0 0 1 opposite sector 7 5
+piece Q 0 0 0 1 opposite sector 5 6
+piece Q 0 0 0 0 out deduced 6 1
+piece Q 0 0 0 0 out midpoint 1 ~2
+piece Q 0 0 0 0 out midpoint ~2 ~3
+piece Q 0 0 1 0 none none ~3 4
+piece Q 0 0 1 0 none none 4 ~3
+piece Q 0 0 0 0 out deduced ~3 ~2
+piece Q 0 0 0 0 out midpoint ~2 ~1
+piece Q 0 0 0 1 opposite sector ~1 0
+piece Q 1 0 0 0 out vertex 2 3
+piece Q 1 0 0 0 in vertex 3 2
+output and 1
+ringout 3 2 Q1.0
+output diff 2
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 2 1 0 P0.0 P0.7 9 P0.5 8 7 5 6 P0.3 4 3 Q1.0
+output or 5
+ringout P1.0 P1.1 P1.2 P1.3
+ringout 9 P0.7 P0.0 0 Q0.1 Q0.2 Q0.3
+ringout 9 8 P0.5
+ringout 2 1 6 P0.3 4 3
+ringout 2 3 Q1.2 Q1.1
+endorder
+endcase
