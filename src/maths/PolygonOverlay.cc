@@ -1687,6 +1687,11 @@ GPlatesMaths::PolygonOverlay::Overlay::find_same_point_vertices(
 		return false;
 	};
 
+	// Any single arc between two vertices, a common one too: nothing is asked of the other input's
+	// pieces between the two. Where both inputs have a vertex on their own edge at one point, and
+	// the two edges cross there, both have a piece of no length between the vertex and the
+	// crossing, which pair as common; left as two vertices, the intersection had a ring of two
+	// points a rounding apart and a third.
 	const unsigned int num_joined_before = joined_records.size();
 	for (const Piece &piece : d_pieces)
 	{
@@ -1749,7 +1754,7 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	// - The other input passes the vertex along the piece both ways. A vertex of the input within
 	//   the thickness of the piece is not enough: a hole's tip 0.85 thicknesses from its
 	//   exterior's edge, which the other input's edge passes, at 68 degrees to that edge, to end
-	//   at the exterior's vertex a thickness on, is a neck, two vertices that describe it as it
+	//   at the exterior's vertex 0.9 thicknesses on, is a neck, two vertices that describe it as it
 	//   is, and the piece cut at the tip made the two one point whose rays leave from two (the
 	//   areas were wrong in two of the hunt's 39,320 cases with valid inputs, both from its 'six'
 	//   generator).
@@ -1905,7 +1910,10 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 
 		// A chain of the other input's pieces from the start vertex to the end vertex, each step
 		// further along the segment and within its thickness (a depth-first search; chains are a
-		// few pieces long).
+		// few pieces long). A chain of more than MAX_CHAIN pieces is not found; its vertices that
+		// hold a vertex of this piece's input can still be cut as passages, below, however many
+		// they are (by the chain alone, 16 or more hole tips of one input on an edge the other
+		// shares left the edge uncut, and the intersection was a polygon of no area along it).
 		const Side other_side = (ring_view.side == SUBJECT) ? CLIP : SUBJECT;
 		std::vector<unsigned int> chain{ *piece.start_vertex };
 		std::vector<double> chain_along{ along_start };

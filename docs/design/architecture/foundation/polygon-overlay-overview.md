@@ -331,11 +331,16 @@ most of the reference, is about that. In the order the reference takes them, all
 - **Vertices by record identity.** Several records can sit at one point (a vertex in the corner of
   the other polygon is reported on both of the corner's edges). Records are made one vertex when
   they name the same original vertex, never by measuring a distance, so the overlay adds no
-  tolerance of its own (*Records and vertices*).
+  tolerance of its own (*Records and vertices*). One case identity misses: where a polygon touches
+  *itself* (a hole's tip on its own exterior) at a point inside an edge of the other, the records
+  there name different vertices. They are at one position, and are made one vertex for that
+  (*Vertices at one point*).
 - **The loop and spike rules** remove a piece that starts and ends at one vertex, or runs to a
   vertex and straight back, which bound nothing.
 - **Self-touch cuts** add the cut that is missing where a polygon touches *itself* on a shared
-  edge, which the intersection of `P` with `Q` never reports.
+  edge, which the intersection of `P` with `Q` never reports. The other polygon is cut there, so
+  its pieces show where: a chain of them from one end of the uncut piece to the other, or one each
+  way along it from a vertex of the touching polygon (*a passage*).
 - **The rotational order, the one-passage rule and bundles.** Where a polygon passes twice through
   one vertex, the order of the pieces round the vertex matters, and near a shared edge that order
   can be noise. Where one polygon passes once its classes need no order (*the one-passage rule*),

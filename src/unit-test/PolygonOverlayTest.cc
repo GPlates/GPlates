@@ -2207,7 +2207,8 @@ namespace
 // of PR C's final review, and what else the two rules for them must do (section 5.2: vertices at
 // one point are one vertex, and a piece is cut at a passage), each both ways round. Every point
 // reads right by parity whatever the rings, so the areas and the crossing groups are what these
-// check; and each case but the first fails with one of the two rules taken out.
+// check. Each case but the first fails with one of the two rules taken out, but for the 17 tips,
+// which were checked against the overlay without either.
 TEST(PolygonOverlayTest, SelfTouchingInputs)
 {
 	// Checks the outputs, both ways round, and returns the vertices joined and the pieces cut at
