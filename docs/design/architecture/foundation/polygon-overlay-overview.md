@@ -359,6 +359,13 @@ most of the reference, is about that. In the order the reference takes them, all
 - **Spike walls.** The symmetric difference joins the two differences across each common piece
   between them, except one along which a ring doubles straight back, which separates nothing (*The
   symmetric difference*).
+- **Rings made simple.** Where a polygon touches *itself* away from the other's outline (a hole's
+  vertex at, or on an edge of, its own exterior) there is no vertex for the split to cut at. The
+  walk gives the touched edge a point there, a ring that passes a point twice is cut there in the
+  clean-up, and a polygon whose rings touch in a loop (a hole touching its exterior twice, which
+  divides its interior) is relinked into one polygon per piece, so that the output of valid inputs
+  is valid under OGC simple features, wherever their outlines touch exactly or keep more than a
+  thickness apart (*Rings made simple*).
 - **Crossing rings.** If an input's own rings cross each other (a self-intersecting polygon), the
   output rings can cross too; such rings are put into one polygon, which reads correctly by
   point-in-polygon's parity rule (*Grouping*).
