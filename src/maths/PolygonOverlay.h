@@ -1405,9 +1405,17 @@ namespace GPlatesMaths
 			find_reference_point(
 					bool inside_subject = false) const;
 
-			//! Apply deductions at every vertex until nothing changes; true if anything did.
+			/**
+			 * Apply deductions at every vertex until nothing changes; true if anything did.
+			 *
+			 * @a classified_pieces: the pieces classified since the last call (by a midpoint
+			 * test, say), whose vertices are then the only ones visited first; none, every vertex
+			 * (the first call). A vertex no class has reached since it was last solved deduces
+			 * nothing new, so either way the classes are those of sweeping every vertex.
+			 */
 			bool
-			deduce_to_fixed_point();
+			deduce_to_fixed_point(
+					const std::vector<unsigned int> *classified_pieces = nullptr);
 
 			bool
 			solve_four_end_vertex(

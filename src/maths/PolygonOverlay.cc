@@ -3019,15 +3019,52 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 
 
 bool
-GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
+GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point(
+		const std::vector<unsigned int> *classified_pieces)
 {
-	bool any_change = false;
-	bool changed = true;
-	while (changed)
+	//
+	// Sweeps in vertex order until one deduces nothing, each visiting only the vertices that a
+	// class has reached since they were last solved (a vertex of a piece classified since). A
+	// vertex's solution reads only its own pieces' classes, so one that no class has reached
+	// since would deduce what it did then, and that applied nothing (a class it applied would
+	// have reached it): the deductions, and their order, are those of sweeping every vertex.
+	// What sweeping every vertex cost was the sweeps: along a common chain running against the
+	// vertex order a class travels one vertex per sweep (two polygons sharing 10,000 vertices
+	// took 8 seconds, 20,000 took 33). A vertex reached ahead of the sweep is visited in it, one
+	// behind it (or the vertex itself) in the next.
+	//
+	std::set<unsigned int> this_sweep;
+	std::set<unsigned int> next_sweep;
+	if (classified_pieces)
 	{
-		changed = false;
+		for (unsigned int p : *classified_pieces)
+		{
+			for (const boost::optional<unsigned int> &vertex :
+					{ d_pieces[p].start_vertex, d_pieces[p].end_vertex })
+			{
+				if (vertex)
+				{
+					this_sweep.insert(*vertex);
+				}
+			}
+		}
+	}
+	else
+	{
 		for (unsigned int v = 0; v < d_vertices.size(); ++v)
 		{
+			this_sweep.insert(this_sweep.end(), v);
+		}
+	}
+
+	bool any_change = false;
+	while (!this_sweep.empty())
+	{
+		while (!this_sweep.empty())
+		{
+			const unsigned int v = *this_sweep.begin();
+			this_sweep.erase(this_sweep.begin());
+
 			std::vector<Deduction> deductions;
 			solve_vertex(v, &deductions);
 			for (const Deduction &deduction : deductions)
@@ -3053,10 +3090,20 @@ GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
 					++d_diagnostics.deduced;
 				}
 				piece.method = deduction.method;
-				changed = true;
 				any_change = true;
+
+				// (A common pair's two pieces have the same two vertices.)
+				for (const boost::optional<unsigned int> &vertex :
+						{ piece.start_vertex, piece.end_vertex })
+				{
+					if (vertex)
+					{
+						(*vertex > v ? this_sweep : next_sweep).insert(*vertex);
+					}
+				}
 			}
 		}
+		this_sweep.swap(next_sweep);
 	}
 	return any_change;
 }
@@ -3464,47 +3511,42 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 	// the one whose midpoint is farthest from the other input's outline is tested first, then
 	// deduction resumes. A class decided within the band of rounding must never be the source of a
 	// deduction for a piece with a margin (section 5.2, classification step 3). The distance is
-	// rounded (a cosine, resolving about 1.5e-8 radians), but it only orders the tests.
+	// rounded (a cosine, resolving about 1.5e-8 radians), but it only orders the tests. Pieces of
+	// equal margin are tested in index order. A piece deduced meanwhile is not tested, and after a
+	// test deduction resumes from that piece's vertices only (deduce_to_fixed_point).
 	//
-	std::vector<boost::optional<double>> margins(d_pieces.size());
-	while (true)
+	deduce_to_fixed_point();
+	std::vector<std::pair<double, unsigned int>> stalled;  // (margin, piece)
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
 	{
-		deduce_to_fixed_point();
-
-		boost::optional<unsigned int> best_piece;
-		double best_margin = -1.0;
-		for (unsigned int p = 0; p < d_pieces.size(); ++p)
+		const Piece &piece = d_pieces[p];
+		if (piece.internal || piece.common || piece.is_classified())
 		{
-			const Piece &piece = d_pieces[p];
-			if (piece.internal || piece.common || piece.is_classified())
+			continue;
+		}
+		const Vector3D sum =
+				Vector3D(d_stops[piece.start_stop].position.position_vector()) +
+				Vector3D(d_stops[piece.end_stop].position.position_vector());
+		const PointOnSphere midpoint(sum.get_normalisation());
+		const boost::optional<AngularDistance> distance =
+				minimum_distance(midpoint, other_polygon(d_rings[piece.ring].side));
+		stalled.emplace_back(distance ? distance->calculate_angle().dval() : 0.0, p);
+	}
+	std::stable_sort(
+			stalled.begin(),
+			stalled.end(),
+			[](const std::pair<double, unsigned int> &a, const std::pair<double, unsigned int> &b)
 			{
-				continue;
-			}
-
-			if (!margins[p])
-			{
-				const Vector3D sum =
-						Vector3D(d_stops[piece.start_stop].position.position_vector()) +
-						Vector3D(d_stops[piece.end_stop].position.position_vector());
-				const PointOnSphere midpoint(sum.get_normalisation());
-				const boost::optional<AngularDistance> distance =
-						minimum_distance(midpoint, other_polygon(d_rings[piece.ring].side));
-				margins[p] = distance ? distance->calculate_angle().dval() : 0.0;
-			}
-
-			if (*margins[p] > best_margin)
-			{
-				best_margin = *margins[p];
-				best_piece = p;
-			}
+				return a.first > b.first;
+			});
+	for (const std::pair<double, unsigned int> &candidate : stalled)
+	{
+		Piece &piece = d_pieces[candidate.second];
+		if (piece.is_classified())
+		{
+			continue;
 		}
 
-		if (!best_piece)
-		{
-			break;
-		}
-
-		Piece &piece = d_pieces[*best_piece];
 		const Vector3D sum =
 				Vector3D(d_stops[piece.start_stop].position.position_vector()) +
 				Vector3D(d_stops[piece.end_stop].position.position_vector());
@@ -3514,6 +3556,9 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 		piece.piece_class = inside ? CLASS_INSIDE : CLASS_OUTSIDE;
 		piece.method = METHOD_MIDPOINT_TEST;
 		++d_diagnostics.midpoint_tests;
+
+		const std::vector<unsigned int> tested(1, candidate.second);
+		deduce_to_fixed_point(&tested);
 	}
 
 	//
@@ -3558,7 +3603,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 			continue;
 		}
 		++d_diagnostics.anchorless_resolved;
-		deduce_to_fixed_point();
+		deduce_to_fixed_point(&chain);  // (one of its pieces was classified)
 	}
 
 	// (e) A common clip piece takes its subject partner's class.

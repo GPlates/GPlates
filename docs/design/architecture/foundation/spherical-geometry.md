@@ -1481,7 +1481,12 @@ gives `0`.
    for much of its length and can cross it with no record, so its midpoint is decided by rounding,
    where the vertex is more than `h` away whatever happens.
 2. **Deduction to a fixed point** (`deduce_to_fixed_point`, `solve_vertex`), combinatorial. At
-   each vertex the rules below deduce what they can; repeat while anything changes.
+   each vertex the rules below deduce what they can; repeat while anything changes. Each sweep,
+   in vertex order, visits only the vertices of the pieces classified since they were last
+   visited: a vertex's rules read only its own pieces' classes, so this deduces what sweeping
+   every vertex does, in the same order. Sweeping every vertex was quadratic in a common chain's
+   length, since a class travels one vertex per sweep along a chain running against the vertex
+   order (two polygons sharing 10,000 vertices took 8 seconds; now 0.05).
    - **Four ends, two of each input, none common: the geometry-free rule**
      (`solve_four_end_vertex`). `P` crosses `Q` at the vertex iff `P`'s two classes differ, `Q`
      crosses `P` iff `Q`'s do, and the two must agree: three known classes fix the fourth, four
@@ -1545,8 +1550,8 @@ gives `0`.
    and the other end is an independent check.
 3. **Stalled single arcs, by margin.** Pieces still unclassified are single arcs between records.
    Each one's chord midpoint is measured to the other input's outline (`minimum_distance`), and the
-   one with the **largest** distance is tested there, threshold off; then deduction resumes. The
-   distance is rounded (a cosine, resolving about `1.5e-8` radians near zero), but it only orders
+   one with the **largest** distance is tested there, threshold off (of equal distances, the
+   first piece); then deduction resumes, at that piece's vertices. The distance is rounded (a cosine, resolving about `1.5e-8` radians near zero), but it only orders
    the tests. The principle: a class decided inside the band (an arc within `2 h` of the other
    outline over its whole length, a *band piece*, whose class is arbitrary by nature) must never be
    the source of a deduction for a piece with a margin. Testing stalled arcs longest first, or in
@@ -3344,15 +3349,10 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   constructed cases. A generator of grid polygons whose holes share a vertex with their exterior or
   put a vertex on its edge, checked by the area identities and the crossing groups, would need no
   outside answer.
-- **Classification is quadratic in the length of a shared edge.** `deduce_to_fixed_point` sweeps
-  every vertex until a sweep changes nothing, and along a common chain the number of sweeps grows
-  with its length: two polygons sharing 10,000 vertices take about 8 seconds, 20,000 about 33. A
-  work list of the vertices at the other ends of newly classified pieces, or classifying a whole
-  common chain once one piece has a class, would make it linear. The grouping is likewise quadratic
-  in the number of output rings (every pair is tested), which a union with thousands of holes can
-  reach (5,000 holes, about 2 seconds); a bounding-circle filter would do. And the self-touch
-  cuts' search for passages is quadratic in the touches on one segment (5,000 hole tips on one
-  shared edge, `0.23` seconds for the intersection, section 5.2).
+- **The grouping is quadratic in the number of output rings** (every pair is tested), which a
+  union with thousands of holes can reach (5,000 holes, about 2 seconds); a bounding-circle filter
+  would do. And the self-touch cuts' search for passages is quadratic in the touches on one segment
+  (5,000 hole tips on one shared edge, `0.23` seconds for the intersection, section 5.2).
 - **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
   edge where an input folds back on itself along all of it, or a short one (its far end within the
   thickness of the arc beside it), the two differences' rings are left sharing the edge, unless
