@@ -1890,7 +1890,7 @@ across a gap under `2 h` between two facing holes decide that a hole lay outside
 of 119,198 generated cases, the intersection's area wrong by about a quarter. Both tests are asked
 only of rings whose bounding circles, widened by the margin, can meet: rings are sorted by the
 angle of their circle's centre from an axis, and only those whose intervals of that angle (plus
-and minus the radius and the margin) overlap are paired (`RingSweep`; the axis is whichever of
+and minus the radius and the margin) overlap are paired (`CircleSweep`; the axis is whichever of
 `x`, `y` and `z` pairs fewest, so that rings along a meridian or a parallel spread out along it).
 Every pair of rings so paired, not already in one group, is given to the crossing test (which
 returns at once if their bounding circles do not meet); containment is asked of each group's first
@@ -1973,8 +1973,13 @@ touch is a shared position:
   ring touching itself is an invalid input, and keeps its touch). Searched at walk time from the
   kept pieces only: the touched edge's piece through the point is of the same input and on the same
   side of the other, so kept with it. Searched in `build()` it would cost every overlay against a
-  clip with holes, polylines and whole results included (by a proxy, 11 to 29 times an overlay
-  against a clip of 4,000 to 120,000 vertices with 20 to 200 holes). Exact up to rounding, the
+  clip with holes, polylines and whole results included. And searched by pairs of rings whose
+  bounding circles meet (`CircleSweep`), each pair's two bounding trees descended together, a pair
+  of nodes whose circles miss pruned, so that vertices meet edges only at leaves where the two
+  outlines come close. A query of the polygon's tree for every vertex visited about a hundred
+  nodes (its rings' subtrees overlap, and a node over a long run of a ring has a circle over much
+  of its interior): an intersection keeping most of a subject with 200 holes and 120,000 vertices
+  took 0.28 seconds, against 0.078 on `main`; by pairs, 0.095. Exact up to rounding, the
   scale of the join of vertices at one point: the thickness would bend an edge by up to 9 m to make
   a touch that is not there, and a vertex farther than rounding from an edge leaves the output as
   valid as the input. A touch point is no stop: a stop would end single arcs, move vertex tests
@@ -3478,7 +3483,9 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   steps logarithmic, and a heap the merges; the merge order must be kept, since the tree's shape
   decides the order in which tied records are found. Likewise `compose_subject_location` (section
   5.4) passes over every subject ring for each point it composes, so a cascade with provenance is
-  quadratic in the subject's holes.
+  quadratic in the subject's holes. And the touch search of section 5.2 depends on its input
+  alone, so it could be made once per polygon and cached like the bounding tree: a clip with holes
+  is searched again for every subject it cuts.
 - **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
   edge where an input folds back on itself along all of it, or a short one (its far end within the
   thickness of the arc beside it), the two differences' rings are left sharing the edge, unless

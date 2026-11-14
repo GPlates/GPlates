@@ -592,51 +592,36 @@ namespace GPlatesMaths
 
 
 			/**
-			 * The pairs of rings whose bounding circles, each widened by a margin, can meet (the
-			 * grouping, Overlay::extract): those whose intervals of angle from an axis overlap,
-			 * each interval the circle's centre's angle plus and minus its radius and the margin
-			 * (two points' angles from an axis differ by no more than the angle between them). The
-			 * axis is whichever of x, y and z gives the fewest pairs, so that rings along a
-			 * meridian or a parallel spread out along it. Without it every pair of rings was
-			 * tested, cheap as a test of their bounding circles is: 1.7 seconds for 10,000 holes
-			 * far apart.
+			 * Which circles can meet, as the rings they bound (the grouping, Overlay::extract, and
+			 * the touch search, Overlay::find_own_touches): those whose intervals of angle from an
+			 * axis overlap, each interval a circle's centre's angle plus and minus its radius (two
+			 * points' angles from an axis differ by no more than the angle between them). The axis
+			 * is whichever of x, y and z gives the fewest pairs, so that rings along a meridian or
+			 * a parallel spread out along it. Without it the grouping tested every pair of rings,
+			 * cheap as a test of their bounding circles is (1.7 seconds for 10,000 holes far
+			 * apart).
 			 */
-			class RingSweep
+			class CircleSweep
 			{
 			public:
-				RingSweep(
-						const std::vector<PolygonOnSphere::non_null_ptr_to_const_type> &rings,
-						const AngularExtent &margin)
+				//! A circle: its centre, and its radius in radians (with any margin added).
+				class Circle
 				{
-					const unsigned int num_rings = rings.size();
-					boost::optional<unsigned long long> fewest_pairs;
-					const UnitVector3D axes[3] = {
-							UnitVector3D::xBasis(),
-							UnitVector3D::yBasis(),
-							UnitVector3D::zBasis() };
-					for (const UnitVector3D &axis : axes)
-					{
-						std::vector<Interval> intervals;
-						intervals.reserve(num_rings);
-						for (unsigned int r = 0; r < num_rings; ++r)
-						{
-							const BoundingSmallCircle &bounds =
-									rings[r]->get_bounding_small_circle();
-							const double centre = angle_between(axis, bounds.get_centre());
-							const double radius = bounds.get_angular_extent().get_angle().dval() +
-									margin.get_angle().dval();
-							intervals.push_back(Interval{ centre - radius, centre + radius, r });
-						}
-						std::stable_sort(
-								intervals.begin(),
-								intervals.end(),
-								[](const Interval &a, const Interval &b)
-								{
-									return a.begin < b.begin;
-								});
+				public:
+					UnitVector3D centre;
+					double radius;
+				};
 
+				explicit
+				CircleSweep(
+						const std::vector<Circle> &circles)
+				{
+					boost::optional<unsigned long long> fewest_pairs;
+					for (const UnitVector3D &axis : get_axes())
+					{
+						std::vector<Interval> intervals = get_intervals(axis, circles);
 						unsigned long long num_pairs = 0;
-						for (unsigned int i = 0; i < num_rings; ++i)
+						for (unsigned int i = 0; i < intervals.size(); ++i)
 						{
 							num_pairs += end_of_overlaps(intervals, i) - (i + 1);
 						}
@@ -648,7 +633,7 @@ namespace GPlatesMaths
 					}
 				}
 
-				//! Calls @a visit(a, b) for each pair of rings whose intervals overlap, once.
+				//! Calls @a visit(a, b) for each pair of circles whose intervals overlap, once.
 				template <typename VisitType>
 				void
 				visit_pairs(
@@ -659,7 +644,7 @@ namespace GPlatesMaths
 						const unsigned int end = end_of_overlaps(d_intervals, i);
 						for (unsigned int j = i + 1; j < end; ++j)
 						{
-							visit(d_intervals[i].ring, d_intervals[j].ring);
+							visit(d_intervals[i].index, d_intervals[j].index);
 						}
 					}
 				}
@@ -670,8 +655,45 @@ namespace GPlatesMaths
 				public:
 					double begin;
 					double end;
-					unsigned int ring;
+					unsigned int index;
 				};
+
+				static
+				std::vector<UnitVector3D>
+				get_axes()
+				{
+					return {
+							UnitVector3D::xBasis(),
+							UnitVector3D::yBasis(),
+							UnitVector3D::zBasis() };
+				}
+
+				//! The circles' intervals on @a axis, in order of their beginnings (stably).
+				static
+				std::vector<Interval>
+				get_intervals(
+						const UnitVector3D &axis,
+						const std::vector<Circle> &circles)
+				{
+					std::vector<Interval> intervals;
+					intervals.reserve(circles.size());
+					for (unsigned int c = 0; c < circles.size(); ++c)
+					{
+						const double centre = angle_between(axis, circles[c].centre);
+						intervals.push_back(Interval{
+								centre - circles[c].radius,
+								centre + circles[c].radius,
+								c });
+					}
+					std::stable_sort(
+							intervals.begin(),
+							intervals.end(),
+							[](const Interval &a, const Interval &b)
+							{
+								return a.begin < b.begin;
+							});
+					return intervals;
+				}
 
 				//! One past the last interval, in order of their beginnings, that begins in
 				//! interval @a i.
@@ -693,7 +715,7 @@ namespace GPlatesMaths
 						intervals.begin();
 				}
 
-				//! In order of their beginnings.
+				//! In order of their beginnings, on the axis of fewest pairs.
 				std::vector<Interval> d_intervals;
 			};
 		}
@@ -4965,78 +4987,200 @@ GPlatesMaths::PolygonOverlay::Overlay::find_own_touches(
 	}
 
 	bool found = false;
-	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	for (Side side : { SUBJECT, CLIP })
 	{
-		const Piece &piece = d_pieces[p];
-		const RingView &ring_view = d_rings[piece.ring];
-		const PolygonOnSphere *const polygon =
-				(ring_view.side == SUBJECT) ? d_subject_polygon : &d_clip;
-		if (!polygon ||
-			polygon->number_of_interior_rings() == 0 ||
-			piece.internal ||
-			!is_kept(piece, operation).get_value_or(false))
+		const PolygonOnSphere *const polygon = (side == SUBJECT) ? d_subject_polygon : &d_clip;
+		if (!polygon || polygon->number_of_interior_rings() == 0)
 		{
 			continue;
 		}
+		const unsigned int first_ring = d_side_rings_begin[side];
+		const unsigned int num_rings = d_side_rings_end[side] - first_ring;
 
-		// The piece's interior stops (a closed piece's: all of its ring's).
-		std::vector<unsigned int> stops;
-		if (piece.closed)
+		// The original vertices of the kept pieces not yet searched (a closed piece's: all of its
+		// ring's stops), by ring and ring vertex.
+		std::vector<std::vector<int>> stop_of_vertex(num_rings);  // empty: none in the ring
+		unsigned int num_searched = 0;
+		for (unsigned int p = 0; p < d_pieces.size(); ++p)
 		{
-			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
-			{
-				stops.push_back(s);
-			}
-		}
-		else
-		{
-			for (unsigned int s = piece.start_stop; ; )
-			{
-				s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
-				if (s == piece.end_stop)
-				{
-					break;
-				}
-				stops.push_back(s);
-			}
-		}
-
-		for (unsigned int s : stops)
-		{
-			if (d_stops[s].kind != Stop::ORIGINAL_VERTEX || d_own_touch_searched[s])
+			const Piece &piece = d_pieces[p];
+			const RingView &ring_view = d_rings[piece.ring];
+			if (ring_view.side != side ||
+				piece.internal ||
+				!is_kept(piece, operation).get_value_or(false))
 			{
 				continue;
 			}
-			d_own_touch_searched[s] = true;
-			++d_diagnostics.own_touch_queries;
-
-			const PointOnSphere &position = d_stops[s].position;
-			const auto visit = [&](unsigned int segment_index)
+			std::vector<int> &ring_stops = stop_of_vertex[piece.ring - first_ring];
+			const auto add = [&](unsigned int s)
 			{
-				const unsigned int ring = ring_of_segment(ring_view.side, segment_index);
-				if (ring == piece.ring)
+				if (d_stops[s].kind != Stop::ORIGINAL_VERTEX || d_own_touch_searched[s])
 				{
 					return;
 				}
-				const RingView &touched = d_rings[ring];
-				const unsigned int segment = segment_index - touched.first_segment_index;
-				const boost::optional<SegmentPlane> plane =
-						SegmentPlane::create(touched.segments[segment]);
-				if (!plane || std::fabs(plane->signed_distance(position)) > OWN_TOUCH_DISTANCE)
+				d_own_touch_searched[s] = true;
+				++num_searched;
+				if (ring_stops.empty())
 				{
-					return;
+					ring_stops.assign(ring_view.num_vertices(), -1);
 				}
-				const double along = plane->along(position);
-				if (!(along > ALONG_ROUNDING && along < plane->length() - ALONG_ROUNDING))
-				{
-					return;  // at an end: a repeated position (cut by extract_rings)
-				}
-				d_own_touches[std::make_pair(ring, segment)].push_back(
-						OwnTouch{ along, along / plane->length(), position });
-				found = true;
+				ring_stops[d_stops[s].segment_out] = s;  // (an original vertex: at_vertex)
 			};
-			visit_segments_near_point(polygon->get_bounding_tree(), position, visit);
+			if (piece.closed)
+			{
+				for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+				{
+					add(s);
+				}
+			}
+			else
+			{
+				for (unsigned int s = piece.start_stop; ; )
+				{
+					s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+					if (s == piece.end_stop)
+					{
+						break;
+					}
+					add(s);
+				}
+			}
 		}
+		if (num_searched == 0)
+		{
+			continue;
+		}
+		d_diagnostics.own_touch_queries += num_searched;
+
+		// Each vertex of one ring tested against the edges of another, at the leaves of the two
+		// rings' bounding trees where their circles meet.
+		const auto test_leaf = [&](
+				unsigned int vertex_ring,
+				unsigned int vertices_begin,
+				unsigned int vertices_end,
+				unsigned int edge_ring,
+				unsigned int edges_begin,
+				unsigned int edges_end)
+		{
+			const std::vector<int> &ring_stops = stop_of_vertex[vertex_ring];
+			if (ring_stops.empty())
+			{
+				return;
+			}
+			const RingView &touched = d_rings[first_ring + edge_ring];
+			for (unsigned int k = vertices_begin; k < vertices_end; ++k)
+			{
+				if (ring_stops[k] < 0)
+				{
+					continue;
+				}
+				const PointOnSphere &position = d_stops[ring_stops[k]].position;
+				for (unsigned int segment = edges_begin; segment < edges_end; ++segment)
+				{
+					const boost::optional<SegmentPlane> plane =
+							SegmentPlane::create(touched.segments[segment]);
+					if (!plane ||
+						std::fabs(plane->signed_distance(position)) > OWN_TOUCH_DISTANCE)
+					{
+						continue;
+					}
+					const double along = plane->along(position);
+					if (!(along > ALONG_ROUNDING && along < plane->length() - ALONG_ROUNDING))
+					{
+						continue;  // at an end: a repeated position (cut by extract_rings)
+					}
+					d_own_touches[std::make_pair(first_ring + edge_ring, segment)].push_back(
+							OwnTouch{ along, along / plane->length(), position });
+					found = true;
+				}
+			}
+		};
+
+		//
+		// The pairs of rings whose bounding circles meet (CircleSweep), each descending its two
+		// rings' bounding trees together, a pair of nodes whose circles do not meet pruned (the
+		// circles are widened by the thickness, far beyond OWN_TOUCH_DISTANCE): the outlines are
+		// visited only where they come close. A query of the polygon's tree for each vertex
+		// visited many nodes (a node over a long run of a ring has a circle over much of its
+		// interior): 0.28 seconds for an overlay of 200 holes and 120,000 vertices, against 0.095
+		// by pairs and 0.078 without the search.
+		//
+		typedef PolygonOnSphere::ring_bounding_tree_type ring_tree_type;
+		std::vector<const ring_tree_type *> trees;
+		std::vector<CircleSweep::Circle> circles;
+		for (unsigned int r = 0; r < num_rings; ++r)
+		{
+			const unsigned int ring_index = d_rings[first_ring + r].ring_index;
+			trees.push_back((ring_index == 0)
+					? &polygon->get_exterior_ring_bounding_tree()
+					: &polygon->get_interior_ring_bounding_tree(ring_index - 1));
+			const BoundingSmallCircle &bounds =
+					trees.back()->get_root_node().get_bounding_small_circle();
+			circles.push_back(CircleSweep::Circle{
+					bounds.get_centre(),
+					bounds.get_angular_extent().get_angle().dval() });
+		}
+		typedef ring_tree_type::node_type node_type;
+		std::vector<std::pair<node_type, node_type>> node_pairs;
+		CircleSweep(circles).visit_pairs(
+				[&](unsigned int a, unsigned int b)
+				{
+					if (stop_of_vertex[a].empty() && stop_of_vertex[b].empty())
+					{
+						return;
+					}
+					node_pairs.assign(1, std::make_pair(
+							trees[a]->get_root_node(),
+							trees[b]->get_root_node()));
+					while (!node_pairs.empty())
+					{
+						const node_type node_a = node_pairs.back().first;
+						const node_type node_b = node_pairs.back().second;
+						node_pairs.pop_back();
+						const BoundingSmallCircle &circle_a = node_a.get_bounding_small_circle();
+						const BoundingSmallCircle &circle_b = node_b.get_bounding_small_circle();
+						if (!intersect(circle_a, circle_b))
+						{
+							continue;
+						}
+						if (node_a.is_leaf_node() && node_b.is_leaf_node())
+						{
+							const unsigned int a_begin =
+									node_a.get_bounded_great_circle_arcs_begin_index();
+							const unsigned int a_end =
+									a_begin + node_a.get_num_bounded_great_circle_arcs();
+							const unsigned int b_begin =
+									node_b.get_bounded_great_circle_arcs_begin_index();
+							const unsigned int b_end =
+									b_begin + node_b.get_num_bounded_great_circle_arcs();
+							test_leaf(a, a_begin, a_end, b, b_begin, b_end);
+							test_leaf(b, b_begin, b_end, a, a_begin, a_end);
+							continue;
+						}
+						// Down the larger node (or the one that is not a leaf).
+						if (node_b.is_leaf_node() ||
+							(node_a.is_internal_node() &&
+								circle_a.get_angular_extent().is_precisely_greater_than(
+										circle_b.get_angular_extent())))
+						{
+							for (unsigned int child = 0; child < 2; ++child)
+							{
+								node_pairs.push_back(std::make_pair(
+										trees[a]->get_child_node(node_a, child),
+										node_b));
+							}
+						}
+						else
+						{
+							for (unsigned int child = 0; child < 2; ++child)
+							{
+								node_pairs.push_back(std::make_pair(
+										node_a,
+										trees[b]->get_child_node(node_b, child)));
+							}
+						}
+					}
+				});
 	}
 
 	if (found)
@@ -5129,15 +5273,20 @@ GPlatesMaths::PolygonOverlay::Overlay::append_piece_points(
 		const double along_b = d_stops[b].at_vertex
 				? plane->length()  // the next ring vertex
 				: plane->along(d_stops[b].position);
-		for (const OwnTouch &touch : touches->second)
+		// (By bisection: the touches are in order along the edge, and an edge can have many.)
+		const std::vector<OwnTouch> &edge_touches = touches->second;
+		for (auto touch = std::upper_bound(
+				edge_touches.begin(),
+				edge_touches.end(),
+				along_a,
+				[](double value, const OwnTouch &other) { return value < other.along; });
+			touch != edge_touches.end() && touch->along < along_b;
+			++touch)
 		{
-			if (touch.along > along_a && touch.along < along_b)
-			{
-				points.push_back(WalkedPoint{
-						boost::none, touch.position, a, a, piece_index, at_end, Provenance(),
-						touch.ratio });
-				++d_diagnostics.own_touch_points_inserted;
-			}
+			points.push_back(WalkedPoint{
+					boost::none, touch->position, a, a, piece_index, at_end, Provenance(),
+					touch->ratio });
+			++d_diagnostics.own_touch_points_inserted;
 		}
 	}
 	if (at_end)
@@ -6449,7 +6598,7 @@ namespace GPlatesMaths
 			 * containing it is the same all over it. That number is its depth, and its parent the
 			 * containing group of greatest depth. A ring crossing no other is a group of its own,
 			 * as for any input whose rings do not cross. (Only rings whose bounding circles can
-			 * meet are tested, as RingSweep pairs them.) The margin of both tests is @a margin
+			 * meet are tested, as CircleSweep pairs them.) The margin of both tests is @a margin
 			 * (is_ring_inside_ring).
 			 */
 			Nesting
@@ -6464,7 +6613,15 @@ namespace GPlatesMaths
 				// The groups, numbered in the order of their first rings, which represent them.
 				// (A pair of rings in no pair of the sweep has bounding circles that do not meet,
 				// so does not cross. The groups are the same in any order of the pairs.)
-				const RingSweep sweep(ring_polygons, margin);
+				std::vector<CircleSweep::Circle> circles;
+				for (const auto &ring_polygon : ring_polygons)
+				{
+					const BoundingSmallCircle &bounds = ring_polygon->get_bounding_small_circle();
+					const double radius = bounds.get_angular_extent().get_angle().dval() +
+							margin.get_angle().dval();
+					circles.push_back(CircleSweep::Circle{ bounds.get_centre(), radius });
+				}
+				const CircleSweep sweep(circles);
 				std::vector<unsigned int> group_root(num_rings);
 				for (unsigned int r = 0; r < num_rings; ++r)
 				{
@@ -6646,7 +6803,7 @@ namespace GPlatesMaths
 			 *
 			 * @a relinked_rings and @a relinked_ring_vertices: all of @a rings, the relinked
 			 * polygons' rings replaced (at their exterior's place) by the walks. Returns the
-			 * counts; none relinked, the outputs are copies.
+			 * counts; none relinked, the outputs are left empty.
 			 */
 			RelinkCounts
 			relink_disconnected_interiors(
@@ -6693,12 +6850,37 @@ namespace GPlatesMaths
 						continue;
 					}
 
-					// The polygon's rings, with the output on each one's left.
 					std::vector<unsigned int> members(1, nesting.groups[e].front());
 					for (unsigned int g : holes_of[e])
 					{
 						members.push_back(nesting.groups[g].front());
 					}
+
+					// A cycle needs two positions each shared by two rings: without, nothing is
+					// copied (a polygon with holes is asked on every extract).
+					const unsigned int SHARED = (std::numeric_limits<unsigned int>::max)();
+					std::unordered_map<PointOnSphere, unsigned int, PositionHash, SamePosition>
+							member_at;
+					unsigned int num_shared = 0;
+					for (unsigned int m = 0; m < members.size() && num_shared < 2; ++m)
+					{
+						for (const PointOnSphere &point : rings[members[m]].points)
+						{
+							const auto inserted = member_at.emplace(point, m);
+							if (!inserted.second && inserted.first->second != m &&
+								inserted.first->second != SHARED)
+							{
+								inserted.first->second = SHARED;
+								++num_shared;
+							}
+						}
+					}
+					if (num_shared < 2)
+					{
+						continue;
+					}
+
+					// The polygon's rings, with the output on each one's left.
 					std::vector<OutputRing> oriented(members.size());
 					std::vector<std::vector<int>> oriented_vertices(members.size());
 					for (unsigned int m = 0; m < members.size(); ++m)
@@ -6972,9 +7154,14 @@ namespace GPlatesMaths
 					++counts.polygons_relinked;
 				}
 
-				// All the rings, a relinked polygon's walks at its exterior's place.
+				// All the rings, a relinked polygon's walks at its exterior's place (none relinked:
+				// the caller keeps its own).
 				relinked_rings.clear();
 				relinked_ring_vertices.clear();
+				if (counts.polygons_relinked == 0)
+				{
+					return counts;
+				}
 				for (unsigned int r = 0; r < num_rings; ++r)
 				{
 					const auto walks = walks_of.find(r);
