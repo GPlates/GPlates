@@ -642,6 +642,14 @@ namespace GPlatesMaths
 			unsigned int repeated_positions_removed = 0;
 			unsigned int collapsed_rings_dropped = 0; // fewer than three distinct positions
 
+			// Rings made simple (section 5.2), accumulated over every extract.
+			unsigned int own_touch_queries = 0;       // input vertices searched for a touch
+			unsigned int own_touch_points_inserted = 0;  // an input's vertex on its own edge
+			unsigned int rings_split_at_positions = 0;   // cuts of a ring passing a position twice
+			unsigned int polygons_relinked = 0;       // a disconnected interior relinked
+			unsigned int relinks_refused = 0;         // rays not alternating at a shared position
+			unsigned int relinks_discarded = 0;       // the second nesting worse than the first
+
 			// Grouping and the hemisphere check, accumulated over every extract.
 			unsigned int coincident_rings = 0;        // ring pairs with no vertex off the other
 			unsigned int crossing_ring_groups = 0;    // crossing rings put in one polygon
@@ -1058,10 +1066,12 @@ namespace GPlatesMaths
 			 * The rings of one operation's output (section 5.2): the
 			 * kept ends paired at every vertex and walked into rings, rings passing a vertex twice
 			 * cut there (and a ring twisted between two vertices of a common chain the operation
-			 * does not keep, at the two), repeated positions removed and collapsed rings dropped.
+			 * does not keep, at the two), repeated positions removed, rings passing a position
+			 * twice cut there (where an input touches itself), and collapsed rings dropped.
 			 * The symmetric difference's rings are the two differences', joined across the common
-			 * pieces between them. Appended to @a rings. Not grouped into polygons, and in the
-			 * direction walked (arbitrary).
+			 * pieces between them. Appended to @a rings, and with @a ring_vertices, for each ring
+			 * the overlay vertex at each of its points (-1 for none). Not grouped into polygons,
+			 * and in the direction walked (arbitrary).
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if a vertex's ends
 			 * cannot be paired (which consistent classes rule out), unless
@@ -1071,7 +1081,8 @@ namespace GPlatesMaths
 			void
 			extract_rings(
 					Operation operation,
-					std::vector<OutputRing> &rings) const;
+					std::vector<OutputRing> &rings,
+					std::vector<std::vector<int>> *ring_vertices = nullptr) const;
 
 			/**
 			 * A polyline subject's output (section 5.2): its consecutive pieces

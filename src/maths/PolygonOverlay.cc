@@ -165,6 +165,133 @@ namespace GPlatesMaths
 			}
 
 
+			//! A hash of a position consistent with is_same_position (-0 hashed as 0, which '=='
+			//! takes it for).
+			class PositionHash
+			{
+			public:
+				std::size_t
+				operator()(
+						const PointOnSphere &point) const
+				{
+					const UnitVector3D &u = point.position_vector();
+					const std::hash<double> hash;
+					const auto coordinate = [&hash](double c)
+					{
+						return hash(are_exactly_equal(c, 0.0) ? 0.0 : c);
+					};
+					std::size_t seed = coordinate(u.x().dval());
+					seed ^= coordinate(u.y().dval()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+					seed ^= coordinate(u.z().dval()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+					return seed;
+				}
+			};
+
+			class SamePosition
+			{
+			public:
+				bool
+				operator()(
+						const PointOnSphere &a,
+						const PointOnSphere &b) const
+				{
+					return is_same_position(a, b);
+				}
+			};
+
+
+			//! Whether @a points hold at least three different positions (a ring with area).
+			bool
+			has_three_positions(
+					const std::vector<PointOnSphere> &points)
+			{
+				unsigned int num_distinct = 0;
+				for (unsigned int j = 0; j < points.size() && num_distinct < 3; ++j)
+				{
+					bool repeated = false;
+					for (unsigned int k = 0; k < j; ++k)
+					{
+						repeated = repeated || is_same_position(points[k], points[j]);
+					}
+					num_distinct += repeated ? 0 : 1;
+				}
+				return num_distinct >= 3;
+			}
+
+
+			/**
+			 * Cuts @a ring wherever it passes one position twice (exactly), as the split cuts a
+			 * ring passing an overlay vertex twice: 'v, A, v, B' into 'v, A' and 'v, B', each
+			 * keeping its own of the two points (and provenances, if any). Not where both points
+			 * are overlay vertices (@a vertices, per point, -1 for none): two crossings at one
+			 * point, a twist lying on the other input, are two vertices by design.
+			 *
+			 * One pass with a stack of the points not yet cut off: a point at the position of one
+			 * on the stack closes the ring of the stack from that point up, and takes its place.
+			 * The rings cut off come first, the rest last. Returns the number of cuts.
+			 */
+			unsigned int
+			split_at_repeated_positions(
+					const OutputRing &ring,
+					const std::vector<int> &vertices,
+					std::vector<OutputRing> &simple_rings,
+					std::vector<std::vector<int>> &simple_ring_vertices)
+			{
+				const bool with_provenance = !ring.provenances.empty();
+				std::vector<unsigned int> stack;
+				std::unordered_map<PointOnSphere, unsigned int, PositionHash, SamePosition>
+						stack_index;
+				unsigned int num_cuts = 0;
+				const auto emit = [&](unsigned int from)
+				{
+					OutputRing cut;
+					std::vector<int> cut_vertices;
+					for (unsigned int k = from; k < stack.size(); ++k)
+					{
+						cut.points.push_back(ring.points[stack[k]]);
+						cut_vertices.push_back(vertices[stack[k]]);
+						if (with_provenance)
+						{
+							cut.provenances.push_back(ring.provenances[stack[k]]);
+						}
+					}
+					simple_rings.push_back(std::move(cut));
+					simple_ring_vertices.push_back(std::move(cut_vertices));
+				};
+				for (unsigned int j = 0; j < ring.points.size(); ++j)
+				{
+					const auto found = stack_index.find(ring.points[j]);
+					if (found != stack_index.end() &&
+						!(vertices[stack[found->second]] >= 0 && vertices[j] >= 0))
+					{
+						const unsigned int i = found->second;
+						emit(i);
+						for (unsigned int k = i + 1; k < stack.size(); ++k)
+						{
+							const auto entry = stack_index.find(ring.points[stack[k]]);
+							if (entry != stack_index.end() && entry->second == k)
+							{
+								stack_index.erase(entry);
+							}
+						}
+						stack.resize(i);
+						stack.push_back(j);  // at index i, where the position's entry still points
+						++num_cuts;
+						continue;
+					}
+					if (found == stack_index.end())
+					{
+						stack_index.emplace(
+								ring.points[j],
+								static_cast<unsigned int>(stack.size()));
+					}
+					stack.push_back(j);
+				}
+				emit(0);
+				return num_cuts;
+			}
+
+
 			/**
 			 * Union-find over record indices, by path halving.
 			 */
@@ -5851,7 +5978,8 @@ GPlatesMaths::PolygonOverlay::Overlay::split_walked_rings(
 void
 GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		Operation operation,
-		std::vector<OutputRing> &rings) const
+		std::vector<OutputRing> &rings,
+		std::vector<std::vector<int>> *ring_vertices) const
 {
 	// A polyline subject's output is extract_polylines' (a dangling end has no ray).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -5897,48 +6025,59 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			}
 		}
 
-		std::vector<PointOnSphere> points;
-		provenance_seq_type provenances;
+		OutputRing cleaned;
+		std::vector<int> vertices;  // the overlay vertex at each point, -1 for none
 		for (const WalkedPoint &entry : ring)
 		{
-			if (!points.empty() && is_same_position(points.back(), entry.position))
+			if (!cleaned.points.empty() && is_same_position(cleaned.points.back(), entry.position))
 			{
 				++d_diagnostics.repeated_positions_removed;
 				continue;
 			}
-			points.push_back(entry.position);
+			cleaned.points.push_back(entry.position);
+			vertices.push_back(entry.vertex ? static_cast<int>(*entry.vertex) : -1);
 			if (d_options.want_provenance)
 			{
-				provenances.push_back(entry.provenance);
+				cleaned.provenances.push_back(entry.provenance);
 			}
 		}
-		while (points.size() > 1 && is_same_position(points.front(), points.back()))
+		while (cleaned.points.size() > 1 &&
+			is_same_position(cleaned.points.front(), cleaned.points.back()))
 		{
-			points.pop_back();
+			cleaned.points.pop_back();
+			vertices.pop_back();
 			if (d_options.want_provenance)
 			{
-				provenances.pop_back();
+				cleaned.provenances.pop_back();
 			}
 			++d_diagnostics.repeated_positions_removed;
 		}
 
-		unsigned int num_distinct = 0;
-		for (unsigned int j = 0; j < points.size() && num_distinct < 3; ++j)
+		//
+		// A ring passing one position twice where an input touches itself away from the other's
+		// outline (two vertices of one input at one point, or a vertex on its own edge with a
+		// touch point inserted there): no overlay vertex is there, so the split by identity did
+		// not cut it. Cut here, after the provenance, since the split's rings must stay whole
+		// pieces from vertex to vertex (the provenance's arriving stops, the chain cut's arcs and
+		// the symmetric difference's join read them so).
+		//
+		std::vector<OutputRing> simple_rings;
+		std::vector<std::vector<int>> simple_ring_vertices;
+		d_diagnostics.rings_split_at_positions += split_at_repeated_positions(
+				cleaned, vertices, simple_rings, simple_ring_vertices);
+		for (unsigned int s = 0; s < simple_rings.size(); ++s)
 		{
-			bool repeated = false;
-			for (unsigned int k = 0; k < j; ++k)
+			if (!has_three_positions(simple_rings[s].points))
 			{
-				repeated = repeated || is_same_position(points[k], points[j]);
+				++d_diagnostics.collapsed_rings_dropped;
+				continue;
 			}
-			num_distinct += repeated ? 0 : 1;
+			rings.push_back(std::move(simple_rings[s]));
+			if (ring_vertices)
+			{
+				ring_vertices->push_back(std::move(simple_ring_vertices[s]));
+			}
 		}
-		if (num_distinct < 3)
-		{
-			++d_diagnostics.collapsed_rings_dropped;
-			continue;
-		}
-
-		rings.push_back(OutputRing{ points, provenances });
 	}
 
 	d_diagnostics.pairing_failures += num_pairing_failures;
