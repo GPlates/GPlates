@@ -5103,7 +5103,8 @@ GPlatesMaths::PolygonOverlay::Overlay::find_own_touches(
 		// visited only where they come close. A query of the polygon's tree for each vertex
 		// visited many nodes (a node over a long run of a ring has a circle over much of its
 		// interior): 0.28 seconds for an overlay of 200 holes and 120,000 vertices, against 0.095
-		// by pairs and 0.078 without the search.
+		// by pairs, and 0.078 before output rings were made simple at all (no touch search, cut
+		// by position or relinking). A query of each other ring's own tree was little better.
 		//
 		typedef PolygonOnSphere::ring_bounding_tree_type ring_tree_type;
 		std::vector<const ring_tree_type *> trees;
@@ -5960,6 +5961,9 @@ GPlatesMaths::PolygonOverlay::Overlay::join_difference_rings(
 						start.piece,
 						!start.at_end,
 						Provenance() });
+				// (The step's interior stops and touch points, as the difference's walk made them:
+				// none is inserted here, and a touch point's stop and ratio are in ring order, so
+				// they hold whichever way the step is taken.)
 				for (unsigned int k = step.points.size(); k-- > 1; )
 				{
 					ring.push_back(step.points[k]);
@@ -6086,7 +6090,10 @@ GPlatesMaths::PolygonOverlay::Overlay::split_walked_rings(
 
 	// The points of a walk along unkept chain pieces from one vertex to another of its chain,
 	// without the last vertex's (a breadth-first search: a chain can branch where an input
-	// touches itself).
+	// touches itself). Vertex points only, with no call of append_piece_points: a common piece is
+	// a single arc, and can hold no touch point either (a vertex of its own input on it is within
+	// the thickness of the other input's outline, so in a record, and find_own_touches takes
+	// only vertices in no record).
 	const auto chain_path = [&](unsigned int from, unsigned int to)
 	{
 		std::map<unsigned int, End> arrived_by;  // vertex -> the piece end left to reach it
@@ -6986,6 +6993,11 @@ namespace GPlatesMaths
 					{
 						if (passages.size() == 2)
 						{
+							// The exchange, with no angle measured: so also at both ends of an
+							// edge two rings share, where angles would tie (the walk of the edge's
+							// two positions is then dropped as collapsed). A ring of another
+							// polygon through the position (an island of the hole) is not among
+							// the passages: it lies in a wedge that is not this polygon's output.
 							relinks.push_back(std::make_pair(passages[0], passages[1]));
 							relinks.push_back(std::make_pair(passages[1], passages[0]));
 							continue;
@@ -7037,6 +7049,15 @@ namespace GPlatesMaths
 								{
 									return a.angle < b.angle;
 								});
+						//
+						// Arriving and leaving rays must alternate, and no two tie. The order is
+						// rounded (a short edge's direction; rings crossing within an overlay
+						// vertex's cluster), and can be wrong with no tie, but two adjacent rays
+						// of an alternating order exchanged put two of one kind side by side.
+						// This is the only guard of the order: with each arriving ray given the
+						// leaving ray on its other side, the caller's second nesting discarded
+						// none of the outputs that came out wrong (section 6).
+						//
 						for (unsigned int r = 0; r < rays.size(); ++r)
 						{
 							const PassageRay &ray = rays[r];
@@ -7912,10 +7933,14 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 
 	// The induction fails where an identity vertex holds two vertices of one input (dense shared
 	// edges): a piece's edge then spans the group, from a vertex before it to one after it, so
-	// its ends are on no one segment; and where a point at an input's corner lies within the
-	// thickness of both its segments but names only one (section 5.4). No subject location,
-	// counted (never a wrong value; a coverage interpolates such a point along its run, as a cut
-	// point, section 5.4): a subject location lost if both ends had one, else nothing lost.
+	// its ends are on no one segment; where a point at an input's corner lies within the
+	// thickness of both its segments but names only one (section 5.4); and where an earlier step
+	// cut a ring at a position it passed twice, or relinked it there (section 5.2, rings made
+	// simple), so that the piece's ring arrives at the point along one ring of the input and
+	// leaves along another, and one of its edges there has its ends on two rings. No subject
+	// location, counted (never a wrong value; a coverage interpolates such a point along its
+	// run, as a cut point, section 5.4): a subject location lost if both ends had one, else
+	// nothing lost.
 	provenance.subject = boost::none;
 	++((a.subject && b.subject)
 			? d_diagnostics.provenance_subject_mismatches

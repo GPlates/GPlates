@@ -1137,7 +1137,10 @@ namespace GPlatesMaths
 					std::vector<std::pair<double, unsigned int>>> d_self_touch_cuts;
 
 			//! A vertex of an input on an edge of another ring of the same input (@a
-			//! find_own_touches), as a point of that edge.
+			//! find_own_touches), as a point of that edge. Ordered, and placed between an arc's
+			//! stops, by 'along' and not by 'ratio': both come from the edge's plane in doubles,
+			//! which a segment GreatCircleArc calls zero length still has, but the stops' own
+			//! ratios are 0 all along such a segment.
 			class OwnTouch
 			{
 			public:

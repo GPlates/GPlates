@@ -84,6 +84,7 @@ The one table of every tolerance in this code. "Exact" means a plain `double` co
 | Self-touch cut, `h` and `1e-12` radians | `Overlay::find_self_touch_cuts`: a vertex is on a piece when its output position is within the thickness sine of the piece's own plane (in doubles, even for a segment `GreatCircleArc` calls zero length) and inside the piece by more than `ALONG_ROUNDING = 1e-12` radians. A chain's vertices are also each further along than the last by more than `ALONG_ROUNDING`, in at most `MAX_CHAIN = 16` pieces; at a passage, the vertices that the other input's pieces run to from it are within the thickness sine of the same plane, and before it or after it by more than `ALONG_ROUNDING` | Where a stretch the two inputs share is cut on one side only (an input touching itself there, section 5.2) | `h` is the thickness the records were decided with, and a tip anywhere within it of the stretch is a touch to `GeometryIntersect`: two inputs that each had such a tip threw at every distance tried from none to `0.99 h`, so a cut only at a vertex exactly on the piece would not do (section 5.7). The rounding margin keeps a vertex at the segment's end from counting as inside it one way in doubles and the other in the prototype, whose positions are exact ones rounded once |
 | An output ring's arc passing a vertex, `h` and `1e-12` radians | `Overlay::FirstArc` (`get_first_arc`), in `Overlay::split_walked_rings` (a ring twisted at a chain) and `Overlay::join_difference_rings` (a wall walked as a spike): an overlay vertex's output position within the thickness sine of the plane of the ring's arc (in doubles, as the self-touch cut's) and its projection inside the arc by more than `ALONG_ROUNDING = 1e-12` radians, the arc not ending at that vertex by identity. For the twist also the ring's first points beyond the thickness sine of that plane, each way from the vertex, and their sides of the plane of the ring's other arc at the first arc's start, again beyond the thickness sine | Whether an arc of an output ring passes an overlay vertex it has no stop at (an input touching itself, which `GeometryIntersect` never records): whether the ring crosses itself there and is cut, and whether a common piece between the two differences is joined across in the symmetric difference (section 5.2) | The self-touch cut's thickness and rounding margin, asked of an output ring: the crossing `GeometryIntersect` would have recorded had it intersected the ring with itself. A point within the thickness where it would decide, a ring that runs within the thickness past the arc's end, and a touch that is not a crossing, cut nothing |
 | An input's touch of itself, `1e-12` radians; positions exactly | `Overlay::find_own_touches`: `OWN_TOUCH_DISTANCE`, an original vertex's distance from the plane of an edge of another ring of its input (in doubles, `SegmentPlane`), and its angle along the edge more than `ALONG_ROUNDING = 1e-12` from both ends. `split_at_repeated_positions` and `relink_disconnected_interiors` compare positions exactly (`is_same_position`) | Whether the walk inserts a touch point into the edge, and so whether rings that touch there share a position, are cut there and relinked there (section 5.2, *Rings made simple*) | Exact up to rounding, the join's scale: a touch is exact or it is not one. The thickness would bend an edge by up to 9 m to make a touch that is not there, and a vertex farther than rounding from an edge leaves the output as valid as the input |
+| Rays about a shared position, `1e-12` radians of angle | `relink_disconnected_interiors`, where three or more passages of one polygon's rings meet at a position: the rays' angles about it by `atan2`, in doubles, from their tangents there towards the neighbouring points. The polygon is left as it is (`relinks_refused`) if two rays adjacent in that order are both arriving or both leaving, or are within `1e-12` of each other | Which leaving edge each arriving edge takes (section 5.2, *Rings made simple*) | The order is rounded, and a threshold on the angle alone (the first design) does not bound it: the direction of an edge shorter than about `1e-4` radians is rounded by more than `1e-12`, and rings can cross within an overlay vertex by its cluster's width, so the order can be wrong with no tie. The right order alternates, and exchanging two adjacent rays of an alternating order puts two of one kind side by side, so the alternation is the check; the second nesting does not see a wrong order there (section 6). Two passages are exchanged with no angle measured |
 | Bundle cone | `Overlay::measure_ray`: `0` when the arc starts at the vertex's output position on its segment's great circle, `pi` when the arc is no longer than its offset, else `atan2(delta, L - delta)`; the offset counts the start's and far end's distances off the great circle only for a stop at a touch record inside a segment or a self-touch cut (decided by the stop's type, not a threshold) | Which rays are anchored and which float at a vertex of six or more ends where both inputs pass more than once, and the admissible orders (section 5.2) | Threshold-free: the bound on how far the arc's direction seen from the output position can differ from its tangent; `h` enters only through the data. A threshold of `1e-12` for the offsets was wrong at crossings, whose stored position lies up to about `2.4e-11` radians off its planes in a dense shared edge |
 | Anchorless reference point, `1e-6` | `Overlay::classify_anchorless_chain`: each input's outside point is replaced by its second reference point when within that of the great circle of the input's own segment along the chain (as a sine), or of the input's test point on it or its antipode | Which reference point the crossing parities are counted from (section 5.2) | The crossing arc must meet that great circle only at the test point, and must have a defined plane: the degenerate crossing arc bound of section 3.8 |
 | Hemisphere check and grouping margins, `10 h` and `max(10 h, 2 x the widest record cluster)` | `HEMISPHERE_CHECK_MARGIN` in `PolygonOverlay.cc`. `Overlay::find_reference_point`: the reference point of the hemisphere check (`extract`) and of a whole answer's check (`check_whole_result`) must be farther than `10 h` from both inputs' outlines; the whole answer's candidates beside the subject's edges are `20 h` off them. `Overlay::extract`: the grouping margin, for `is_ring_inside_ring`'s point that decides containment, for `do_rings_cross` (outlines farther apart than it do not cross; a point within it decides nothing) and for `does_ring_cross_itself`. `PROBE_DISTANCE_IN_MARGINS = 3`: both crossing tests look three margins along the edges of a vertex within the margin, and `does_ring_cross_itself` asks for arms two margins long | Whether an output's rings, or a whole answer, read as the output or its complement; which ring contains which, which rings cross, and which ring crosses itself (section 5.2) | The point tests are exact with the threshold off, so they need a margin above the band; output rings can cross within an overlay vertex by up to its record cluster's width (a margin of `s` alone misgrouped a hole in 5 of 119,198 generated cases) |
@@ -1489,7 +1490,10 @@ gives `0`.
    visited: a vertex's rules read only its own pieces' classes, so this deduces what sweeping
    every vertex does, in the same order. Sweeping every vertex was quadratic in a common chain's
    length, since a class travels one vertex per sweep along a chain running against the vertex
-   order (two polygons sharing 10,000 vertices took 8 seconds; now 0.05).
+   order (two polygons sharing 10,000 vertices took 8 seconds; now 0.05). The order is kept
+   because the first deduction to reach a piece gives it its class and its method: classifying a
+   whole common chain as soon as one of its pieces has a class, the other cure, would have
+   changed it.
    - **Four ends, two of each input, none common: the geometry-free rule**
      (`solve_four_end_vertex`). `P` crosses `Q` at the vertex iff `P`'s two classes differ, `Q`
      crosses `P` iff `Q`'s do, and the two must agree: three known classes fix the fourth, four
@@ -1900,7 +1904,8 @@ since every point the containment test could take is in that region; a ring wrap
 than a hemisphere about its boundary centroid, for which that is not so, is asked of every group.
 Every pair of rings was tested before: 6.8 seconds for 10,000 holes far apart, now 0.08, and 2.0
 for a union with 5,000 holes along a shared edge, now 0.4 (each hole a sliver, whose circle meets
-a hundred others). A group's depth is the
+a hundred others). Asking containment only where the circles meet, without the sweep, left the
+loop over every pair: 1.7 seconds for the 10,000 holes. A group's depth is the
 number of rings containing it and its parent the containing group of greatest depth. An even depth
 starts a polygon, whose exterior is the group's ring of largest area (any would read the same by
 parity) and whose holes are its other rings; an odd depth puts all of the group's rings, as holes,
@@ -1959,7 +1964,8 @@ outline (a hole's vertex at its exterior's vertex, or on its exterior's edge) th
 vertex, and without the rules below the output has a ring passing a position twice, a vertex on its
 own edge, or a hole touching its exterior at two points, which divides the interior: in the fuzz of
 grid polygons of section 6, judged by shapely, 8,498, 2,764 and about 3,100 of its 349,710 output
-polygons, none of them in a union. Where two passages of the output's boundary touch at a point,
+polygons, none of them in a union, where every one of its 48,000 input polygons is valid. Where
+two passages of the output's boundary touch at a point,
 each can continue itself or each can continue into the other. Exchanging the two between two rings
 merges them into one ring passing the point twice; within one ring it splits it in two (the split
 at a repeated vertex is that exchange). So the rules are exchanges at touch points, once every
@@ -1969,7 +1975,11 @@ touch is a shared position:
   outline), of an input with interior rings, lies within `1e-12` radians of the plane of an edge of
   another ring of that input, and inside it by more than `1e-12` from both ends, the walk inserts
   the vertex's exact position into that edge, in every walked piece over it
-  (`own_touch_points_inserted`). Only between rings: a valid polygon touches itself nowhere else (a
+  (`own_touch_points_inserted`), whichever ring walks it and whether or not a cut or a relinking
+  follows there: a vertex on an edge that has no point there is a touch only until coordinates are
+  rounded (in the fuzz shapely called 31 polygons with one self-intersecting, 6 of them in unions,
+  and passed 13 rings with a vertex on their own edge, so it is no complete judge of this rule).
+  Only between rings: a valid polygon touches itself nowhere else (a
   ring touching itself is an invalid input, and keeps its touch). Searched at walk time from the
   kept pieces only: the touched edge's piece through the point is of the same input and on the same
   side of the other, so kept with it. Searched in `build()` it would cost every overlay against a
@@ -1979,7 +1989,9 @@ touch is a shared position:
   outlines come close. A query of the polygon's tree for every vertex visited about a hundred
   nodes (its rings' subtrees overlap, and a node over a long run of a ring has a circle over much
   of its interior): an intersection keeping most of a subject with 200 holes and 120,000 vertices
-  took 0.28 seconds, against 0.078 on `main`; by pairs, 0.095. Exact up to rounding, the
+  took 0.28 seconds, against 0.078 with none of these rules; by pairs, 0.095. (A query of each
+  other ring's own tree was little better than one of the polygon's, for the second reason.)
+  Exact up to rounding, the
   scale of the join of vertices at one point: the thickness would bend an edge by up to 9 m to make
   a touch that is not there, and a vertex farther than rounding from an edge leaves the output as
   valid as the input. A touch point is no stop: a stop would end single arcs, move vertex tests
@@ -1989,18 +2001,29 @@ touch is a shared position:
   a part's first vertex another part's arriving stop, and the chain cut and the symmetric
   difference's join read the split's rings as whole pieces. Not where the two points are two
   different overlay vertices (a twist, two crossings at one point, kept apart by design; a cut
-  there would come and go with the frame).
+  there would come and go with the frame). The cut needs no geometry: a ring through two
+  positions twice each can be cut two ways, and the pass (a stack of the points not yet cut off)
+  takes the first it meets, but the two rings then share two positions, and where they are one
+  polygon the relinking below decides from the edges alone.
 - *A disconnected interior.* After the nesting (`nest_rings`), a polygon (an exterior group of one
   ring and its nested holes, none a group of crossing rings) whose graph of rings and the positions
   two or more of them share has a cycle (two rings sharing two positions; three rings at one point
   are a star) is relinked at every shared position: each passage arriving there leaves along the
   passage that bounds the same wedge of output with it, the output on every ring's left. With two
-  passages (an exterior and its hole, or two holes) that is the exchange of the two. With more, the
+  passages (an exterior and its hole, or two holes) that is the exchange of the two, and no angle
+  is measured; a ring of another polygon through the point (an island of the hole) lies in a wedge
+  that is not this polygon's output, and changes nothing. Two rings that share an edge, where
+  angles would tie, are exchanged at both its ends into the merged outline and a ring of the
+  edge's two positions, which is dropped as collapsed. With more, the
   rays (arriving edges reversed, leaving edges) are ordered anticlockwise about the point and each
   arriving ray takes the leaving ray next clockwise, provided arriving and leaving rays alternate
-  (else the order is noise, and the polygon is left as it is, `relinks_refused`). Each walk is then
+  and no two adjacent rays are within `1e-12` radians of angle
+  (else the order is noise, and the polygon is left as it is, `relinks_refused`; section 1 has why
+  the alternation is asked). Each walk is then
   cut where it passes a position twice (one overlay vertex twice included), and all the output's
-  rings are nested again; the relinking is discarded (`relinks_discarded`) if the second nesting
+  rings are nested again, by containment as before: a piece enclosed by holes that touch in a
+  loop is a walk inside the walk round the loop, a polygon of its own at depth two, as an island
+  of a hole is. The relinking is discarded (`relinks_discarded`) if the second nesting
   has more crossing groups or more holes out of their nesting than the first. This is the face
   traversal, one walk per boundary component of each connected piece, so each piece is a polygon
   of its own, as GEOS returns it. At a shared position on no cycle the exchange merges two rings
@@ -2016,7 +2039,12 @@ rules were designed with a planar exact prototype of them, which gave the same r
 outputs. Validity holds for touches exact up to rounding and for rings more than a thickness
 apart: an overlay vertex is output at the other input's vertex, up to `h` off an edge, so a hole's
 vertex nearer than `h` to its exterior's edge can end on the wrong side of the bent edge (section
-5.3).
+5.3). Built so, a hole's vertex `0.5e-6` radians inside its exterior's edge, with a clip's vertex
+`0.9e-6` inside that edge `0.01` radians along it, gives a difference, a union and a symmetric
+difference that shapely calls self-intersecting, both inputs being valid; with the hole's vertex
+`5e-6` in, all are valid. And a subject that the partitioner returns whole (section 5.1) is the
+input itself, with none of these rules applied: as valid as the input, and without a point where
+a hole's vertex lies on its exterior's edge (22 of the fuzz's intersections and differences).
 
 **The sliver filter** (section 5.5), applied in `extract` after grouping and the relinking of
 disconnected interiors, so that each connected piece is filtered as a polygon of its own (a
@@ -2084,10 +2112,16 @@ for rounding, and not a second distance: it asks whether two stops are at one po
 which can be computed, and the hunt's data keep clear of it either way: in the C++ the chords
 joined reach `1.8e-14`, 55 times under it, and the shortest not joined with a touch at either stop
 is `1.0e-9`, a thousand times over (section 1; section 6 has what a crossing at a small angle
-does). The overlay's decisions are of section 5.2's three kinds:
+does). The `1e-12` of the touch points (section 5.2, *Rings made simple*) is the same margin, asked
+of a vertex and an edge of another ring of its own input, away from the other's outline: there a
+touch is taken only where it is exact up to rounding, and deliberately not within the thickness,
+which the three searches above use because the records they complete were decided with it. The
+overlay's decisions are of section 5.2's three kinds:
 
 - **Exact**: the identity of vertices (union-find on record indices); whether an arc starts at a
-  vertex's output position, and clean-up's repeated positions (coordinates compared exactly, never
+  vertex's output position, clean-up's repeated positions, and the positions a ring passes twice
+  or two rings of a polygon share, where rings are cut and relinked (coordinates compared
+  exactly, never
   `PointOnSphere::operator==`, whose tolerance is about the thickness); the record kinds the LL
   rule reads, which `GeometryIntersect` decided with its thick planes; the rotational order among
   rays, treated as exact (sign tests in doubles on directions that are themselves rounded, measured
@@ -2114,7 +2148,11 @@ does). The overlay's decisions are of section 5.2's three kinds:
   output ring's arc passing a vertex with the same two measures (the
   cut of a ring twisted at a chain, where a flip at the margin is a part about the thickness wide
   cut off or left wound backwards, and a wall left unjoined in the symmetric difference, where a
-  flip leaves two rings that read the same as the one); which points the crossing tests take as
+  flip leaves two rings that read the same as the one); the touch points (a vertex within `1e-12`
+  of the plane of an edge of another ring of its input, where a flip at the margin leaves a touch
+  the rules for simple rings do not see, section 7), and the order of the rays where three or
+  more passages are relinked (refused unless they alternate, section 1); which points the
+  crossing tests take as
   near (a distance compared with the margin, where a
   flip changes only whether a crossing within a few margins is seen); the orientation of an output
   ring; and the sliver filter's widths. Point-in-polygon itself is not exact near an edge
@@ -2125,7 +2163,8 @@ does). The overlay's decisions are of section 5.2's three kinds:
   outline, beyond that zone, so only a band piece's midpoint test can be affected.
 - **Combinatorial**: the loop, spike and common-pair rules, the free, LL and one-passage rules,
   the sector walk and the bundle solve, the keep-rule, the pairing, the split at a repeated vertex,
-  the join of the two differences' rings across a wall and the grouping's depth parity.
+  the join of the two differences' rings across a wall, the grouping's depth parity, and, of the
+  relinking of a disconnected interior, the cycle test and the exchange where two passages meet.
 
 Why identity and not distance. The records already encode the snapped topology (which vertices
 touch which segments, decided once with `GeometryIntersect`'s thickness), and the rays describe
@@ -2190,7 +2229,11 @@ input (a piece's edge then spans the group, from a vertex before it to one after
 at an input's corner lies within `h` of both its segments but names one; such points get no subject
 location and are counted (`provenance_subject_mismatches` when both ends had one, else
 `provenance_clip_mismatches`, when nothing is lost), about 0.2% of second-step points in the large
-generated set and 3% in the dense chain set. A coverage then interpolates such points along their
+generated set and 3% in the dense chain set. It fails too beside a point where a ring cut at a
+position it passes twice, or relinked (section 5.2, *Rings made simple*), arrives along one ring
+of the input and leaves along another: one of its two edges there has its ends on two rings, and
+a later step's point inside that edge is counted the same way, never located wrong. A coverage
+then interpolates such points along their
 run, as cut points. An edge whose two ends both have subject locations but lie on one earlier clip's
 segment (a crossing to a crossing along that cut) is a cut edge, composed as a cut and not counted.
 Only the
@@ -2595,6 +2638,27 @@ self-intersection query would give before classification) is the third row of th
 its restriction to single arcs with no partner, and that row is wrong with the restriction. Such a
 query's other half, joining an input's vertices within the thickness of each other, is the
 contraction.
+
+**For rings made simple** (section 5.2, which says why the touch search is made at walk time and
+by pairs of rings, why a touch is not found within the thickness, why a touch point is no stop,
+and why the cut by position follows the provenance pass; section 5.4 has why a touch point is not
+located at the touching vertex, and section 1 why the relinking asks that rays alternate, where
+the first design asked only that no two tie). Three more forms were set aside:
+
+- *Everything after the grouping*: no cut in the clean-up, and a ring that touches itself relinked
+  with the rest. On the fuzz's outputs the planar prototype of the rules gave the same polygons
+  that way, but every output with such a ring would be nested twice (11,294 rings of the fuzz
+  touch themselves once the touch points are in), and a ring's own two passages would need the
+  order of their rays, where the cut by position needs no geometry.
+- *The relinked pieces kept from the sliver filter* (in the first design the filter ran on the
+  rings before the relinking). A disconnected interior is not only an input's holes' doing: a
+  plate inside a polygon that shares two of its vertices divides the difference, and where the
+  plate's edge runs close along the polygon's outline between the two, the crescent between them
+  is the digitising sliver of section 5.5, which would have become a polygon of its own that the
+  filter never saw.
+- *Nesting again only the rings of the relinked polygon*: less work for an output of many rings,
+  and a second path through the grouping. Not built: only an output with a relinked polygon is
+  nested twice.
 
 **Dropping one of a corner's two records**: section 4.5.
 
@@ -3139,7 +3203,25 @@ polygon's holes). `SimpleOutputRingsProvenance` pins a touch point's location on
 cycle (each ring's own), and `SimpleOutputRingsFilterAndCost` the sliver filter's seeing a crescent
 between two shared vertices and the touch search's asking nothing where no piece of the input with
 holes is kept. Switching off the relinking, or the touch search, fails four tests each. Outside the
-repository, the fuzz judged by Shapely gives the figures of section 5.2.
+repository, the fuzz judged by Shapely gives the figures of section 5.2. The structure is compared
+because neither the oracle nor the area identities can see how rings are linked: an exchange keeps
+every edge, so the output reads the same, and measures the same, either way; only this checker,
+the crossing groups, the orientation and an outside answer's structure tell them apart. A second
+fuzz outside the repository reaches what the grid fuzz rarely does: its polygons are unions of
+triangles on a small grid, so that up to four rings meet at one point and touches, shared edges
+and holes are dense (12,000 pairs, each way round, the four Boolean methods, filter off). All of
+its 162,498 output polygons are valid by Shapely, every output is a valid MultiPolygon, and all
+96,000 outputs have Shapely's structure. It orders rays by angle at 336 positions in two of its
+four seeds, where the grid fuzz does at 3; with that order reversed, 80 of one seed's 24,000
+outputs have another structure (and 2 of the grid fuzz's), `SimpleOutputRings` fails, and the
+second nesting discards none of the 80, so the alternation of the rays is the only guard of that
+order (section 1). A probe outside the repository, over the grid fuzz's 6,055 pairs with a
+polygon that touches itself and 6,000 pairs of the second fuzz, each way round, found every
+point's provenance resolving to its position, no point of the subject's outline without its
+subject location, and the same of a second step of a cascade from every piece of the
+intersection and the difference, but for the subject locations a second step loses and counts
+(section 5.4). No committed test holds that second step beside a touch point, a cut or a
+relinked point, nor two rings of one polygon that share an edge (section 5.2).
 
 **The prototype comparison** (`PolygonOverlayPrototypeTest.cc`). The overlay was derived by a
 Python prototype in exact rational arithmetic, run on a catalogue of configurations with several
@@ -3305,6 +3387,14 @@ identities within `1.3e-12` steradians in 200 rotations at each angle. The C++'s
 the self-touch cuts' thresholds were not measured; the comparison of the 263 cases where a rule
 applies, and of the 924 where the fourth condition drops a passage, stands in for that.
 
+The three changes that made large overlays faster (deduction at reached vertices only, the
+grouping's sweep of bounding circles and the lookups by bisection; section 5.2) were each shown to
+change nothing. For the first two the code replaced was run beside the new, from the same state,
+in every overlay of the hunt and of the grid fuzz: no piece's class or method differed in 472,793
+and 178,945 classifications, and no group, container or count of coincident rings in 1,247,150 and
+238,406 extracts. With the third, the hunt's summary and the fuzz's failures and statistics were
+the same.
+
 The partition layer's tests (`PolygonPartitionerTest.cc`) cover the three old no-intersection bugs
 (a partitioner inside the subject, a subject across a partitioner's hole, a partitioner across the
 subject's hole) and a piece along the boundary for both orientations; the result contract (touches
@@ -3380,7 +3470,14 @@ as rings, not as polygons), no bundle vertex (at most six ends at a vertex), 11 
 (431 polygons from the 149 cut at 0 Ma, against 703 polylines before; at pyGPlates' default width
 the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlates'
 `partition_features` over the 2,136 features takes about 45% longer than before (0.29 s against
-0.20 s at 0 Ma, after about 0.06 s resolving the topologies for either).
+0.20 s at 0 Ma, after about 0.06 s resolving the topologies for either). The rules that make rings
+simple (section 5.2) find nothing to do in this data, and its pieces and that time are the same
+with them: only 7 of the 2,937 coastline polygons have holes, and cut at 0 to 400 Ma every 50 Myr
+(506 polygons into 1,348 pieces) no output ring passed a position twice, and every input and
+output polygon was valid by Shapely, before those rules. That is a measurement of this data and no
+property of plate models: a plate inside a polygon that shares two of its vertices divides the
+piece outside it, with no hole in either. The rules are for user data with holes (lakes, say) and
+for chains of Boolean operations, whose outputs have holes touching their exteriors.
 
 ## 7. Deferred work
 
@@ -3402,7 +3499,12 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   between two rings are searched. Neither is to be cured by a tolerance: a touch is exact or it is
   not one. Two different overlay vertices at one exact position (a twist, two crossings at one
   point) are neither cut nor counted as a shared position, and a polygon whose relinking is refused
-  or discarded keeps its divided interior (section 6 has how often, in the hunt).
+  or discarded keeps its divided interior (section 6 has how often, in the hunt). And a touch
+  point is one more point of a walked ring inside an edge, which the test for a ring twisted at a
+  chain (section 5.2) walks over with the rest: it can be that test's first point beyond the
+  thickness in place of the edge's far end, or lie within the thickness past the arc's end, where
+  the test decides nothing. That takes a touch point within a few thicknesses of a twisted chain;
+  no case of the hunt has a touch point at all, so nothing at the thickness scale has tried it.
 - **Provenance at two subject vertices joined at one point** (sections 5.2 and 5.4). The joined
   vertex names the first subject vertex in record order, whichever ring is walked through it.
   Where a hole's vertex is at its exterior's, inside the clip's edge, an output ring that walks one
@@ -3464,7 +3566,8 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
 - **No generator of valid inputs that touch themselves above the thickness scale.** The hunt's
   generators reach the vertices at one point and the cut at a passage almost only with input rings
   that cross (7 of its 39,320 cases with valid inputs, section 6), and the fuzz that found the
-  defects is outside the repository; the committed tests hold its 338 failing pairs and 22
+  defects is outside the repository; the committed tests hold its 338 failing pairs, the 18 pairs
+  of `SimpleOutputRings` (13 of them its own, section 6) and 22
   constructed cases. A generator of grid polygons whose holes share a vertex with their exterior or
   put a vertex on its edge, checked by the area identities and the crossing groups, would need no
   outside answer.
@@ -3555,8 +3658,10 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   other three (the
   self-touch cuts, the cut of a ring twisted at a chain and the walls the symmetric difference
   leaves unjoined, section 5.2); what those leave is the band's noise, such as a sliver under half a
-  thickness wide wound backwards on a ring, and the rings that touch themselves away from the
-  other input's outline (above). (The cut looks only between two vertices of one unkept
+  thickness wide wound backwards on a ring, and, away from the other input's outline, where a
+  vertex exactly on an edge of another ring of its input gets a point and no stop (section 5.2,
+  *Rings made simple*), the touches those rules do not see (above). (The cut looks only between
+  two vertices of one unkept
   chain: a ring twisted where an arc passes a vertex of its own input with no common piece between
   them is not looked for; no valid input of the hunt gives one wider than a thickness, and the fuzz
   of grid polygons, whose inputs touch themselves far above that scale, is left with no output of
