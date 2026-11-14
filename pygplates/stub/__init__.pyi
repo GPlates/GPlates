@@ -10933,7 +10933,7 @@ class PolygonOnSphere(GeometryOnSphere):
 
         Together with :meth:`intersection`, this partitions this polygon by *other_polygon*: ``other_polygon.partition(polygon, inside, outside)`` adds the polygons returned by ``polygon.difference(other_polygon)`` to *outside*. So if the two polygons are apart, or only touch, this polygon itself is returned. Where *other_polygon* lies inside this polygon, the difference has a hole.
 
-        See :meth:`intersection` for polygons whose rings cross, and for slivers.
+        See :meth:`intersection` for the polygons' validity, for polygons whose rings cross, and for slivers.
 
         .. versionadded:: 1.1
         """
@@ -11246,7 +11246,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :raises PartitionError: if overlaying the two polygons finds no consistent result
         :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN
 
-        The polygons returned have interior rings where the region needs them, and do not overlap each other (they can touch at points). The interior rings of both polygons take part: for example, the intersection of a polygon with a hole and a smaller polygon inside it that covers the hole is the smaller polygon with the same hole.
+        The polygons returned have interior rings where the region needs them, and do not overlap each other (they can touch at points). Where both polygons are valid, each is valid by the OGC simple features rules (as shapely expects): no ring passes through a point twice, and each polygon's interior is one connected piece, so a region that a hole would divide (touching the outer ring at two points) is returned as separate polygons. (Outlines nearer than about 9 metres to each other without touching can still give a ring that touches itself.) The interior rings of both polygons take part: for example, the intersection of a polygon with a hole and a smaller polygon inside it that covers the hole is the smaller polygon with the same hole.
 
         This is partitioning: ``other_polygon.partition(polygon, inside, outside)`` adds the polygons returned by ``polygon.intersection(other_polygon)`` to *inside*, and those returned by ``polygon.difference(other_polygon)`` to *outside* (see :meth:`partition` and :meth:`difference`). So two polygons that only touch (along an edge, or at points) do not intersect, and if this polygon lies entirely inside *other_polygon* (or only touches its outline from inside) then this polygon itself is returned.
 
@@ -11374,7 +11374,7 @@ class PolygonOnSphere(GeometryOnSphere):
 
         The region is the two differences, ``polygon.difference(other_polygon)`` and ``other_polygon.difference(polygon)``, merged where they share an edge: two polygons that share an edge without overlapping give one polygon, their union. As for :meth:`union`, a result whose outer ring would enclose more than a hemisphere raises :class:`PartitionError`.
 
-        See :meth:`intersection` for polygons whose rings cross, and for slivers.
+        See :meth:`intersection` for the polygons' validity, for polygons whose rings cross, and for slivers.
 
         .. versionadded:: 1.1
         """
@@ -11462,7 +11462,7 @@ class PolygonOnSphere(GeometryOnSphere):
 
         Each ring of a polygon bounds its smaller side (see :meth:`is_point_in_polygon`), so a ring cannot enclose more than a hemisphere. A union whose outer ring would (two large polygons that overlap, say) raises :class:`PartitionError`.
 
-        See :meth:`intersection` for polygons whose rings cross, and for slivers.
+        See :meth:`intersection` for the polygons' validity, for polygons whose rings cross, and for slivers.
 
         ::
 

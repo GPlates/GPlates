@@ -4729,7 +4729,12 @@ export_polygon_on_sphere()
 				"  :raises ValueError: if *sliver_width_threshold_radians* is negative or NaN\n"
 				"\n"
 				"  The polygons returned have interior rings where the region needs them, and do not overlap each "
-				"other (they can touch at points). The interior rings of both polygons take part: for example, the "
+				"other (they can touch at points). Where both polygons are valid, each is valid by the OGC simple "
+				"features rules (as shapely expects): no ring passes through a point twice, and each polygon's "
+				"interior is one connected piece, so a region that a hole would divide (touching the outer ring "
+				"at two points) is returned as separate polygons. (Outlines nearer than about 9 metres to each "
+				"other without touching can still give a ring that touches itself.) The interior rings of both "
+				"polygons take part: for example, the "
 				"intersection of a polygon with a hole and a smaller polygon inside it that covers the hole is the "
 				"smaller polygon with the same hole.\n"
 				"\n"
@@ -4787,7 +4792,8 @@ export_polygon_on_sphere()
 				"cannot enclose more than a hemisphere. A union whose outer ring would (two large polygons that "
 				"overlap, say) raises :class:`PartitionError`.\n"
 				"\n"
-				"  See :meth:`intersection` for polygons whose rings cross, and for slivers.\n"
+				"  See :meth:`intersection` for the polygons' validity, for polygons whose rings cross, and for "
+				"slivers.\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -4818,7 +4824,8 @@ export_polygon_on_sphere()
 				"touch, this polygon itself is returned. Where *other_polygon* lies inside this polygon, the "
 				"difference has a hole.\n"
 				"\n"
-				"  See :meth:`intersection` for polygons whose rings cross, and for slivers.\n"
+				"  See :meth:`intersection` for the polygons' validity, for polygons whose rings cross, and for "
+				"slivers.\n"
 				"\n"
 				"  .. versionadded:: 1.1\n")
 		.def("symmetric_difference",
@@ -4845,7 +4852,8 @@ export_polygon_on_sphere()
 				"an edge without overlapping give one polygon, their union. As for :meth:`union`, a result whose "
 				"outer ring would enclose more than a hemisphere raises :class:`PartitionError`.\n"
 				"\n"
-				"  See :meth:`intersection` for polygons whose rings cross, and for slivers.\n"
+				"  See :meth:`intersection` for the polygons' validity, for polygons whose rings cross, and for "
+				"slivers.\n"
 				"\n"
 				"  .. versionadded:: 1.1\n")
 		.def("get_boundary_centroid",

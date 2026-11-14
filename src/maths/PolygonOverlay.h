@@ -642,6 +642,14 @@ namespace GPlatesMaths
 			unsigned int repeated_positions_removed = 0;
 			unsigned int collapsed_rings_dropped = 0; // fewer than three distinct positions
 
+			// Rings made simple (section 5.2), accumulated over every extract.
+			unsigned int own_touch_queries = 0;       // input vertices searched for a touch
+			unsigned int own_touch_points_inserted = 0;  // an input's vertex on its own edge
+			unsigned int rings_split_at_positions = 0;   // cuts of a ring passing a position twice
+			unsigned int polygons_relinked = 0;       // a disconnected interior relinked
+			unsigned int relinks_refused = 0;         // rays not alternating at a shared position
+			unsigned int relinks_discarded = 0;       // the second nesting worse than the first
+
 			// Grouping and the hemisphere check, accumulated over every extract.
 			unsigned int coincident_rings = 0;        // ring pairs with no vertex off the other
 			unsigned int crossing_ring_groups = 0;    // crossing rings put in one polygon
@@ -1030,8 +1038,10 @@ namespace GPlatesMaths
 			 * The output of one operation as polygons with holes (section 5.2): the rings of
 			 * @a extract_rings grouped by containment with parity depth (an even depth is an
 			 * exterior, an odd depth a hole of the ring containing it, and an island in a hole an
-			 * exterior of its own), each oriented with the output on its left, and slivers dropped
-			 * if Options::sliver_min_width is set. Rings that cross each other (where an input's
+			 * exterior of its own), each oriented with the output on its left; a polygon whose rings
+			 * touch so as to divide its interior relinked into one polygon per connected piece
+			 * (Diagnostics::polygons_relinked); and slivers dropped, piece by piece, if
+			 * Options::sliver_min_width is set. Rings that cross each other (where an input's
 			 * rings cross, do_rings_cross) go into one polygon, read by parity, so that no two
 			 * polygons overlap (Diagnostics::crossing_ring_groups); their orientation is arbitrary
 			 * (no orientation has the output on the left all round). Appended to @a polygons.
@@ -1058,10 +1068,12 @@ namespace GPlatesMaths
 			 * The rings of one operation's output (section 5.2): the
 			 * kept ends paired at every vertex and walked into rings, rings passing a vertex twice
 			 * cut there (and a ring twisted between two vertices of a common chain the operation
-			 * does not keep, at the two), repeated positions removed and collapsed rings dropped.
+			 * does not keep, at the two), repeated positions removed, rings passing a position
+			 * twice cut there (where an input touches itself), and collapsed rings dropped.
 			 * The symmetric difference's rings are the two differences', joined across the common
-			 * pieces between them. Appended to @a rings. Not grouped into polygons, and in the
-			 * direction walked (arbitrary).
+			 * pieces between them. Appended to @a rings, and with @a ring_vertices, for each ring
+			 * the overlay vertex at each of its points (-1 for none). Not grouped into polygons,
+			 * and in the direction walked (arbitrary).
 			 *
 			 * Call after @a classify. @throws InconsistentOverlayException if a vertex's ends
 			 * cannot be paired (which consistent classes rule out), unless
@@ -1071,7 +1083,8 @@ namespace GPlatesMaths
 			void
 			extract_rings(
 					Operation operation,
-					std::vector<OutputRing> &rings) const;
+					std::vector<OutputRing> &rings,
+					std::vector<std::vector<int>> *ring_vertices = nullptr) const;
 
 			/**
 			 * A polyline subject's output (section 5.2): its consecutive pieces
@@ -1122,6 +1135,28 @@ namespace GPlatesMaths
 			 */
 			std::map<std::tuple<unsigned int, unsigned int, unsigned int>,
 					std::vector<std::pair<double, unsigned int>>> d_self_touch_cuts;
+
+			//! A vertex of an input on an edge of another ring of the same input (@a
+			//! find_own_touches), as a point of that edge. Ordered, and placed between an arc's
+			//! stops, by 'along' and not by 'ratio': both come from the edge's plane in doubles,
+			//! which a segment GreatCircleArc calls zero length still has, but the stops' own
+			//! ratios are 0 all along such a segment.
+			class OwnTouch
+			{
+			public:
+				double along;   // the angle along the segment's plane from its start
+				double ratio;   // the angle fraction along the segment (its provenance)
+				PointOnSphere position;  // the touching vertex's, exactly
+			};
+
+			/**
+			 * The touch points the walk inserts (section 5.2, rings made simple), by (ring,
+			 * ring-local segment), in order along the segment; and the stops already searched.
+			 * Mutable: found at walk time, for the vertices output (@a find_own_touches).
+			 */
+			mutable std::map<std::pair<unsigned int, unsigned int>, std::vector<OwnTouch>>
+					d_own_touches;
+			mutable std::vector<bool> d_own_touch_searched;
 
 
 			void
@@ -1235,6 +1270,10 @@ namespace GPlatesMaths
 				bool at_end;
 
 				Provenance provenance;
+
+				//! A touch point (@a find_own_touches) inside the arc that leaves 'stop' in ring
+				//! order: its angle fraction along that stop's 'segment_out'. None otherwise.
+				boost::optional<double> touch_ratio;
 			};
 
 			typedef std::vector<WalkedPoint> walked_ring_type;
@@ -1258,6 +1297,26 @@ namespace GPlatesMaths
 					Operation operation,
 					std::vector<walked_ring_type> &walked,
 					unsigned int &num_pairing_failures) const;
+
+			/**
+			 * The touch points of @a d_own_touches for the pieces @a operation keeps (section 5.2,
+			 * rings made simple): each kept piece's original vertices of an input with interior
+			 * rings, searched once per overlay, on the edges of the input's other rings.
+			 */
+			void
+			find_own_touches(
+					Operation operation) const;
+
+			/**
+			 * Appends to @a ring a piece's points after the vertex it is left from, before the one
+			 * it arrives at, in the direction walked: its interior stops, and the touch points on
+			 * its arcs. A closed piece's (none): every stop of its ring, from the first.
+			 */
+			void
+			append_piece_points(
+					walked_ring_type &ring,
+					unsigned int piece,
+					bool at_end) const;
 
 			/**
 			 * The symmetric difference's rings before its split: the split rings of the
@@ -1405,9 +1464,17 @@ namespace GPlatesMaths
 			find_reference_point(
 					bool inside_subject = false) const;
 
-			//! Apply deductions at every vertex until nothing changes; true if anything did.
+			/**
+			 * Apply deductions at every vertex until nothing changes; true if anything did.
+			 *
+			 * @a classified_pieces: the pieces classified since the last call (by a midpoint
+			 * test, say), whose vertices are then the only ones visited first; none, every vertex
+			 * (the first call). A vertex no class has reached since it was last solved deduces
+			 * nothing new, so either way the classes are those of sweeping every vertex.
+			 */
 			bool
-			deduce_to_fixed_point();
+			deduce_to_fixed_point(
+					const std::vector<unsigned int> *classified_pieces = nullptr);
 
 			bool
 			solve_four_end_vertex(

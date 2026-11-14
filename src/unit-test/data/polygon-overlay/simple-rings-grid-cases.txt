@@ -1,0 +1,695 @@
+case holes-1-6
+grid 3
+ring P 8
+0.0 1.0
+1.0 0.0
+3.0 0.0
+3.0 2.0
+3.0 3.0
+1.0 3.0
+0.0 3.0
+0.0 2.0
+ring P 3
+1.0 1.0
+2.0 1.0
+3.0 2.0
+ring Q 5
+1.0 1.0
+2.0 0.0
+3.0 3.0
+1.0 3.0
+0.0 3.0
+expect intersection 0 0
+expect union 1
+expect difference 0 0 0
+expect symmetric_difference 0 0 0 0
+endcase
+case holes-1-17
+grid 5
+ring P 4
+0.0 3.0
+2.0 0.0
+3.0 4.0
+1.0 5.0
+ring P 3
+2.0 0.0
+2.0 2.0
+1.0 4.0
+ring Q 5
+0.0 1.0
+0.0 0.0
+5.0 1.0
+5.0 5.0
+1.0 5.0
+ring Q 3
+1.0 3.0
+5.0 2.0
+4.0 4.0
+expect intersection 0 0
+expect union 3
+expect difference 0 0 0 0 0
+expect symmetric_difference 0 0 0 0 0 0 0 0 0 0
+endcase
+case holes-2-1824
+grid 5
+ring P 8
+0.0 0.0
+1.0 0.0
+2.0 0.0
+2.0 1.0
+4.0 0.0
+3.0 2.0
+0.0 5.0
+0.0 4.0
+ring P 3
+1.0 2.0
+2.0 2.0
+1.0 4.0
+ring Q 5
+0.0 1.0
+2.0 1.0
+3.0 2.0
+3.0 5.0
+2.0 5.0
+expect intersection 0
+expect union 1
+expect difference 0 0 0 0
+expect symmetric_difference 0 0 0 0 0 0
+endcase
+case holes-transform-1-1957
+grid 5
+ring P 5
+0.0 1.0
+2.0 2.0
+5.0 1.0
+2.0 4.0
+0.0 5.0
+ring P 4
+3.0 2.0
+4.0 2.0
+2.0 3.0
+1.0 3.0
+ring Q 5
+5.0 1.0
+3.0 2.0
+0.0 1.0
+3.0 4.0
+5.0 5.0
+ring Q 4
+2.0 2.0
+1.0 2.0
+3.0 3.0
+4.0 3.0
+expect intersection 0 0 0 0 0 0
+expect union 3
+expect difference 0 0 0 0
+expect symmetric_difference 0 0 0 0 0 0 0 0
+endcase
+case holes-transform-4-1176
+grid 5
+ring P 5
+2.0 2.0
+1.0 0.0
+5.0 3.0
+3.0 5.0
+2.0 4.0
+ring P 3
+2.0 1.0
+4.0 4.0
+3.0 4.0
+ring Q 5
+2.0 3.0
+1.0 1.0
+5.0 4.0
+3.0 6.0
+2.0 5.0
+ring Q 3
+2.0 2.0
+4.0 5.0
+3.0 5.0
+expect intersection 0 0 0 0
+expect union 3
+expect difference 0 0
+expect symmetric_difference 0 0 0 0 0 0
+endcase
+case star-1-153
+grid 5
+ring P 8
+0.0 1.0
+2.0 0.0
+3.0 2.0
+4.0 1.0
+4.0 3.0
+5.0 4.0
+4.0 5.0
+3.0 5.0
+ring Q 3
+3.0 2.0
+4.0 5.0
+3.0 4.0
+expect intersection 0
+expect union 0
+expect difference 0 0
+expect symmetric_difference 0 0
+endcase
+case holes-1-9
+grid 3
+ring P 8
+1.0 1.0
+0.0 0.0
+2.0 1.0
+3.0 0.0
+3.0 1.0
+3.0 2.0
+1.0 3.0
+0.0 3.0
+ring P 3
+1.0 2.0
+2.0 2.0
+1.0 3.0
+ring Q 8
+1.0 0.0
+2.0 0.0
+2.0 1.0
+3.0 1.0
+3.0 2.0
+3.0 3.0
+0.0 3.0
+1.0 2.0
+expect intersection 0 0
+expect union 0
+expect difference 0 0 0
+expect symmetric_difference 0 0 0 0 0 0
+endcase
+case holes-1-110
+grid 5
+ring P 5
+3.0 2.0
+5.0 0.0
+5.0 4.0
+4.0 4.0
+2.0 4.0
+ring P 3
+3.0 3.0
+4.0 3.0
+5.0 4.0
+ring Q 8
+3.0 2.0
+2.0 0.0
+5.0 0.0
+5.0 1.0
+5.0 2.0
+4.0 5.0
+3.0 4.0
+1.0 3.0
+ring Q 3
+3.0 0.0
+4.0 1.0
+3.0 1.0
+expect intersection 0
+expect union 2
+expect difference 0 0 0
+expect symmetric_difference 0 0 0 0 0 0 0 0
+endcase
+case holes-transform-1-751
+grid 4
+ring P 4
+0.0 0.0
+3.0 2.0
+4.0 4.0
+0.0 3.0
+ring P 3
+2.0 2.0
+2.0 3.0
+1.0 3.0
+ring Q 4
+1.0 0.0
+4.0 2.0
+5.0 4.0
+1.0 3.0
+ring Q 3
+3.0 2.0
+3.0 3.0
+2.0 3.0
+expect intersection 0 0
+expect union 0
+expect difference 0 0
+expect symmetric_difference 0 0 0 0
+endcase
+case polyomino-3-481
+grid 5
+ring P 20
+0.0 2.0
+0.0 3.0
+1.0 3.0
+1.0 4.0
+2.0 4.0
+2.0 5.0
+3.0 5.0
+3.0 4.0
+4.0 4.0
+4.0 3.0
+5.0 3.0
+5.0 2.0
+4.0 2.0
+3.0 2.0
+3.0 1.0
+2.0 1.0
+2.0 0.0
+1.0 0.0
+0.0 0.0
+0.0 1.0
+ring P 4
+2.0 2.0
+1.0 2.0
+1.0 1.0
+2.0 1.0
+ring Q 4
+2.0 2.0
+2.0 3.0
+3.0 3.0
+3.0 2.0
+expect intersection 0
+expect union 1
+expect difference 0 0
+expect symmetric_difference 0 0
+endcase
+case holes-2-279
+grid 5
+ring P 8
+1.0 1.0
+3.0 2.0
+3.0 0.0
+5.0 1.0
+5.0 3.0
+5.0 5.0
+3.0 5.0
+1.0 5.0
+ring P 3
+2.0 4.0
+3.0 3.0
+4.0 5.0
+ring Q 6
+0.0 1.0
+3.0 0.0
+5.0 3.0
+4.0 5.0
+3.0 5.0
+0.0 3.0
+ring Q 3
+3.0 2.0
+4.0 2.0
+4.0 5.0
+expect intersection 0 1
+expect union 0
+expect difference 0 0 0 0
+expect symmetric_difference 0 0 0 0 0 0
+endcase
+case holes-transform-1-1066
+grid 5
+ring P 8
+1.0 2.0
+1.0 0.0
+4.0 1.0
+5.0 3.0
+4.0 3.0
+5.0 4.0
+4.0 5.0
+1.0 4.0
+ring P 3
+3.0 1.0
+4.0 2.0
+4.0 3.0
+ring Q 8
+3.0 1.0
+5.0 1.0
+4.0 4.0
+2.0 5.0
+2.0 4.0
+1.0 5.0
+0.0 4.0
+1.0 1.0
+ring Q 3
+4.0 3.0
+3.0 4.0
+2.0 4.0
+expect intersection 0 0 0
+expect union 0
+expect difference 0 0 0 0 0
+expect symmetric_difference 0 0 0 0 0 0 0 0 0 0
+endcase
+case holes-transform-5-680
+grid 4
+ring P 8
+0.0 2.0
+0.0 0.0
+1.0 1.0
+4.0 0.0
+4.0 2.0
+4.0 4.0
+1.0 3.0
+0.0 4.0
+ring P 3
+1.0 2.0
+2.0 2.0
+4.0 3.0
+ring Q 8
+2.0 0.0
+4.0 0.0
+3.0 1.0
+4.0 4.0
+2.0 4.0
+0.0 4.0
+1.0 1.0
+0.0 0.0
+ring Q 3
+2.0 1.0
+2.0 2.0
+1.0 4.0
+expect intersection 0 0
+expect union 3
+expect difference 0 0 0 0 0
+expect symmetric_difference 0 0 0 0 0 0 0 0 0
+endcase
+case region-1-25
+grid 8
+ring P 27
+0.0 0.0
+0.0 2.0
+0.0 4.0
+1.0 3.0
+2.0 4.0
+1.0 5.0
+0.0 6.0
+1.0 7.0
+0.0 8.0
+2.0 8.0
+3.0 7.0
+4.0 8.0
+6.0 8.0
+7.0 7.0
+8.0 8.0
+8.0 6.0
+8.0 4.0
+6.0 4.0
+4.0 4.0
+5.0 3.0
+4.0 2.0
+5.0 1.0
+6.0 2.0
+6.0 0.0
+4.0 0.0
+2.0 0.0
+1.0 1.0
+ring P 3
+2.0 2.0
+3.0 3.0
+2.0 4.0
+ring P 3
+3.0 5.0
+2.0 6.0
+2.0 4.0
+ring P 3
+4.0 6.0
+5.0 7.0
+4.0 8.0
+ring Q 4
+2.0 2.0
+2.0 0.0
+0.0 0.0
+0.0 2.0
+expect intersection 0
+expect union 3
+expect difference 0 2
+expect symmetric_difference 0 0 2
+endcase
+case region-1-41
+grid 8
+ring P 13
+1.0 3.0
+0.0 4.0
+1.0 5.0
+0.0 6.0
+1.0 7.0
+0.0 8.0
+2.0 8.0
+3.0 7.0
+4.0 8.0
+8.0 8.0
+8.0 0.0
+2.0 0.0
+2.0 4.0
+ring P 3
+6.0 6.0
+7.0 5.0
+8.0 6.0
+ring P 3
+6.0 2.0
+7.0 1.0
+8.0 2.0
+ring P 3
+7.0 3.0
+6.0 4.0
+6.0 2.0
+ring P 3
+4.0 2.0
+5.0 1.0
+6.0 2.0
+ring P 3
+5.0 3.0
+4.0 4.0
+4.0 2.0
+ring P 3
+3.0 5.0
+4.0 6.0
+2.0 6.0
+ring Q 8
+6.0 4.0
+7.0 3.0
+8.0 4.0
+8.0 0.0
+7.0 1.0
+6.0 0.0
+6.0 2.0
+5.0 3.0
+expect intersection 0 0 0 0
+expect union 4
+expect difference 0 0 2
+expect symmetric_difference 0 0 0 3
+endcase
+case region-1-59
+grid 10
+ring P 18
+0.0 8.0
+0.0 10.0
+6.0 10.0
+10.0 10.0
+10.0 8.0
+9.0 7.0
+10.0 6.0
+10.0 4.0
+10.0 0.0
+8.0 0.0
+6.0 0.0
+5.0 1.0
+4.0 0.0
+2.0 0.0
+0.0 0.0
+0.0 2.0
+1.0 3.0
+0.0 4.0
+ring P 3
+4.0 8.0
+5.0 9.0
+4.0 10.0
+ring P 3
+3.0 9.0
+2.0 8.0
+4.0 8.0
+ring P 3
+3.0 5.0
+4.0 4.0
+4.0 6.0
+ring P 3
+5.0 3.0
+6.0 4.0
+4.0 4.0
+ring P 3
+2.0 4.0
+2.0 6.0
+1.0 5.0
+ring P 3
+7.0 7.0
+6.0 8.0
+6.0 6.0
+ring P 4
+8.0 6.0
+7.0 5.0
+8.0 4.0
+9.0 5.0
+ring Q 8
+2.0 4.0
+4.0 4.0
+3.0 3.0
+4.0 2.0
+3.0 1.0
+2.0 0.0
+2.0 2.0
+1.0 3.0
+expect intersection 0
+expect union 7
+expect difference 0 7
+expect symmetric_difference 0 7
+endcase
+case region-1-82
+grid 8
+ring P 21
+0.0 6.0
+0.0 8.0
+2.0 8.0
+1.0 7.0
+2.0 6.0
+4.0 6.0
+4.0 8.0
+6.0 8.0
+8.0 8.0
+8.0 6.0
+8.0 4.0
+8.0 2.0
+8.0 0.0
+7.0 1.0
+6.0 0.0
+4.0 0.0
+2.0 0.0
+0.0 0.0
+1.0 1.0
+0.0 2.0
+0.0 4.0
+ring P 3
+4.0 4.0
+5.0 5.0
+4.0 6.0
+ring P 6
+2.0 4.0
+1.0 3.0
+2.0 2.0
+4.0 2.0
+3.0 3.0
+4.0 4.0
+ring P 3
+5.0 3.0
+6.0 4.0
+4.0 4.0
+ring Q 8
+1.0 3.0
+2.0 4.0
+3.0 3.0
+2.0 2.0
+2.0 0.0
+0.0 0.0
+1.0 1.0
+0.0 2.0
+expect intersection 0
+expect union 4
+expect difference 0 1
+expect symmetric_difference 0 1
+endcase
+case region-1-155
+grid 10
+ring P 14
+0.0 0.0
+0.0 10.0
+8.0 10.0
+9.0 9.0
+10.0 10.0
+10.0 4.0
+8.0 4.0
+8.0 2.0
+10.0 0.0
+8.0 0.0
+7.0 1.0
+6.0 0.0
+2.0 0.0
+1.0 1.0
+ring P 3
+1.0 3.0
+2.0 4.0
+0.0 4.0
+ring P 3
+2.0 2.0
+3.0 3.0
+2.0 4.0
+ring P 3
+9.0 7.0
+8.0 6.0
+10.0 6.0
+ring P 3
+8.0 8.0
+7.0 7.0
+8.0 6.0
+ring P 3
+6.0 6.0
+6.0 4.0
+8.0 4.0
+ring P 3
+7.0 3.0
+6.0 2.0
+8.0 2.0
+ring P 3
+4.0 2.0
+3.0 1.0
+4.0 0.0
+ring P 3
+2.0 8.0
+4.0 8.0
+3.0 9.0
+ring P 3
+4.0 4.0
+5.0 5.0
+4.0 6.0
+ring Q 24
+2.0 4.0
+2.0 6.0
+1.0 5.0
+0.0 6.0
+1.0 7.0
+0.0 8.0
+0.0 10.0
+2.0 10.0
+3.0 9.0
+4.0 10.0
+5.0 9.0
+6.0 10.0
+8.0 10.0
+8.0 8.0
+7.0 7.0
+8.0 6.0
+8.0 4.0
+6.0 4.0
+5.0 3.0
+6.0 2.0
+4.0 0.0
+3.0 1.0
+4.0 2.0
+4.0 4.0
+ring Q 3
+7.0 9.0
+6.0 8.0
+8.0 8.0
+ring Q 3
+4.0 8.0
+5.0 7.0
+6.0 8.0
+ring Q 3
+2.0 8.0
+3.0 7.0
+4.0 8.0
+ring Q 3
+4.0 6.0
+6.0 6.0
+5.0 7.0
+expect intersection 0 0 0 0
+expect union 5
+expect difference 0 0 0 0 0 0 0 0 0 0 0 0 1
+expect symmetric_difference 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+endcase

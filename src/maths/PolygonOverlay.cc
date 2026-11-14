@@ -165,6 +165,143 @@ namespace GPlatesMaths
 			}
 
 
+			//! A hash of a position consistent with is_same_position (-0 hashed as 0, which '=='
+			//! takes it for).
+			class PositionHash
+			{
+			public:
+				std::size_t
+				operator()(
+						const PointOnSphere &point) const
+				{
+					const UnitVector3D &u = point.position_vector();
+					const std::hash<double> hash;
+					const auto coordinate = [&hash](double c)
+					{
+						return hash(are_exactly_equal(c, 0.0) ? 0.0 : c);
+					};
+					std::size_t seed = coordinate(u.x().dval());
+					seed ^= coordinate(u.y().dval()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+					seed ^= coordinate(u.z().dval()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+					return seed;
+				}
+			};
+
+			class SamePosition
+			{
+			public:
+				bool
+				operator()(
+						const PointOnSphere &a,
+						const PointOnSphere &b) const
+				{
+					return is_same_position(a, b);
+				}
+			};
+
+
+			//! Whether @a points hold at least three different positions (a ring with area).
+			bool
+			has_three_positions(
+					const std::vector<PointOnSphere> &points)
+			{
+				unsigned int num_distinct = 0;
+				for (unsigned int j = 0; j < points.size() && num_distinct < 3; ++j)
+				{
+					bool repeated = false;
+					for (unsigned int k = 0; k < j; ++k)
+					{
+						repeated = repeated || is_same_position(points[k], points[j]);
+					}
+					num_distinct += repeated ? 0 : 1;
+				}
+				return num_distinct >= 3;
+			}
+
+
+			/**
+			 * Cuts @a ring wherever it passes one position twice (exactly), as the split cuts a
+			 * ring passing an overlay vertex twice: 'v1, A, v2, B' into 'A, v2' and 'v1, B', each
+			 * point (and its provenance, if any) staying with the passage it arrives from. Which
+			 * part takes which point matters where relink_disconnected_interiors joined two rings
+			 * at a touch on no cycle: the other way round, the hole was closed by its exterior's
+			 * point and the exterior took the hole's (a coverage's values exchanged there). Not
+			 * where the points are two different overlay vertices (@a vertices, per point, -1 for
+			 * none): two crossings at one point, a twist lying on the other input, are two
+			 * vertices by design. (One overlay vertex twice is cut: a relinked walk can pass one.)
+			 *
+			 * One pass with a stack of the points not yet cut off: a point at the position of one
+			 * on the stack closes the ring of the stack's points after that one. The rings cut off
+			 * come first, the rest last. Returns the number of cuts.
+			 */
+			unsigned int
+			split_at_repeated_positions(
+					const OutputRing &ring,
+					const std::vector<int> &vertices,
+					std::vector<OutputRing> &simple_rings,
+					std::vector<std::vector<int>> &simple_ring_vertices)
+			{
+				const bool with_provenance = !ring.provenances.empty();
+				std::vector<unsigned int> stack;
+				std::unordered_map<PointOnSphere, unsigned int, PositionHash, SamePosition>
+						stack_index;
+				unsigned int num_cuts = 0;
+				const auto emit = [&](unsigned int from)
+				{
+					OutputRing cut;
+					std::vector<int> cut_vertices;
+					for (unsigned int k = from; k < stack.size(); ++k)
+					{
+						cut.points.push_back(ring.points[stack[k]]);
+						cut_vertices.push_back(vertices[stack[k]]);
+						if (with_provenance)
+						{
+							cut.provenances.push_back(ring.provenances[stack[k]]);
+						}
+					}
+					simple_rings.push_back(std::move(cut));
+					simple_ring_vertices.push_back(std::move(cut_vertices));
+				};
+				for (unsigned int j = 0; j < ring.points.size(); ++j)
+				{
+					const auto found = stack_index.find(ring.points[j]);
+					const auto is_twist = [&](unsigned int i)
+					{
+						const int a = vertices[stack[i]];
+						return a >= 0 && vertices[j] >= 0 && a != vertices[j];
+					};
+					if (found != stack_index.end() && !is_twist(found->second))
+					{
+						// Cut off the points after the first, closed by the second; the first
+						// stays, where the position's entry still points.
+						const unsigned int i = found->second;
+						stack.push_back(j);
+						emit(i + 1);
+						for (unsigned int k = i + 1; k < stack.size(); ++k)
+						{
+							const auto entry = stack_index.find(ring.points[stack[k]]);
+							if (entry != stack_index.end() && entry->second == k)
+							{
+								stack_index.erase(entry);
+							}
+						}
+						stack.resize(i + 1);
+						++num_cuts;
+						continue;
+					}
+					if (found == stack_index.end())
+					{
+						stack_index.emplace(
+								ring.points[j],
+								static_cast<unsigned int>(stack.size()));
+					}
+					stack.push_back(j);
+				}
+				emit(0);
+				return num_cuts;
+			}
+
+
 			/**
 			 * Union-find over record indices, by path halving.
 			 */
@@ -221,6 +358,67 @@ namespace GPlatesMaths
 					}
 				}
 			}
+
+
+			/**
+			 * A segment's great circle in doubles, for distances from its plane and angles along
+			 * it from its start: the plane even of a segment GreatCircleArc calls zero length
+			 * (under about 1e-6 radians, where it has no rotation axis). None for a segment of no
+			 * length.
+			 */
+			class SegmentPlane
+			{
+			public:
+				static
+				boost::optional<SegmentPlane>
+				create(
+						const GreatCircleArc &segment)
+				{
+					const Vector3D start(segment.start_point().position_vector());
+					const Vector3D end(segment.end_point().position_vector());
+					const Vector3D normal = cross(start, end);
+					const double normal_length = std::sqrt(normal.magSqrd().dval());
+					if (!(normal_length > 0))
+					{
+						return boost::none;
+					}
+					SegmentPlane plane;
+					plane.d_start = start;
+					plane.d_axis = (1.0 / normal_length) * normal;
+					plane.d_length = std::atan2(normal_length, dot(start, end).dval());
+					return plane;
+				}
+
+				double
+				signed_distance(
+						const PointOnSphere &point) const
+				{
+					return dot(d_axis, Vector3D(point.position_vector())).dval();
+				}
+
+				//! atan2(axis . (start x point), start . point).
+				double
+				along(
+						const PointOnSphere &point) const
+				{
+					const Vector3D x(point.position_vector());
+					return std::atan2(
+							dot(d_axis, cross(d_start, x)).dval(),
+							dot(d_start, x).dval());
+				}
+
+				//! The angle along to the segment's end.
+				double
+				length() const
+				{
+					return d_length;
+				}
+
+			private:
+				Vector3D d_start;
+				Vector3D d_axis;
+				double d_length = 0.0;
+			};
 
 
 			/**
@@ -391,6 +589,135 @@ namespace GPlatesMaths
 				}
 				return false;
 			}
+
+
+			/**
+			 * Which circles can meet, as the rings they bound (the grouping, Overlay::extract, and
+			 * the touch search, Overlay::find_own_touches): those whose intervals of angle from an
+			 * axis overlap, each interval a circle's centre's angle plus and minus its radius (two
+			 * points' angles from an axis differ by no more than the angle between them). The axis
+			 * is whichever of x, y and z gives the fewest pairs, so that rings along a meridian or
+			 * a parallel spread out along it. Without it the grouping tested every pair of rings,
+			 * cheap as a test of their bounding circles is (1.7 seconds for 10,000 holes far
+			 * apart).
+			 */
+			class CircleSweep
+			{
+			public:
+				//! A circle: its centre, and its radius in radians (with any margin added).
+				class Circle
+				{
+				public:
+					UnitVector3D centre;
+					double radius;
+				};
+
+				explicit
+				CircleSweep(
+						const std::vector<Circle> &circles)
+				{
+					boost::optional<unsigned long long> fewest_pairs;
+					for (const UnitVector3D &axis : get_axes())
+					{
+						std::vector<Interval> intervals = get_intervals(axis, circles);
+						unsigned long long num_pairs = 0;
+						for (unsigned int i = 0; i < intervals.size(); ++i)
+						{
+							num_pairs += end_of_overlaps(intervals, i) - (i + 1);
+						}
+						if (!fewest_pairs || num_pairs < *fewest_pairs)
+						{
+							fewest_pairs = num_pairs;
+							d_intervals.swap(intervals);
+						}
+					}
+				}
+
+				//! Calls @a visit(a, b) for each pair of circles whose intervals overlap, once.
+				template <typename VisitType>
+				void
+				visit_pairs(
+						VisitType visit) const
+				{
+					for (unsigned int i = 0; i < d_intervals.size(); ++i)
+					{
+						const unsigned int end = end_of_overlaps(d_intervals, i);
+						for (unsigned int j = i + 1; j < end; ++j)
+						{
+							visit(d_intervals[i].index, d_intervals[j].index);
+						}
+					}
+				}
+
+			private:
+				class Interval
+				{
+				public:
+					double begin;
+					double end;
+					unsigned int index;
+				};
+
+				static
+				std::vector<UnitVector3D>
+				get_axes()
+				{
+					return {
+							UnitVector3D::xBasis(),
+							UnitVector3D::yBasis(),
+							UnitVector3D::zBasis() };
+				}
+
+				//! The circles' intervals on @a axis, in order of their beginnings (stably).
+				static
+				std::vector<Interval>
+				get_intervals(
+						const UnitVector3D &axis,
+						const std::vector<Circle> &circles)
+				{
+					std::vector<Interval> intervals;
+					intervals.reserve(circles.size());
+					for (unsigned int c = 0; c < circles.size(); ++c)
+					{
+						const double centre = angle_between(axis, circles[c].centre);
+						intervals.push_back(Interval{
+								centre - circles[c].radius,
+								centre + circles[c].radius,
+								c });
+					}
+					std::stable_sort(
+							intervals.begin(),
+							intervals.end(),
+							[](const Interval &a, const Interval &b)
+							{
+								return a.begin < b.begin;
+							});
+					return intervals;
+				}
+
+				//! One past the last interval, in order of their beginnings, that begins in
+				//! interval @a i.
+				static
+				unsigned int
+				end_of_overlaps(
+						const std::vector<Interval> &intervals,
+						unsigned int i)
+				{
+					const double end = intervals[i].end;
+					return std::upper_bound(
+							intervals.begin() + i + 1,
+							intervals.end(),
+							end,
+							[](double value, const Interval &interval)
+							{
+								return value < interval.begin;
+							}) -
+						intervals.begin();
+				}
+
+				//! In order of their beginnings, on the axis of fewest pairs.
+				std::vector<Interval> d_intervals;
+			};
 		}
 	}
 }
@@ -930,18 +1257,29 @@ GPlatesMaths::PolygonOverlay::Overlay::ring_of_segment(
 		Side side,
 		unsigned int segment_index) const
 {
-	for (unsigned int ring = d_side_rings_begin[side]; ring < d_side_rings_end[side]; ++ring)
+	// The first ring of the side that ends after the segment, by bisection (the rings are in
+	// segment order; asked once per record, a pass over the rings was quadratic in the holes).
+	// A polyline's last vertex is the start of the fictitious segment 'num_segments'.
+	unsigned int begin = d_side_rings_begin[side];
+	unsigned int end = d_side_rings_end[side];
+	while (begin < end)
 	{
-		const RingView &ring_view = d_rings[ring];
-		// A polyline's last vertex is the start of the fictitious segment 'num_segments'.
-		const unsigned int end_index = ring_view.first_segment_index + ring_view.num_vertices();
-		if (segment_index < end_index)
+		const unsigned int middle = begin + (end - begin) / 2;
+		const RingView &ring_view = d_rings[middle];
+		if (segment_index < ring_view.first_segment_index + ring_view.num_vertices())
 		{
-			return ring;
+			end = middle;
+		}
+		else
+		{
+			begin = middle + 1;
 		}
 	}
-
-	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	if (begin == d_side_rings_end[side])
+	{
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	}
+	return begin;
 }
 
 
@@ -1156,19 +1494,31 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 	//
 	// This ring's records, by ring-local segment (a polyline's last vertex is 'num_segments'). The
 	// ordered sequence runs ring by ring, so the records of one segment keep their order along it.
+	// It is sorted by segment first, so the ring's records are a range of it, found by bisection
+	// (a pass over every record for each ring was quadratic in the holes, where each has records).
 	//
 	const unsigned int num_vertices = ring_view.num_vertices();
 	std::vector<std::vector<unsigned int>> at_vertex_records(num_vertices);
 	std::vector<std::vector<unsigned int>> inside_segment_records(num_vertices);
-	for (unsigned int r : ordered)
+	const auto segment_less = [&](unsigned int r, unsigned int segment_index)
 	{
+		return record_segment(records[r], side) < segment_index;
+	};
+	const auto ring_records_end = std::lower_bound(
+			ordered.begin(),
+			ordered.end(),
+			ring_view.first_segment_index + num_vertices,
+			segment_less);
+	for (auto ring_record = std::lower_bound(
+			ordered.begin(),
+			ring_records_end,
+			ring_view.first_segment_index,
+			segment_less);
+		ring_record != ring_records_end;
+		++ring_record)
+	{
+		const unsigned int r = *ring_record;
 		const unsigned int segment_index = record_segment(records[r], side);
-		if (segment_index < ring_view.first_segment_index ||
-			segment_index >= ring_view.first_segment_index + num_vertices)
-		{
-			continue;
-		}
-
 		const unsigned int local = segment_index - ring_view.first_segment_index;
 		if (is_record_at_vertex(records[r], side))
 		{
@@ -1194,18 +1544,15 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 	// The self-touch cuts that follow, on segment 'k', the stop whose first record is 'record',
 	// if any. Keyed by the stop (its first record), not its vertex: a vertex can have two stops on
 	// one segment, and the cuts belong after the one the cut piece starts at.
-	std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> self_touch_cuts_added;
+	std::set<std::tuple<unsigned int, unsigned int, unsigned int>> self_touch_cuts_added;
 	const auto add_self_touch_cuts = [&](unsigned int k, unsigned int record)
 	{
 		const auto key = std::make_tuple(ring, k, record);
 		const auto cuts = d_self_touch_cuts.find(key);
-		if (cuts == d_self_touch_cuts.end() ||
-			std::find(self_touch_cuts_added.begin(), self_touch_cuts_added.end(), key) !=
-					self_touch_cuts_added.end())
+		if (cuts == d_self_touch_cuts.end() || !self_touch_cuts_added.insert(key).second)
 		{
 			return;  // none, or already added
 		}
-		self_touch_cuts_added.push_back(key);
 		for (const std::pair<double, unsigned int> &cut : cuts->second)
 		{
 			// A stop of the vertex with no record of this ring (none names it).
@@ -1806,6 +2153,8 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	// tree. Found for every vertex at once, when the first piece asks.
 	//
 	std::map<std::pair<unsigned int, unsigned int>, std::vector<unsigned int>> passage_vertices;
+	std::map<std::pair<unsigned int, unsigned int>, std::vector<std::pair<double, unsigned int>>>
+			passage_vertices_along;  // (angle along the segment, vertex), sorted
 	bool found_passage_vertices = false;
 	const auto find_passage_vertices = [&]()
 	{
@@ -1888,6 +2237,8 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		// As (angle along the segment, vertex).
 		std::vector<std::pair<double, unsigned int>> chain;
 		std::vector<Passage> passages;
+		// The passages' vertices, to look one up.
+		std::multiset<unsigned int> passage_vertices;
 	};
 	std::vector<CutPiece> cut_pieces;
 
@@ -2016,7 +2367,33 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 				passage_vertices.find(std::make_pair(piece.ring, *piece.single_arc_segment));
 		if (on_segment != passage_vertices.end())
 		{
-			for (unsigned int v : on_segment->second)
+			// Only those inside the piece by angle along the segment, from the segment's vertices
+			// sorted by it once (every piece of the segment has the same 'along'), taken in vertex
+			// order as listed. A segment cut into many pieces, with as many touches on it, was
+			// quadratic: 2,000 hole tips of each input alternating on a shared edge took 0.1 s.
+			std::vector<std::pair<double, unsigned int>> &by_along =
+					passage_vertices_along[on_segment->first];
+			if (by_along.empty())
+			{
+				for (unsigned int v : on_segment->second)
+				{
+					by_along.push_back(std::make_pair(along(d_vertices[v].position), v));
+				}
+				std::sort(by_along.begin(), by_along.end());
+			}
+			// (The first past 'along_start + ALONG_ROUNDING', as is_inside asks.)
+			const std::pair<double, unsigned int> start_bound(
+					along_start + ALONG_ROUNDING,
+					(std::numeric_limits<unsigned int>::max)());
+			std::vector<unsigned int> inside_piece;
+			for (auto candidate = std::upper_bound(by_along.begin(), by_along.end(), start_bound);
+				candidate != by_along.end() && candidate->first < along_end - ALONG_ROUNDING;
+				++candidate)
+			{
+				inside_piece.push_back(candidate->second);
+			}
+			std::sort(inside_piece.begin(), inside_piece.end());
+			for (unsigned int v : inside_piece)
 			{
 				const double v_along = along(d_vertices[v].position);
 				if (v == *piece.start_vertex ||
@@ -2076,6 +2453,10 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		}
 		if (!cut_piece.chain.empty() || !cut_piece.passages.empty())
 		{
+			for (const Passage &passage : cut_piece.passages)
+			{
+				cut_piece.passage_vertices.insert(passage.vertex);
+			}
 			cut_pieces.push_back(cut_piece);
 		}
 	}
@@ -2089,13 +2470,7 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	//
 	const auto is_passage = [](const CutPiece &cut_piece, unsigned int vertex)
 	{
-		return std::find_if(
-				cut_piece.passages.begin(),
-				cut_piece.passages.end(),
-				[vertex](const Passage &passage)
-				{
-					return passage.vertex == vertex;
-				}) != cut_piece.passages.end();
+		return cut_piece.passage_vertices.count(vertex) != 0;
 	};
 	const auto is_cut_at = [&](unsigned int piece, unsigned int vertex)
 	{
@@ -2125,7 +2500,9 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		dropped = false;
 		for (CutPiece &cut_piece : cut_pieces)
 		{
-			for (unsigned int i = 0; i < cut_piece.passages.size(); )
+			// (Dropped ones are removed after the piece's pass, not one at a time.)
+			std::vector<bool> is_dropped(cut_piece.passages.size(), false);
+			for (unsigned int i = 0; i < cut_piece.passages.size(); ++i)
 			{
 				const Passage &passage = cut_piece.passages[i];
 				const bool kept =
@@ -2144,16 +2521,27 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 									return is_cut_at(
 											piece_and_vertex.first, piece_and_vertex.second);
 								});
-				if (kept)
+				if (!kept)
 				{
-					++i;
-				}
-				else
-				{
-					cut_piece.passages.erase(cut_piece.passages.begin() + i);
+					cut_piece.passage_vertices.erase(
+							cut_piece.passage_vertices.find(passage.vertex));
+					is_dropped[i] = true;
 					dropped = true;
 				}
 			}
+			unsigned int num_kept = 0;
+			for (unsigned int i = 0; i < cut_piece.passages.size(); ++i)
+			{
+				if (!is_dropped[i])
+				{
+					if (num_kept != i)
+					{
+						cut_piece.passages[num_kept] = std::move(cut_piece.passages[i]);
+					}
+					++num_kept;
+				}
+			}
+			cut_piece.passages.resize(num_kept);
 		}
 	}
 
@@ -2162,10 +2550,11 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	{
 		// The cuts, as (angle along the segment, vertex): the chain's vertices and the passages.
 		std::vector<std::pair<double, unsigned int>> cuts = cut_piece.chain;
+		std::set<std::pair<double, unsigned int>> cuts_added(cuts.begin(), cuts.end());
 		for (const Passage &passage : cut_piece.passages)
 		{
 			const std::pair<double, unsigned int> cut(passage.along, passage.vertex);
-			if (std::find(cuts.begin(), cuts.end(), cut) == cuts.end())
+			if (cuts_added.insert(cut).second)
 			{
 				cuts.push_back(cut);
 				++d_diagnostics.self_touch_cuts_at_passages;
@@ -3019,15 +3408,52 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 
 
 bool
-GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
+GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point(
+		const std::vector<unsigned int> *classified_pieces)
 {
-	bool any_change = false;
-	bool changed = true;
-	while (changed)
+	//
+	// Sweeps in vertex order until one deduces nothing, each visiting only the vertices that a
+	// class has reached since they were last solved (a vertex of a piece classified since). A
+	// vertex's solution reads only its own pieces' classes, so one that no class has reached
+	// since would deduce what it did then, and that applied nothing (a class it applied would
+	// have reached it): the deductions, and their order, are those of sweeping every vertex.
+	// What sweeping every vertex cost was the sweeps: along a common chain running against the
+	// vertex order a class travels one vertex per sweep (two polygons sharing 10,000 vertices
+	// took 8 seconds, 20,000 took 33). A vertex reached ahead of the sweep is visited in it, one
+	// behind it (or the vertex itself) in the next.
+	//
+	std::set<unsigned int> this_sweep;
+	std::set<unsigned int> next_sweep;
+	if (classified_pieces)
 	{
-		changed = false;
+		for (unsigned int p : *classified_pieces)
+		{
+			for (const boost::optional<unsigned int> &vertex :
+					{ d_pieces[p].start_vertex, d_pieces[p].end_vertex })
+			{
+				if (vertex)
+				{
+					this_sweep.insert(*vertex);
+				}
+			}
+		}
+	}
+	else
+	{
 		for (unsigned int v = 0; v < d_vertices.size(); ++v)
 		{
+			this_sweep.insert(this_sweep.end(), v);
+		}
+	}
+
+	bool any_change = false;
+	while (!this_sweep.empty())
+	{
+		while (!this_sweep.empty())
+		{
+			const unsigned int v = *this_sweep.begin();
+			this_sweep.erase(this_sweep.begin());
+
 			std::vector<Deduction> deductions;
 			solve_vertex(v, &deductions);
 			for (const Deduction &deduction : deductions)
@@ -3053,10 +3479,20 @@ GPlatesMaths::PolygonOverlay::Overlay::deduce_to_fixed_point()
 					++d_diagnostics.deduced;
 				}
 				piece.method = deduction.method;
-				changed = true;
 				any_change = true;
+
+				// (A common pair's two pieces have the same two vertices.)
+				for (const boost::optional<unsigned int> &vertex :
+						{ piece.start_vertex, piece.end_vertex })
+				{
+					if (vertex)
+					{
+						(*vertex > v ? this_sweep : next_sweep).insert(*vertex);
+					}
+				}
 			}
 		}
+		this_sweep.swap(next_sweep);
 	}
 	return any_change;
 }
@@ -3464,47 +3900,42 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 	// the one whose midpoint is farthest from the other input's outline is tested first, then
 	// deduction resumes. A class decided within the band of rounding must never be the source of a
 	// deduction for a piece with a margin (section 5.2, classification step 3). The distance is
-	// rounded (a cosine, resolving about 1.5e-8 radians), but it only orders the tests.
+	// rounded (a cosine, resolving about 1.5e-8 radians), but it only orders the tests. Pieces of
+	// equal margin are tested in index order. A piece deduced meanwhile is not tested, and after a
+	// test deduction resumes from that piece's vertices only (deduce_to_fixed_point).
 	//
-	std::vector<boost::optional<double>> margins(d_pieces.size());
-	while (true)
+	deduce_to_fixed_point();
+	std::vector<std::pair<double, unsigned int>> stalled;  // (margin, piece)
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
 	{
-		deduce_to_fixed_point();
-
-		boost::optional<unsigned int> best_piece;
-		double best_margin = -1.0;
-		for (unsigned int p = 0; p < d_pieces.size(); ++p)
+		const Piece &piece = d_pieces[p];
+		if (piece.internal || piece.common || piece.is_classified())
 		{
-			const Piece &piece = d_pieces[p];
-			if (piece.internal || piece.common || piece.is_classified())
+			continue;
+		}
+		const Vector3D sum =
+				Vector3D(d_stops[piece.start_stop].position.position_vector()) +
+				Vector3D(d_stops[piece.end_stop].position.position_vector());
+		const PointOnSphere midpoint(sum.get_normalisation());
+		const boost::optional<AngularDistance> distance =
+				minimum_distance(midpoint, other_polygon(d_rings[piece.ring].side));
+		stalled.emplace_back(distance ? distance->calculate_angle().dval() : 0.0, p);
+	}
+	std::stable_sort(
+			stalled.begin(),
+			stalled.end(),
+			[](const std::pair<double, unsigned int> &a, const std::pair<double, unsigned int> &b)
 			{
-				continue;
-			}
-
-			if (!margins[p])
-			{
-				const Vector3D sum =
-						Vector3D(d_stops[piece.start_stop].position.position_vector()) +
-						Vector3D(d_stops[piece.end_stop].position.position_vector());
-				const PointOnSphere midpoint(sum.get_normalisation());
-				const boost::optional<AngularDistance> distance =
-						minimum_distance(midpoint, other_polygon(d_rings[piece.ring].side));
-				margins[p] = distance ? distance->calculate_angle().dval() : 0.0;
-			}
-
-			if (*margins[p] > best_margin)
-			{
-				best_margin = *margins[p];
-				best_piece = p;
-			}
+				return a.first > b.first;
+			});
+	for (const std::pair<double, unsigned int> &candidate : stalled)
+	{
+		Piece &piece = d_pieces[candidate.second];
+		if (piece.is_classified())
+		{
+			continue;
 		}
 
-		if (!best_piece)
-		{
-			break;
-		}
-
-		Piece &piece = d_pieces[*best_piece];
 		const Vector3D sum =
 				Vector3D(d_stops[piece.start_stop].position.position_vector()) +
 				Vector3D(d_stops[piece.end_stop].position.position_vector());
@@ -3514,6 +3945,9 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 		piece.piece_class = inside ? CLASS_INSIDE : CLASS_OUTSIDE;
 		piece.method = METHOD_MIDPOINT_TEST;
 		++d_diagnostics.midpoint_tests;
+
+		const std::vector<unsigned int> tested(1, candidate.second);
+		deduce_to_fixed_point(&tested);
 	}
 
 	//
@@ -3558,7 +3992,7 @@ GPlatesMaths::PolygonOverlay::Overlay::classify_pieces()
 			continue;
 		}
 		++d_diagnostics.anchorless_resolved;
-		deduce_to_fixed_point();
+		deduce_to_fixed_point(&chain);  // (one of its pieces was classified)
 	}
 
 	// (e) A common clip piece takes its subject partner's class.
@@ -4526,11 +4960,353 @@ GPlatesMaths::PolygonOverlay::Overlay::is_kept(
 
 
 void
+GPlatesMaths::PolygonOverlay::Overlay::find_own_touches(
+		Operation operation) const
+{
+	//
+	// Where an input touches itself away from the other's outline with a vertex of one ring on an
+	// edge of another (a hole's vertex on its exterior's edge), no record is there, and the rings
+	// walked through the two have no point in common there: an output ring with a vertex on its
+	// own edge, or two rings touching where only one has a point, which no cut by position can
+	// see. So the touched edge gets a point at the vertex's position (section 5.2, rings made
+	// simple). Only between two rings of an input with interior rings: a valid polygon touches
+	// itself nowhere else (a ring touching itself is an invalid input, left as it is). Searched
+	// from the original vertices (in no record, so off the other input's outline) of the pieces
+	// the operation keeps: the touched edge's piece through the point is of the same input, on
+	// the same side of the other, so kept with it; and nothing is searched where the output is
+	// small (a large clip with holes), a polyline's, or whole. Exact up to rounding: within
+	// OWN_TOUCH_DISTANCE of the edge's plane, the scale of the join of vertices at one point.
+	// Not the thickness, which would bend an edge by up to 9 m to make a touch that is not
+	// there; a vertex farther than rounding from an edge leaves the output as valid as the input.
+	//
+	const double OWN_TOUCH_DISTANCE = 1e-12;  // radians, from the edge's plane
+	const double ALONG_ROUNDING = 1e-12;      // radians, from the edge's ends
+	if (d_own_touch_searched.size() != d_stops.size())
+	{
+		d_own_touch_searched.assign(d_stops.size(), false);
+	}
+
+	bool found = false;
+	for (Side side : { SUBJECT, CLIP })
+	{
+		const PolygonOnSphere *const polygon = (side == SUBJECT) ? d_subject_polygon : &d_clip;
+		if (!polygon || polygon->number_of_interior_rings() == 0)
+		{
+			continue;
+		}
+		const unsigned int first_ring = d_side_rings_begin[side];
+		const unsigned int num_rings = d_side_rings_end[side] - first_ring;
+
+		// The original vertices of the kept pieces not yet searched (a closed piece's: all of its
+		// ring's stops), by ring and ring vertex.
+		std::vector<std::vector<int>> stop_of_vertex(num_rings);  // empty: none in the ring
+		unsigned int num_searched = 0;
+		for (unsigned int p = 0; p < d_pieces.size(); ++p)
+		{
+			const Piece &piece = d_pieces[p];
+			const RingView &ring_view = d_rings[piece.ring];
+			if (ring_view.side != side ||
+				piece.internal ||
+				!is_kept(piece, operation).get_value_or(false))
+			{
+				continue;
+			}
+			std::vector<int> &ring_stops = stop_of_vertex[piece.ring - first_ring];
+			const auto add = [&](unsigned int s)
+			{
+				if (d_stops[s].kind != Stop::ORIGINAL_VERTEX || d_own_touch_searched[s])
+				{
+					return;
+				}
+				d_own_touch_searched[s] = true;
+				++num_searched;
+				if (ring_stops.empty())
+				{
+					ring_stops.assign(ring_view.num_vertices(), -1);
+				}
+				ring_stops[d_stops[s].segment_out] = s;  // (an original vertex: at_vertex)
+			};
+			if (piece.closed)
+			{
+				for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+				{
+					add(s);
+				}
+			}
+			else
+			{
+				for (unsigned int s = piece.start_stop; ; )
+				{
+					s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+					if (s == piece.end_stop)
+					{
+						break;
+					}
+					add(s);
+				}
+			}
+		}
+		if (num_searched == 0)
+		{
+			continue;
+		}
+		d_diagnostics.own_touch_queries += num_searched;
+
+		// Each vertex of one ring tested against the edges of another, at the leaves of the two
+		// rings' bounding trees where their circles meet.
+		const auto test_leaf = [&](
+				unsigned int vertex_ring,
+				unsigned int vertices_begin,
+				unsigned int vertices_end,
+				unsigned int edge_ring,
+				unsigned int edges_begin,
+				unsigned int edges_end)
+		{
+			const std::vector<int> &ring_stops = stop_of_vertex[vertex_ring];
+			if (ring_stops.empty())
+			{
+				return;
+			}
+			const RingView &touched = d_rings[first_ring + edge_ring];
+			for (unsigned int k = vertices_begin; k < vertices_end; ++k)
+			{
+				if (ring_stops[k] < 0)
+				{
+					continue;
+				}
+				const PointOnSphere &position = d_stops[ring_stops[k]].position;
+				for (unsigned int segment = edges_begin; segment < edges_end; ++segment)
+				{
+					const boost::optional<SegmentPlane> plane =
+							SegmentPlane::create(touched.segments[segment]);
+					if (!plane ||
+						std::fabs(plane->signed_distance(position)) > OWN_TOUCH_DISTANCE)
+					{
+						continue;
+					}
+					const double along = plane->along(position);
+					if (!(along > ALONG_ROUNDING && along < plane->length() - ALONG_ROUNDING))
+					{
+						continue;  // at an end: a repeated position (cut by extract_rings)
+					}
+					d_own_touches[std::make_pair(first_ring + edge_ring, segment)].push_back(
+							OwnTouch{ along, along / plane->length(), position });
+					found = true;
+				}
+			}
+		};
+
+		//
+		// The pairs of rings whose bounding circles meet (CircleSweep), each descending its two
+		// rings' bounding trees together, a pair of nodes whose circles do not meet pruned (the
+		// circles are widened by the thickness, far beyond OWN_TOUCH_DISTANCE): the outlines are
+		// visited only where they come close. A query of the polygon's tree for each vertex
+		// visited many nodes (a node over a long run of a ring has a circle over much of its
+		// interior): 0.28 seconds for an overlay of 200 holes and 120,000 vertices, against 0.095
+		// by pairs, and 0.078 before output rings were made simple at all (no touch search, cut
+		// by position or relinking). A query of each other ring's own tree was little better.
+		//
+		typedef PolygonOnSphere::ring_bounding_tree_type ring_tree_type;
+		std::vector<const ring_tree_type *> trees;
+		std::vector<CircleSweep::Circle> circles;
+		for (unsigned int r = 0; r < num_rings; ++r)
+		{
+			const unsigned int ring_index = d_rings[first_ring + r].ring_index;
+			trees.push_back((ring_index == 0)
+					? &polygon->get_exterior_ring_bounding_tree()
+					: &polygon->get_interior_ring_bounding_tree(ring_index - 1));
+			const BoundingSmallCircle &bounds =
+					trees.back()->get_root_node().get_bounding_small_circle();
+			circles.push_back(CircleSweep::Circle{
+					bounds.get_centre(),
+					bounds.get_angular_extent().get_angle().dval() });
+		}
+		typedef ring_tree_type::node_type node_type;
+		std::vector<std::pair<node_type, node_type>> node_pairs;
+		CircleSweep(circles).visit_pairs(
+				[&](unsigned int a, unsigned int b)
+				{
+					if (stop_of_vertex[a].empty() && stop_of_vertex[b].empty())
+					{
+						return;
+					}
+					node_pairs.assign(1, std::make_pair(
+							trees[a]->get_root_node(),
+							trees[b]->get_root_node()));
+					while (!node_pairs.empty())
+					{
+						const node_type node_a = node_pairs.back().first;
+						const node_type node_b = node_pairs.back().second;
+						node_pairs.pop_back();
+						const BoundingSmallCircle &circle_a = node_a.get_bounding_small_circle();
+						const BoundingSmallCircle &circle_b = node_b.get_bounding_small_circle();
+						if (!intersect(circle_a, circle_b))
+						{
+							continue;
+						}
+						if (node_a.is_leaf_node() && node_b.is_leaf_node())
+						{
+							const unsigned int a_begin =
+									node_a.get_bounded_great_circle_arcs_begin_index();
+							const unsigned int a_end =
+									a_begin + node_a.get_num_bounded_great_circle_arcs();
+							const unsigned int b_begin =
+									node_b.get_bounded_great_circle_arcs_begin_index();
+							const unsigned int b_end =
+									b_begin + node_b.get_num_bounded_great_circle_arcs();
+							test_leaf(a, a_begin, a_end, b, b_begin, b_end);
+							test_leaf(b, b_begin, b_end, a, a_begin, a_end);
+							continue;
+						}
+						// Down the larger node (or the one that is not a leaf).
+						if (node_b.is_leaf_node() ||
+							(node_a.is_internal_node() &&
+								circle_a.get_angular_extent().is_precisely_greater_than(
+										circle_b.get_angular_extent())))
+						{
+							for (unsigned int child = 0; child < 2; ++child)
+							{
+								node_pairs.push_back(std::make_pair(
+										trees[a]->get_child_node(node_a, child),
+										node_b));
+							}
+						}
+						else
+						{
+							for (unsigned int child = 0; child < 2; ++child)
+							{
+								node_pairs.push_back(std::make_pair(
+										node_a,
+										trees[b]->get_child_node(node_b, child)));
+							}
+						}
+					}
+				});
+	}
+
+	if (found)
+	{
+		// In order along each edge, two at one point once (two holes' vertices on one edge).
+		for (auto &edge_touches : d_own_touches)
+		{
+			std::vector<OwnTouch> &touches = edge_touches.second;
+			std::stable_sort(
+					touches.begin(),
+					touches.end(),
+					[](const OwnTouch &a, const OwnTouch &b) { return a.along < b.along; });
+			unsigned int num_kept = 0;
+			for (unsigned int t = 0; t < touches.size(); ++t)
+			{
+				if (num_kept == 0 ||
+					touches[t].along > touches[num_kept - 1].along + ALONG_ROUNDING)
+				{
+					touches[num_kept++] = touches[t];
+				}
+			}
+			touches.erase(touches.begin() + num_kept, touches.end());
+		}
+	}
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::append_piece_points(
+		walked_ring_type &ring,
+		unsigned int piece_index,
+		bool at_end) const
+{
+	const Piece &piece = d_pieces[piece_index];
+	const RingView &ring_view = d_rings[piece.ring];
+
+	// The piece's stops in ring order, its end stops too (a closed piece's: its ring's, from
+	// the first, its arcs closing the ring).
+	std::vector<unsigned int> stops;
+	if (piece.closed)
+	{
+		for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+		{
+			stops.push_back(s);
+		}
+	}
+	else
+	{
+		stops.push_back(piece.start_stop);
+		for (unsigned int s = piece.start_stop; ; )
+		{
+			s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+			stops.push_back(s);
+			if (s == piece.end_stop)
+			{
+				break;
+			}
+		}
+	}
+
+	// In ring order: each interior stop, and the touch points strictly inside each arc, on the
+	// segment leaving the arc's first stop, by angle along it from each stop's own position.
+	walked_ring_type points;
+	const unsigned int num_arcs = piece.closed ? stops.size() : stops.size() - 1;
+	for (unsigned int k = 0; k < num_arcs; ++k)
+	{
+		const unsigned int a = stops[k];
+		if (k > 0 || piece.closed)
+		{
+			points.push_back(WalkedPoint{
+					boost::none, d_stops[a].position, a, a, piece_index, at_end, Provenance() });
+		}
+		if (d_own_touches.empty())
+		{
+			continue;
+		}
+		const auto touches = d_own_touches.find(std::make_pair(piece.ring, d_stops[a].segment_out));
+		if (touches == d_own_touches.end())
+		{
+			continue;
+		}
+		const boost::optional<SegmentPlane> plane =
+				SegmentPlane::create(ring_view.segments[d_stops[a].segment_out]);
+		if (!plane)
+		{
+			continue;
+		}
+		const unsigned int b = stops[(k + 1) % stops.size()];
+		const double along_a = plane->along(d_stops[a].position);
+		const double along_b = d_stops[b].at_vertex
+				? plane->length()  // the next ring vertex
+				: plane->along(d_stops[b].position);
+		// (By bisection: the touches are in order along the edge, and an edge can have many.)
+		const std::vector<OwnTouch> &edge_touches = touches->second;
+		for (auto touch = std::upper_bound(
+				edge_touches.begin(),
+				edge_touches.end(),
+				along_a,
+				[](double value, const OwnTouch &other) { return value < other.along; });
+			touch != edge_touches.end() && touch->along < along_b;
+			++touch)
+		{
+			points.push_back(WalkedPoint{
+					boost::none, touch->position, a, a, piece_index, at_end, Provenance(),
+					touch->ratio });
+			++d_diagnostics.own_touch_points_inserted;
+		}
+	}
+	if (at_end)
+	{
+		std::reverse(points.begin(), points.end());
+	}
+	ring.insert(ring.end(), points.begin(), points.end());
+}
+
+
+void
 GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 		Operation operation,
 		std::vector<walked_ring_type> &walked,
 		unsigned int &num_pairing_failures) const
 {
+	// The points where the kept pieces' input touches itself, inserted as the pieces are walked.
+	find_own_touches(operation);
+
 	// A ray, as (vertex, index into its rays).
 	typedef std::pair<unsigned int, unsigned int> ray_ref_type;
 	const ray_ref_type no_ray((std::numeric_limits<unsigned int>::max)(), 0);
@@ -4842,28 +5618,8 @@ GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 						end.at_end,
 						Provenance() });
 
-				// The piece's interior stops, in the direction walked.
-				std::vector<unsigned int> stops;
-				const RingView &ring_view = d_rings[piece.ring];
-				for (unsigned int s = piece.start_stop; ; )
-				{
-					s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
-					if (s == piece.end_stop)
-					{
-						break;
-					}
-					stops.push_back(s);
-				}
-				if (end.at_end)
-				{
-					std::reverse(stops.begin(), stops.end());
-				}
-				for (unsigned int s : stops)
-				{
-					ring.push_back(WalkedPoint{
-							boost::none, d_stops[s].position, s, s, end.piece, end.at_end,
-							Provenance() });
-				}
+				// The piece's interior stops and touch points, in the direction walked.
+				append_piece_points(ring, end.piece, end.at_end);
 
 				const ray_ref_type arrive = ray_of_end[2 * end.piece + (end.at_end ? 0 : 1)];
 				used[arrive.first][arrive.second] = true;
@@ -4898,12 +5654,7 @@ GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 			is_kept(piece, operation).get_value_or(false))
 		{
 			walked_ring_type ring;
-			const RingView &ring_view = d_rings[piece.ring];
-			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
-			{
-				ring.push_back(WalkedPoint{
-						boost::none, d_stops[s].position, s, s, p, false, Provenance() });
-			}
+			append_piece_points(ring, p, false);
 			walked.push_back(ring);
 		}
 	}
@@ -5210,6 +5961,9 @@ GPlatesMaths::PolygonOverlay::Overlay::join_difference_rings(
 						start.piece,
 						!start.at_end,
 						Provenance() });
+				// (The step's interior stops and touch points, as the difference's walk made them:
+				// none is inserted here, and a touch point's stop and ratio are in ring order, so
+				// they hold whichever way the step is taken.)
 				for (unsigned int k = step.points.size(); k-- > 1; )
 				{
 					ring.push_back(step.points[k]);
@@ -5336,7 +6090,10 @@ GPlatesMaths::PolygonOverlay::Overlay::split_walked_rings(
 
 	// The points of a walk along unkept chain pieces from one vertex to another of its chain,
 	// without the last vertex's (a breadth-first search: a chain can branch where an input
-	// touches itself).
+	// touches itself). Vertex points only, with no call of append_piece_points: a common piece is
+	// a single arc, and can hold no touch point either (a vertex of its own input on it is within
+	// the thickness of the other input's outline, so in a record, and find_own_touches takes
+	// only vertices in no record).
 	const auto chain_path = [&](unsigned int from, unsigned int to)
 	{
 		std::map<unsigned int, End> arrived_by;  // vertex -> the piece end left to reach it
@@ -5637,7 +6394,8 @@ GPlatesMaths::PolygonOverlay::Overlay::split_walked_rings(
 void
 GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 		Operation operation,
-		std::vector<OutputRing> &rings) const
+		std::vector<OutputRing> &rings,
+		std::vector<std::vector<int>> *ring_vertices) const
 {
 	// A polyline subject's output is extract_polylines' (a dangling end has no ray).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -5676,6 +6434,27 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 							*entry.vertex, entry.position, arriving_stop, entry.stop);
 					arriving_stop = entry.far_stop;
 				}
+				else if (entry.touch_ratio)
+				{
+					// A touch point: on the walked ring's own segment (not the touching vertex's
+					// location, on another ring: a coverage would take that vertex's value, and
+					// the next step of a cascade could compose neither edge beside it).
+					const RingView &ring_view = d_rings[ring_of_stop(entry.stop)];
+					const Location location{
+							ring_view.ring_index,
+							d_stops[entry.stop].segment_out,
+							*entry.touch_ratio };
+					entry.provenance = Provenance();
+					entry.provenance.clip_index = d_options.clip_index;
+					if (ring_view.side == SUBJECT)
+					{
+						compose_subject_location(ring_view, location, entry.provenance);
+					}
+					else
+					{
+						entry.provenance.clip = location;
+					}
+				}
 				else
 				{
 					entry.provenance = get_original_vertex_provenance(entry.stop);
@@ -5683,48 +6462,59 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 			}
 		}
 
-		std::vector<PointOnSphere> points;
-		provenance_seq_type provenances;
+		OutputRing cleaned;
+		std::vector<int> vertices;  // the overlay vertex at each point, -1 for none
 		for (const WalkedPoint &entry : ring)
 		{
-			if (!points.empty() && is_same_position(points.back(), entry.position))
+			if (!cleaned.points.empty() && is_same_position(cleaned.points.back(), entry.position))
 			{
 				++d_diagnostics.repeated_positions_removed;
 				continue;
 			}
-			points.push_back(entry.position);
+			cleaned.points.push_back(entry.position);
+			vertices.push_back(entry.vertex ? static_cast<int>(*entry.vertex) : -1);
 			if (d_options.want_provenance)
 			{
-				provenances.push_back(entry.provenance);
+				cleaned.provenances.push_back(entry.provenance);
 			}
 		}
-		while (points.size() > 1 && is_same_position(points.front(), points.back()))
+		while (cleaned.points.size() > 1 &&
+			is_same_position(cleaned.points.front(), cleaned.points.back()))
 		{
-			points.pop_back();
+			cleaned.points.pop_back();
+			vertices.pop_back();
 			if (d_options.want_provenance)
 			{
-				provenances.pop_back();
+				cleaned.provenances.pop_back();
 			}
 			++d_diagnostics.repeated_positions_removed;
 		}
 
-		unsigned int num_distinct = 0;
-		for (unsigned int j = 0; j < points.size() && num_distinct < 3; ++j)
+		//
+		// A ring passing one position twice where an input touches itself away from the other's
+		// outline (two vertices of one input at one point, or a vertex on its own edge with a
+		// touch point inserted there): no overlay vertex is there, so the split by identity did
+		// not cut it. Cut here, after the provenance, since the split's rings must stay whole
+		// pieces from vertex to vertex (the provenance's arriving stops, the chain cut's arcs and
+		// the symmetric difference's join read them so).
+		//
+		std::vector<OutputRing> simple_rings;
+		std::vector<std::vector<int>> simple_ring_vertices;
+		d_diagnostics.rings_split_at_positions += split_at_repeated_positions(
+				cleaned, vertices, simple_rings, simple_ring_vertices);
+		for (unsigned int s = 0; s < simple_rings.size(); ++s)
 		{
-			bool repeated = false;
-			for (unsigned int k = 0; k < j; ++k)
+			if (!has_three_positions(simple_rings[s].points))
 			{
-				repeated = repeated || is_same_position(points[k], points[j]);
+				++d_diagnostics.collapsed_rings_dropped;
+				continue;
 			}
-			num_distinct += repeated ? 0 : 1;
+			rings.push_back(std::move(simple_rings[s]));
+			if (ring_vertices)
+			{
+				ring_vertices->push_back(std::move(simple_ring_vertices[s]));
+			}
 		}
-		if (num_distinct < 3)
-		{
-			++d_diagnostics.collapsed_rings_dropped;
-			continue;
-		}
-
-		rings.push_back(OutputRing{ points, provenances });
 	}
 
 	d_diagnostics.pairing_failures += num_pairing_failures;
@@ -5740,6 +6530,683 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 }
 
 
+namespace GPlatesMaths
+{
+	namespace PolygonOverlay
+	{
+		namespace
+		{
+			typedef std::vector<PolygonOnSphere::non_null_ptr_to_const_type> ring_polygon_seq_type;
+
+
+			//! The rings of one output nested by containment with parity depth (Overlay::extract).
+			class Nesting
+			{
+			public:
+				//! The groups (crossing rings together), in the order of their first rings.
+				std::vector<std::vector<unsigned int>> groups;
+				std::vector<unsigned int> group_of;
+
+				//! Per group, the rings containing it (its first ring), in ring order.
+				std::vector<std::vector<unsigned int>> containers;
+
+				//! Per group, the containing group of greatest depth.
+				std::vector<boost::optional<unsigned int>> parent;
+
+				unsigned int num_crossing_groups = 0;  // groups of more than one ring
+				unsigned int num_coincident = 0;       // ring pairs with no point off the other
+
+				unsigned int
+				depth(
+						unsigned int g) const
+				{
+					return containers[g].size();
+				}
+
+				//! A hole group nested in its parent: its depth is its parent's plus the number of
+				//! its parent's rings containing it.
+				bool
+				is_nested(
+						unsigned int g) const
+				{
+					if (!parent[g])
+					{
+						return false;
+					}
+					const unsigned int parent_rings_containing = std::count_if(
+							containers[g].begin(),
+							containers[g].end(),
+							[&](unsigned int other) { return group_of[other] == *parent[g]; });
+					return depth(g) == depth(*parent[g]) + parent_rings_containing;
+				}
+
+				//! The hole groups not nested in their parents (counted as grouping failures).
+				unsigned int
+				num_not_nested() const
+				{
+					unsigned int count = 0;
+					for (unsigned int g = 0; g < groups.size(); ++g)
+					{
+						count += (depth(g) % 2 == 1 && !is_nested(g)) ? 1 : 0;
+					}
+					return count;
+				}
+			};
+
+
+			/**
+			 * Grouping (section 5.2): by containment with parity depth, as the output is read.
+			 * Rings that cross (where an input's rings cross each other, do_rings_cross) are first
+			 * joined into groups, and all of a group's rings go into one polygon: two polygons are
+			 * read as their union, so crossing rings in separate polygons would overlap, while one
+			 * polygon reads by parity as the output does. Groups do not cross each other, so a
+			 * group lies wholly inside or wholly outside each ring of another (a ring crossing one
+			 * inside a ring R reaches inside R, so lies inside it), and the number of rings
+			 * containing it is the same all over it. That number is its depth, and its parent the
+			 * containing group of greatest depth. A ring crossing no other is a group of its own,
+			 * as for any input whose rings do not cross. (Only rings whose bounding circles can
+			 * meet are tested, as CircleSweep pairs them.) The margin of both tests is @a margin
+			 * (is_ring_inside_ring).
+			 */
+			Nesting
+			nest_rings(
+					const std::vector<OutputRing> &rings,
+					const ring_polygon_seq_type &ring_polygons,
+					const AngularExtent &margin)
+			{
+				const unsigned int num_rings = rings.size();
+				Nesting nesting;
+
+				// The groups, numbered in the order of their first rings, which represent them.
+				// (A pair of rings in no pair of the sweep has bounding circles that do not meet,
+				// so does not cross. The groups are the same in any order of the pairs.)
+				std::vector<CircleSweep::Circle> circles;
+				for (const auto &ring_polygon : ring_polygons)
+				{
+					const BoundingSmallCircle &bounds = ring_polygon->get_bounding_small_circle();
+					const double radius = bounds.get_angular_extent().get_angle().dval() +
+							margin.get_angle().dval();
+					circles.push_back(CircleSweep::Circle{ bounds.get_centre(), radius });
+				}
+				const CircleSweep sweep(circles);
+				std::vector<unsigned int> group_root(num_rings);
+				for (unsigned int r = 0; r < num_rings; ++r)
+				{
+					group_root[r] = r;
+				}
+				sweep.visit_pairs(
+						[&](unsigned int a, unsigned int b)
+						{
+							const unsigned int r = (std::min)(a, b);
+							const unsigned int other = (std::max)(a, b);
+							if (find_root(group_root, r) != find_root(group_root, other) &&
+								do_rings_cross(*ring_polygons[r], *ring_polygons[other], margin))
+							{
+								group_root[find_root(group_root, other)] = find_root(group_root, r);
+							}
+						});
+				std::vector<unsigned int> &group_of = nesting.group_of;
+				std::vector<std::vector<unsigned int>> &groups = nesting.groups;
+				group_of.resize(num_rings);
+				{
+					std::vector<int> group_of_root(num_rings, -1);
+					for (unsigned int r = 0; r < num_rings; ++r)
+					{
+						const unsigned int root = find_root(group_root, r);
+						if (group_of_root[root] < 0)
+						{
+							group_of_root[root] = groups.size();
+							groups.emplace_back();
+						}
+						group_of[r] = group_of_root[root];
+						groups[group_of[r]].push_back(r);
+					}
+				}
+				const unsigned int num_groups = groups.size();
+				for (const std::vector<unsigned int> &group : groups)
+				{
+					nesting.num_crossing_groups += (group.size() > 1) ? 1 : 0;
+				}
+
+				//
+				// The rings containing each group (its first ring), and its parent. A ring whose
+				// bounding circle, widened by the margin, misses the group's is no container: every
+				// point of the group's ring that is_ring_inside_ring could test is outside that
+				// circle by more than the margin, so it is outside the ring if the region outside
+				// the circle is. So a ring is tested only with the groups of its pairs in the
+				// sweep, except one wrapping round more than a hemisphere about its boundary
+				// centroid (the region outside its circle is inside it), tested with every group.
+				// Every group tested against every ring took 2 seconds for a union with 5,000
+				// holes.
+				//
+				std::vector<boost::optional<BoundingSmallCircle>> container_bounds(num_rings);
+				std::vector<unsigned int> wrapping_rings;
+				for (unsigned int r = 0; r < num_rings; ++r)
+				{
+					const BoundingSmallCircle &bounds =
+							ring_polygons[r]->get_bounding_small_circle();
+					if (ring_polygons[r]->is_outside_bounding_small_circle_outside_polygon(bounds))
+					{
+						container_bounds[r] = bounds.expand(margin);
+					}
+					else
+					{
+						wrapping_rings.push_back(r);
+					}
+				}
+				std::vector<std::vector<unsigned int>> &containers = nesting.containers;
+				containers.resize(num_groups);
+				const auto test_container = [&](unsigned int g, unsigned int other)
+				{
+					const boost::optional<bool> inside = is_ring_inside_ring(
+							rings[groups[g].front()].points, *ring_polygons[other], margin);
+					if (!inside)
+					{
+						++nesting.num_coincident;  // a degenerate output clean-up did not catch
+					}
+					else if (*inside)
+					{
+						containers[g].push_back(other);
+					}
+				};
+				sweep.visit_pairs(
+						[&](unsigned int a, unsigned int b)
+						{
+							for (const std::pair<unsigned int, unsigned int> &ring_and_other :
+									{ std::make_pair(a, b), std::make_pair(b, a) })
+							{
+								const unsigned int ring = ring_and_other.first;
+								const unsigned int other = ring_and_other.second;
+								const unsigned int g = group_of[ring];
+								if (groups[g].front() == ring &&
+									group_of[other] != g &&
+									container_bounds[other] &&
+									intersect(
+											ring_polygons[ring]->get_bounding_small_circle(),
+											*container_bounds[other]))
+								{
+									test_container(g, other);
+								}
+							}
+						});
+				for (unsigned int other : wrapping_rings)
+				{
+					for (unsigned int g = 0; g < num_groups; ++g)
+					{
+						if (group_of[other] != g)
+						{
+							test_container(g, other);
+						}
+					}
+				}
+				// In ring order, as the parent is chosen from them (the first of the most
+				// contained).
+				for (std::vector<unsigned int> &group_containers : containers)
+				{
+					std::sort(group_containers.begin(), group_containers.end());
+				}
+				std::vector<boost::optional<unsigned int>> &parent = nesting.parent;
+				parent.resize(num_groups);
+				for (unsigned int g = 0; g < num_groups; ++g)
+				{
+					for (unsigned int other : containers[g])
+					{
+						const unsigned int other_group = group_of[other];
+						if (!parent[g] ||
+							containers[other_group].size() > containers[*parent[g]].size())
+						{
+							parent[g] = other_group;
+						}
+					}
+				}
+				return nesting;
+			}
+
+
+			//! The output on the ring's left: an exterior anticlockwise, a hole clockwise (seen
+			//! from outside), by PolygonOrientation (Overlay::extract's orientation).
+			bool
+			is_output_on_left(
+					const PolygonOnSphere &ring_polygon,
+					bool exterior)
+			{
+				const bool interior_on_left =
+						PolygonOrientation::calculate_polygon_orientation(ring_polygon) ==
+								PolygonOrientation::COUNTERCLOCKWISE;
+				return interior_on_left == exterior;
+			}
+
+
+			//! What relink_disconnected_interiors did.
+			class RelinkCounts
+			{
+			public:
+				unsigned int polygons_relinked = 0;
+				unsigned int relinks_refused = 0;
+				unsigned int collapsed_rings_dropped = 0;
+				unsigned int rings_split = 0;
+			};
+
+
+			/**
+			 * A polygon whose interior is disconnected (section 5.2, rings made simple): rings of
+			 * one polygon (its exterior and holes, after the cuts at repeated positions each
+			 * simple) that touch so that their graph of rings and shared positions has a cycle,
+			 * two rings sharing two positions, say. Where it has one, the polygon's rings are
+			 * relinked at every shared position so that each passage arriving there leaves along
+			 * the passage that bounds the same wedge of output with it (the output on every
+			 * ring's left), then cut at the positions a ring then passes twice: the face
+			 * traversal, one walk per boundary component of each connected piece of the output.
+			 * The relinked rings are nested again by the caller.
+			 *
+			 * With two passages at a position, of an exterior and a hole or of two holes, the
+			 * wedge-bounding link is the exchange of the two. With more, the rays (arriving edges
+			 * reversed, leaving edges) are ordered anticlockwise about the position, and each
+			 * arriving ray takes the leaving ray next clockwise; arriving and leaving rays must
+			 * alternate (else the measured order cannot be trusted, and the polygon is left and
+			 * counted). The point at a relinked position is the arriving passage's, a location it
+			 * lacks taken from the leaving passage's point. Not for a polygon with a group of
+			 * crossing rings, or a hole not nested in it (no one side is the output's there).
+			 *
+			 * @a relinked_rings and @a relinked_ring_vertices: all of @a rings, the relinked
+			 * polygons' rings replaced (at their exterior's place) by the walks. Returns the
+			 * counts; none relinked, the outputs are left empty.
+			 */
+			RelinkCounts
+			relink_disconnected_interiors(
+					const std::vector<OutputRing> &rings,
+					const std::vector<std::vector<int>> &ring_vertices,
+					const ring_polygon_seq_type &ring_polygons,
+					const Nesting &nesting,
+					std::vector<OutputRing> &relinked_rings,
+					std::vector<std::vector<int>> &relinked_ring_vertices)
+			{
+				RelinkCounts counts;
+				const unsigned int num_rings = rings.size();
+				const unsigned int num_groups = nesting.groups.size();
+
+				// Each exterior group's hole groups nested in it, and whether any of them is not
+				// a single ring nested in it.
+				std::vector<std::vector<unsigned int>> holes_of(num_groups);
+				std::vector<bool> unsafe(num_groups, false);
+				for (unsigned int g = 0; g < num_groups; ++g)
+				{
+					if (nesting.depth(g) % 2 == 0 || !nesting.parent[g])
+					{
+						continue;
+					}
+					const unsigned int p = *nesting.parent[g];
+					if (nesting.groups[g].size() > 1 || !nesting.is_nested(g))
+					{
+						unsafe[p] = true;
+					}
+					holes_of[p].push_back(g);
+				}
+
+				// The polygons' replacement rings, by their exterior ring.
+				typedef std::pair<OutputRing, std::vector<int>> walk_type;  // with its vertices
+				std::map<unsigned int, std::vector<walk_type>> walks_of;
+				std::vector<bool> replaced(num_rings, false);
+				for (unsigned int e = 0; e < num_groups; ++e)
+				{
+					if (nesting.depth(e) % 2 == 1 ||
+						nesting.groups[e].size() > 1 ||
+						unsafe[e] ||
+						holes_of[e].empty())
+					{
+						continue;
+					}
+
+					std::vector<unsigned int> members(1, nesting.groups[e].front());
+					for (unsigned int g : holes_of[e])
+					{
+						members.push_back(nesting.groups[g].front());
+					}
+
+					// A cycle needs two positions each shared by two rings: without, nothing is
+					// copied (a polygon with holes is asked on every extract).
+					const unsigned int SHARED = (std::numeric_limits<unsigned int>::max)();
+					std::unordered_map<PointOnSphere, unsigned int, PositionHash, SamePosition>
+							member_at;
+					unsigned int num_shared = 0;
+					for (unsigned int m = 0; m < members.size() && num_shared < 2; ++m)
+					{
+						for (const PointOnSphere &point : rings[members[m]].points)
+						{
+							const auto inserted = member_at.emplace(point, m);
+							if (!inserted.second && inserted.first->second != m &&
+								inserted.first->second != SHARED)
+							{
+								inserted.first->second = SHARED;
+								++num_shared;
+							}
+						}
+					}
+					if (num_shared < 2)
+					{
+						continue;
+					}
+
+					// The polygon's rings, with the output on each one's left.
+					std::vector<OutputRing> oriented(members.size());
+					std::vector<std::vector<int>> oriented_vertices(members.size());
+					for (unsigned int m = 0; m < members.size(); ++m)
+					{
+						oriented[m] = rings[members[m]];
+						oriented_vertices[m] = ring_vertices[members[m]];
+						if (!is_output_on_left(*ring_polygons[members[m]], m == 0))
+						{
+							std::reverse(oriented[m].points.begin(), oriented[m].points.end());
+							std::reverse(
+									oriented[m].provenances.begin(),
+									oriented[m].provenances.end());
+							std::reverse(
+									oriented_vertices[m].begin(),
+									oriented_vertices[m].end());
+						}
+					}
+
+					// The positions two or more of its rings share (not two different overlay
+					// vertices at one position: two crossings at one point, a twist, by design).
+					typedef std::pair<unsigned int, unsigned int> passage_type;  // (member, point)
+					std::unordered_map<
+							PointOnSphere,
+							std::vector<passage_type>,
+							PositionHash,
+							SamePosition> passages_at;
+					for (unsigned int m = 0; m < members.size(); ++m)
+					{
+						for (unsigned int i = 0; i < oriented[m].points.size(); ++i)
+						{
+							passages_at[oriented[m].points[i]].push_back(passage_type(m, i));
+						}
+					}
+					std::vector<std::vector<passage_type>> shared;
+					for (const auto &position_passages : passages_at)
+					{
+						const std::vector<passage_type> &passages = position_passages.second;
+						if (passages.size() < 2)
+						{
+							continue;
+						}
+						boost::optional<int> overlay_vertex;
+						bool twist = false;
+						for (const passage_type &passage : passages)
+						{
+							const int v = oriented_vertices[passage.first][passage.second];
+							if (v >= 0)
+							{
+								twist = twist || (overlay_vertex && *overlay_vertex != v);
+								overlay_vertex = v;
+							}
+						}
+						if (!twist)
+						{
+							shared.push_back(passages);
+						}
+					}
+
+					// A cycle in the graph of rings and shared positions: a ring joined at a
+					// position to one already connected to it.
+					std::vector<unsigned int> root(members.size());
+					for (unsigned int m = 0; m < members.size(); ++m)
+					{
+						root[m] = m;
+					}
+					bool cycle = false;
+					for (const std::vector<passage_type> &passages : shared)
+					{
+						const unsigned int first = find_root(root, passages.front().first);
+						for (unsigned int k = 1; k < passages.size(); ++k)
+						{
+							const unsigned int other = find_root(root, passages[k].first);
+							if (other == first)
+							{
+								cycle = true;
+							}
+							else
+							{
+								root[other] = first;
+							}
+						}
+					}
+					if (!cycle)
+					{
+						continue;
+					}
+
+					// The links: at each shared position, each passage's arrival continues along
+					// another passage's leaving edge.
+					std::vector<std::vector<passage_type>> next(members.size());
+					for (unsigned int m = 0; m < members.size(); ++m)
+					{
+						const unsigned int n = oriented[m].points.size();
+						for (unsigned int i = 0; i < n; ++i)
+						{
+							next[m].push_back(passage_type(m, (i + 1) % n));
+						}
+					}
+					// (arriving, leaving)
+					std::vector<std::pair<passage_type, passage_type>> relinks;
+					bool refused = false;
+					for (const std::vector<passage_type> &passages : shared)
+					{
+						if (passages.size() == 2)
+						{
+							// The exchange, with no angle measured: so also at both ends of an
+							// edge two rings share, where angles would tie (the walk of the edge's
+							// two positions is then dropped as collapsed). A ring of another
+							// polygon through the position (an island of the hole) is not among
+							// the passages: it lies in a wedge that is not this polygon's output.
+							relinks.push_back(std::make_pair(passages[0], passages[1]));
+							relinks.push_back(std::make_pair(passages[1], passages[0]));
+							continue;
+						}
+
+						// Three or more: the rays anticlockwise about the position (seen from
+						// outside), each by its tangent there towards its neighbouring point.
+						const passage_type &first_passage = passages.front();
+						const UnitVector3D &centre = oriented[first_passage.first]
+								.points[first_passage.second].position_vector();
+						const auto tangent = [&](const PointOnSphere &towards)
+						{
+							const Vector3D x(towards.position_vector());
+							return x - dot(x, Vector3D(centre)).dval() * Vector3D(centre);
+						};
+						const auto neighbour = [&](const passage_type &passage, int step)
+						{
+							const std::vector<PointOnSphere> &points =
+									oriented[passage.first].points;
+							const int n = points.size();
+							return points[(passage.second + step + n) % n];
+						};
+						const Vector3D basis_x = tangent(neighbour(passages[0], 1));
+						const Vector3D basis_y = cross(Vector3D(centre), basis_x);
+						class PassageRay
+						{
+						public:
+							double angle;
+							bool leaving;
+							unsigned int passage;
+						};
+						std::vector<PassageRay> rays;
+						for (unsigned int k = 0; k < passages.size(); ++k)
+						{
+							for (const bool leaving : { true, false })
+							{
+								const Vector3D t =
+										tangent(neighbour(passages[k], leaving ? 1 : -1));
+								rays.push_back(PassageRay{
+										std::atan2(dot(t, basis_y).dval(), dot(t, basis_x).dval()),
+										leaving,
+										k });
+							}
+						}
+						std::sort(
+								rays.begin(),
+								rays.end(),
+								[](const PassageRay &a, const PassageRay &b)
+								{
+									return a.angle < b.angle;
+								});
+						//
+						// Arriving and leaving rays must alternate, and no two tie. The order is
+						// rounded (a short edge's direction; rings crossing within an overlay
+						// vertex's cluster), and can be wrong with no tie, but two adjacent rays
+						// of an alternating order exchanged put two of one kind side by side.
+						// This is the only guard of the order: with each arriving ray given the
+						// leaving ray on its other side, the caller's second nesting discarded
+						// none of the outputs that came out wrong (section 6).
+						//
+						for (unsigned int r = 0; r < rays.size(); ++r)
+						{
+							const PassageRay &ray = rays[r];
+							const PassageRay &following = rays[(r + 1) % rays.size()];
+							const double gap = (r + 1 < rays.size())
+									? following.angle - ray.angle
+									: following.angle + 2 * PI - ray.angle;
+							if (ray.leaving == following.leaving || !(gap > 1e-12))
+							{
+								refused = true;
+							}
+						}
+						if (refused)
+						{
+							break;
+						}
+						for (unsigned int r = 0; r < rays.size(); ++r)
+						{
+							if (!rays[r].leaving)
+							{
+								// The leaving ray next clockwise: the one before it anticlockwise.
+								const PassageRay &leaving =
+										rays[(r + rays.size() - 1) % rays.size()];
+								relinks.push_back(std::make_pair(
+										passages[rays[r].passage], passages[leaving.passage]));
+							}
+						}
+					}
+					if (refused)
+					{
+						++counts.relinks_refused;
+						continue;
+					}
+
+					// The point at a relinked position is the arriving passage's: a location it
+					// lacks (a cut has no subject location, say) from the leaving passage's point.
+					std::vector<OutputRing> filled = oriented;
+					for (const std::pair<passage_type, passage_type> &relink : relinks)
+					{
+						const passage_type &arriving = relink.first;
+						const passage_type &leaving = relink.second;
+						// (The leaving passage's own successor, not as already relinked.)
+						next[arriving.first][arriving.second] = passage_type(
+								leaving.first,
+								(leaving.second + 1) % oriented[leaving.first].points.size());
+						if (!filled[arriving.first].provenances.empty() && arriving != leaving)
+						{
+							Provenance &provenance =
+									filled[arriving.first].provenances[arriving.second];
+							const Provenance &other =
+									oriented[leaving.first].provenances[leaving.second];
+							if (!provenance.subject)
+							{
+								provenance.subject = other.subject;
+							}
+							if (!provenance.clip)
+							{
+								provenance.clip = other.clip;
+								provenance.clip_index = other.clip_index;
+							}
+						}
+					}
+
+					// The walks, each cut where it passes a position twice.
+					std::vector<std::vector<bool>> visited(members.size());
+					for (unsigned int m = 0; m < members.size(); ++m)
+					{
+						visited[m].assign(oriented[m].points.size(), false);
+					}
+					std::vector<walk_type> &walks = walks_of[members[0]];
+					for (unsigned int m = 0; m < members.size(); ++m)
+					{
+						for (unsigned int i = 0; i < oriented[m].points.size(); ++i)
+						{
+							if (visited[m][i])
+							{
+								continue;
+							}
+							OutputRing walk;
+							std::vector<int> walk_vertices;
+							for (passage_type at(m, i);
+								!visited[at.first][at.second];
+								at = next[at.first][at.second])
+							{
+								visited[at.first][at.second] = true;
+								walk.points.push_back(filled[at.first].points[at.second]);
+								walk_vertices.push_back(oriented_vertices[at.first][at.second]);
+								if (!filled[at.first].provenances.empty())
+								{
+									walk.provenances.push_back(
+											filled[at.first].provenances[at.second]);
+								}
+							}
+							std::vector<OutputRing> simple_rings;
+							std::vector<std::vector<int>> simple_ring_vertices;
+							counts.rings_split += split_at_repeated_positions(
+									walk, walk_vertices, simple_rings, simple_ring_vertices);
+							for (unsigned int s = 0; s < simple_rings.size(); ++s)
+							{
+								if (!has_three_positions(simple_rings[s].points))
+								{
+									++counts.collapsed_rings_dropped;
+									continue;
+								}
+								walks.push_back(std::make_pair(
+										std::move(simple_rings[s]),
+										std::move(simple_ring_vertices[s])));
+							}
+						}
+					}
+					for (unsigned int member : members)
+					{
+						replaced[member] = true;
+					}
+					++counts.polygons_relinked;
+				}
+
+				// All the rings, a relinked polygon's walks at its exterior's place (none relinked:
+				// the caller keeps its own).
+				relinked_rings.clear();
+				relinked_ring_vertices.clear();
+				if (counts.polygons_relinked == 0)
+				{
+					return counts;
+				}
+				for (unsigned int r = 0; r < num_rings; ++r)
+				{
+					const auto walks = walks_of.find(r);
+					if (walks != walks_of.end())
+					{
+						for (const std::pair<OutputRing, std::vector<int>> &walk : walks->second)
+						{
+							relinked_rings.push_back(walk.first);
+							relinked_ring_vertices.push_back(walk.second);
+						}
+					}
+					else if (!replaced[r])
+					{
+						relinked_rings.push_back(rings[r]);
+						relinked_ring_vertices.push_back(ring_vertices[r]);
+					}
+				}
+				return counts;
+			}
+		}
+	}
+}
+
+
 void
 GPlatesMaths::PolygonOverlay::Overlay::extract(
 		Operation operation,
@@ -5751,10 +7218,10 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 			GPLATES_ASSERTION_SOURCE);
 
 	std::vector<OutputRing> rings;
-	extract_rings(operation, rings);
-	const unsigned int num_rings = rings.size();
+	std::vector<std::vector<int>> ring_vertices;
+	extract_rings(operation, rings, &ring_vertices);
 
-	std::vector<PolygonOnSphere::non_null_ptr_to_const_type> ring_polygons;
+	ring_polygon_seq_type ring_polygons;
 	for (const OutputRing &ring : rings)
 	{
 		ring_polygons.push_back(PolygonOnSphere::create(ring.points));
@@ -5812,17 +7279,9 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	}
 
 	//
-	// Grouping (section 5.2): by containment with parity depth, as the output is read. Rings that
-	// cross (where an input's rings cross each other, do_rings_cross) are first joined into groups,
-	// and all of a group's rings go into one polygon: two polygons are read as their union, so
-	// crossing rings in separate polygons would overlap, while one polygon reads by parity as the
-	// output does. Groups do not cross each other, so a group lies wholly inside or wholly outside
-	// each ring of another (a ring crossing one inside a ring R reaches inside R, so lies inside
-	// it), and the number of rings containing it is the same all over it. That number is its
-	// depth, and its parent the containing group of greatest depth. A ring crossing no other is a
-	// group of its own, as for any input whose rings do not cross. (The number of rings is small:
-	// every pair is tested.) The margin of both tests, as the oracle's: ten thicknesses, or twice
-	// the widest record cluster if wider (is_ring_inside_ring).
+	// Grouping (section 5.2, nest_rings): by containment with parity depth, as the output is
+	// read. The margin of its tests, as the oracle's: ten thicknesses, or twice the widest record
+	// cluster if wider (is_ring_inside_ring).
 	//
 	double cluster_width = 0.0;
 	for (const Vertex &vertex : d_vertices)
@@ -5841,82 +7300,59 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	const AngularExtent grouping_margin = AngularExtent::create_from_angle(
 			(std::max)(HEMISPHERE_CHECK_MARGIN * h, 2 * cluster_width));
 
-	// The groups, numbered in the order of their first rings, which represent them.
-	std::vector<unsigned int> group_root(num_rings);
-	for (unsigned int r = 0; r < num_rings; ++r)
-	{
-		group_root[r] = r;
-	}
-	for (unsigned int r = 0; r < num_rings; ++r)
-	{
-		for (unsigned int other = r + 1; other < num_rings; ++other)
-		{
-			if (find_root(group_root, r) != find_root(group_root, other) &&
-				do_rings_cross(*ring_polygons[r], *ring_polygons[other], grouping_margin))
-			{
-				group_root[find_root(group_root, other)] = find_root(group_root, r);
-			}
-		}
-	}
-	std::vector<unsigned int> group_of(num_rings);
-	std::vector<std::vector<unsigned int>> groups;
-	{
-		std::vector<int> group_of_root(num_rings, -1);
-		for (unsigned int r = 0; r < num_rings; ++r)
-		{
-			const unsigned int root = find_root(group_root, r);
-			if (group_of_root[root] < 0)
-			{
-				group_of_root[root] = groups.size();
-				groups.emplace_back();
-			}
-			group_of[r] = group_of_root[root];
-			groups[group_of[r]].push_back(r);
-		}
-	}
-	const unsigned int num_groups = groups.size();
-	for (const std::vector<unsigned int> &group : groups)
-	{
-		if (group.size() > 1)
-		{
-			++d_diagnostics.crossing_ring_groups;
-		}
-	}
+	Nesting nesting = nest_rings(rings, ring_polygons, grouping_margin);
 
-	// The rings containing each group (its first ring), and its parent.
-	std::vector<std::vector<unsigned int>> containers(num_groups);
-	for (unsigned int g = 0; g < num_groups; ++g)
+	//
+	// A polygon whose interior is disconnected (section 5.2, rings made simple): relinked and
+	// nested again, before the sliver filter, so that each connected piece is filtered as a polygon
+	// of its own. Kept only if the second nesting finds no more groups of crossing rings, and no
+	// more holes out of their nesting, than the first (a relinking made from a noisy order of rays
+	// at a vertex could make rings cross).
+	//
 	{
-		for (unsigned int other = 0; other < num_rings; ++other)
+		std::vector<OutputRing> relinked_rings;
+		std::vector<std::vector<int>> relinked_ring_vertices;
+		const RelinkCounts counts = relink_disconnected_interiors(
+				rings,
+				ring_vertices,
+				ring_polygons,
+				nesting,
+				relinked_rings,
+				relinked_ring_vertices);
+		d_diagnostics.relinks_refused += counts.relinks_refused;
+		if (counts.polygons_relinked != 0)
 		{
-			if (group_of[other] == g)
+			ring_polygon_seq_type relinked_ring_polygons;
+			for (const OutputRing &ring : relinked_rings)
 			{
-				continue;
+				relinked_ring_polygons.push_back(PolygonOnSphere::create(ring.points));
 			}
-			const boost::optional<bool> inside = is_ring_inside_ring(
-					rings[groups[g].front()].points, *ring_polygons[other], grouping_margin);
-			if (!inside)
+			Nesting renested = nest_rings(relinked_rings, relinked_ring_polygons, grouping_margin);
+			if (renested.num_crossing_groups > nesting.num_crossing_groups ||
+				renested.num_not_nested() > nesting.num_not_nested())
 			{
-				++d_diagnostics.coincident_rings;  // a degenerate output clean-up did not catch
+				++d_diagnostics.relinks_discarded;
 			}
-			else if (*inside)
+			else
 			{
-				containers[g].push_back(other);
+				d_diagnostics.polygons_relinked += counts.polygons_relinked;
+				d_diagnostics.rings_split_at_positions += counts.rings_split;
+				d_diagnostics.collapsed_rings_dropped += counts.collapsed_rings_dropped;
+				rings.swap(relinked_rings);
+				ring_vertices.swap(relinked_ring_vertices);
+				ring_polygons.swap(relinked_ring_polygons);
+				nesting = std::move(renested);
 			}
 		}
 	}
-	std::vector<boost::optional<unsigned int>> parent(num_groups);
-	for (unsigned int g = 0; g < num_groups; ++g)
-	{
-		for (unsigned int other : containers[g])
-		{
-			const unsigned int other_group = group_of[other];
-			if (!parent[g] || containers[other_group].size() > containers[*parent[g]].size())
-			{
-				parent[g] = other_group;
-			}
-		}
-	}
+	d_diagnostics.crossing_ring_groups += nesting.num_crossing_groups;
+	d_diagnostics.coincident_rings += nesting.num_coincident;
+	const unsigned int num_rings = rings.size();
+	const std::vector<std::vector<unsigned int>> &groups = nesting.groups;
+	const std::vector<unsigned int> &group_of = nesting.group_of;
+	const std::vector<std::vector<unsigned int>> &containers = nesting.containers;
+	const std::vector<boost::optional<unsigned int>> &parent = nesting.parent;
+	const unsigned int num_groups = groups.size();
 
 	//
 	// Orientation (section 5.2, developer's decision): the output on each ring's left, so an
@@ -6158,12 +7594,18 @@ unsigned int
 GPlatesMaths::PolygonOverlay::Overlay::ring_of_stop(
 		unsigned int stop_index) const
 {
-	unsigned int ring = 0;
-	while (!(stop_index >= d_rings[ring].first_stop && stop_index < d_rings[ring].end_stop))
-	{
-		++ring;
-	}
-	return ring;
+	// The first ring whose stops end after it, by bisection: the rings' stops are stored ring by
+	// ring (asked once per output point with provenance, a pass over the rings was quadratic in
+	// the holes).
+	return std::upper_bound(
+			d_rings.begin(),
+			d_rings.end(),
+			stop_index,
+			[](unsigned int stop, const RingView &ring_view)
+			{
+				return stop < ring_view.end_stop;
+			}) -
+		d_rings.begin();
 }
 
 
@@ -6491,10 +7933,14 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 
 	// The induction fails where an identity vertex holds two vertices of one input (dense shared
 	// edges): a piece's edge then spans the group, from a vertex before it to one after it, so
-	// its ends are on no one segment; and where a point at an input's corner lies within the
-	// thickness of both its segments but names only one (section 5.4). No subject location,
-	// counted (never a wrong value; a coverage interpolates such a point along its run, as a cut
-	// point, section 5.4): a subject location lost if both ends had one, else nothing lost.
+	// its ends are on no one segment; where a point at an input's corner lies within the
+	// thickness of both its segments but names only one (section 5.4); and where an earlier step
+	// cut a ring at a position it passed twice, or relinked it there (section 5.2, rings made
+	// simple), so that the piece's ring arrives at the point along one ring of the input and
+	// leaves along another, and one of its edges there has its ends on two rings. No subject
+	// location, counted (never a wrong value; a coverage interpolates such a point along its
+	// run, as a cut point, section 5.4): a subject location lost if both ends had one, else
+	// nothing lost.
 	provenance.subject = boost::none;
 	++((a.subject && b.subject)
 			? d_diagnostics.provenance_subject_mismatches
@@ -6506,18 +7952,22 @@ std::pair<unsigned int, unsigned int>
 GPlatesMaths::PolygonOverlay::Overlay::ring_piece_range(
 		unsigned int ring) const
 {
-	// The pieces are stored ring by ring.
-	unsigned int first = 0;
-	while (first < d_pieces.size() && d_pieces[first].ring != ring)
+	// The pieces are stored ring by ring, so by bisection (none: both the number of pieces).
+	const auto first = std::lower_bound(
+			d_pieces.begin(),
+			d_pieces.end(),
+			ring,
+			[](const Piece &piece, unsigned int r) { return piece.ring < r; });
+	const auto end = std::upper_bound(
+			first,
+			d_pieces.end(),
+			ring,
+			[](unsigned int r, const Piece &piece) { return r < piece.ring; });
+	if (first == end)
 	{
-		++first;
+		return std::make_pair(unsigned(d_pieces.size()), unsigned(d_pieces.size()));
 	}
-	unsigned int end = first;
-	while (end < d_pieces.size() && d_pieces[end].ring == ring)
-	{
-		++end;
-	}
-	return std::make_pair(first, end);
+	return std::make_pair(unsigned(first - d_pieces.begin()), unsigned(end - d_pieces.begin()));
 }
 
 
