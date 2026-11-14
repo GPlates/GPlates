@@ -1213,6 +1213,26 @@ namespace
 								<< "subject's within " << area_error << " of it (allowed "
 								<< tolerance << "); ";
 					}
+					// The other three identities, which see what the piece comparison and the
+					// sampled points cannot: a rule wrong in the overlay and the prototype alike (a
+					// cut at a passage at a neck, say) gives wrong areas with every piece matched
+					// and every point read right.
+					const char *const identities[3] = {
+							"the intersection and the reverse difference against the clip",
+							"the union and the intersection against both inputs",
+							"the symmetric difference against the two differences" };
+					const std::vector<double> errors =
+							PolygonOverlayOracle::area_identity_errors(*P, *Q, overlay);
+					const double identity_tolerance =
+							PolygonOverlayOracle::area_identity_tolerance(*P, *Q);
+					for (unsigned int i = 0; i < errors.size(); ++i)
+					{
+						if (errors[i] > identity_tolerance)
+						{
+							oracle_report << "the areas of " << identities[i] << " are off by "
+									<< errors[i] << " (allowed " << identity_tolerance << "); ";
+						}
+					}
 				}
 				// A second step of a cascade (section 5.4): each piece of the
 				// difference, with its provenance table, overlaid with the clip again (the pieces

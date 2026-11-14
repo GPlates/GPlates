@@ -1,0 +1,9789 @@
+case holes-transform-1-40
+grid 3
+ring P 6
+0 0
+1 0
+3 0
+3 3
+2 2
+0 3
+ring P 3
+1 1
+2 1
+3 2
+ring Q 6
+3 0
+2 0
+0 0
+0 3
+1 2
+3 3
+ring Q 3
+2 1
+1 1
+0 2
+endcase
+case holes-transform-1-109
+grid 5
+ring P 6
+3 1
+3 2
+4 0
+5 5
+0 5
+1 4
+ring P 3
+2 3
+3 4
+3 5
+ring Q 6
+4 1
+4 2
+5 0
+6 5
+1 5
+2 4
+ring Q 3
+3 3
+4 4
+4 5
+endcase
+case holes-transform-1-231
+grid 5
+ring P 6
+0 2
+0 0
+5 0
+5 5
+2 5
+0 5
+ring P 4
+1 1
+3 1
+2 5
+1 3
+ring Q 6
+3 0
+5 0
+5 5
+0 5
+0 2
+0 0
+ring Q 4
+4 1
+4 3
+0 2
+2 1
+endcase
+case holes-1-266
+grid 5
+ring P 7
+0 0
+4 1
+5 5
+4 5
+3 5
+2 4
+0 5
+ring P 4
+1 3
+2 1
+4 3
+4 5
+ring Q 8
+0 1
+1 0
+3 0
+4 1
+5 5
+4 5
+1 5
+0 5
+ring Q 4
+1 1
+4 2
+3 3
+0 5
+endcase
+case holes-transform-1-284
+grid 5
+ring P 8
+1 2
+1 1
+2 0
+2 2
+5 0
+4 4
+0 5
+0 4
+ring P 3
+2 2
+4 3
+2 4
+ring Q 8
+1 1
+1 0
+2 -1
+2 1
+5 -1
+4 3
+0 4
+0 3
+ring Q 3
+2 1
+4 2
+2 3
+endcase
+case holes-transform-1-301
+grid 5
+ring P 8
+0 1
+2 0
+3 0
+5 1
+5 3
+4 4
+2 4
+1 4
+ring P 4
+2 0
+3 1
+4 3
+2 2
+ring Q 8
+0 0
+2 -1
+3 -1
+5 0
+5 2
+4 3
+2 3
+1 3
+ring Q 4
+2 -1
+3 0
+4 2
+2 1
+endcase
+case holes-1-341
+grid 3
+ring P 6
+0 1
+1 0
+3 1
+2 3
+1 3
+0 3
+ring P 3
+1 1
+3 1
+2 2
+ring Q 6
+0 1
+1 0
+2 0
+3 0
+1 3
+0 3
+ring Q 3
+1 1
+1 2
+0 3
+endcase
+case holes-transform-1-399
+grid 4
+ring P 6
+0 1
+3 1
+4 1
+4 3
+3 4
+0 4
+ring P 3
+4 1
+2 3
+1 3
+ring Q 6
+4 1
+1 1
+0 1
+0 3
+1 4
+4 4
+ring Q 3
+0 1
+2 3
+3 3
+endcase
+case polyomino-transform-1-463
+grid 3
+ring P 12
+0 1
+0 2
+0 3
+1 3
+2 3
+3 3
+3 2
+3 1
+2 1
+2 0
+1 0
+0 0
+ring P 4
+2 2
+1 2
+1 1
+2 1
+ring Q 12
+3 2
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+0 2
+1 2
+1 3
+2 3
+3 3
+ring Q 4
+1 1
+2 1
+2 2
+1 2
+endcase
+case holes-1-552
+grid 4
+ring P 8
+0 0
+3 1
+4 2
+4 3
+4 4
+2 4
+1 3
+0 3
+ring P 5
+2 2
+1 1
+3 2
+4 3
+3 3
+ring Q 5
+0 1
+1 1
+4 2
+4 3
+4 4
+endcase
+case holes-transform-1-576
+grid 4
+ring P 6
+1 0
+4 3
+4 4
+3 4
+2 3
+0 3
+ring P 3
+1 0
+2 2
+1 2
+ring Q 6
+1 1
+4 4
+4 5
+3 5
+2 4
+0 4
+ring Q 3
+1 1
+2 3
+1 3
+endcase
+case holes-transform-1-592
+grid 4
+ring P 6
+1 2
+1 1
+4 2
+4 4
+1 4
+0 3
+ring P 3
+2 3
+2 2
+3 4
+ring Q 6
+3 2
+3 1
+0 2
+0 4
+3 4
+4 3
+ring Q 3
+2 3
+2 2
+1 4
+endcase
+case holes-1-593
+grid 4
+ring P 7
+0 2
+1 1
+4 1
+4 4
+1 4
+0 4
+1 3
+ring P 3
+1 2
+3 2
+4 4
+ring Q 7
+1 2
+1 1
+2 1
+3 1
+4 2
+4 4
+2 3
+endcase
+case holes-1-619
+grid 5
+ring P 8
+0 2
+1 2
+0 0
+5 0
+4 5
+3 4
+1 4
+0 5
+ring P 4
+2 1
+3 0
+4 1
+3 3
+ring Q 5
+0 2
+1 0
+4 2
+5 4
+0 5
+ring Q 4
+1 2
+2 2
+1 3
+0 3
+endcase
+case holes-transform-1-770
+grid 3
+ring P 4
+0 0
+3 1
+3 3
+0 2
+ring P 4
+1 1
+3 1
+2 2
+1 2
+ring Q 4
+-1 2
+2 1
+2 -1
+-1 0
+ring Q 4
+0 1
+2 1
+1 0
+0 0
+endcase
+case holes-transform-1-794
+grid 3
+ring P 7
+0 1
+0 0
+3 1
+3 2
+2 2
+1 2
+0 2
+ring P 3
+1 1
+2 1
+2 2
+ring Q 7
+3 1
+3 0
+0 1
+0 2
+1 2
+2 2
+3 2
+ring Q 3
+2 1
+1 1
+1 2
+endcase
+case holes-1-904
+grid 3
+ring P 6
+0 1
+3 0
+3 2
+3 3
+1 3
+0 3
+ring P 3
+1 1
+2 1
+1 3
+ring Q 7
+0 0
+2 1
+3 1
+3 2
+2 3
+1 3
+0 2
+endcase
+case holes-transform-1-933
+grid 3
+ring P 7
+1 1
+1 0
+3 0
+3 1
+3 3
+2 3
+0 3
+ring P 3
+1 2
+2 2
+1 3
+ring Q 7
+2 1
+2 0
+0 0
+0 1
+0 3
+1 3
+3 3
+ring Q 3
+2 2
+1 2
+2 3
+endcase
+case holes-transform-1-1076
+grid 3
+ring P 8
+0 1
+1 0
+3 0
+2 1
+3 1
+3 3
+0 3
+0 2
+ring P 3
+2 1
+2 2
+1 2
+ring Q 8
+1 2
+2 3
+4 3
+3 2
+4 2
+4 0
+1 0
+1 1
+ring Q 3
+3 2
+3 1
+2 1
+endcase
+case polyomino-transform-1-1087
+grid 3
+ring P 12
+0 1
+0 2
+0 3
+1 3
+2 3
+2 2
+3 2
+3 1
+3 0
+2 0
+1 0
+0 0
+ring P 4
+1 2
+1 1
+2 1
+2 2
+ring Q 12
+3 1
+3 2
+3 3
+2 3
+1 3
+1 2
+0 2
+0 1
+0 0
+1 0
+2 0
+3 0
+ring Q 4
+2 2
+2 1
+1 1
+1 2
+endcase
+case holes-transform-1-1146
+grid 5
+ring P 8
+1 1
+1 0
+3 0
+5 1
+4 5
+1 5
+0 5
+0 3
+ring P 3
+1 3
+4 4
+1 5
+ring Q 8
+4 1
+4 0
+2 0
+0 1
+1 5
+4 5
+5 5
+5 3
+ring Q 3
+4 3
+1 4
+4 5
+endcase
+case holes-transform-1-1283
+grid 5
+ring P 7
+0 1
+1 0
+5 0
+5 1
+5 5
+4 4
+0 5
+ring P 3
+3 0
+3 2
+2 3
+ring Q 7
+5 1
+4 0
+0 0
+0 1
+0 5
+1 4
+5 5
+ring Q 3
+2 0
+2 2
+3 3
+endcase
+case holes-1-1356
+grid 5
+ring P 7
+0 1
+2 0
+5 3
+4 5
+3 4
+2 5
+0 5
+ring P 3
+1 2
+3 2
+1 5
+ring Q 8
+0 0
+3 0
+5 3
+4 4
+3 4
+2 5
+0 5
+1 4
+ring Q 4
+1 2
+3 1
+3 3
+1 3
+endcase
+case holes-transform-1-1389
+grid 5
+ring P 7
+1 1
+2 0
+3 0
+5 1
+5 2
+4 5
+0 2
+ring P 4
+3 2
+3 0
+4 2
+4 4
+ring Q 7
+1 0
+2 -1
+3 -1
+5 0
+5 1
+4 4
+0 1
+ring Q 4
+3 1
+3 -1
+4 1
+4 3
+endcase
+case holes-1-1440
+grid 4
+ring P 7
+0 1
+2 1
+3 1
+4 0
+4 2
+3 4
+1 3
+ring P 4
+2 2
+4 1
+3 2
+2 3
+ring Q 7
+2 1
+3 0
+4 0
+4 4
+2 3
+1 4
+0 3
+ring Q 3
+3 1
+3 3
+2 3
+endcase
+case holes-transform-1-1608
+grid 5
+ring P 7
+3 1
+3 0
+4 0
+5 0
+5 4
+1 4
+0 3
+ring P 5
+3 2
+4 1
+4 2
+5 3
+1 3
+ring Q 7
+3 3
+3 4
+4 4
+5 4
+5 0
+1 0
+0 1
+ring Q 5
+3 2
+4 3
+4 2
+5 1
+1 1
+endcase
+case holes-transform-1-1621
+grid 5
+ring P 7
+1 0
+2 0
+4 1
+4 2
+4 4
+3 4
+0 5
+ring P 3
+2 0
+3 2
+2 3
+ring Q 7
+1 -1
+2 -1
+4 0
+4 1
+4 3
+3 3
+0 4
+ring Q 3
+2 -1
+3 1
+2 2
+endcase
+case holes-transform-1-1629
+grid 4
+ring P 7
+1 1
+3 0
+4 2
+4 3
+4 4
+2 4
+0 3
+ring P 4
+1 2
+3 2
+3 4
+2 3
+ring Q 7
+1 0
+3 -1
+4 1
+4 2
+4 3
+2 3
+0 2
+ring Q 4
+1 1
+3 1
+3 3
+2 2
+endcase
+case polyomino-transform-1-1649
+grid 3
+ring P 12
+0 1
+0 2
+0 3
+1 3
+2 3
+2 2
+3 2
+3 1
+3 0
+2 0
+1 0
+0 0
+ring P 4
+1 2
+1 1
+2 1
+2 2
+ring Q 12
+3 1
+3 2
+3 3
+2 3
+1 3
+1 2
+0 2
+0 1
+0 0
+1 0
+2 0
+3 0
+ring Q 4
+2 2
+2 1
+1 1
+1 2
+endcase
+case holes-transform-1-1727
+grid 5
+ring P 7
+0 0
+3 0
+5 2
+5 5
+3 5
+1 5
+0 4
+ring P 4
+2 3
+4 2
+4 5
+2 4
+ring Q 7
+0 -1
+3 -1
+5 1
+5 4
+3 4
+1 4
+0 3
+ring Q 4
+2 2
+4 1
+4 4
+2 3
+endcase
+case holes-transform-1-1741
+grid 4
+ring P 8
+0 0
+3 0
+4 0
+4 1
+4 3
+4 4
+0 4
+0 2
+ring P 3
+3 2
+3 1
+4 4
+ring Q 8
+0 4
+3 4
+4 4
+4 3
+4 1
+4 0
+0 0
+0 2
+ring Q 3
+3 2
+3 3
+4 0
+endcase
+case holes-transform-1-1748
+grid 5
+ring P 6
+0 2
+0 0
+3 0
+5 4
+2 5
+0 3
+ring P 3
+1 3
+3 4
+1 4
+ring Q 6
+1 2
+1 4
+4 4
+6 0
+3 -1
+1 1
+ring Q 3
+2 1
+4 0
+2 0
+endcase
+case holes-transform-1-1855
+grid 5
+ring P 4
+2 3
+5 2
+4 5
+2 4
+ring P 3
+3 3
+4 3
+4 5
+ring Q 4
+2 2
+5 1
+4 4
+2 3
+ring Q 3
+3 2
+4 2
+4 4
+endcase
+case polyomino-transform-1-1865
+grid 5
+ring P 22
+0 2
+1 2
+1 3
+2 3
+2 4
+2 5
+3 5
+4 5
+5 5
+5 4
+5 3
+5 2
+5 1
+5 0
+4 0
+4 1
+3 1
+3 0
+2 0
+1 0
+1 1
+0 1
+ring P 4
+2 2
+3 2
+3 3
+2 3
+ring Q 22
+1 2
+2 2
+2 1
+3 1
+3 0
+3 -1
+4 -1
+5 -1
+6 -1
+6 0
+6 1
+6 2
+6 3
+6 4
+5 4
+5 3
+4 3
+4 4
+3 4
+2 4
+2 3
+1 3
+ring Q 4
+3 2
+4 2
+4 1
+3 1
+endcase
+case holes-transform-1-1887
+grid 3
+ring P 6
+0 0
+1 0
+3 0
+3 3
+2 3
+0 3
+ring P 3
+0 1
+2 1
+1 2
+ring Q 6
+3 0
+3 1
+3 3
+0 3
+0 2
+0 0
+ring Q 3
+2 0
+2 2
+1 1
+endcase
+case holes-transform-1-1926
+grid 4
+ring P 8
+0 1
+2 0
+4 0
+4 2
+4 3
+3 3
+2 4
+0 4
+ring P 4
+1 1
+3 1
+3 3
+1 3
+ring Q 8
+4 1
+2 0
+0 0
+0 2
+0 3
+1 3
+2 4
+4 4
+ring Q 4
+3 1
+1 1
+1 3
+3 3
+endcase
+case holes-transform-1-2059
+grid 5
+ring P 8
+1 0
+3 0
+3 1
+5 1
+4 2
+5 5
+1 5
+0 4
+ring P 4
+1 2
+2 1
+2 2
+2 5
+ring Q 8
+1 -1
+3 -1
+3 0
+5 0
+4 1
+5 4
+1 4
+0 3
+ring Q 4
+1 1
+2 0
+2 1
+2 4
+endcase
+case holes-transform-1-2113
+grid 4
+ring P 8
+0 0
+1 0
+2 1
+4 0
+4 4
+3 4
+1 3
+0 4
+ring P 3
+1 2
+2 2
+4 3
+ring Q 8
+0 1
+1 1
+2 2
+4 1
+4 5
+3 5
+1 4
+0 5
+ring Q 3
+1 3
+2 3
+4 4
+endcase
+case holes-transform-1-2166
+grid 4
+ring P 8
+0 1
+1 0
+4 0
+3 1
+4 2
+2 3
+0 4
+0 3
+ring P 4
+1 2
+3 2
+2 3
+1 3
+ring Q 8
+0 0
+1 -1
+4 -1
+3 0
+4 1
+2 2
+0 3
+0 2
+ring Q 4
+1 1
+3 1
+2 2
+1 2
+endcase
+case holes-transform-1-2246
+grid 4
+ring P 4
+0 0
+2 0
+4 4
+0 4
+ring P 3
+2 1
+1 3
+0 4
+ring Q 4
+4 0
+4 2
+0 4
+0 0
+ring Q 3
+3 2
+1 1
+0 0
+endcase
+case holes-1-2384
+grid 3
+ring P 4
+0 2
+1 0
+3 3
+0 3
+ring P 3
+1 2
+2 2
+2 3
+ring Q 7
+0 1
+0 0
+3 1
+2 2
+3 3
+1 3
+0 3
+endcase
+case holes-1-2388
+grid 3
+ring P 5
+1 1
+2 0
+3 1
+3 3
+1 3
+ring P 3
+2 1
+2 2
+1 2
+ring Q 4
+1 0
+2 0
+3 2
+1 3
+ring Q 3
+2 1
+2 2
+1 3
+endcase
+case holes-transform-1-2401
+grid 5
+ring P 8
+1 0
+5 1
+5 2
+4 3
+4 4
+4 5
+1 5
+0 5
+ring P 3
+2 2
+5 2
+1 4
+ring Q 8
+0 0
+4 1
+4 2
+3 3
+3 4
+3 5
+0 5
+-1 5
+ring Q 3
+1 2
+4 2
+0 4
+endcase
+case holes-transform-1-2412
+grid 3
+ring P 6
+0 1
+3 0
+3 1
+3 3
+2 3
+0 3
+ring P 3
+1 1
+2 1
+1 3
+ring Q 6
+2 0
+3 3
+2 3
+0 3
+0 2
+0 0
+ring Q 3
+2 1
+2 2
+0 1
+endcase
+case holes-1-2579
+grid 3
+ring P 8
+0 1
+1 0
+3 0
+3 3
+1 3
+1 2
+0 3
+0 2
+ring P 3
+1 1
+3 1
+2 2
+ring Q 8
+0 0
+2 0
+2 1
+3 0
+3 1
+3 2
+2 2
+0 3
+ring Q 3
+1 1
+1 2
+0 3
+endcase
+case holes-1-2582
+grid 4
+ring P 8
+1 0
+2 0
+3 0
+4 1
+4 2
+1 4
+0 3
+0 2
+ring P 3
+1 1
+3 0
+2 2
+ring Q 6
+0 0
+3 0
+3 1
+4 1
+2 4
+0 2
+ring Q 3
+2 0
+2 1
+1 1
+endcase
+case polyomino-1-2618
+grid 5
+ring P 22
+0 2
+1 2
+1 3
+2 3
+2 4
+3 4
+3 5
+4 5
+5 5
+5 4
+5 3
+4 3
+4 2
+5 2
+5 1
+5 0
+4 0
+3 0
+2 0
+1 0
+1 1
+0 1
+ring P 4
+2 2
+3 2
+3 3
+2 3
+ring Q 24
+1 2
+1 3
+0 3
+0 4
+0 5
+1 5
+2 5
+2 4
+3 4
+4 4
+5 4
+5 3
+4 3
+4 2
+4 1
+5 1
+5 0
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+0 2
+ring Q 4
+1 1
+2 1
+2 2
+1 2
+ring Q 4
+3 2
+3 3
+2 3
+2 2
+endcase
+case holes-transform-1-2645
+grid 4
+ring P 6
+0 2
+1 0
+4 0
+2 4
+1 4
+0 3
+ring P 4
+1 2
+2 1
+2 3
+0 3
+ring Q 6
+-1 2
+0 0
+3 0
+1 4
+0 4
+-1 3
+ring Q 4
+0 2
+1 1
+1 3
+-1 3
+endcase
+case holes-1-2709
+grid 4
+ring P 7
+0 2
+3 0
+3 1
+4 1
+4 4
+2 3
+0 3
+ring P 3
+1 2
+2 2
+4 3
+ring Q 7
+0 1
+3 0
+3 2
+4 2
+4 3
+1 3
+0 3
+ring Q 3
+1 1
+1 2
+0 2
+endcase
+case holes-1-2760
+grid 3
+ring P 6
+0 0
+3 0
+2 3
+1 3
+0 3
+0 2
+ring P 3
+1 1
+1 0
+2 2
+ring Q 8
+0 0
+1 1
+3 1
+3 2
+3 3
+2 3
+1 3
+0 2
+ring Q 3
+0 1
+2 2
+1 2
+endcase
+case holes-transform-1-2833
+grid 3
+ring P 4
+0 0
+2 1
+3 3
+0 3
+ring P 3
+0 1
+1 1
+2 2
+ring Q 4
+0 1
+2 2
+3 4
+0 4
+ring Q 3
+0 2
+1 2
+2 3
+endcase
+case holes-transform-1-2839
+grid 4
+ring P 6
+0 0
+3 0
+4 0
+4 1
+4 3
+0 3
+ring P 3
+1 1
+2 2
+0 3
+ring Q 6
+0 3
+3 3
+4 3
+4 2
+4 0
+0 0
+ring Q 3
+1 2
+2 1
+0 0
+endcase
+case holes-transform-1-2905
+grid 4
+ring P 4
+0 0
+4 1
+4 4
+0 4
+ring P 3
+1 1
+4 2
+2 2
+ring Q 4
+-1 2
+3 3
+3 6
+-1 6
+ring Q 3
+0 3
+3 4
+1 4
+endcase
+case holes-transform-1-2939
+grid 3
+ring P 7
+1 0
+2 0
+2 1
+3 0
+3 2
+2 2
+0 3
+ring P 3
+1 1
+2 1
+1 2
+ring Q 7
+3 1
+3 2
+2 2
+3 3
+1 3
+1 2
+0 0
+ring Q 3
+2 1
+2 2
+1 1
+endcase
+case holes-transform-1-2945
+grid 5
+ring P 6
+0 0
+1 0
+4 0
+5 1
+4 5
+1 5
+ring P 5
+2 0
+3 1
+4 1
+3 2
+2 4
+ring Q 6
+1 0
+2 0
+5 0
+6 1
+5 5
+2 5
+ring Q 5
+3 0
+4 1
+5 1
+4 2
+3 4
+endcase
+case holes-2-267
+grid 3
+ring P 7
+0 1
+0 0
+2 1
+3 3
+1 3
+1 2
+0 2
+ring P 3
+0 1
+1 1
+2 2
+ring Q 7
+0 1
+0 0
+1 0
+3 0
+2 1
+3 3
+0 2
+ring Q 3
+0 0
+1 1
+1 2
+endcase
+case holes-transform-2-329
+grid 3
+ring P 8
+0 1
+0 0
+2 0
+3 1
+3 3
+1 3
+0 3
+0 2
+ring P 3
+1 2
+2 2
+0 3
+ring Q 8
+3 1
+3 0
+1 0
+0 1
+0 3
+2 3
+3 3
+3 2
+ring Q 3
+2 2
+1 2
+3 3
+endcase
+case holes-transform-2-428
+grid 5
+ring P 7
+0 1
+2 1
+3 2
+5 2
+3 3
+4 4
+0 5
+ring P 3
+2 3
+3 3
+1 4
+ring Q 7
+1 5
+1 3
+2 2
+2 0
+3 2
+4 1
+5 5
+ring Q 3
+3 3
+3 2
+4 4
+endcase
+case holes-transform-2-448
+grid 3
+ring P 7
+1 1
+1 0
+3 1
+3 2
+2 3
+1 3
+0 2
+ring P 3
+1 2
+2 1
+2 3
+ring Q 7
+1 2
+1 1
+3 2
+3 3
+2 4
+1 4
+0 3
+ring Q 3
+1 3
+2 2
+2 4
+endcase
+case holes-transform-2-459
+grid 5
+ring P 8
+0 1
+2 1
+3 0
+3 1
+3 2
+4 2
+3 5
+2 5
+ring P 3
+2 2
+3 2
+2 4
+ring Q 8
+5 1
+3 1
+2 0
+2 1
+2 2
+1 2
+2 5
+3 5
+ring Q 3
+3 2
+2 2
+3 4
+endcase
+case holes-transform-2-489
+grid 4
+ring P 5
+0 0
+4 0
+4 1
+4 3
+1 4
+ring P 3
+1 1
+4 1
+1 2
+ring Q 5
+-1 0
+3 0
+3 1
+3 3
+0 4
+ring Q 3
+0 1
+3 1
+0 2
+endcase
+case holes-2-643
+grid 4
+ring P 7
+2 0
+4 1
+3 3
+2 3
+2 4
+0 4
+0 3
+ring P 3
+1 2
+3 2
+0 4
+ring Q 7
+1 1
+2 0
+3 0
+4 2
+3 2
+3 4
+0 4
+ring Q 5
+1 2
+2 2
+3 1
+2 3
+1 3
+endcase
+case holes-transform-2-721
+grid 4
+ring P 4
+0 0
+4 1
+4 4
+0 4
+ring P 4
+1 1
+2 1
+4 3
+2 3
+ring Q 4
+1 0
+5 1
+5 4
+1 4
+ring Q 4
+2 1
+3 1
+5 3
+3 3
+endcase
+case holes-transform-2-832
+grid 5
+ring P 8
+1 2
+3 0
+4 0
+5 1
+4 4
+4 5
+3 5
+2 4
+ring P 4
+2 1
+4 1
+4 3
+3 2
+ring Q 8
+2 2
+4 0
+5 0
+6 1
+5 4
+5 5
+4 5
+3 4
+ring Q 4
+3 1
+5 1
+5 3
+4 2
+endcase
+case polyomino-transform-2-839
+grid 5
+ring P 26
+0 3
+0 4
+0 5
+1 5
+2 5
+2 4
+3 4
+3 5
+4 5
+5 5
+5 4
+4 4
+4 3
+5 3
+5 2
+4 2
+4 1
+3 1
+3 0
+2 0
+2 1
+1 1
+1 0
+0 0
+0 1
+0 2
+ring P 4
+1 4
+1 3
+2 3
+2 4
+ring P 4
+2 2
+3 2
+3 3
+2 3
+ring Q 26
+2 0
+1 0
+0 0
+0 1
+0 2
+1 2
+1 3
+0 3
+0 4
+0 5
+1 5
+1 4
+2 4
+2 5
+3 5
+3 4
+4 4
+4 3
+5 3
+5 2
+4 2
+4 1
+5 1
+5 0
+4 0
+3 0
+ring Q 4
+1 1
+2 1
+2 2
+1 2
+ring Q 4
+3 2
+3 3
+2 3
+2 2
+endcase
+case holes-transform-2-940
+grid 5
+ring P 7
+1 2
+0 1
+4 0
+3 3
+3 4
+1 4
+0 5
+ring P 4
+1 1
+3 1
+3 2
+1 2
+ring Q 7
+2 2
+1 1
+5 0
+4 3
+4 4
+2 4
+1 5
+ring Q 4
+2 1
+4 1
+4 2
+2 2
+endcase
+case holes-2-1192
+grid 5
+ring P 8
+2 2
+2 0
+3 0
+5 3
+5 5
+4 4
+2 5
+1 4
+ring P 4
+3 3
+3 2
+4 3
+5 4
+ring Q 6
+3 3
+0 2
+3 0
+5 4
+5 5
+3 4
+endcase
+case holes-2-1260
+grid 4
+ring P 5
+1 0
+4 0
+4 1
+4 4
+1 4
+ring P 3
+1 2
+3 3
+2 3
+ring Q 5
+0 0
+3 0
+3 1
+3 3
+0 3
+ring Q 3
+2 0
+2 2
+1 2
+endcase
+case holes-transform-2-1358
+grid 5
+ring P 8
+1 0
+3 0
+5 5
+3 4
+2 4
+1 5
+0 5
+0 4
+ring P 3
+2 1
+4 3
+2 4
+ring Q 8
+4 0
+2 0
+0 5
+2 4
+3 4
+4 5
+5 5
+5 4
+ring Q 3
+3 1
+1 3
+3 4
+endcase
+case holes-transform-2-1365
+grid 3
+ring P 7
+0 0
+1 0
+2 0
+3 0
+2 3
+1 3
+0 2
+ring P 4
+1 1
+2 1
+2 2
+1 3
+ring Q 7
+3 0
+2 0
+1 0
+0 0
+1 3
+2 3
+3 2
+ring Q 4
+2 1
+1 1
+1 2
+2 3
+endcase
+case holes-2-1394
+grid 3
+ring P 5
+0 1
+2 0
+3 0
+3 2
+0 3
+ring P 3
+2 1
+3 0
+2 2
+ring Q 6
+0 0
+1 0
+3 0
+3 1
+3 3
+0 1
+ring Q 3
+1 1
+2 0
+2 2
+endcase
+case holes-2-1483
+grid 3
+ring P 4
+0 0
+3 0
+3 2
+0 3
+ring P 3
+0 0
+2 1
+1 2
+ring Q 8
+0 1
+0 0
+2 0
+2 1
+3 1
+3 3
+1 3
+1 2
+ring Q 3
+1 1
+3 2
+2 2
+endcase
+case holes-2-1534
+grid 3
+ring P 8
+0 1
+0 0
+2 0
+3 0
+3 2
+2 3
+1 3
+0 2
+ring P 3
+0 1
+1 1
+2 2
+ring Q 7
+0 1
+2 1
+3 0
+3 3
+1 3
+0 3
+0 2
+ring Q 3
+1 2
+2 2
+2 3
+endcase
+case holes-2-1600
+grid 3
+ring P 6
+0 2
+0 1
+3 0
+3 3
+2 3
+0 3
+ring P 3
+1 1
+2 1
+3 2
+ring Q 8
+0 1
+1 1
+1 0
+3 0
+3 1
+3 2
+3 3
+0 3
+endcase
+case holes-2-1603
+grid 5
+ring P 5
+1 1
+5 0
+5 5
+3 5
+1 5
+ring P 3
+2 2
+2 1
+5 4
+ring Q 8
+2 0
+3 1
+5 1
+5 5
+3 3
+3 4
+2 5
+0 3
+ring Q 3
+0 3
+2 2
+2 4
+endcase
+case holes-transform-2-1736
+grid 4
+ring P 6
+0 0
+4 0
+3 2
+4 3
+3 4
+0 4
+ring P 4
+2 2
+2 1
+3 1
+2 4
+ring Q 6
+1 0
+5 0
+4 2
+5 3
+4 4
+1 4
+ring Q 4
+3 2
+3 1
+4 1
+3 4
+endcase
+case holes-transform-2-1788
+grid 5
+ring P 8
+2 2
+1 1
+2 1
+5 1
+5 2
+5 5
+4 4
+1 4
+ring P 3
+4 2
+5 2
+3 3
+ring Q 8
+0 1
+-1 0
+0 0
+3 0
+3 1
+3 4
+2 3
+-1 3
+ring Q 3
+2 1
+3 1
+1 2
+endcase
+case holes-transform-2-1970
+grid 4
+ring P 6
+0 2
+1 0
+4 1
+4 2
+3 4
+1 3
+ring P 3
+2 2
+3 3
+1 3
+ring Q 6
+-1 2
+0 0
+3 1
+3 2
+2 4
+0 3
+ring Q 3
+1 2
+2 3
+0 3
+endcase
+case holes-2-1979
+grid 3
+ring P 6
+0 0
+1 1
+3 0
+3 2
+0 3
+0 2
+ring P 3
+2 1
+2 2
+1 2
+ring Q 7
+0 1
+0 0
+2 0
+3 0
+2 3
+1 3
+0 3
+ring Q 3
+1 1
+2 2
+0 3
+endcase
+case holes-transform-2-1985
+grid 5
+ring P 8
+0 2
+0 0
+3 0
+5 5
+4 5
+2 5
+1 5
+1 4
+ring P 4
+1 1
+4 3
+4 5
+2 4
+ring Q 8
+0 3
+0 1
+3 1
+5 6
+4 6
+2 6
+1 6
+1 5
+ring Q 4
+1 2
+4 4
+4 6
+2 5
+endcase
+case holes-transform-2-1999
+grid 4
+ring P 7
+1 1
+0 0
+3 0
+4 1
+3 2
+2 3
+0 2
+ring P 3
+2 1
+4 1
+1 2
+ring Q 7
+0 1
+-1 0
+2 0
+3 1
+2 2
+1 3
+-1 2
+ring Q 3
+1 1
+3 1
+0 2
+endcase
+case holes-2-2042
+grid 3
+ring P 8
+1 2
+0 0
+3 0
+3 2
+3 3
+2 3
+1 3
+0 3
+ring P 3
+2 1
+3 1
+2 2
+ring Q 8
+0 0
+1 0
+3 0
+3 1
+3 3
+2 3
+1 3
+0 3
+ring Q 3
+1 1
+2 1
+0 2
+endcase
+case holes-transform-2-2048
+grid 3
+ring P 7
+0 1
+1 0
+2 0
+3 0
+3 1
+3 3
+2 3
+ring P 3
+3 0
+2 1
+1 1
+ring Q 7
+1 3
+0 2
+0 1
+0 0
+1 0
+3 0
+3 1
+ring Q 3
+0 0
+1 1
+1 2
+endcase
+case holes-transform-2-2058
+grid 5
+ring P 7
+0 3
+5 0
+5 4
+4 4
+5 5
+3 5
+0 5
+ring P 3
+4 2
+2 5
+2 4
+ring Q 7
+-1 3
+4 0
+4 4
+3 4
+4 5
+2 5
+-1 5
+ring Q 3
+3 2
+1 5
+1 4
+endcase
+case holes-2-2174
+grid 4
+ring P 8
+2 0
+3 0
+4 0
+3 2
+4 3
+3 3
+3 4
+0 4
+ring P 5
+2 1
+3 1
+3 2
+2 3
+1 3
+ring Q 7
+2 1
+4 0
+3 2
+4 4
+2 4
+1 3
+0 3
+endcase
+case holes-2-2189
+grid 5
+ring P 5
+2 0
+5 0
+4 3
+3 4
+0 3
+ring P 3
+2 1
+4 0
+3 2
+ring Q 6
+3 0
+5 0
+5 1
+5 2
+4 5
+0 2
+ring Q 3
+3 0
+4 3
+3 2
+endcase
+case holes-2-2192
+grid 4
+ring P 6
+0 0
+1 1
+4 1
+3 4
+1 3
+0 3
+ring P 3
+0 1
+3 2
+2 2
+ring Q 8
+0 1
+0 0
+2 1
+3 0
+4 1
+2 3
+1 4
+0 2
+ring Q 3
+0 2
+1 2
+1 3
+endcase
+case holes-2-2215
+grid 3
+ring P 8
+0 1
+0 0
+2 0
+2 1
+3 1
+3 3
+1 3
+0 2
+ring P 3
+1 1
+3 2
+2 2
+ring Q 8
+0 0
+2 0
+3 1
+3 3
+1 3
+0 3
+1 2
+0 2
+ring Q 3
+1 0
+2 1
+2 2
+endcase
+case holes-transform-2-2222
+grid 4
+ring P 7
+0 0
+3 0
+3 1
+3 3
+0 4
+0 3
+0 2
+ring P 3
+0 1
+2 2
+2 3
+ring Q 7
+0 4
+3 4
+3 3
+3 1
+0 0
+0 1
+0 2
+ring Q 3
+0 3
+2 2
+2 1
+endcase
+case holes-transform-2-2274
+grid 3
+ring P 8
+0 1
+1 0
+3 0
+2 1
+2 2
+3 3
+0 3
+0 2
+ring P 3
+1 2
+1 1
+2 3
+ring Q 8
+3 1
+2 0
+0 0
+1 1
+1 2
+0 3
+3 3
+3 2
+ring Q 3
+2 2
+2 1
+1 3
+endcase
+case holes-transform-2-2349
+grid 5
+ring P 8
+1 2
+0 1
+1 1
+3 0
+4 1
+5 3
+3 5
+2 3
+ring P 3
+3 0
+4 3
+3 3
+ring Q 8
+1 3
+0 2
+1 2
+3 1
+4 2
+5 4
+3 6
+2 4
+ring Q 3
+3 1
+4 4
+3 4
+endcase
+case polyomino-transform-2-2355
+grid 5
+ring P 20
+1 1
+1 2
+0 2
+0 3
+0 4
+1 4
+1 5
+2 5
+3 5
+3 4
+4 4
+4 3
+4 2
+4 1
+4 0
+3 0
+3 1
+2 1
+2 0
+1 0
+ring P 4
+1 3
+2 3
+2 4
+1 4
+ring P 4
+2 2
+3 2
+3 3
+2 3
+ring Q 20
+4 1
+4 2
+5 2
+5 3
+5 4
+4 4
+4 5
+3 5
+2 5
+2 4
+1 4
+1 3
+1 2
+1 1
+1 0
+2 0
+2 1
+3 1
+3 0
+4 0
+ring Q 4
+4 3
+3 3
+3 4
+4 4
+ring Q 4
+3 2
+2 2
+2 3
+3 3
+endcase
+case holes-transform-2-2362
+grid 4
+ring P 8
+0 1
+0 0
+4 0
+3 1
+4 1
+3 2
+4 4
+0 4
+ring P 4
+1 2
+2 2
+1 3
+0 3
+ring Q 8
+2 2
+2 1
+6 1
+5 2
+6 2
+5 3
+6 5
+2 5
+ring Q 4
+3 3
+4 3
+3 4
+2 4
+endcase
+case holes-2-2393
+grid 3
+ring P 6
+0 1
+0 0
+3 2
+3 3
+1 3
+0 2
+ring P 3
+1 2
+1 1
+3 3
+ring Q 6
+1 2
+0 1
+2 0
+3 3
+1 3
+0 3
+endcase
+case holes-transform-2-2447
+grid 3
+ring P 7
+0 1
+1 0
+2 1
+3 1
+3 3
+2 3
+1 3
+ring P 3
+1 2
+1 1
+3 3
+ring Q 7
+1 2
+2 1
+3 2
+4 2
+4 4
+3 4
+2 4
+ring Q 3
+2 3
+2 2
+4 4
+endcase
+case holes-transform-2-2461
+grid 4
+ring P 8
+0 2
+0 1
+3 0
+4 1
+4 2
+4 4
+3 4
+1 4
+ring P 5
+1 1
+4 1
+3 2
+3 3
+1 3
+ring Q 8
+-1 2
+-1 1
+2 0
+3 1
+3 2
+3 4
+2 4
+0 4
+ring Q 5
+0 1
+3 1
+2 2
+2 3
+0 3
+endcase
+case polyomino-star-2-2476
+grid 4
+ring P 14
+1 1
+1 2
+2 2
+2 3
+3 3
+4 3
+4 2
+4 1
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+ring P 4
+2 1
+3 1
+3 2
+2 2
+ring Q 8
+0 1
+0 0
+2 1
+3 0
+4 1
+4 2
+4 3
+2 2
+endcase
+case holes-transform-2-2520
+grid 3
+ring P 8
+0 1
+0 0
+1 0
+3 0
+3 3
+2 3
+0 3
+0 2
+ring P 3
+1 1
+2 2
+0 2
+ring Q 8
+0 2
+0 1
+1 1
+3 1
+3 4
+2 4
+0 4
+0 3
+ring Q 3
+1 2
+2 3
+0 3
+endcase
+case holes-transform-2-2575
+grid 3
+ring P 7
+0 1
+0 0
+1 0
+3 2
+3 3
+0 3
+0 2
+ring P 3
+1 2
+2 2
+1 3
+ring Q 7
+3 1
+3 0
+2 0
+0 2
+0 3
+3 3
+3 2
+ring Q 3
+2 2
+1 2
+2 3
+endcase
+case holes-transform-2-2577
+grid 4
+ring P 7
+0 1
+1 0
+4 0
+4 1
+4 3
+3 4
+0 4
+ring P 3
+2 2
+4 2
+3 3
+ring Q 7
+-1 3
+0 4
+3 4
+3 3
+3 1
+2 0
+-1 0
+ring Q 3
+1 2
+3 2
+2 1
+endcase
+case holes-transform-2-2662
+grid 5
+ring P 6
+0 1
+2 0
+4 1
+5 3
+3 4
+0 5
+ring P 4
+0 2
+4 2
+2 3
+1 3
+ring Q 6
+0 2
+2 1
+4 2
+5 4
+3 5
+0 6
+ring Q 4
+0 3
+4 3
+2 4
+1 4
+endcase
+case holes-2-2675
+grid 4
+ring P 8
+0 1
+3 0
+3 1
+4 1
+4 2
+4 3
+3 4
+2 2
+ring P 3
+1 1
+2 1
+4 2
+ring Q 5
+0 0
+2 1
+3 0
+4 2
+1 4
+endcase
+case holes-2-2693
+grid 3
+ring P 7
+0 0
+2 0
+2 1
+3 3
+2 3
+0 3
+0 2
+ring P 3
+1 1
+1 2
+0 2
+ring Q 6
+0 0
+2 0
+3 2
+2 2
+1 3
+0 2
+ring Q 3
+0 0
+1 1
+1 2
+endcase
+case holes-transform-2-2730
+grid 4
+ring P 6
+1 0
+2 0
+3 1
+4 4
+0 4
+0 3
+ring P 3
+2 1
+2 3
+0 3
+ring Q 6
+2 0
+3 0
+4 1
+5 4
+1 4
+1 3
+ring Q 3
+3 1
+3 3
+1 3
+endcase
+case polyomino-star-2-2768
+grid 5
+ring P 22
+2 2
+3 2
+3 3
+3 4
+2 4
+1 4
+0 4
+0 5
+1 5
+2 5
+3 5
+4 5
+4 4
+4 3
+5 3
+5 2
+5 1
+5 0
+4 0
+3 0
+2 0
+2 1
+ring P 4
+3 1
+4 1
+4 2
+3 2
+ring Q 5
+1 1
+2 1
+5 0
+1 4
+1 3
+endcase
+case holes-transform-2-2779
+grid 3
+ring P 7
+0 1
+0 0
+3 0
+3 2
+2 3
+1 3
+0 2
+ring P 3
+1 1
+3 1
+2 2
+ring Q 7
+1 1
+1 0
+4 0
+4 2
+3 3
+2 3
+1 2
+ring Q 3
+2 1
+4 1
+3 2
+endcase
+case holes-transform-2-2787
+grid 4
+ring P 7
+0 1
+1 0
+2 0
+4 0
+3 2
+2 4
+0 4
+ring P 3
+3 0
+2 3
+2 2
+ring Q 7
+4 1
+3 0
+2 0
+0 0
+1 2
+2 4
+4 4
+ring Q 3
+1 0
+2 3
+2 2
+endcase
+case holes-2-2814
+grid 4
+ring P 5
+1 0
+2 2
+3 3
+2 4
+0 4
+ring P 3
+1 3
+2 3
+1 4
+ring Q 8
+1 0
+2 0
+3 0
+4 1
+3 4
+2 4
+0 4
+0 2
+ring Q 3
+2 1
+3 1
+2 3
+endcase
+case holes-2-2926
+grid 5
+ring P 8
+0 3
+0 2
+3 3
+5 1
+5 2
+5 4
+4 5
+1 5
+ring P 3
+2 3
+3 3
+2 4
+ring Q 7
+1 3
+0 2
+3 2
+5 3
+4 5
+3 5
+0 5
+ring Q 3
+1 4
+3 3
+1 5
+endcase
+case holes-transform-3-70
+grid 3
+ring P 6
+0 0
+1 0
+3 0
+3 2
+2 3
+0 3
+ring P 3
+0 1
+2 1
+2 2
+ring Q 6
+0 1
+1 1
+3 1
+3 3
+2 4
+0 4
+ring Q 3
+0 2
+2 2
+2 3
+endcase
+case holes-3-106
+grid 3
+ring P 4
+1 0
+3 2
+0 3
+0 2
+ring P 3
+1 1
+2 1
+1 2
+ring Q 6
+1 2
+3 0
+3 2
+3 3
+2 3
+0 3
+endcase
+case holes-transform-3-178
+grid 4
+ring P 8
+0 1
+0 0
+4 0
+3 1
+4 1
+2 3
+0 3
+0 2
+ring P 4
+1 1
+2 1
+2 2
+0 2
+ring Q 8
+-1 1
+-1 0
+3 0
+2 1
+3 1
+1 3
+-1 3
+-1 2
+ring Q 4
+0 1
+1 1
+1 2
+-1 2
+endcase
+case holes-transform-3-212
+grid 5
+ring P 8
+0 0
+2 2
+4 2
+5 4
+4 5
+3 5
+2 5
+0 4
+ring P 3
+1 2
+2 2
+3 4
+ring Q 8
+0 5
+2 3
+2 1
+4 0
+5 1
+5 2
+5 3
+4 5
+ring Q 3
+2 4
+2 3
+4 2
+endcase
+case holes-transform-3-218
+grid 5
+ring P 7
+2 3
+2 0
+5 0
+5 5
+4 5
+3 4
+0 4
+ring P 3
+3 2
+4 2
+5 3
+ring Q 7
+2 2
+2 -1
+5 -1
+5 4
+4 4
+3 3
+0 3
+ring Q 3
+3 1
+4 1
+5 2
+endcase
+case holes-transform-3-246
+grid 4
+ring P 6
+1 1
+2 0
+3 0
+4 2
+2 4
+0 2
+ring P 4
+2 2
+3 1
+3 2
+1 3
+ring Q 6
+3 1
+2 0
+1 0
+0 2
+2 4
+4 2
+ring Q 4
+2 2
+1 1
+1 2
+3 3
+endcase
+case holes-transform-3-253
+grid 3
+ring P 5
+0 1
+3 0
+3 1
+2 3
+0 2
+ring P 3
+1 1
+3 1
+1 2
+ring Q 5
+-1 1
+2 0
+2 1
+1 3
+-1 2
+ring Q 3
+0 1
+2 1
+0 2
+endcase
+case holes-3-271
+grid 3
+ring P 6
+0 1
+0 0
+3 0
+3 1
+2 3
+0 3
+ring P 4
+1 1
+1 0
+2 1
+2 2
+ring Q 6
+1 0
+2 1
+3 0
+3 3
+0 3
+0 2
+ring Q 3
+1 2
+1 1
+2 3
+endcase
+case holes-3-323
+grid 5
+ring P 7
+0 0
+1 0
+5 0
+5 1
+4 5
+3 5
+1 3
+ring P 4
+1 1
+4 1
+3 4
+1 3
+ring Q 3
+1 1
+1 4
+0 5
+endcase
+case holes-3-349
+grid 3
+ring P 8
+0 1
+0 0
+2 0
+3 0
+3 1
+3 2
+2 3
+1 3
+ring P 3
+1 2
+2 1
+1 3
+ring Q 5
+0 1
+2 0
+3 0
+2 3
+1 3
+ring Q 3
+1 1
+2 2
+2 3
+endcase
+case polyomino-3-420
+grid 5
+ring P 18
+1 3
+0 3
+0 4
+1 4
+1 5
+2 5
+3 5
+4 5
+4 4
+4 3
+5 3
+5 2
+4 2
+3 2
+3 1
+2 1
+1 1
+1 2
+ring P 4
+3 3
+2 3
+2 2
+3 2
+ring Q 22
+0 3
+0 4
+1 4
+1 3
+2 3
+2 4
+3 4
+4 4
+5 4
+5 3
+4 3
+4 2
+5 2
+5 1
+5 0
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+0 2
+ring Q 4
+3 2
+3 1
+4 1
+4 2
+endcase
+case holes-3-474
+grid 4
+ring P 7
+1 0
+3 0
+3 1
+4 1
+4 2
+4 3
+0 3
+ring P 3
+2 1
+2 2
+1 3
+ring Q 7
+0 1
+2 1
+3 0
+4 1
+4 2
+3 4
+0 4
+ring Q 4
+1 2
+4 1
+3 2
+1 3
+endcase
+case holes-3-476
+grid 5
+ring P 8
+2 3
+0 0
+4 1
+5 2
+5 3
+5 5
+3 5
+0 5
+ring P 3
+4 3
+3 4
+1 5
+ring Q 7
+0 1
+4 0
+5 2
+4 3
+5 5
+2 5
+1 5
+ring Q 4
+2 2
+4 1
+2 5
+2 3
+endcase
+case holes-transform-3-568
+grid 5
+ring P 7
+0 0
+2 1
+4 0
+5 0
+5 5
+2 4
+0 2
+ring P 5
+1 1
+2 1
+4 1
+4 3
+1 2
+ring Q 7
+5 0
+4 2
+5 4
+5 5
+0 5
+1 2
+3 0
+ring Q 5
+4 1
+4 2
+4 4
+2 4
+3 1
+endcase
+case holes-transform-3-617
+grid 5
+ring P 6
+0 2
+0 1
+2 0
+4 5
+2 5
+1 4
+ring P 3
+2 3
+3 3
+3 5
+ring Q 6
+5 2
+5 1
+3 0
+1 5
+3 5
+4 4
+ring Q 3
+3 3
+2 3
+2 5
+endcase
+case holes-transform-3-675
+grid 3
+ring P 7
+0 1
+1 1
+0 0
+2 0
+3 0
+2 3
+1 3
+ring P 3
+1 1
+2 2
+1 2
+ring Q 7
+0 3
+1 3
+0 4
+2 4
+3 4
+2 1
+1 1
+ring Q 3
+1 3
+2 2
+1 2
+endcase
+case holes-3-704
+grid 3
+ring P 5
+0 1
+1 0
+2 0
+2 2
+0 3
+ring P 3
+1 1
+1 2
+0 2
+ring Q 6
+0 1
+1 0
+2 1
+3 3
+0 3
+0 2
+ring Q 3
+1 2
+2 2
+3 3
+endcase
+case holes-transform-3-725
+grid 4
+ring P 6
+1 1
+3 0
+4 1
+4 4
+3 4
+0 4
+ring P 3
+3 1
+3 2
+1 4
+ring Q 6
+3 1
+1 0
+0 1
+0 4
+1 4
+4 4
+ring Q 3
+1 1
+1 2
+3 4
+endcase
+case holes-transform-3-827
+grid 4
+ring P 7
+0 1
+3 1
+4 1
+4 2
+4 3
+2 4
+0 4
+ring P 4
+2 2
+4 2
+3 3
+2 3
+ring Q 7
+-1 1
+2 1
+3 1
+3 2
+3 3
+1 4
+-1 4
+ring Q 4
+1 2
+3 2
+2 3
+1 3
+endcase
+case polyomino-transform-3-863
+grid 5
+ring P 26
+2 1
+2 2
+1 2
+0 2
+0 3
+1 3
+1 4
+1 5
+2 5
+2 4
+3 4
+4 4
+5 4
+5 3
+5 2
+5 1
+5 0
+4 0
+4 1
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+1 1
+ring P 4
+3 2
+3 3
+2 3
+2 2
+ring Q 26
+3 1
+3 2
+4 2
+5 2
+5 3
+4 3
+4 4
+4 5
+3 5
+3 4
+2 4
+1 4
+0 4
+0 3
+0 2
+0 1
+0 0
+1 0
+1 1
+2 1
+2 0
+3 0
+4 0
+5 0
+5 1
+4 1
+ring Q 4
+2 2
+2 3
+3 3
+3 2
+endcase
+case holes-transform-3-933
+grid 3
+ring P 7
+0 0
+1 0
+2 0
+3 0
+3 3
+2 2
+0 2
+ring P 3
+2 0
+2 1
+1 1
+ring Q 7
+3 0
+2 0
+1 0
+0 0
+0 3
+1 2
+3 2
+ring Q 3
+1 0
+1 1
+2 1
+endcase
+case holes-transform-3-956
+grid 4
+ring P 7
+0 0
+4 0
+4 1
+4 4
+2 3
+0 4
+0 3
+ring P 3
+1 1
+2 0
+3 2
+ring Q 7
+0 4
+0 0
+1 0
+4 0
+3 2
+4 4
+3 4
+ring Q 3
+1 3
+0 2
+2 1
+endcase
+case polyomino-star-3-969
+grid 4
+ring P 16
+1 1
+0 1
+0 2
+0 3
+0 4
+1 4
+2 4
+3 4
+3 3
+4 3
+4 2
+4 1
+3 1
+3 0
+2 0
+1 0
+ring P 4
+2 3
+2 2
+3 2
+3 3
+ring Q 5
+0 3
+2 2
+4 4
+2 4
+1 4
+endcase
+case holes-transform-3-986
+grid 4
+ring P 7
+0 0
+1 0
+4 1
+3 3
+4 4
+0 4
+1 3
+ring P 4
+2 2
+1 1
+3 2
+3 3
+ring Q 7
+4 0
+3 0
+0 1
+1 3
+0 4
+4 4
+3 3
+ring Q 4
+2 2
+3 1
+1 2
+1 3
+endcase
+case holes-transform-3-1116
+grid 5
+ring P 5
+0 3
+5 1
+5 4
+4 5
+3 5
+ring P 3
+4 2
+4 5
+2 4
+ring Q 5
+0 4
+5 2
+5 5
+4 6
+3 6
+ring Q 3
+4 3
+4 6
+2 5
+endcase
+case holes-3-1345
+grid 5
+ring P 7
+0 1
+0 0
+3 0
+4 0
+5 0
+4 5
+0 5
+ring P 3
+2 1
+3 3
+1 5
+ring Q 4
+1 0
+4 3
+1 5
+0 5
+endcase
+case holes-transform-3-1380
+grid 4
+ring P 8
+0 2
+2 0
+3 0
+4 2
+3 4
+1 4
+0 4
+0 3
+ring P 3
+2 2
+3 2
+1 4
+ring Q 8
+4 2
+2 0
+1 0
+0 2
+1 4
+3 4
+4 4
+4 3
+ring Q 3
+2 2
+1 2
+3 4
+endcase
+case holes-3-1419
+grid 4
+ring P 5
+0 1
+4 0
+3 2
+3 4
+0 4
+ring P 3
+2 2
+2 3
+1 4
+ring Q 5
+1 3
+4 0
+4 4
+3 4
+1 4
+ring Q 3
+3 1
+3 2
+2 3
+endcase
+case holes-3-1427
+grid 4
+ring P 6
+0 1
+2 0
+4 1
+4 3
+2 4
+1 3
+ring P 4
+0 1
+1 1
+3 1
+2 2
+ring Q 8
+0 1
+0 0
+4 0
+4 2
+1 4
+1 3
+0 3
+1 2
+ring Q 3
+1 1
+4 1
+2 2
+endcase
+case polyomino-transform-3-1448
+grid 4
+ring P 18
+0 2
+1 2
+1 3
+0 3
+0 4
+1 4
+2 4
+3 4
+4 4
+4 3
+4 2
+4 1
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+ring P 6
+1 1
+2 1
+3 1
+3 2
+2 2
+1 2
+ring Q 18
+4 2
+3 2
+3 3
+4 3
+4 4
+3 4
+2 4
+1 4
+0 4
+0 3
+0 2
+0 1
+0 0
+1 0
+2 0
+3 0
+4 0
+4 1
+ring Q 6
+3 1
+2 1
+1 1
+1 2
+2 2
+3 2
+endcase
+case holes-3-1480
+grid 3
+ring P 6
+0 1
+1 0
+3 1
+3 2
+3 3
+1 3
+ring P 3
+0 1
+2 1
+2 2
+ring Q 7
+0 1
+0 0
+3 0
+3 1
+2 3
+1 2
+0 2
+ring Q 3
+1 0
+2 1
+2 2
+endcase
+case holes-transform-3-1758
+grid 4
+ring P 8
+1 1
+2 1
+4 1
+4 2
+2 4
+1 4
+0 4
+1 3
+ring P 3
+2 2
+2 3
+1 4
+ring Q 8
+1 4
+2 4
+4 4
+4 3
+2 1
+1 1
+0 1
+1 2
+ring Q 3
+2 3
+2 2
+1 1
+endcase
+case holes-transform-3-1823
+grid 5
+ring P 8
+1 2
+0 0
+2 1
+5 0
+5 5
+2 5
+2 3
+0 5
+ring P 3
+3 1
+5 2
+4 4
+ring Q 8
+1 1
+0 -1
+2 0
+5 -1
+5 4
+2 4
+2 2
+0 4
+ring Q 3
+3 0
+5 1
+4 3
+endcase
+case holes-transform-3-1845
+grid 3
+ring P 8
+0 0
+2 1
+3 0
+3 2
+2 2
+2 3
+1 3
+0 3
+ring P 3
+1 1
+2 1
+1 2
+ring Q 8
+1 0
+3 1
+4 0
+4 2
+3 2
+3 3
+2 3
+1 3
+ring Q 3
+2 1
+3 1
+2 2
+endcase
+case holes-transform-3-2053
+grid 4
+ring P 4
+1 0
+3 0
+4 2
+1 4
+ring P 4
+1 1
+2 1
+3 1
+2 3
+ring Q 4
+3 0
+1 0
+0 2
+3 4
+ring Q 4
+3 1
+2 1
+1 1
+2 3
+endcase
+case holes-transform-3-2141
+grid 4
+ring P 7
+0 1
+0 0
+1 0
+4 0
+4 4
+0 4
+1 2
+ring P 4
+3 0
+3 2
+2 3
+1 3
+ring Q 7
+4 1
+4 0
+3 0
+0 0
+0 4
+4 4
+3 2
+ring Q 4
+1 0
+1 2
+2 3
+3 3
+endcase
+case holes-3-2229
+grid 5
+ring P 5
+0 2
+4 0
+4 3
+5 4
+3 5
+ring P 3
+2 1
+3 2
+2 3
+ring Q 6
+4 0
+5 0
+4 1
+3 4
+1 3
+2 2
+ring Q 3
+2 2
+3 3
+2 3
+endcase
+case holes-3-2319
+grid 3
+ring P 8
+0 0
+1 0
+2 0
+3 0
+3 3
+2 3
+0 3
+0 2
+ring P 3
+2 1
+3 2
+1 2
+ring Q 5
+0 2
+2 0
+3 2
+3 3
+1 3
+ring Q 3
+1 2
+2 2
+3 3
+endcase
+case holes-transform-3-2381
+grid 5
+ring P 6
+0 0
+5 0
+5 2
+5 5
+1 5
+0 3
+ring P 5
+1 1
+3 2
+4 2
+5 3
+3 3
+ring Q 6
+0 4
+5 4
+5 2
+5 -1
+1 -1
+0 1
+ring Q 5
+1 3
+3 2
+4 2
+5 1
+3 1
+endcase
+case holes-transform-3-2425
+grid 4
+ring P 8
+1 0
+2 0
+4 0
+4 1
+3 2
+2 3
+0 4
+0 2
+ring P 3
+3 1
+3 2
+2 2
+ring Q 8
+1 -2
+2 -2
+4 -2
+4 -1
+3 0
+2 1
+0 2
+0 0
+ring Q 3
+3 -1
+3 0
+2 0
+endcase
+case holes-3-2524
+grid 4
+ring P 5
+2 0
+3 0
+3 1
+4 3
+1 3
+ring P 3
+2 2
+2 1
+3 3
+ring Q 5
+0 1
+3 1
+3 2
+3 4
+1 4
+ring Q 3
+2 2
+3 3
+2 3
+endcase
+case holes-3-2530
+grid 5
+ring P 6
+0 0
+5 1
+5 2
+5 5
+3 5
+0 4
+ring P 3
+2 1
+4 1
+4 4
+ring Q 7
+0 2
+0 1
+0 0
+4 1
+4 3
+5 5
+3 5
+ring Q 3
+3 4
+4 4
+4 5
+endcase
+case holes-3-2538
+grid 4
+ring P 8
+0 2
+0 1
+0 0
+4 0
+4 3
+2 4
+1 3
+0 4
+ring P 3
+3 0
+3 3
+2 2
+ring Q 6
+1 0
+4 0
+4 2
+1 4
+1 3
+0 2
+ring Q 3
+1 0
+3 2
+2 2
+endcase
+case holes-3-2563
+grid 3
+ring P 8
+0 1
+0 0
+1 0
+3 2
+2 3
+1 3
+0 3
+0 2
+ring P 3
+1 1
+2 2
+1 3
+ring Q 8
+0 1
+1 1
+3 0
+2 2
+3 3
+2 3
+1 3
+0 2
+endcase
+case holes-transform-3-2572
+grid 5
+ring P 5
+1 1
+5 2
+5 5
+4 5
+1 5
+ring P 3
+4 2
+3 4
+1 4
+ring Q 5
+0 1
+4 2
+4 5
+3 5
+0 5
+ring Q 3
+3 2
+2 4
+0 4
+endcase
+case polyomino-3-2593
+grid 5
+ring P 26
+1 2
+1 3
+1 4
+0 4
+0 5
+1 5
+2 5
+3 5
+3 4
+4 4
+4 5
+5 5
+5 4
+5 3
+5 2
+5 1
+5 0
+4 0
+3 0
+3 1
+2 1
+2 0
+1 0
+0 0
+0 1
+0 2
+ring P 4
+2 4
+2 3
+3 3
+3 4
+ring P 4
+3 2
+4 2
+4 3
+3 3
+ring Q 22
+1 2
+0 2
+0 3
+0 4
+1 4
+2 4
+2 5
+3 5
+4 5
+5 5
+5 4
+5 3
+5 2
+5 1
+5 0
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+1 1
+ring Q 4
+2 3
+3 3
+3 4
+2 4
+ring Q 4
+2 2
+2 1
+3 1
+3 2
+endcase
+case holes-3-2714
+grid 3
+ring P 5
+0 0
+3 0
+3 3
+1 3
+0 3
+ring P 3
+1 1
+2 0
+2 2
+ring Q 6
+0 0
+1 0
+2 0
+3 3
+1 3
+0 2
+ring Q 3
+1 2
+2 1
+2 3
+endcase
+case holes-3-2816
+grid 5
+ring P 8
+0 0
+2 0
+5 0
+5 2
+5 3
+3 5
+1 5
+0 5
+ring P 3
+4 1
+5 3
+3 3
+ring Q 7
+1 1
+2 1
+4 0
+5 2
+1 5
+1 4
+0 5
+ring Q 3
+2 2
+4 2
+1 5
+endcase
+case holes-transform-3-2903
+grid 5
+ring P 7
+0 1
+1 0
+3 1
+5 0
+5 4
+2 4
+0 4
+ring P 3
+2 1
+4 2
+0 4
+ring Q 7
+5 1
+4 0
+2 1
+0 0
+0 4
+3 4
+5 4
+ring Q 3
+3 1
+1 2
+5 4
+endcase
+case holes-3-2935
+grid 5
+ring P 8
+2 1
+2 0
+3 0
+5 1
+4 2
+3 2
+1 5
+1 3
+ring P 3
+3 0
+3 1
+2 3
+ring Q 8
+0 3
+0 1
+1 2
+3 0
+5 4
+5 5
+1 5
+0 4
+ring Q 5
+2 2
+2 1
+3 1
+2 3
+1 3
+endcase
+case holes-transform-4-48
+grid 4
+ring P 8
+0 2
+1 2
+2 1
+3 1
+4 0
+4 4
+3 4
+1 4
+ring P 3
+3 2
+4 2
+1 3
+ring Q 8
+0 3
+1 3
+2 4
+3 4
+4 5
+4 1
+3 1
+1 1
+ring Q 3
+3 3
+4 3
+1 2
+endcase
+case holes-transform-4-120
+grid 4
+ring P 6
+0 0
+2 0
+2 1
+3 4
+1 4
+0 3
+ring P 3
+1 1
+2 3
+0 3
+ring Q 6
+-1 0
+1 0
+1 1
+2 4
+0 4
+-1 3
+ring Q 3
+0 1
+1 3
+-1 3
+endcase
+case holes-transform-4-395
+grid 4
+ring P 8
+1 0
+2 1
+4 0
+3 1
+4 1
+2 4
+1 3
+0 3
+ring P 4
+2 2
+4 1
+3 2
+2 3
+ring Q 8
+3 -2
+4 -1
+6 -2
+5 -1
+6 -1
+4 2
+3 1
+2 1
+ring Q 4
+4 0
+6 -1
+5 0
+4 1
+endcase
+case holes-4-404
+grid 5
+ring P 4
+1 0
+5 0
+5 4
+2 5
+ring P 3
+4 0
+4 2
+2 2
+ring Q 6
+0 1
+1 0
+4 0
+5 2
+3 5
+2 4
+ring Q 3
+2 0
+3 2
+3 3
+endcase
+case holes-transform-4-514
+grid 3
+ring P 5
+0 0
+3 0
+3 3
+2 3
+0 3
+ring P 3
+1 1
+3 0
+1 2
+ring Q 5
+3 0
+0 0
+0 3
+1 3
+3 3
+ring Q 3
+2 1
+0 0
+2 2
+endcase
+case holes-4-650
+grid 3
+ring P 7
+0 1
+1 0
+3 0
+3 1
+3 3
+2 3
+1 3
+ring P 3
+1 1
+3 0
+2 2
+ring Q 7
+1 1
+1 0
+2 0
+3 0
+3 2
+2 3
+0 2
+endcase
+case holes-transform-4-656
+grid 4
+ring P 8
+0 0
+4 0
+4 1
+4 2
+4 4
+3 3
+0 4
+1 3
+ring P 5
+1 1
+2 1
+3 0
+3 2
+1 2
+ring Q 8
+0 -1
+4 -1
+4 0
+4 1
+4 3
+3 2
+0 3
+1 2
+ring Q 5
+1 0
+2 0
+3 -1
+3 1
+1 1
+endcase
+case holes-transform-4-691
+grid 5
+ring P 6
+0 0
+1 0
+5 0
+5 5
+1 5
+0 3
+ring P 5
+3 1
+4 0
+4 2
+2 3
+1 2
+ring Q 6
+0 5
+0 4
+0 0
+5 0
+5 4
+3 5
+ring Q 5
+1 2
+0 1
+2 1
+3 3
+2 4
+endcase
+case holes-4-744
+grid 3
+ring P 8
+0 1
+0 0
+2 0
+3 2
+3 3
+1 2
+0 3
+0 2
+ring P 3
+1 0
+2 1
+1 1
+ring Q 5
+0 0
+2 0
+2 2
+2 3
+0 3
+ring Q 3
+1 1
+1 2
+0 2
+endcase
+case holes-transform-4-783
+grid 3
+ring P 7
+1 0
+2 0
+3 1
+3 3
+2 2
+1 3
+0 2
+ring P 3
+1 1
+2 1
+1 3
+ring Q 7
+-1 1
+0 1
+1 2
+1 4
+0 3
+-1 4
+-2 3
+ring Q 3
+-1 2
+0 2
+-1 4
+endcase
+case holes-transform-4-867
+grid 5
+ring P 7
+1 1
+2 1
+4 2
+5 2
+4 5
+1 5
+0 4
+ring P 3
+3 3
+4 4
+0 4
+ring Q 7
+2 1
+3 1
+5 2
+6 2
+5 5
+2 5
+1 4
+ring Q 3
+4 3
+5 4
+1 4
+endcase
+case holes-transform-4-898
+grid 5
+ring P 8
+0 3
+0 0
+4 0
+5 4
+4 4
+4 5
+3 4
+1 5
+ring P 3
+2 0
+4 2
+4 3
+ring Q 8
+5 3
+5 0
+1 0
+0 4
+1 4
+1 5
+2 4
+4 5
+ring Q 3
+3 0
+1 2
+1 3
+endcase
+case holes-transform-4-1028
+grid 3
+ring P 4
+0 0
+3 0
+2 3
+1 3
+ring P 3
+0 0
+2 2
+1 2
+ring Q 4
+3 0
+0 0
+1 3
+2 3
+ring Q 3
+3 0
+1 2
+2 2
+endcase
+case holes-4-1037
+grid 4
+ring P 6
+1 0
+4 0
+4 1
+3 2
+4 4
+0 4
+ring P 4
+2 2
+1 1
+3 2
+2 3
+ring Q 8
+1 0
+3 0
+4 1
+3 3
+2 3
+2 2
+1 3
+0 3
+ring Q 3
+2 0
+3 1
+3 2
+endcase
+case holes-transform-4-1056
+grid 4
+ring P 5
+0 0
+2 2
+2 3
+3 4
+0 4
+ring P 3
+1 2
+1 3
+0 3
+ring Q 5
+0 -1
+2 1
+2 2
+3 3
+0 3
+ring Q 3
+1 1
+1 2
+0 2
+endcase
+case holes-transform-4-1099
+grid 5
+ring P 6
+1 3
+1 1
+5 0
+5 5
+0 5
+0 4
+ring P 3
+2 2
+3 2
+3 5
+ring Q 6
+4 3
+4 1
+0 0
+0 5
+5 5
+5 4
+ring Q 3
+3 2
+2 2
+2 5
+endcase
+case holes-transform-4-1580
+grid 4
+ring P 5
+0 0
+1 1
+4 1
+4 4
+0 4
+ring P 3
+1 2
+2 2
+1 4
+ring Q 5
+4 0
+3 1
+0 1
+0 4
+4 4
+ring Q 3
+3 2
+2 2
+3 4
+endcase
+case holes-4-1630
+grid 4
+ring P 7
+1 1
+3 0
+4 3
+4 4
+3 4
+1 4
+0 3
+ring P 3
+1 2
+2 3
+1 4
+ring Q 8
+1 0
+3 0
+4 1
+4 2
+3 3
+3 4
+0 4
+0 3
+ring Q 3
+1 1
+2 4
+1 3
+endcase
+case holes-transform-4-1697
+grid 5
+ring P 8
+1 1
+2 2
+2 1
+4 0
+5 5
+3 5
+0 4
+1 3
+ring P 3
+3 2
+3 4
+0 4
+ring Q 8
+2 1
+3 2
+3 1
+5 0
+6 5
+4 5
+1 4
+2 3
+ring Q 3
+4 2
+4 4
+1 4
+endcase
+case holes-transform-4-1765
+grid 4
+ring P 6
+1 1
+2 1
+4 0
+3 4
+1 3
+0 2
+ring P 4
+2 2
+3 2
+3 3
+1 3
+ring Q 6
+2 1
+3 1
+5 0
+4 4
+2 3
+1 2
+ring Q 4
+3 2
+4 2
+4 3
+2 3
+endcase
+case holes-4-1845
+grid 4
+ring P 8
+1 1
+2 1
+3 0
+3 2
+4 3
+3 4
+2 4
+1 4
+ring P 3
+3 0
+2 3
+2 2
+ring Q 7
+0 0
+3 0
+4 0
+4 2
+4 4
+2 4
+2 3
+ring Q 4
+2 2
+1 1
+4 3
+3 3
+endcase
+case holes-transform-4-1862
+grid 3
+ring P 5
+1 0
+2 0
+3 0
+3 2
+0 2
+ring P 3
+1 1
+2 1
+2 2
+ring Q 5
+1 2
+2 2
+3 2
+3 0
+0 0
+ring Q 3
+1 1
+2 1
+2 0
+endcase
+case holes-transform-4-1908
+grid 5
+ring P 8
+0 1
+0 0
+4 0
+5 0
+5 2
+5 5
+4 5
+0 5
+ring P 4
+0 0
+3 1
+3 4
+1 4
+ring Q 8
+5 1
+5 0
+1 0
+0 0
+0 2
+0 5
+1 5
+5 5
+ring Q 4
+5 0
+2 1
+2 4
+4 4
+endcase
+case holes-4-1959
+grid 4
+ring P 8
+1 1
+0 0
+3 0
+4 0
+4 4
+3 4
+0 4
+2 2
+ring P 3
+3 2
+3 1
+4 3
+ring Q 5
+1 0
+4 0
+4 4
+1 4
+0 4
+ring Q 5
+2 2
+3 1
+3 2
+3 3
+2 4
+endcase
+case holes-transform-4-1981
+grid 3
+ring P 6
+1 1
+0 0
+3 0
+3 3
+2 3
+0 2
+ring P 3
+1 2
+2 2
+3 3
+ring Q 6
+2 1
+3 0
+3 3
+0 3
+0 2
+1 0
+ring Q 3
+1 1
+1 2
+0 3
+endcase
+case holes-4-2110
+grid 3
+ring P 5
+0 1
+1 0
+3 0
+3 2
+0 3
+ring P 3
+1 1
+2 0
+2 2
+ring Q 8
+0 0
+2 0
+3 2
+2 2
+3 3
+2 3
+0 3
+0 2
+ring Q 3
+1 1
+2 1
+2 2
+endcase
+case holes-transform-4-2162
+grid 5
+ring P 6
+1 0
+2 0
+5 0
+5 1
+2 5
+0 2
+ring P 5
+3 1
+5 1
+3 2
+2 2
+1 2
+ring Q 6
+2 0
+3 0
+6 0
+6 1
+3 5
+1 2
+ring Q 5
+4 1
+6 1
+4 2
+3 2
+2 2
+endcase
+case holes-4-2255
+grid 3
+ring P 8
+0 1
+0 0
+1 0
+2 0
+3 1
+3 3
+1 3
+0 3
+ring P 3
+1 2
+2 2
+0 3
+ring Q 8
+0 0
+1 1
+1 0
+3 0
+3 1
+1 3
+0 3
+0 2
+endcase
+case holes-transform-4-2257
+grid 4
+ring P 7
+1 1
+1 0
+3 2
+4 2
+1 4
+0 4
+0 3
+ring P 3
+2 2
+3 2
+2 3
+ring Q 7
+0 2
+0 3
+2 1
+3 1
+0 -1
+-1 -1
+-1 0
+ring Q 3
+1 1
+2 1
+1 0
+endcase
+case holes-transform-4-2258
+grid 4
+ring P 4
+0 0
+4 3
+1 4
+0 4
+ring P 3
+0 2
+2 2
+1 3
+ring Q 4
+1 0
+5 3
+2 4
+1 4
+ring Q 3
+1 2
+3 2
+2 3
+endcase
+case polyomino-transform-4-2279
+grid 5
+ring P 28
+0 3
+0 4
+0 5
+1 5
+1 4
+2 4
+2 5
+3 5
+4 5
+5 5
+5 4
+4 4
+4 3
+5 3
+5 2
+5 1
+5 0
+4 0
+4 1
+4 2
+3 2
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+0 2
+ring P 4
+2 3
+3 3
+3 4
+2 4
+ring Q 28
+5 3
+5 4
+5 5
+4 5
+4 4
+3 4
+3 5
+2 5
+1 5
+0 5
+0 4
+1 4
+1 3
+0 3
+0 2
+0 1
+0 0
+1 0
+1 1
+1 2
+2 2
+2 1
+2 0
+3 0
+4 0
+5 0
+5 1
+5 2
+ring Q 4
+3 3
+2 3
+2 4
+3 4
+endcase
+case holes-4-2284
+grid 3
+ring P 7
+0 0
+2 0
+3 0
+3 1
+3 2
+3 3
+1 3
+ring P 3
+1 1
+3 2
+2 2
+ring Q 7
+0 1
+1 1
+1 0
+2 0
+3 1
+3 3
+2 3
+ring Q 3
+2 2
+2 1
+3 3
+endcase
+case holes-4-2370
+grid 4
+ring P 7
+0 1
+2 1
+4 3
+3 3
+3 4
+0 4
+0 3
+ring P 3
+1 2
+2 2
+0 3
+ring Q 8
+0 1
+0 0
+2 2
+4 1
+4 2
+4 4
+0 4
+0 3
+ring Q 3
+1 2
+3 3
+0 4
+endcase
+case holes-transform-4-2651
+grid 5
+ring P 8
+3 1
+3 0
+5 0
+5 1
+4 2
+5 4
+0 4
+0 3
+ring P 3
+3 2
+4 3
+3 4
+ring Q 8
+4 1
+4 0
+6 0
+6 1
+5 2
+6 4
+1 4
+1 3
+ring Q 3
+4 2
+5 3
+4 4
+endcase
+case holes-4-2756
+grid 5
+ring P 6
+1 2
+5 1
+4 3
+0 5
+1 3
+0 3
+ring P 3
+3 2
+4 2
+4 3
+ring Q 4
+4 1
+4 2
+4 4
+3 5
+endcase
+case holes-transform-4-2824
+grid 5
+ring P 8
+0 3
+3 0
+3 1
+5 3
+5 5
+3 4
+1 5
+0 4
+ring P 4
+2 3
+3 2
+5 3
+4 4
+ring Q 8
+5 3
+2 0
+2 1
+0 3
+0 5
+2 4
+4 5
+5 4
+ring Q 4
+3 3
+2 2
+0 3
+1 4
+endcase
+case holes-transform-4-2885
+grid 5
+ring P 7
+1 2
+0 1
+5 1
+5 3
+5 5
+4 5
+0 5
+ring P 3
+4 1
+4 3
+2 4
+ring Q 7
+4 2
+5 1
+0 1
+0 3
+0 5
+1 5
+5 5
+ring Q 3
+1 1
+1 3
+3 4
+endcase
+case holes-transform-4-2966
+grid 5
+ring P 5
+0 1
+5 1
+5 4
+3 5
+0 4
+ring P 4
+2 2
+3 2
+5 3
+2 4
+ring Q 5
+5 1
+0 1
+0 4
+2 5
+5 4
+ring Q 4
+3 2
+2 2
+0 3
+3 4
+endcase
+case holes-4-2991
+grid 4
+ring P 8
+0 1
+2 0
+4 0
+4 1
+3 3
+3 4
+0 4
+1 2
+ring P 4
+2 1
+3 1
+4 0
+2 3
+ring Q 3
+0 1
+4 0
+3 3
+endcase
+case holes-5-145
+grid 3
+ring P 4
+0 0
+3 0
+3 3
+0 3
+ring P 3
+3 1
+2 2
+1 2
+ring Q 6
+0 1
+0 0
+1 0
+3 0
+1 3
+0 3
+ring Q 3
+1 1
+1 2
+0 3
+endcase
+case holes-transform-5-278
+grid 3
+ring P 7
+0 1
+0 0
+1 0
+3 1
+3 2
+3 3
+2 3
+ring P 3
+1 1
+2 1
+3 3
+ring Q 7
+3 2
+3 3
+2 3
+0 2
+0 1
+0 0
+1 0
+ring Q 3
+2 2
+1 2
+0 0
+endcase
+case holes-5-352
+grid 5
+ring P 7
+0 3
+0 1
+3 1
+5 2
+3 5
+2 4
+0 5
+ring P 3
+2 1
+3 3
+1 3
+ring Q 7
+0 2
+1 1
+2 0
+5 3
+1 4
+1 3
+0 4
+ring Q 4
+2 1
+3 2
+3 3
+1 3
+endcase
+case holes-transform-5-371
+grid 3
+ring P 6
+0 0
+3 0
+3 3
+2 3
+0 3
+0 2
+ring P 3
+1 0
+2 1
+2 2
+ring Q 6
+3 0
+0 0
+0 3
+1 3
+3 3
+3 2
+ring Q 3
+2 0
+1 1
+1 2
+endcase
+case holes-transform-5-512
+grid 3
+ring P 7
+0 2
+0 1
+1 1
+3 1
+3 3
+2 3
+0 3
+ring P 3
+1 2
+2 2
+1 3
+ring Q 7
+2 3
+1 3
+1 2
+1 0
+3 0
+3 1
+3 3
+ring Q 3
+2 2
+2 1
+3 2
+endcase
+case holes-5-565
+grid 3
+ring P 7
+0 1
+2 0
+3 1
+3 2
+2 3
+1 3
+0 3
+ring P 3
+0 1
+2 1
+1 2
+ring Q 8
+0 1
+1 0
+2 0
+3 0
+3 1
+1 3
+0 3
+0 2
+ring Q 3
+1 1
+1 2
+0 3
+endcase
+case holes-transform-5-580
+grid 3
+ring P 8
+1 0
+2 0
+3 0
+3 2
+3 3
+2 3
+1 3
+0 3
+ring P 3
+1 2
+2 1
+1 3
+ring Q 8
+2 3
+1 3
+0 3
+0 1
+0 0
+1 0
+2 0
+3 0
+ring Q 3
+2 1
+1 2
+2 0
+endcase
+case holes-transform-5-590
+grid 5
+ring P 5
+0 0
+5 0
+5 2
+3 5
+0 5
+ring P 3
+0 1
+1 1
+2 3
+ring Q 5
+0 -1
+5 -1
+5 1
+3 4
+0 4
+ring Q 3
+0 0
+1 0
+2 2
+endcase
+case holes-transform-5-680
+grid 4
+ring P 8
+0 2
+0 0
+1 1
+4 0
+4 2
+4 4
+1 3
+0 4
+ring P 3
+1 2
+2 2
+4 3
+ring Q 8
+2 0
+4 0
+3 1
+4 4
+2 4
+0 4
+1 1
+0 0
+ring Q 3
+2 1
+2 2
+1 4
+endcase
+case holes-5-907
+grid 3
+ring P 7
+1 0
+2 0
+3 0
+3 2
+3 3
+1 3
+0 2
+ring P 3
+1 2
+2 1
+2 3
+ring Q 5
+0 1
+2 1
+3 3
+1 3
+0 3
+ring Q 3
+1 2
+2 2
+1 3
+endcase
+case holes-transform-5-924
+grid 3
+ring P 6
+0 0
+3 0
+3 1
+2 2
+1 2
+0 2
+ring P 3
+1 1
+2 1
+1 2
+ring Q 6
+3 0
+0 0
+0 1
+1 2
+2 2
+3 2
+ring Q 3
+2 1
+1 1
+2 2
+endcase
+case holes-transform-5-1191
+grid 5
+ring P 6
+4 0
+4 2
+4 3
+2 5
+0 4
+0 3
+ring P 3
+2 2
+3 4
+2 4
+ring Q 6
+5 6
+5 4
+5 3
+3 1
+1 2
+1 3
+ring Q 3
+3 4
+4 2
+3 2
+endcase
+case holes-5-1275
+grid 4
+ring P 8
+0 2
+0 1
+1 0
+2 0
+4 3
+4 4
+2 3
+0 3
+ring P 3
+1 2
+0 1
+3 3
+ring Q 6
+0 1
+1 0
+2 0
+4 1
+3 4
+1 3
+ring Q 4
+1 1
+1 0
+3 2
+1 2
+endcase
+case polyomino-transform-5-1531
+grid 5
+ring P 26
+1 1
+0 1
+0 2
+1 2
+1 3
+0 3
+0 4
+1 4
+1 5
+2 5
+2 4
+3 4
+4 4
+5 4
+5 3
+5 2
+5 1
+5 0
+4 0
+4 1
+4 2
+3 2
+3 1
+2 1
+2 0
+1 0
+ring P 4
+3 3
+2 3
+2 2
+3 2
+ring Q 26
+4 1
+5 1
+5 2
+4 2
+4 3
+5 3
+5 4
+4 4
+4 5
+3 5
+3 4
+2 4
+1 4
+0 4
+0 3
+0 2
+0 1
+0 0
+1 0
+1 1
+1 2
+2 2
+2 1
+3 1
+3 0
+4 0
+ring Q 4
+2 3
+3 3
+3 2
+2 2
+endcase
+case holes-5-1579
+grid 3
+ring P 8
+0 1
+0 0
+1 0
+3 0
+2 1
+3 2
+2 2
+0 3
+ring P 3
+1 1
+2 0
+1 2
+ring Q 8
+0 0
+1 0
+2 0
+2 1
+3 3
+2 2
+2 3
+0 2
+ring Q 3
+0 0
+1 1
+1 2
+endcase
+case holes-transform-5-1584
+grid 3
+ring P 8
+0 1
+2 0
+3 0
+3 2
+3 3
+2 3
+1 3
+0 3
+ring P 3
+2 1
+2 2
+0 2
+ring Q 8
+3 1
+1 0
+0 0
+0 2
+0 3
+1 3
+2 3
+3 3
+ring Q 3
+1 1
+1 2
+3 2
+endcase
+case polyomino-transform-5-1827
+grid 3
+ring P 12
+0 1
+0 2
+0 3
+1 3
+2 3
+3 3
+3 2
+3 1
+2 1
+2 0
+1 0
+0 0
+ring P 4
+2 2
+1 2
+1 1
+2 1
+ring Q 12
+2 0
+1 0
+0 0
+0 1
+0 2
+0 3
+1 3
+2 3
+2 2
+3 2
+3 1
+3 0
+ring Q 4
+1 2
+1 1
+2 1
+2 2
+endcase
+case holes-transform-5-2006
+grid 5
+ring P 7
+0 0
+5 0
+4 4
+5 5
+4 5
+1 5
+0 5
+ring P 5
+3 2
+4 2
+3 3
+3 4
+0 3
+ring Q 7
+0 4
+5 4
+4 0
+5 -1
+4 -1
+1 -1
+0 -1
+ring Q 5
+3 2
+4 2
+3 1
+3 0
+0 1
+endcase
+case polyomino-star-5-2047
+grid 5
+ring P 24
+1 2
+0 2
+0 3
+0 4
+1 4
+1 5
+2 5
+3 5
+4 5
+5 5
+5 4
+4 4
+4 3
+5 3
+5 2
+5 1
+5 0
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+1 1
+ring P 4
+2 2
+2 3
+1 3
+1 2
+ring P 4
+3 3
+3 2
+4 2
+4 3
+ring Q 4
+2 2
+3 2
+5 4
+4 5
+endcase
+case holes-transform-5-2061
+grid 4
+ring P 4
+0 1
+1 0
+4 0
+3 3
+ring P 3
+1 1
+3 1
+3 3
+ring Q 4
+0 0
+1 -1
+4 -1
+3 2
+ring Q 3
+1 0
+3 0
+3 2
+endcase
+case holes-transform-5-2214
+grid 5
+ring P 5
+0 1
+5 0
+5 5
+2 5
+0 5
+ring P 4
+1 1
+5 3
+4 3
+3 4
+ring Q 5
+0 0
+5 -1
+5 4
+2 4
+0 4
+ring Q 4
+1 0
+5 2
+4 2
+3 3
+endcase
+case holes-transform-5-2371
+grid 3
+ring P 6
+0 0
+3 0
+3 2
+2 3
+1 3
+0 3
+ring P 3
+0 1
+2 1
+2 2
+ring Q 6
+0 -1
+3 -1
+3 1
+2 2
+1 2
+0 2
+ring Q 3
+0 0
+2 0
+2 1
+endcase
+case holes-5-2398
+grid 3
+ring P 5
+1 0
+3 0
+3 2
+3 3
+0 3
+ring P 3
+1 1
+3 0
+1 2
+ring Q 7
+1 1
+0 0
+3 0
+3 1
+3 2
+3 3
+2 3
+ring Q 3
+2 1
+3 2
+2 2
+endcase
+case holes-transform-5-2435
+grid 5
+ring P 6
+0 2
+3 0
+4 2
+5 3
+4 4
+1 4
+ring P 4
+1 2
+2 2
+4 2
+3 3
+ring Q 6
+-1 2
+2 4
+3 2
+4 1
+3 0
+0 0
+ring Q 4
+0 2
+1 2
+3 2
+2 1
+endcase
+case holes-transform-5-2442
+grid 5
+ring P 5
+2 0
+5 2
+5 4
+5 5
+0 5
+ring P 4
+2 1
+2 0
+4 2
+2 4
+ring Q 5
+2 2
+5 4
+5 6
+5 7
+0 7
+ring Q 4
+2 3
+2 2
+4 4
+2 6
+endcase
+case holes-5-2645
+grid 4
+ring P 7
+0 2
+1 2
+4 0
+4 4
+0 4
+1 3
+0 3
+ring P 3
+3 1
+2 3
+1 4
+ring Q 5
+0 0
+4 0
+4 1
+4 3
+0 4
+ring Q 3
+3 1
+2 2
+0 3
+endcase
+case holes-transform-5-2646
+grid 5
+ring P 8
+0 1
+1 0
+3 0
+5 2
+5 5
+3 5
+0 5
+0 3
+ring P 3
+4 2
+1 4
+0 4
+ring Q 8
+5 1
+4 0
+2 0
+0 2
+0 5
+2 5
+5 5
+5 3
+ring Q 3
+1 2
+4 4
+5 4
+endcase
+case holes-transform-5-2772
+grid 5
+ring P 6
+0 1
+4 1
+5 1
+5 2
+4 4
+1 4
+ring P 4
+2 2
+3 2
+4 2
+2 4
+ring Q 6
+0 0
+4 0
+5 0
+5 1
+4 3
+1 3
+ring Q 4
+2 1
+3 1
+4 1
+2 3
+endcase
+case holes-5-2965
+grid 3
+ring P 8
+0 1
+0 0
+1 1
+3 0
+3 2
+1 3
+1 2
+0 2
+ring P 3
+2 1
+3 2
+2 2
+ring Q 7
+1 1
+3 0
+3 2
+3 3
+0 3
+1 2
+0 2
+ring Q 3
+2 1
+2 2
+1 2
+endcase
+case holes-transform-6-254
+grid 4
+ring P 6
+0 0
+2 0
+4 2
+4 3
+2 4
+0 4
+ring P 4
+1 2
+3 2
+3 3
+0 3
+ring Q 6
+1 3
+3 3
+5 1
+5 0
+3 -1
+1 -1
+ring Q 4
+2 1
+4 1
+4 0
+1 0
+endcase
+case polyomino-star-6-276
+grid 5
+ring P 22
+0 2
+0 3
+0 4
+0 5
+1 5
+2 5
+3 5
+3 4
+4 4
+4 3
+5 3
+5 2
+5 1
+5 0
+4 0
+4 1
+3 1
+3 0
+2 0
+1 0
+1 1
+0 1
+ring P 4
+3 2
+2 2
+2 1
+3 1
+ring P 6
+2 3
+2 4
+1 4
+1 3
+1 2
+2 2
+ring Q 3
+4 0
+5 2
+1 3
+endcase
+case holes-transform-6-305
+grid 3
+ring P 8
+1 1
+0 0
+1 0
+2 0
+3 0
+3 3
+2 3
+0 2
+ring P 3
+2 1
+3 1
+1 2
+ring Q 8
+2 1
+3 0
+3 1
+3 2
+3 3
+0 3
+0 2
+1 0
+ring Q 3
+2 2
+2 3
+1 1
+endcase
+case holes-6-384
+grid 5
+ring P 7
+0 0
+3 0
+5 0
+4 4
+4 5
+3 4
+2 5
+ring P 4
+2 2
+1 0
+4 3
+3 3
+ring Q 7
+0 2
+0 0
+1 0
+5 1
+4 5
+1 5
+1 4
+ring Q 3
+0 0
+3 1
+4 3
+endcase
+case holes-6-502
+grid 4
+ring P 8
+0 0
+4 1
+4 2
+4 3
+2 4
+2 3
+1 4
+0 4
+ring P 3
+0 1
+3 1
+3 3
+ring Q 7
+0 1
+2 0
+4 0
+4 2
+4 3
+3 3
+0 2
+ring Q 3
+1 1
+2 1
+4 2
+endcase
+case holes-transform-6-539
+grid 4
+ring P 8
+1 0
+3 1
+4 0
+4 1
+4 2
+4 3
+2 4
+1 4
+ring P 4
+2 2
+4 1
+3 2
+2 3
+ring Q 8
+1 -1
+3 0
+4 -1
+4 0
+4 1
+4 2
+2 3
+1 3
+ring Q 4
+2 1
+4 0
+3 1
+2 2
+endcase
+case holes-transform-6-656
+grid 4
+ring P 7
+0 2
+2 1
+3 0
+3 1
+4 4
+1 4
+0 4
+ring P 3
+1 3
+1 2
+3 4
+ring Q 7
+4 2
+2 1
+1 0
+1 1
+0 4
+3 4
+4 4
+ring Q 3
+3 3
+3 2
+1 4
+endcase
+case holes-transform-6-683
+grid 3
+ring P 6
+0 0
+1 0
+2 0
+3 3
+0 3
+0 2
+ring P 3
+0 1
+1 1
+2 2
+ring Q 6
+0 3
+0 2
+0 1
+3 0
+3 3
+2 3
+ring Q 3
+1 3
+1 2
+2 1
+endcase
+case polyomino-transform-6-724
+grid 3
+ring P 12
+3 0
+2 0
+1 0
+1 1
+0 1
+0 2
+0 3
+1 3
+2 3
+3 3
+3 2
+3 1
+ring P 4
+2 1
+2 2
+1 2
+1 1
+ring Q 12
+0 0
+1 0
+2 0
+2 1
+3 1
+3 2
+3 3
+2 3
+1 3
+0 3
+0 2
+0 1
+ring Q 4
+1 1
+1 2
+2 2
+2 1
+endcase
+case holes-transform-6-747
+grid 5
+ring P 4
+0 0
+1 0
+4 0
+4 5
+ring P 3
+1 1
+3 1
+4 4
+ring Q 4
+0 6
+1 6
+4 6
+4 1
+ring Q 3
+1 5
+3 5
+4 2
+endcase
+case holes-transform-6-1014
+grid 3
+ring P 4
+0 0
+2 0
+3 3
+0 3
+ring P 3
+1 2
+2 2
+2 3
+ring Q 4
+3 0
+3 2
+0 3
+0 0
+ring Q 3
+1 1
+1 2
+0 2
+endcase
+case holes-transform-6-1032
+grid 3
+ring P 7
+0 0
+1 0
+3 1
+3 3
+2 3
+1 3
+0 3
+ring P 3
+2 2
+2 1
+3 3
+ring Q 7
+0 3
+0 2
+1 0
+3 0
+3 1
+3 2
+3 3
+ring Q 3
+2 1
+1 1
+3 0
+endcase
+case holes-6-1062
+grid 5
+ring P 4
+1 1
+4 0
+4 5
+3 5
+ring P 3
+3 1
+4 2
+3 3
+ring Q 7
+0 2
+1 1
+3 0
+4 0
+4 4
+3 3
+1 5
+ring Q 5
+1 2
+2 1
+4 1
+2 3
+1 3
+endcase
+case polyomino-transform-6-1117
+grid 4
+ring P 18
+0 2
+0 3
+1 3
+1 4
+2 4
+3 4
+4 4
+4 3
+4 2
+3 2
+3 1
+4 1
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+ring P 4
+3 3
+2 3
+2 2
+3 2
+ring P 4
+1 2
+1 1
+2 1
+2 2
+ring Q 18
+4 2
+4 1
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+0 2
+1 2
+1 3
+0 3
+0 4
+1 4
+2 4
+3 4
+4 4
+4 3
+ring Q 4
+1 1
+2 1
+2 2
+1 2
+ring Q 4
+3 2
+3 3
+2 3
+2 2
+endcase
+case holes-6-1200
+grid 4
+ring P 5
+1 1
+2 0
+4 0
+1 4
+0 4
+ring P 3
+2 1
+3 1
+0 4
+ring Q 7
+1 0
+2 0
+3 0
+4 0
+3 4
+2 4
+0 2
+ring Q 4
+1 1
+3 3
+2 3
+1 3
+endcase
+case holes-transform-6-1339
+grid 5
+ring P 6
+2 0
+3 2
+5 0
+4 2
+3 5
+0 5
+ring P 3
+2 0
+3 4
+2 4
+ring Q 6
+2 1
+3 3
+5 1
+4 3
+3 6
+0 6
+ring Q 3
+2 1
+3 5
+2 5
+endcase
+case holes-transform-6-1392
+grid 5
+ring P 8
+1 2
+0 0
+4 0
+5 0
+4 5
+3 4
+0 4
+0 3
+ring P 3
+1 0
+3 2
+4 4
+ring Q 8
+4 2
+5 0
+1 0
+0 0
+1 5
+2 4
+5 4
+5 3
+ring Q 3
+4 0
+2 2
+1 4
+endcase
+case holes-transform-6-1477
+grid 4
+ring P 8
+1 1
+0 0
+1 0
+3 0
+4 0
+4 2
+3 3
+2 3
+ring P 3
+2 0
+3 2
+2 2
+ring Q 8
+2 2
+1 3
+2 3
+4 3
+5 3
+5 1
+4 0
+3 0
+ring Q 3
+3 3
+4 1
+3 1
+endcase
+case holes-transform-6-1494
+grid 5
+ring P 8
+1 2
+0 1
+2 0
+5 1
+5 4
+5 5
+1 5
+0 3
+ring P 3
+2 1
+5 3
+3 4
+ring Q 8
+4 2
+5 1
+3 0
+0 1
+0 4
+0 5
+4 5
+5 3
+ring Q 3
+3 1
+0 3
+2 4
+endcase
+case holes-transform-6-1515
+grid 5
+ring P 8
+0 2
+0 1
+2 0
+3 0
+5 0
+4 5
+0 5
+0 4
+ring P 4
+3 0
+3 1
+4 3
+1 2
+ring Q 8
+5 2
+5 1
+3 0
+2 0
+0 0
+1 5
+5 5
+5 4
+ring Q 4
+2 0
+2 1
+1 3
+4 2
+endcase
+case holes-6-1524
+grid 3
+ring P 6
+0 0
+2 1
+3 1
+3 2
+3 3
+1 3
+ring P 3
+1 1
+3 2
+1 2
+ring Q 8
+1 0
+2 0
+3 1
+3 2
+3 3
+1 3
+0 3
+0 2
+ring Q 3
+1 2
+2 1
+3 3
+endcase
+case holes-transform-6-1563
+grid 4
+ring P 8
+0 1
+2 0
+2 1
+3 3
+4 4
+2 4
+0 4
+1 3
+ring P 3
+0 1
+1 1
+2 3
+ring Q 8
+-1 4
+1 5
+1 4
+2 2
+3 1
+1 1
+-1 1
+0 2
+ring Q 3
+-1 4
+0 4
+1 2
+endcase
+case holes-transform-6-1754
+grid 3
+ring P 7
+0 1
+0 0
+1 0
+3 1
+2 3
+0 3
+0 2
+ring P 4
+2 1
+2 2
+1 2
+0 2
+ring Q 7
+1 3
+0 3
+0 2
+1 0
+3 1
+3 3
+2 3
+ring Q 4
+1 1
+2 1
+2 2
+2 3
+endcase
+case holes-transform-6-1894
+grid 3
+ring P 7
+1 1
+1 0
+2 0
+3 2
+3 3
+2 3
+0 2
+ring P 3
+1 2
+2 1
+2 3
+ring Q 7
+1 0
+1 -1
+2 -1
+3 1
+3 2
+2 2
+0 1
+ring Q 3
+1 1
+2 0
+2 2
+endcase
+case holes-transform-6-1931
+grid 3
+ring P 8
+0 0
+2 1
+3 0
+3 1
+3 2
+2 3
+1 3
+0 2
+ring P 3
+1 2
+1 1
+2 3
+ring Q 8
+3 0
+1 1
+0 0
+0 1
+0 2
+1 3
+2 3
+3 2
+ring Q 3
+2 2
+2 1
+1 3
+endcase
+case holes-transform-6-1937
+grid 5
+ring P 8
+1 2
+1 1
+4 0
+4 2
+2 4
+1 4
+0 5
+0 4
+ring P 4
+2 1
+4 1
+1 3
+2 2
+ring Q 8
+0 2
+0 1
+3 0
+3 2
+1 4
+0 4
+-1 5
+-1 4
+ring Q 4
+1 1
+3 1
+0 3
+1 2
+endcase
+case holes-transform-6-2038
+grid 3
+ring P 8
+0 1
+0 0
+2 0
+2 1
+3 1
+3 3
+2 3
+0 3
+ring P 3
+1 1
+1 2
+0 2
+ring Q 8
+3 1
+3 0
+1 0
+1 1
+0 1
+0 3
+1 3
+3 3
+ring Q 3
+2 1
+2 2
+3 2
+endcase
+case holes-transform-6-2058
+grid 4
+ring P 7
+0 0
+3 0
+4 0
+4 2
+3 3
+3 4
+0 3
+ring P 3
+4 0
+2 3
+1 3
+ring Q 7
+4 0
+1 0
+0 0
+0 2
+1 3
+1 4
+4 3
+ring Q 3
+0 0
+2 3
+3 3
+endcase
+case holes-6-2139
+grid 4
+ring P 7
+0 2
+1 2
+2 0
+3 1
+4 3
+4 4
+1 4
+ring P 4
+2 2
+2 1
+3 2
+1 3
+ring Q 8
+0 2
+0 0
+1 1
+1 0
+4 1
+4 4
+1 4
+0 4
+ring Q 3
+1 2
+2 1
+4 3
+endcase
+case holes-transform-6-2165
+grid 5
+ring P 8
+0 2
+2 1
+3 0
+4 1
+5 2
+3 5
+2 5
+1 4
+ring P 3
+2 1
+4 2
+4 3
+ring Q 8
+-1 3
+1 4
+2 5
+3 4
+4 3
+2 0
+1 0
+0 1
+ring Q 3
+1 4
+3 3
+3 2
+endcase
+case holes-6-2166
+grid 3
+ring P 8
+0 1
+0 0
+1 0
+2 0
+3 0
+3 3
+1 3
+0 3
+ring P 4
+1 1
+3 2
+2 2
+1 2
+ring Q 7
+0 1
+1 1
+2 1
+3 0
+3 1
+3 2
+1 3
+endcase
+case holes-transform-6-2242
+grid 3
+ring P 6
+0 0
+1 0
+2 0
+3 0
+3 3
+0 3
+ring P 3
+3 0
+2 1
+1 1
+ring Q 6
+3 0
+2 0
+1 0
+0 0
+0 3
+3 3
+ring Q 3
+0 0
+1 1
+2 1
+endcase
+case holes-transform-6-2254
+grid 5
+ring P 7
+0 0
+2 0
+5 1
+4 2
+4 3
+2 5
+0 5
+ring P 4
+3 1
+4 1
+4 2
+2 3
+ring Q 7
+5 0
+5 2
+4 5
+3 4
+2 4
+0 2
+0 0
+ring Q 4
+4 3
+4 4
+3 4
+2 2
+endcase
+case holes-transform-6-2346
+grid 5
+ring P 7
+1 3
+1 1
+4 1
+4 3
+3 5
+1 5
+1 4
+ring P 3
+1 1
+3 4
+2 4
+ring Q 7
+4 3
+4 1
+1 1
+1 3
+2 5
+4 5
+4 4
+ring Q 3
+4 1
+2 4
+3 4
+endcase
+case holes-6-2586
+grid 3
+ring P 7
+0 1
+1 0
+2 0
+2 2
+2 3
+1 3
+0 3
+ring P 3
+1 1
+1 2
+0 2
+ring Q 6
+0 1
+3 1
+3 2
+3 3
+2 3
+0 3
+endcase
+case polyomino-star-6-2718
+grid 5
+ring P 22
+0 2
+0 3
+0 4
+0 5
+1 5
+2 5
+2 4
+3 4
+3 5
+4 5
+5 5
+5 4
+5 3
+5 2
+5 1
+5 0
+4 0
+3 0
+2 0
+1 0
+1 1
+0 1
+ring P 4
+3 3
+4 3
+4 4
+3 4
+ring Q 3
+5 2
+2 5
+0 4
+endcase
+case holes-transform-6-2735
+grid 5
+ring P 8
+0 0
+2 0
+3 0
+4 2
+3 2
+4 5
+2 4
+0 2
+ring P 3
+0 1
+2 2
+3 4
+ring Q 8
+0 1
+2 1
+3 1
+4 3
+3 3
+4 6
+2 5
+0 3
+ring Q 3
+0 2
+2 3
+3 5
+endcase
+case holes-transform-6-2737
+grid 3
+ring P 8
+1 0
+2 0
+2 1
+3 2
+2 2
+2 3
+1 3
+0 2
+ring P 3
+1 1
+2 1
+1 2
+ring Q 8
+2 0
+1 0
+1 1
+0 2
+1 2
+1 3
+2 3
+3 2
+ring Q 3
+2 1
+1 1
+2 2
+endcase
+case holes-transform-6-2743
+grid 4
+ring P 5
+0 0
+4 2
+4 3
+4 4
+0 4
+ring P 4
+0 2
+1 1
+3 2
+1 3
+ring Q 5
+0 -1
+4 1
+4 2
+4 3
+0 3
+ring Q 4
+0 1
+1 0
+3 1
+1 2
+endcase
+case holes-transform-6-2893
+grid 3
+ring P 6
+0 1
+0 0
+3 0
+3 2
+3 3
+1 3
+ring P 3
+1 1
+3 0
+2 2
+ring Q 6
+3 1
+3 0
+0 0
+0 2
+0 3
+2 3
+ring Q 3
+2 1
+0 0
+1 2
+endcase
+case holes-6-2976
+grid 4
+ring P 8
+0 0
+1 1
+1 0
+2 2
+3 2
+3 4
+2 4
+0 3
+ring P 3
+1 2
+2 3
+2 4
+ring Q 4
+1 0
+3 3
+3 4
+0 4
+ring Q 3
+2 3
+2 2
+3 4
+endcase
+case holes-7-12
+grid 4
+ring P 4
+0 0
+1 0
+4 4
+0 4
+ring P 4
+1 2
+1 1
+2 3
+2 4
+ring Q 6
+0 2
+3 0
+4 2
+4 3
+3 4
+0 4
+ring Q 4
+2 1
+3 1
+3 4
+2 3
+endcase
+case holes-7-62
+grid 4
+ring P 5
+1 1
+0 0
+4 0
+3 4
+1 2
+ring P 3
+2 2
+3 2
+2 3
+ring Q 7
+0 2
+1 2
+1 1
+3 2
+4 3
+4 4
+0 4
+ring Q 3
+1 1
+3 3
+2 3
+endcase
+case holes-transform-7-149
+grid 5
+ring P 8
+1 1
+3 0
+4 0
+3 2
+3 3
+4 5
+3 5
+0 3
+ring P 3
+3 1
+3 2
+1 3
+ring Q 8
+4 1
+5 3
+5 4
+3 3
+2 3
+0 4
+0 3
+2 0
+ring Q 3
+4 3
+3 3
+2 1
+endcase
+case holes-transform-7-162
+grid 3
+ring P 8
+0 0
+1 0
+2 0
+3 0
+2 1
+3 2
+3 3
+1 2
+ring P 3
+1 1
+1 0
+2 2
+ring Q 8
+3 0
+2 0
+1 0
+0 0
+1 1
+0 2
+0 3
+2 2
+ring Q 3
+2 1
+2 0
+1 2
+endcase
+case holes-7-441
+grid 3
+ring P 7
+2 1
+3 0
+3 1
+3 3
+2 3
+0 3
+0 2
+ring P 3
+1 2
+2 2
+1 3
+ring Q 6
+0 1
+1 0
+3 0
+3 2
+3 3
+1 3
+ring Q 4
+1 1
+1 0
+2 1
+1 2
+endcase
+case holes-7-594
+grid 3
+ring P 6
+0 1
+1 0
+3 0
+3 3
+2 3
+0 3
+ring P 3
+2 0
+2 2
+1 2
+ring Q 5
+0 0
+2 0
+3 1
+2 3
+0 3
+ring Q 3
+1 2
+2 2
+0 3
+endcase
+case holes-transform-7-687
+grid 4
+ring P 8
+0 0
+2 0
+3 2
+4 2
+4 3
+4 4
+1 4
+0 3
+ring P 3
+1 2
+3 2
+1 3
+ring Q 8
+4 0
+2 0
+1 2
+0 2
+0 3
+0 4
+3 4
+4 3
+ring Q 3
+3 2
+1 2
+3 3
+endcase
+case polyomino-7-858
+grid 4
+ring P 18
+0 2
+1 2
+1 3
+1 4
+2 4
+2 3
+3 3
+4 3
+4 2
+4 1
+4 0
+3 0
+2 0
+2 1
+1 1
+1 0
+0 0
+0 1
+ring P 4
+3 1
+3 2
+2 2
+2 1
+ring Q 16
+0 2
+0 3
+1 3
+1 4
+2 4
+3 4
+4 4
+4 3
+4 2
+4 1
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+ring Q 4
+3 2
+2 2
+2 1
+3 1
+endcase
+case holes-7-1072
+grid 3
+ring P 5
+0 0
+1 0
+3 0
+3 1
+0 3
+ring P 3
+0 1
+2 1
+1 2
+ring Q 5
+0 2
+2 0
+3 2
+2 3
+1 3
+ring Q 4
+1 1
+2 1
+2 2
+1 2
+endcase
+case holes-7-1136
+grid 3
+ring P 6
+0 1
+2 0
+3 0
+3 1
+2 3
+0 3
+ring P 4
+1 1
+2 2
+1 2
+0 2
+ring Q 7
+0 1
+1 1
+2 0
+3 1
+3 2
+3 3
+0 3
+endcase
+case holes-transform-7-1151
+grid 3
+ring P 6
+0 0
+2 0
+2 1
+3 1
+3 3
+0 3
+ring P 3
+1 2
+2 2
+2 3
+ring Q 6
+1 -1
+3 -1
+3 0
+4 0
+4 2
+1 2
+ring Q 3
+2 1
+3 1
+3 2
+endcase
+case holes-transform-7-1182
+grid 5
+ring P 8
+2 2
+1 0
+3 0
+5 2
+4 3
+3 4
+2 5
+1 4
+ring P 3
+2 1
+2 0
+3 3
+ring Q 8
+3 2
+4 0
+2 0
+0 2
+1 3
+2 4
+3 5
+4 4
+ring Q 3
+3 1
+3 0
+2 3
+endcase
+case holes-7-1255
+grid 5
+ring P 6
+1 1
+2 1
+2 0
+5 4
+1 5
+1 4
+ring P 3
+4 3
+2 4
+1 4
+ring Q 7
+1 2
+0 1
+2 0
+5 0
+4 5
+2 4
+0 4
+ring Q 3
+2 3
+4 2
+4 4
+endcase
+case holes-7-1370
+grid 3
+ring P 4
+0 0
+3 1
+3 3
+0 3
+ring P 4
+1 2
+2 1
+2 2
+2 3
+ring Q 8
+0 1
+2 0
+3 1
+2 2
+3 3
+0 3
+1 2
+0 2
+endcase
+case holes-7-1458
+grid 4
+ring P 5
+1 0
+4 0
+4 4
+0 4
+0 3
+ring P 3
+2 1
+3 2
+2 4
+ring Q 6
+1 0
+4 0
+3 2
+3 4
+2 4
+0 3
+ring Q 5
+2 1
+3 1
+2 2
+0 3
+1 2
+endcase
+case holes-7-1481
+grid 3
+ring P 6
+0 0
+3 0
+3 2
+3 3
+0 3
+0 2
+ring P 4
+1 0
+2 1
+2 2
+1 2
+ring Q 8
+0 1
+1 0
+3 0
+3 1
+3 3
+2 3
+0 3
+0 2
+ring Q 4
+1 1
+2 1
+1 2
+0 2
+endcase
+case holes-transform-7-1503
+grid 5
+ring P 6
+0 3
+3 1
+4 1
+4 3
+5 5
+0 5
+ring P 3
+3 2
+4 4
+0 4
+ring Q 6
+1 3
+4 1
+5 1
+5 3
+6 5
+1 5
+ring Q 3
+4 2
+5 4
+1 4
+endcase
+case holes-transform-7-1508
+grid 5
+ring P 6
+0 0
+5 0
+4 2
+5 3
+4 4
+2 5
+ring P 3
+1 0
+3 2
+3 3
+ring Q 6
+5 0
+0 0
+1 2
+0 3
+1 4
+3 5
+ring Q 3
+4 0
+2 2
+2 3
+endcase
+case holes-7-1642
+grid 4
+ring P 5
+1 0
+4 1
+4 2
+4 4
+1 4
+ring P 3
+2 3
+3 3
+3 4
+ring Q 7
+2 1
+2 0
+3 1
+4 2
+4 4
+1 4
+1 3
+ring Q 4
+2 3
+2 2
+3 3
+1 4
+endcase
+case holes-7-1721
+grid 4
+ring P 8
+1 1
+2 1
+4 0
+4 2
+3 2
+4 3
+0 3
+0 2
+ring P 3
+1 2
+3 1
+2 3
+ring Q 7
+1 0
+2 0
+3 0
+4 4
+3 4
+1 2
+0 2
+ring Q 3
+1 1
+3 3
+2 3
+endcase
+case holes-transform-7-1766
+grid 3
+ring P 6
+0 1
+1 0
+3 0
+2 3
+1 2
+0 2
+ring P 4
+1 1
+2 1
+2 2
+1 2
+ring Q 6
+3 1
+2 0
+0 0
+1 3
+2 2
+3 2
+ring Q 4
+2 1
+1 1
+1 2
+2 2
+endcase
+case holes-transform-7-1868
+grid 3
+ring P 6
+0 0
+1 0
+3 1
+2 3
+1 2
+0 3
+ring P 3
+0 1
+2 1
+2 2
+ring Q 6
+0 3
+1 3
+3 2
+2 0
+1 1
+0 0
+ring Q 3
+0 2
+2 2
+2 1
+endcase
+case holes-7-1872
+grid 4
+ring P 4
+2 0
+4 1
+4 3
+0 3
+ring P 3
+1 2
+3 2
+4 3
+ring Q 8
+0 1
+1 1
+3 1
+4 1
+4 4
+2 4
+1 4
+1 3
+ring Q 3
+1 2
+3 3
+1 3
+endcase
+case holes-transform-7-2157
+grid 4
+ring P 8
+1 0
+3 0
+3 1
+4 2
+4 3
+2 4
+1 4
+0 4
+ring P 3
+2 1
+2 2
+1 4
+ring Q 8
+1 4
+3 4
+3 3
+4 2
+4 1
+2 0
+1 0
+0 0
+ring Q 3
+2 3
+2 2
+1 0
+endcase
+case holes-transform-7-2282
+grid 3
+ring P 8
+1 1
+0 0
+1 0
+3 0
+2 1
+3 2
+2 3
+0 2
+ring P 3
+2 1
+2 2
+1 2
+ring Q 8
+1 0
+0 -1
+1 -1
+3 -1
+2 0
+3 1
+2 2
+0 1
+ring Q 3
+2 0
+2 1
+1 1
+endcase
+case holes-7-2367
+grid 4
+ring P 8
+0 0
+1 0
+2 0
+3 0
+4 3
+2 4
+1 4
+0 3
+ring P 3
+1 2
+1 1
+4 3
+ring Q 7
+0 0
+2 1
+3 0
+4 1
+4 2
+4 3
+0 4
+ring Q 5
+0 1
+1 1
+3 2
+2 2
+1 2
+endcase
+case holes-7-2427
+grid 4
+ring P 8
+0 0
+1 0
+4 0
+4 2
+3 3
+3 4
+0 4
+0 2
+ring P 3
+1 0
+2 1
+1 3
+ring Q 7
+0 0
+1 0
+4 0
+4 2
+4 3
+2 4
+1 4
+ring Q 4
+2 1
+3 0
+3 2
+1 3
+endcase
+case holes-transform-7-2472
+grid 4
+ring P 7
+0 0
+2 1
+3 0
+4 3
+3 3
+2 4
+0 2
+ring P 3
+0 1
+1 1
+3 2
+ring Q 7
+0 1
+2 2
+3 1
+4 4
+3 4
+2 5
+0 3
+ring Q 3
+0 2
+1 2
+3 3
+endcase
+case polyomino-transform-7-2478
+grid 4
+ring P 16
+0 2
+0 3
+1 3
+1 4
+2 4
+3 4
+4 4
+4 3
+4 2
+4 1
+4 0
+3 0
+2 0
+1 0
+0 0
+0 1
+ring P 8
+1 2
+2 2
+2 1
+3 1
+3 2
+3 3
+2 3
+1 3
+ring Q 16
+4 2
+4 3
+3 3
+3 4
+2 4
+1 4
+0 4
+0 3
+0 2
+0 1
+0 0
+1 0
+2 0
+3 0
+4 0
+4 1
+ring Q 8
+3 2
+2 2
+2 1
+1 1
+1 2
+1 3
+2 3
+3 3
+endcase
+case polyomino-transform-7-2527
+grid 3
+ring P 12
+0 1
+0 2
+0 3
+1 3
+2 3
+2 2
+3 2
+3 1
+3 0
+2 0
+1 0
+0 0
+ring P 4
+1 2
+1 1
+2 1
+2 2
+ring Q 12
+2 0
+1 0
+0 0
+0 1
+0 2
+1 2
+1 3
+2 3
+3 3
+3 2
+3 1
+3 0
+ring Q 4
+1 1
+2 1
+2 2
+1 2
+endcase
+case polyomino-7-2692
+grid 4
+ring P 16
+0 3
+0 4
+1 4
+2 4
+3 4
+4 4
+4 3
+4 2
+4 1
+4 0
+3 0
+2 0
+2 1
+1 1
+0 1
+0 2
+ring P 6
+3 1
+3 2
+3 3
+2 3
+2 2
+2 1
+ring Q 18
+1 1
+1 2
+0 2
+0 3
+1 3
+1 4
+2 4
+3 4
+3 3
+4 3
+4 2
+4 1
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+ring Q 4
+3 2
+2 2
+2 1
+3 1
+endcase
+case polyomino-transform-7-2770
+grid 5
+ring P 20
+0 2
+0 3
+0 4
+1 4
+1 5
+2 5
+3 5
+4 5
+5 5
+5 4
+5 3
+5 2
+5 1
+4 1
+4 0
+3 0
+2 0
+1 0
+1 1
+1 2
+ring P 4
+4 2
+3 2
+3 1
+4 1
+ring P 4
+3 3
+2 3
+2 2
+3 2
+ring Q 20
+5 2
+5 3
+5 4
+4 4
+4 5
+3 5
+2 5
+1 5
+0 5
+0 4
+0 3
+0 2
+0 1
+1 1
+1 0
+2 0
+3 0
+4 0
+4 1
+4 2
+ring Q 4
+1 2
+2 2
+2 1
+1 1
+ring Q 4
+2 3
+3 3
+3 2
+2 2
+endcase
+case holes-transform-7-2892
+grid 4
+ring P 6
+0 0
+4 0
+4 2
+4 4
+2 4
+0 3
+ring P 4
+1 2
+3 2
+3 4
+1 3
+ring Q 6
+4 4
+0 4
+0 2
+0 0
+2 0
+4 1
+ring Q 4
+3 2
+1 2
+1 0
+3 1
+endcase
+case holes-transform-7-2983
+grid 5
+ring P 6
+1 0
+2 0
+3 1
+5 4
+2 3
+1 4
+ring P 3
+2 1
+3 1
+2 2
+ring Q 6
+0 4
+0 3
+1 2
+4 0
+3 3
+4 4
+ring Q 3
+1 3
+1 2
+2 3
+endcase
+case holes-transform-8-240
+grid 3
+ring P 5
+0 1
+3 0
+3 3
+2 3
+0 3
+ring P 4
+1 1
+2 1
+3 3
+1 2
+ring Q 5
+3 1
+0 0
+0 3
+1 3
+3 3
+ring Q 4
+2 1
+1 1
+0 3
+2 2
+endcase
+case polyomino-transform-8-323
+grid 3
+ring P 12
+3 0
+2 0
+1 0
+1 1
+0 1
+0 2
+0 3
+1 3
+2 3
+3 3
+3 2
+3 1
+ring P 4
+2 1
+2 2
+1 2
+1 1
+ring Q 12
+0 0
+1 0
+2 0
+2 1
+3 1
+3 2
+3 3
+2 3
+1 3
+0 3
+0 2
+0 1
+ring Q 4
+1 1
+1 2
+2 2
+2 1
+endcase
+case holes-8-339
+grid 3
+ring P 6
+1 1
+1 0
+3 0
+3 3
+0 3
+0 2
+ring P 3
+2 1
+2 2
+1 3
+ring Q 7
+0 1
+0 0
+3 0
+2 2
+2 3
+1 3
+0 2
+ring Q 3
+0 0
+2 1
+1 2
+endcase
+case holes-8-535
+grid 5
+ring P 8
+0 2
+1 1
+1 0
+2 0
+5 3
+5 4
+5 5
+4 4
+ring P 3
+0 2
+2 1
+3 3
+ring Q 8
+0 2
+1 1
+1 0
+2 1
+5 0
+5 4
+4 5
+0 4
+ring Q 3
+1 2
+5 3
+4 3
+endcase
+case holes-transform-8-663
+grid 5
+ring P 6
+1 3
+4 1
+5 5
+4 5
+1 5
+0 5
+ring P 3
+4 3
+4 4
+3 5
+ring Q 6
+4 3
+1 1
+0 5
+1 5
+4 5
+5 5
+ring Q 3
+1 3
+1 4
+2 5
+endcase
+case holes-transform-8-675
+grid 4
+ring P 5
+0 2
+0 0
+4 1
+4 4
+2 4
+ring P 4
+0 1
+3 1
+2 2
+2 3
+ring Q 5
+4 2
+4 0
+0 1
+0 4
+2 4
+ring Q 4
+4 1
+1 1
+2 2
+2 3
+endcase
+case holes-8-769
+grid 5
+ring P 7
+0 2
+1 2
+0 1
+5 0
+4 5
+0 5
+1 3
+ring P 5
+3 2
+5 0
+4 2
+3 3
+2 3
+ring Q 7
+0 1
+2 1
+5 1
+5 2
+4 3
+2 4
+1 5
+ring Q 3
+4 1
+4 2
+2 2
+endcase
+case holes-8-798
+grid 4
+ring P 6
+0 0
+4 0
+4 1
+4 4
+2 4
+1 4
+ring P 3
+3 1
+4 4
+2 3
+ring Q 8
+1 0
+2 0
+4 0
+3 1
+4 2
+4 4
+1 3
+0 2
+ring Q 3
+2 1
+2 0
+3 2
+endcase
+case holes-8-820
+grid 3
+ring P 6
+0 0
+2 1
+3 2
+3 3
+1 3
+0 2
+ring P 3
+1 2
+2 2
+3 3
+ring Q 8
+0 1
+0 0
+3 0
+3 1
+3 3
+1 3
+0 3
+1 2
+ring Q 3
+1 1
+2 1
+2 3
+endcase
+case holes-8-976
+grid 3
+ring P 7
+0 0
+2 0
+3 0
+3 1
+3 3
+2 3
+0 3
+ring P 3
+1 1
+3 1
+2 2
+ring Q 7
+0 0
+2 0
+3 0
+3 1
+3 2
+0 3
+0 2
+ring Q 4
+1 1
+0 0
+2 1
+1 2
+endcase
+case holes-transform-8-1153
+grid 3
+ring P 6
+0 1
+3 0
+3 2
+3 3
+1 3
+0 3
+ring P 3
+1 2
+2 1
+2 3
+ring Q 6
+-1 1
+2 0
+2 2
+2 3
+0 3
+-1 3
+ring Q 3
+0 2
+1 1
+1 3
+endcase
+case holes-transform-8-1224
+grid 3
+ring P 5
+0 0
+3 0
+3 1
+3 3
+0 3
+ring P 3
+2 1
+3 2
+1 2
+ring Q 5
+3 0
+0 0
+0 1
+0 3
+3 3
+ring Q 3
+1 1
+0 2
+2 2
+endcase
+case holes-transform-8-1299
+grid 3
+ring P 6
+0 1
+0 0
+3 0
+3 2
+1 3
+1 2
+ring P 3
+2 0
+2 1
+1 1
+ring Q 6
+-1 1
+-1 0
+2 0
+2 2
+0 3
+0 2
+ring Q 3
+1 0
+1 1
+0 1
+endcase
+case holes-8-1332
+grid 5
+ring P 6
+0 2
+0 0
+5 2
+5 5
+2 5
+0 5
+ring P 4
+3 3
+2 2
+4 3
+5 4
+ring Q 6
+1 0
+4 1
+5 2
+5 4
+1 5
+0 3
+ring Q 3
+1 0
+2 2
+1 3
+endcase
+case polyomino-transform-8-1357
+grid 3
+ring P 12
+0 1
+0 2
+0 3
+1 3
+2 3
+2 2
+3 2
+3 1
+3 0
+2 0
+1 0
+0 0
+ring P 4
+1 2
+1 1
+2 1
+2 2
+ring Q 12
+3 1
+3 2
+3 3
+2 3
+1 3
+1 2
+0 2
+0 1
+0 0
+1 0
+2 0
+3 0
+ring Q 4
+2 2
+2 1
+1 1
+1 2
+endcase
+case holes-transform-8-1630
+grid 4
+ring P 8
+0 0
+3 0
+4 0
+3 2
+4 3
+1 3
+0 4
+0 2
+ring P 3
+1 1
+3 1
+3 2
+ring Q 8
+0 3
+3 3
+4 3
+3 1
+4 0
+1 0
+0 -1
+0 1
+ring Q 3
+1 2
+3 2
+3 1
+endcase
+case polyomino-transform-8-1739
+grid 4
+ring P 16
+0 2
+0 3
+0 4
+1 4
+2 4
+3 4
+3 3
+4 3
+4 2
+4 1
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+ring P 4
+3 2
+2 2
+2 1
+3 1
+ring P 4
+2 3
+1 3
+1 2
+2 2
+ring Q 16
+-1 2
+-1 1
+-1 0
+0 0
+1 0
+2 0
+2 1
+3 1
+3 2
+3 3
+2 3
+2 4
+1 4
+0 4
+-1 4
+-1 3
+ring Q 4
+2 2
+1 2
+1 3
+2 3
+ring Q 4
+1 1
+0 1
+0 2
+1 2
+endcase
+case holes-8-1752
+grid 5
+ring P 6
+0 3
+0 1
+4 3
+5 5
+3 5
+0 4
+ring P 3
+3 3
+4 3
+3 4
+ring Q 7
+1 1
+3 2
+4 3
+5 5
+4 5
+1 5
+0 5
+ring Q 4
+1 3
+1 2
+2 2
+5 5
+endcase
+case holes-transform-8-1832
+grid 3
+ring P 6
+1 0
+3 0
+3 1
+3 2
+3 3
+0 3
+ring P 3
+1 2
+2 1
+2 3
+ring Q 6
+1 3
+3 3
+3 2
+3 1
+3 0
+0 0
+ring Q 3
+1 1
+2 2
+2 0
+endcase
+case holes-transform-8-1834
+grid 3
+ring P 7
+0 0
+2 0
+3 1
+3 2
+2 3
+1 3
+0 3
+ring P 3
+1 1
+1 2
+0 2
+ring Q 7
+0 -1
+2 -1
+3 0
+3 1
+2 2
+1 2
+0 2
+ring Q 3
+1 0
+1 1
+0 1
+endcase
+case holes-8-1875
+grid 4
+ring P 7
+1 1
+3 0
+4 0
+3 2
+2 3
+1 3
+0 4
+ring P 3
+4 0
+2 2
+1 2
+ring Q 7
+0 1
+1 1
+3 0
+4 0
+2 4
+1 3
+0 3
+ring Q 3
+3 1
+3 2
+1 2
+endcase
+case holes-transform-8-1892
+grid 4
+ring P 5
+2 0
+3 0
+3 2
+4 4
+0 2
+ring P 3
+2 1
+3 2
+1 2
+ring Q 5
+0 2
+0 1
+2 1
+4 0
+2 4
+ring Q 3
+1 2
+2 1
+2 3
+endcase
+case holes-8-2104
+grid 3
+ring P 8
+0 1
+1 1
+2 0
+3 0
+3 1
+2 3
+0 3
+0 2
+ring P 3
+1 1
+2 2
+1 2
+ring Q 6
+0 1
+1 0
+3 0
+3 1
+2 2
+1 3
+ring Q 3
+3 0
+2 1
+1 1
+endcase
+case holes-transform-8-2106
+grid 3
+ring P 5
+0 1
+3 0
+2 2
+1 2
+0 3
+ring P 3
+1 1
+2 1
+1 2
+ring Q 5
+3 1
+0 0
+1 2
+2 2
+3 3
+ring Q 3
+2 1
+1 1
+2 2
+endcase
+case polyomino-transform-8-2160
+grid 5
+ring P 20
+2 0
+2 1
+1 1
+1 2
+1 3
+2 3
+2 4
+3 4
+3 5
+4 5
+4 4
+4 3
+5 3
+5 2
+4 2
+4 1
+5 1
+5 0
+4 0
+3 0
+ring P 4
+3 1
+3 2
+2 2
+2 1
+ring Q 20
+3 0
+3 1
+4 1
+4 2
+4 3
+3 3
+3 4
+2 4
+2 5
+1 5
+1 4
+1 3
+0 3
+0 2
+1 2
+1 1
+0 1
+0 0
+1 0
+2 0
+ring Q 4
+2 1
+2 2
+3 2
+3 1
+endcase
+case holes-transform-8-2284
+grid 4
+ring P 8
+0 0
+1 0
+4 0
+3 1
+4 3
+2 4
+1 3
+0 3
+ring P 3
+2 0
+3 2
+2 2
+ring Q 8
+0 -1
+1 -1
+4 -1
+3 0
+4 2
+2 3
+1 2
+0 2
+ring Q 3
+2 -1
+3 1
+2 1
+endcase
+case holes-transform-8-2286
+grid 4
+ring P 6
+0 0
+1 1
+4 2
+4 3
+3 3
+0 4
+ring P 4
+0 1
+3 2
+2 2
+1 2
+ring Q 6
+0 4
+1 3
+4 2
+4 1
+3 1
+0 0
+ring Q 4
+0 3
+3 2
+2 2
+1 2
+endcase
+case holes-transform-8-2318
+grid 5
+ring P 6
+1 2
+2 1
+3 1
+5 1
+3 5
+1 5
+ring P 3
+3 2
+4 2
+1 4
+ring Q 6
+1 3
+2 2
+3 2
+5 2
+3 6
+1 6
+ring Q 3
+3 3
+4 3
+1 5
+endcase
+case holes-transform-8-2394
+grid 3
+ring P 7
+0 1
+0 0
+3 0
+3 3
+1 3
+1 2
+0 2
+ring P 3
+1 1
+2 2
+2 3
+ring Q 7
+3 2
+3 3
+0 3
+0 0
+2 0
+2 1
+3 1
+ring Q 3
+2 2
+1 1
+1 0
+endcase
+case holes-transform-8-2398
+grid 4
+ring P 5
+1 0
+4 2
+4 3
+3 4
+0 3
+ring P 4
+1 1
+3 3
+1 3
+0 3
+ring Q 5
+-1 0
+2 2
+2 3
+1 4
+-2 3
+ring Q 4
+-1 1
+1 3
+-1 3
+-2 3
+endcase
+case holes-8-2508
+grid 3
+ring P 7
+0 1
+0 0
+1 0
+3 0
+2 3
+1 3
+0 3
+ring P 3
+2 1
+1 2
+0 2
+ring Q 8
+0 1
+0 0
+1 1
+3 1
+2 3
+1 2
+0 3
+0 2
+endcase
+case polyomino-transform-8-2515
+grid 5
+ring P 22
+1 2
+0 2
+0 3
+0 4
+0 5
+1 5
+1 4
+2 4
+3 4
+3 5
+4 5
+4 4
+5 4
+5 3
+5 2
+5 1
+4 1
+3 1
+3 0
+2 0
+2 1
+1 1
+ring P 4
+2 2
+2 3
+1 3
+1 2
+ring Q 22
+2 4
+2 5
+3 5
+4 5
+5 5
+5 4
+4 4
+4 3
+4 2
+5 2
+5 1
+4 1
+4 0
+3 0
+2 0
+1 0
+1 1
+1 2
+0 2
+0 3
+1 3
+1 4
+ring Q 4
+2 3
+3 3
+3 4
+2 4
+endcase
+case polyomino-transform-8-2577
+grid 3
+ring P 12
+0 1
+0 2
+0 3
+1 3
+2 3
+3 3
+3 2
+3 1
+2 1
+2 0
+1 0
+0 0
+ring P 4
+2 2
+1 2
+1 1
+2 1
+ring Q 12
+3 2
+3 1
+3 0
+2 0
+1 0
+0 0
+0 1
+0 2
+1 2
+1 3
+2 3
+3 3
+ring Q 4
+1 1
+2 1
+2 2
+1 2
+endcase
+case holes-transform-8-2767
+grid 5
+ring P 8
+0 2
+0 0
+4 0
+5 2
+4 3
+4 4
+3 3
+0 5
+ring P 5
+1 0
+4 1
+4 2
+3 2
+1 3
+ring Q 8
+0 4
+0 2
+4 2
+5 4
+4 5
+4 6
+3 5
+0 7
+ring Q 5
+1 2
+4 3
+4 4
+3 4
+1 5
+endcase
+case holes-transform-8-2797
+grid 4
+ring P 6
+0 1
+1 1
+4 1
+4 3
+3 4
+0 4
+ring P 4
+1 2
+4 2
+2 3
+1 3
+ring Q 6
+-1 1
+0 1
+3 1
+3 3
+2 4
+-1 4
+ring Q 4
+0 2
+3 2
+1 3
+0 3
+endcase
+case holes-transform-8-2875
+grid 5
+ring P 6
+0 1
+1 1
+2 1
+4 0
+5 5
+0 5
+ring P 3
+1 2
+3 1
+0 5
+ring Q 6
+5 1
+4 1
+3 1
+1 0
+0 5
+5 5
+ring Q 3
+4 2
+2 1
+5 5
+endcase

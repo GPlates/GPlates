@@ -25,7 +25,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <boost/optional/optional_io.hpp>
@@ -2372,6 +2374,76 @@ TEST(PolygonOverlayTest, SelfTouchingInputs)
 				{ grid_ring({ { 1, 1 }, { 3, 3 }, { 2, 3 } }) });
 		EXPECT_EQ(check_both_ways(*P, *Q).first, 1u);
 	}
+}
+
+
+// The pairs of PR C's final review's fuzz that went wrong before the one-passage rule took its
+// order nearer the measured one and the two rules above (338 of 24,000 pairs of small polygons on
+// a grid, every one with an input that touches itself: a wrong area, a polygon of no area, or a
+// PartitionError). The fuzz compared each answer with an independent library's; here no outside
+// answer is needed, since the oracle, the area identities and the crossing groups saw them all.
+// Each pair is on its own grid of 3 to 5 units, centred on the frame's centre.
+TEST(PolygonOverlayTest, SelfTouchingGridPairs)
+{
+	std::ifstream file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/self-touching-grid-pairs.txt");
+	ASSERT_TRUE(file.good());
+
+	unsigned int num_cases = 0;
+	std::string line;
+	while (std::getline(file, line))
+	{
+		std::istringstream case_line(line);
+		std::string word, name;
+		case_line >> word >> name;
+		ASSERT_EQ(word, "case");
+
+		unsigned int grid_size = 0;
+		ASSERT_TRUE(std::getline(file, line));
+		std::istringstream(line) >> word >> grid_size;
+		ASSERT_EQ(word, "grid");
+		const double centre = 0.5 * grid_size;
+
+		std::vector<ring_type> rings[2];  // P's, then Q's
+		while (std::getline(file, line) && line != "endcase")
+		{
+			std::istringstream ring_line(line);
+			std::string polygon_name;
+			unsigned int num_points = 0;
+			ring_line >> word >> polygon_name >> num_points;
+			ASSERT_EQ(word, "ring");
+			std::vector<ring_type> &input_rings = rings[polygon_name == "P" ? 0 : 1];
+			input_rings.push_back(ring_type());
+			ring_type &ring = input_rings.back();
+			for (unsigned int i = 0; i < num_points; ++i)
+			{
+				ASSERT_TRUE(std::getline(file, line));
+				double x, y;
+				std::istringstream(line) >> x >> y;
+				ring.push_back(grid(x - centre, y - centre));
+			}
+		}
+		ASSERT_FALSE(rings[0].empty() || rings[1].empty()) << name;
+		++num_cases;
+
+		SCOPED_TRACE(name);
+		const auto P = polygon(
+				rings[0].front(),
+				std::vector<ring_type>(rings[0].begin() + 1, rings[0].end()));
+		const auto Q = polygon(
+				rings[1].front(),
+				std::vector<ring_type>(rings[1].begin() + 1, rings[1].end()));
+		for (bool swap : { false, true })
+		{
+			SCOPED_TRACE(swap ? "swapped" : "as given");
+			const PolygonOnSphere &subject = swap ? *Q : *P;
+			const PolygonOnSphere &clip = swap ? *P : *Q;
+			Overlay::Overlay overlay(subject, clip);
+			classify_and_check(overlay);
+			check_oracle(subject, clip, overlay);
+			check_areas(subject, clip, overlay);
+		}
+	}
+	EXPECT_EQ(num_cases, 338u);
 }
 
 

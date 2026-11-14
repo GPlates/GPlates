@@ -734,11 +734,24 @@ namespace PolygonOverlayOracle
 				{
 					continue;
 				}
-				// The ring's vertex farthest from the other ring (rings can touch, and a vertex
-				// near an edge shorter than about 1e-6 radians is not tested exactly).
+				// The ring's vertex or edge midpoint farthest from the other ring (rings can touch,
+				// and a vertex near an edge shorter than about 1e-6 radians is not tested exactly).
+				// Not the vertices alone: a hole can touch its exterior at every one of its
+				// vertices (a triangle with a corner at each of three of the exterior's), where
+				// each vertex is on the other ring and its test decides nothing.
+				std::vector<PointOnSphere> candidates(rings[r]);
+				for (unsigned int i = 0; i < rings[r].size(); ++i)
+				{
+					const Vector3D sum = Vector3D(rings[r][i].position_vector()) +
+							Vector3D(rings[r][(i + 1) % rings[r].size()].position_vector());
+					if (sum.magSqrd().dval() > 1e-12)
+					{
+						candidates.push_back(PointOnSphere(sum.get_normalisation()));
+					}
+				}
 				const PointOnSphere *farthest = nullptr;
 				double farthest_distance = 0;
-				for (const PointOnSphere &point : rings[r])
+				for (const PointOnSphere &point : candidates)
 				{
 					const double distance = minimum_distance(point, *ring_polygons[other])
 							->calculate_angle().dval();
@@ -880,6 +893,96 @@ namespace PolygonOverlayOracle
 					subject.interior_ring_vertex_begin(i), subject.interior_ring_vertex_end(i)));
 		}
 		return 2 * h * perimeter / parity_area(subject_rings);
+	}
+
+
+	/**
+	 * The other three area identities beside @a area_sum_error's, each as its absolute error: the
+	 * intersection and the reverse difference make up the clip, the union and the intersection
+	 * both inputs, and the symmetric difference is the two differences. Every point of a twisted
+	 * or wrongly grouped ring can read right by parity, so that the sampled points pass, and only
+	 * an area shows it; the piece comparison cannot see it either (where the overlay and the
+	 * prototype both cut wrong, or where the prototype's pieces are band pieces). For inputs whose
+	 * rings do not cross (@a is_area_sum_applicable); compare with @a area_identity_tolerance.
+	 */
+	inline
+	std::vector<double>
+	area_identity_errors(
+			const GPlatesMaths::PolygonOnSphere &subject,
+			const GPlatesMaths::PolygonOnSphere &clip,
+			const GPlatesMaths::PolygonOverlay::Overlay &overlay)
+	{
+		using namespace GPlatesMaths;
+
+		const auto rings_of = [](const PolygonOnSphere &polygon)
+		{
+			std::vector<std::vector<PointOnSphere>> rings{ std::vector<PointOnSphere>(
+					polygon.exterior_ring_vertex_begin(), polygon.exterior_ring_vertex_end()) };
+			for (unsigned int i = 0; i < polygon.number_of_interior_rings(); ++i)
+			{
+				rings.push_back(std::vector<PointOnSphere>(
+						polygon.interior_ring_vertex_begin(i),
+						polygon.interior_ring_vertex_end(i)));
+			}
+			return rings;
+		};
+		const auto output_area = [&overlay](PolygonOverlay::Operation operation)
+		{
+			std::vector<PolygonOverlay::OutputPolygon> polygons;
+			overlay.extract(operation, polygons);
+			double area = 0;
+			for (const PolygonOverlay::OutputPolygon &polygon : polygons)
+			{
+				std::vector<std::vector<PointOnSphere>> rings{ polygon.exterior.points };
+				for (const PolygonOverlay::OutputRing &interior : polygon.interiors)
+				{
+					rings.push_back(interior.points);
+				}
+				area += parity_area(rings);
+			}
+			return area;
+		};
+
+		const double subject_area = parity_area(rings_of(subject));
+		const double clip_area = parity_area(rings_of(clip));
+		const double intersection = output_area(PolygonOverlay::INTERSECTION);
+		const double difference = output_area(PolygonOverlay::DIFFERENCE);
+		const double reverse_difference = output_area(PolygonOverlay::REVERSE_DIFFERENCE);
+		return std::vector<double>{
+				std::fabs(intersection + reverse_difference - clip_area),
+				std::fabs(
+						output_area(PolygonOverlay::UNION) + intersection -
+						subject_area - clip_area),
+				std::fabs(
+						output_area(PolygonOverlay::SYMMETRIC_DIFFERENCE) -
+						difference - reverse_difference) };
+	}
+
+
+	/**
+	 * The absolute error @a area_identity_errors allows: four thicknesses times both inputs'
+	 * perimeters (each output's boundary can be a thickness off the inputs' along them, and an
+	 * identity adds two or three outputs), as PolygonOverlayTest's area checks allow.
+	 */
+	inline
+	double
+	area_identity_tolerance(
+			const GPlatesMaths::PolygonOnSphere &subject,
+			const GPlatesMaths::PolygonOnSphere &clip)
+	{
+		using namespace GPlatesMaths;
+
+		const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
+		double perimeter = 0;
+		for (const PolygonOnSphere *polygon : { &subject, &clip })
+		{
+			for (auto arc = polygon->begin(); arc != polygon->end(); ++arc)
+			{
+				perimeter += angle_between(
+						arc->start_point().position_vector(), arc->end_point().position_vector());
+			}
+		}
+		return 4 * h * perimeter;
 	}
 }
 
