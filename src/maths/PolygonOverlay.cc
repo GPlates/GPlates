@@ -599,7 +599,9 @@ namespace GPlatesMaths
 			 * is whichever of x, y and z gives the fewest pairs, so that rings along a meridian or
 			 * a parallel spread out along it. Without it the grouping tested every pair of rings,
 			 * cheap as a test of their bounding circles is (1.7 seconds for 10,000 holes far
-			 * apart).
+			 * apart). One axis only: rings spread over an area are still paired with every ring
+			 * in a band across it, about n^1.5 pairs for n rings on a grid (spherical-geometry.md
+			 * section 7).
 			 */
 			class CircleSweep
 			{

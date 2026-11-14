@@ -76,6 +76,7 @@ Changes since 1.0.0:
   * A ring that halves the sphere (eg, four points on the equator) has its interior to its left.
   * Fixed `GeometryOnSphere.distance()` with a solid polygon and a threshold returning `None` for a point inside a polygon that wraps round the globe.
 * `PolygonOnSphere.get_interior_centroid()` (and `get_centroid()`) is now exact for a polygon wider than about 0.01 radians. It was off by up to about 0.3 degrees for a polygon one radian across.
+* Polygons with many interior rings are much faster in `GeometryOnSphere.distance()` and to index (eg, `polygon.get_points()[i]`). The first distance to such a polygon took time growing with the square of its number of interior rings (eg, about a second for 20,000 holes, now 0.015 seconds), and each index (and `len()`) with their number.
 * Bug fixes:
   * Fixed `PlatePartitioner.partition_features()` and `partition_into_plates()` (with `PartitionMethod.split_into_plates`) dropping a feature with no geometry: it is now returned unpartitioned, as with `PartitionMethod.most_overlapping_plate`.
   * Fixed `GeometryOnSphere.distance()` returning inconsistent closest positions and segment indices when two polylines/polygons intersect more than once.

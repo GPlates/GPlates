@@ -55,6 +55,7 @@ Changes since 2.5:
   * "Most overlapping plate" compares the area of polygons inside each plate (previously the length of their outlines, which the cuts inflate), then the length of polylines, then the number of points.
   * A feature that cannot be cut consistently by a plate (rare: the two cases found are a feature and a plate whose polygons each have a hole crossing their outer boundary, with outlines running within about 9 m of each other along many closely spaced vertices; and a feature and a plate whose boundaries run within about 9 m of each other, where a corner of a hole of one lies within about 9 m of the other's boundary and 9 to 12 m from its own) is left as it was, and such features are listed at the end.
 * Reconstructing a polygon with holes using topologies now deforms the points of its holes too (previously they were left out).
+* Co-registration is much faster with polygons that have many holes: the first distance to such a polygon took time growing with the square of the number of holes (about a second for 20,000 holes).
 * Bug fixes:
   * Fixed gaps in boundary sections in the Resolved Topologies (General) export (since GPlates 2.2).
   * Fixed co-registration with a region of interest range of zero (or under about 9 m) leaving out target features whose lines or polygon outlines intersect the seed's.
