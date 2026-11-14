@@ -1418,9 +1418,11 @@ cases, all of the `shared` generator (up to 2 cuts in a case), 6 of them with va
 hunt shows that the passage does no harm at the thickness scale, and that it is right for valid
 inputs far above it rests on the grid polygons of section 6. Neither this rule nor the join costs
 anything measurable where it does not apply (two 20,000-point caps, a shared edge of 2,000
-vertices, identical and interleaved rings, a comb of 500 teeth); the search for passages is
-quadratic in the touches on one segment (`0.23` seconds for the intersection of two polygons
-sharing an edge with 5,000 hole tips on it).
+vertices, identical and interleaved rings, a comb of 500 teeth). Each piece takes the passages
+inside it from its segment's, sorted once by angle along the segment, by bisection: a pass over
+the segment's for each piece was quadratic where a segment is cut into many pieces with as many
+touches on it (2,000 hole tips of each input alternating on a shared edge, 0.1 seconds of the
+intersection's 0.19, now 0.08 in all).
 
 **Rays and their order** (`build_rays`, `measure_ray`, `sort_rays_anticlockwise`). What leaves a
 vertex along a piece, or along a common pair, is a *ray*. Its direction is the exact tangent of the
@@ -3363,9 +3365,16 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   bounding circles meet (section 5.2), so rings that are slivers side by side, each circle meeting
   many others, still cost in proportion to the pairs: a union with 5,000 holes along a shared edge,
   each `0.5` degrees long and `0.004` wide, takes 0.4 seconds against the intersection's 0.05. The
-  rings' bounding trees would separate them. And the self-touch cuts' search for passages is
-  quadratic in the touches on one segment (5,000 hole tips on one shared edge, `0.23` seconds for
-  the intersection, section 5.2).
+  rings' bounding trees would separate them.
+- **A polygon's bounding tree is quadratic in its rings.** `PolyGreatCircleArcBoundingTree` builds
+  a subtree per ring and merges them by a linear search for the smallest per merge, and it finds a
+  node's arcs by `std::advance` from the polygon's first arc, which `PolygonOnSphere`'s iterator
+  does ring by ring. So `GeometryIntersect` over a polygon with many holes is quadratic in them
+  even where nothing meets: an intersection of a polygon with 5,000 small holes far apart and a
+  polygon apart from it takes 0.08 seconds, with 20,000 holes 1.3 (0.15 again, the tree cached),
+  where the overlay's own work is 0.03. A ring offset table in the polygon would make the iterator's
+  steps logarithmic, and a heap the merges; the merge order must be kept, since the tree's shape
+  decides the order in which tied records are found.
 - **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
   edge where an input folds back on itself along all of it, or a short one (its far end within the
   thickness of the arc beside it), the two differences' rings are left sharing the edge, unless

@@ -1037,18 +1037,29 @@ GPlatesMaths::PolygonOverlay::Overlay::ring_of_segment(
 		Side side,
 		unsigned int segment_index) const
 {
-	for (unsigned int ring = d_side_rings_begin[side]; ring < d_side_rings_end[side]; ++ring)
+	// The first ring of the side that ends after the segment, by bisection (the rings are in
+	// segment order; asked once per record, a pass over the rings was quadratic in the holes).
+	// A polyline's last vertex is the start of the fictitious segment 'num_segments'.
+	unsigned int begin = d_side_rings_begin[side];
+	unsigned int end = d_side_rings_end[side];
+	while (begin < end)
 	{
-		const RingView &ring_view = d_rings[ring];
-		// A polyline's last vertex is the start of the fictitious segment 'num_segments'.
-		const unsigned int end_index = ring_view.first_segment_index + ring_view.num_vertices();
-		if (segment_index < end_index)
+		const unsigned int middle = begin + (end - begin) / 2;
+		const RingView &ring_view = d_rings[middle];
+		if (segment_index < ring_view.first_segment_index + ring_view.num_vertices())
 		{
-			return ring;
+			end = middle;
+		}
+		else
+		{
+			begin = middle + 1;
 		}
 	}
-
-	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	if (begin == d_side_rings_end[side])
+	{
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	}
+	return begin;
 }
 
 
@@ -1263,19 +1274,31 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 	//
 	// This ring's records, by ring-local segment (a polyline's last vertex is 'num_segments'). The
 	// ordered sequence runs ring by ring, so the records of one segment keep their order along it.
+	// It is sorted by segment first, so the ring's records are a range of it, found by bisection
+	// (a pass over every record for each ring was quadratic in the holes, where each has records).
 	//
 	const unsigned int num_vertices = ring_view.num_vertices();
 	std::vector<std::vector<unsigned int>> at_vertex_records(num_vertices);
 	std::vector<std::vector<unsigned int>> inside_segment_records(num_vertices);
-	for (unsigned int r : ordered)
+	const auto segment_less = [&](unsigned int r, unsigned int segment_index)
 	{
+		return record_segment(records[r], side) < segment_index;
+	};
+	const auto ring_records_end = std::lower_bound(
+			ordered.begin(),
+			ordered.end(),
+			ring_view.first_segment_index + num_vertices,
+			segment_less);
+	for (auto ring_record = std::lower_bound(
+			ordered.begin(),
+			ring_records_end,
+			ring_view.first_segment_index,
+			segment_less);
+		ring_record != ring_records_end;
+		++ring_record)
+	{
+		const unsigned int r = *ring_record;
 		const unsigned int segment_index = record_segment(records[r], side);
-		if (segment_index < ring_view.first_segment_index ||
-			segment_index >= ring_view.first_segment_index + num_vertices)
-		{
-			continue;
-		}
-
 		const unsigned int local = segment_index - ring_view.first_segment_index;
 		if (is_record_at_vertex(records[r], side))
 		{
@@ -1301,18 +1324,15 @@ GPlatesMaths::PolygonOverlay::Overlay::build_stops_and_pieces(
 	// The self-touch cuts that follow, on segment 'k', the stop whose first record is 'record',
 	// if any. Keyed by the stop (its first record), not its vertex: a vertex can have two stops on
 	// one segment, and the cuts belong after the one the cut piece starts at.
-	std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> self_touch_cuts_added;
+	std::set<std::tuple<unsigned int, unsigned int, unsigned int>> self_touch_cuts_added;
 	const auto add_self_touch_cuts = [&](unsigned int k, unsigned int record)
 	{
 		const auto key = std::make_tuple(ring, k, record);
 		const auto cuts = d_self_touch_cuts.find(key);
-		if (cuts == d_self_touch_cuts.end() ||
-			std::find(self_touch_cuts_added.begin(), self_touch_cuts_added.end(), key) !=
-					self_touch_cuts_added.end())
+		if (cuts == d_self_touch_cuts.end() || !self_touch_cuts_added.insert(key).second)
 		{
 			return;  // none, or already added
 		}
-		self_touch_cuts_added.push_back(key);
 		for (const std::pair<double, unsigned int> &cut : cuts->second)
 		{
 			// A stop of the vertex with no record of this ring (none names it).
@@ -1913,6 +1933,8 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	// tree. Found for every vertex at once, when the first piece asks.
 	//
 	std::map<std::pair<unsigned int, unsigned int>, std::vector<unsigned int>> passage_vertices;
+	std::map<std::pair<unsigned int, unsigned int>, std::vector<std::pair<double, unsigned int>>>
+			passage_vertices_along;  // (angle along the segment, vertex), sorted
 	bool found_passage_vertices = false;
 	const auto find_passage_vertices = [&]()
 	{
@@ -1995,6 +2017,8 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		// As (angle along the segment, vertex).
 		std::vector<std::pair<double, unsigned int>> chain;
 		std::vector<Passage> passages;
+		// The passages' vertices, to look one up.
+		std::multiset<unsigned int> passage_vertices;
 	};
 	std::vector<CutPiece> cut_pieces;
 
@@ -2123,7 +2147,33 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 				passage_vertices.find(std::make_pair(piece.ring, *piece.single_arc_segment));
 		if (on_segment != passage_vertices.end())
 		{
-			for (unsigned int v : on_segment->second)
+			// Only those inside the piece by angle along the segment, from the segment's vertices
+			// sorted by it once (every piece of the segment has the same 'along'), taken in vertex
+			// order as listed. A segment cut into many pieces, with as many touches on it, was
+			// quadratic: 2,000 hole tips of each input alternating on a shared edge took 0.1 s.
+			std::vector<std::pair<double, unsigned int>> &by_along =
+					passage_vertices_along[on_segment->first];
+			if (by_along.empty())
+			{
+				for (unsigned int v : on_segment->second)
+				{
+					by_along.push_back(std::make_pair(along(d_vertices[v].position), v));
+				}
+				std::sort(by_along.begin(), by_along.end());
+			}
+			// (The first past 'along_start + ALONG_ROUNDING', as is_inside asks.)
+			const std::pair<double, unsigned int> start_bound(
+					along_start + ALONG_ROUNDING,
+					(std::numeric_limits<unsigned int>::max)());
+			std::vector<unsigned int> inside_piece;
+			for (auto candidate = std::upper_bound(by_along.begin(), by_along.end(), start_bound);
+				candidate != by_along.end() && candidate->first < along_end - ALONG_ROUNDING;
+				++candidate)
+			{
+				inside_piece.push_back(candidate->second);
+			}
+			std::sort(inside_piece.begin(), inside_piece.end());
+			for (unsigned int v : inside_piece)
 			{
 				const double v_along = along(d_vertices[v].position);
 				if (v == *piece.start_vertex ||
@@ -2183,6 +2233,10 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		}
 		if (!cut_piece.chain.empty() || !cut_piece.passages.empty())
 		{
+			for (const Passage &passage : cut_piece.passages)
+			{
+				cut_piece.passage_vertices.insert(passage.vertex);
+			}
 			cut_pieces.push_back(cut_piece);
 		}
 	}
@@ -2196,13 +2250,7 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	//
 	const auto is_passage = [](const CutPiece &cut_piece, unsigned int vertex)
 	{
-		return std::find_if(
-				cut_piece.passages.begin(),
-				cut_piece.passages.end(),
-				[vertex](const Passage &passage)
-				{
-					return passage.vertex == vertex;
-				}) != cut_piece.passages.end();
+		return cut_piece.passage_vertices.count(vertex) != 0;
 	};
 	const auto is_cut_at = [&](unsigned int piece, unsigned int vertex)
 	{
@@ -2232,7 +2280,9 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		dropped = false;
 		for (CutPiece &cut_piece : cut_pieces)
 		{
-			for (unsigned int i = 0; i < cut_piece.passages.size(); )
+			// (Dropped ones are removed after the piece's pass, not one at a time.)
+			std::vector<bool> is_dropped(cut_piece.passages.size(), false);
+			for (unsigned int i = 0; i < cut_piece.passages.size(); ++i)
 			{
 				const Passage &passage = cut_piece.passages[i];
 				const bool kept =
@@ -2251,16 +2301,27 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 									return is_cut_at(
 											piece_and_vertex.first, piece_and_vertex.second);
 								});
-				if (kept)
+				if (!kept)
 				{
-					++i;
-				}
-				else
-				{
-					cut_piece.passages.erase(cut_piece.passages.begin() + i);
+					cut_piece.passage_vertices.erase(
+							cut_piece.passage_vertices.find(passage.vertex));
+					is_dropped[i] = true;
 					dropped = true;
 				}
 			}
+			unsigned int num_kept = 0;
+			for (unsigned int i = 0; i < cut_piece.passages.size(); ++i)
+			{
+				if (!is_dropped[i])
+				{
+					if (num_kept != i)
+					{
+						cut_piece.passages[num_kept] = std::move(cut_piece.passages[i]);
+					}
+					++num_kept;
+				}
+			}
+			cut_piece.passages.resize(num_kept);
 		}
 	}
 
@@ -2269,10 +2330,11 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	{
 		// The cuts, as (angle along the segment, vertex): the chain's vertices and the passages.
 		std::vector<std::pair<double, unsigned int>> cuts = cut_piece.chain;
+		std::set<std::pair<double, unsigned int>> cuts_added(cuts.begin(), cuts.end());
 		for (const Passage &passage : cut_piece.passages)
 		{
 			const std::pair<double, unsigned int> cut(passage.along, passage.vertex);
-			if (std::find(cuts.begin(), cuts.end(), cut) == cuts.end())
+			if (cuts_added.insert(cut).second)
 			{
 				cuts.push_back(cut);
 				++d_diagnostics.self_touch_cuts_at_passages;
@@ -6363,12 +6425,18 @@ unsigned int
 GPlatesMaths::PolygonOverlay::Overlay::ring_of_stop(
 		unsigned int stop_index) const
 {
-	unsigned int ring = 0;
-	while (!(stop_index >= d_rings[ring].first_stop && stop_index < d_rings[ring].end_stop))
-	{
-		++ring;
-	}
-	return ring;
+	// The first ring whose stops end after it, by bisection: the rings' stops are stored ring by
+	// ring (asked once per output point with provenance, a pass over the rings was quadratic in
+	// the holes).
+	return std::upper_bound(
+			d_rings.begin(),
+			d_rings.end(),
+			stop_index,
+			[](unsigned int stop, const RingView &ring_view)
+			{
+				return stop < ring_view.end_stop;
+			}) -
+		d_rings.begin();
 }
 
 
@@ -6711,18 +6779,22 @@ std::pair<unsigned int, unsigned int>
 GPlatesMaths::PolygonOverlay::Overlay::ring_piece_range(
 		unsigned int ring) const
 {
-	// The pieces are stored ring by ring.
-	unsigned int first = 0;
-	while (first < d_pieces.size() && d_pieces[first].ring != ring)
+	// The pieces are stored ring by ring, so by bisection (none: both the number of pieces).
+	const auto first = std::lower_bound(
+			d_pieces.begin(),
+			d_pieces.end(),
+			ring,
+			[](const Piece &piece, unsigned int r) { return piece.ring < r; });
+	const auto end = std::upper_bound(
+			first,
+			d_pieces.end(),
+			ring,
+			[](unsigned int r, const Piece &piece) { return r < piece.ring; });
+	if (first == end)
 	{
-		++first;
+		return std::make_pair(unsigned(d_pieces.size()), unsigned(d_pieces.size()));
 	}
-	unsigned int end = first;
-	while (end < d_pieces.size() && d_pieces[end].ring == ring)
-	{
-		++end;
-	}
-	return std::make_pair(first, end);
+	return std::make_pair(unsigned(first - d_pieces.begin()), unsigned(end - d_pieces.begin()));
 }
 
 
