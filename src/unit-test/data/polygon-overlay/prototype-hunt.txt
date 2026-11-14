@@ -70,8 +70,7 @@ LL 14 16
 LL 14 17
 SL 15 15
 order 0 0
-piece P 0 0 0 1 opposite sector 0 ~26
-piece P 0 0 0 0 in deduced ~26 1
+piece P 0 0 0 0 in deduced 0 1
 piece P 0 0 0 0 out deduced 1 2
 piece P 0 0 0 1 same sector 2 3
 piece P 0 0 0 1 same sector 3 4
@@ -119,23 +118,23 @@ piece Q 0 0 0 1 same sector 6 5
 piece Q 0 0 0 1 same sector 5 4
 piece Q 0 0 0 1 same sector 4 3
 piece Q 0 0 0 1 same sector 3 2
-piece Q 0 0 0 0 in midpoint 2 26
-piece Q 0 0 0 1 opposite sector 26 0
+piece Q 0 0 0 0 in deduced 2 26
+piece Q 0 0 0 0 in midpoint 26 0
 piece Q 1 0 0 0 in deduced 24 1
 piece Q 1 0 0 0 out vertex 1 25
 piece Q 1 0 0 0 in vertex 25 20
 piece Q 1 0 0 0 out vertex 20 24
 output and 1
-ringout 13 20 Q1.2 25 P1.0 P1.1 22 23 24 1 26 2 3 4 5 6 7 8 9 10 11 12 18 19 17 16 15 14
+ringout 12 11 10 9 8 7 6 5 4 3 2 26 0 1 24 23 22 P1.1 P1.0 25 Q1.2 20 13 14 15 16 17 19 18
 output diff 3
-ringout 8 7 P0.5
-ringout 26 0 P0.0 P0.10 21 20 Q1.2 25 23 22 P1.2 P1.3 24 1 2
 ringout 26 P2.2 P2.1
+ringout 21 P0.10 P0.0 0 26 2 1 24 P1.3 P1.2 22 23 25 Q1.2 20
+ringout 7 8 P0.5
 output or 4
-ringout 26 P2.1 P2.2
+ringout 26 P2.2 P2.1
 ringout 21 22 P1.2 P1.3 24 Q1.0 20
 ringout 21 P0.10 P0.0 0 Q0.1 Q0.2
-ringout 3 2 1 Q1.1 25 23 13 14 15 16 17 19 18 12 11 10 9 8 P0.5 7 6 5 4
+ringout 12 11 10 9 8 P0.5 7 6 5 4 3 2 1 Q1.1 25 23 13 14 15 16 17 19 18
 endorder
 endcase
 case shared#1 seed 1

@@ -60,7 +60,7 @@
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
 // Python implementation in exact rational arithmetic, kept outside this repository) on its
 // catalogue of configurations with several records at or near one point. The prototype ran the
-// chosen configuration ('r5r': identity vertices, with the vertices at one point of an input's
+// chosen configuration ('r5s': identity vertices, with the vertices at one point of an input's
 // touch of itself made one, the loop rule and the spike rule where the other input passes the tip
 // at most once, self-touch cuts at chains and at passages, the LL rule, the one-passage rule with
 // its built order nearer the measured one, midpoint tests in order of margin, the bundle rule where
@@ -68,8 +68,9 @@
 // for anchorless chains; for a polyline subject, the spike rule on the clip's rings only, and a
 // polyline single arc that a clip single arc also joins along; the snapshots were exported under
 // 'r5p', which takes the first built order and has neither the vertices at one point nor the cuts
-// at passages, and the cases that change re-exported under 'r5q', which has the order, and then
-// under 'r5r', which has all three), and the file
+// at passages, and the cases that change re-exported under 'r5q', which has the order, then
+// under 'r5r', which has all three, and then under 'r5s', which makes a polygon subject's cut at a
+// passage only where the stretch is then cut on both sides), and the file
 // holds every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect
 // orders records along a segment by a cosine in
 // doubles, so records whose cosines agree within a few ulps come out in either order. Format, per
@@ -1556,11 +1557,14 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 // thickness of its exterior's edge that the other input's edge passes one way only (a neck: cut
 // there, the areas were wrong), and shared#464 seed 19, whose input rings cross, where a piece
 // along the stretch ends at a crossing inside it (cut at the touch alone, it failed its checks).
-// Of the two rules for an input's touch of itself on the other's outline (section 5.2), each
-// applies in one case here: vertices at one point are made one in chain#146 seed 2 (a vertex of the
-// subject on its own edge, where that edge crosses the clip's: the crossing and the vertex), and a
-// cut is made at a passage in shared#0 seed 1 (a hole's vertex on its exterior's edge, along which
-// the clip runs).
+// Of the two rules for an input's touch of itself on the other's outline (section 5.2), vertices
+// at one point are made one in chain#146 seed 2 (a vertex of the subject on its own edge, where
+// that edge crosses the clip's: the crossing and the vertex). No cut at a passage is made in any
+// case here (SelfTouching, below, has them), and shared#0 seed 1, whose input rings cross, holds
+// the condition that keeps one to a stretch cut on both sides: a hole's vertex lies on its
+// exterior's edge, along which the clip runs, but the clip's piece from it runs on past the end of
+// the exterior's piece (a crossing with an edge of the clip's other ring) with no stop there, so
+// the cut, which was made before that condition, would be on the subject's side alone.
 TEST(PolygonOverlayPrototypeTest, Hunt)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);

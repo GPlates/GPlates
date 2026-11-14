@@ -37,7 +37,7 @@ Nothing in this directory is installed or packaged. It exists only to be read by
 | `polygon-overlay/prototype-hunt.txt` | `PolygonOverlayPrototypeTest.cc` (likewise: cases from the prototype's random generators) |
 | `polygon-overlay/prototype-polyline.txt` | `PolygonOverlayPrototypeTest.cc` (likewise: a polyline subject, from the prototype's polyline generators) |
 | `polygon-overlay/prototype-self-touching.txt` | `PolygonOverlayPrototypeTest.cc` (likewise: constructed valid inputs that touch themselves on the other's outline) |
-| `polygon-overlay/self-touching-grid-pairs.txt` | `PolygonOverlayTest.cc` (`SelfTouchingGridPairs`: the 338 pairs of small grid polygons, each with an input that touches itself, that went wrong in the fuzz of PR C's final review, as integer grid coordinates) |
+| `polygon-overlay/self-touching-grid-pairs.txt` | `PolygonOverlayTest.cc` (`SelfTouchingGridPairs`: the 338 pairs of small grid polygons, each with an input that touches itself, that went wrong in the fuzz against an independent library that `docs/design/architecture/foundation/spherical-geometry.md` section 6 describes, as integer grid coordinates) |
 | `polygon-overlay/inconsistent.txt` | `PartitionFeatureUtilsTest.cc` (the rings of one generated case whose cut the overlay finds inconsistent, so that the failure path has an input: `shared#2288 seed 2`, whose two polygons each have a hole crossing their exterior ring; the residue of the hunt over generated cases that `docs/design/architecture/foundation/spherical-geometry.md` section 6 describes) |
 
 **Everything else is not yet referenced by any test.** It arrived on 2026-08-11 from the old

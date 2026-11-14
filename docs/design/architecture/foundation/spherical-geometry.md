@@ -78,7 +78,7 @@ The one table of every tolerance in this code. "Exact" means a plain `double` co
 | `R2` band, 60 to 120 degrees from `R` | `calculate_second_reference_point`: a candidate with `fabs(dot(candidate, R)) > 0.5` is skipped | Which candidates may be the second reference point | The arc from `R` to `R2`, on which `R2`'s status is found, and the arc from `R2` to a point within `1e-6` of `R` or `-R`, are then 60 to 120 degrees long, so their planes are well defined. A candidate always exists, since no point is more than about 23 degrees from one (the comment there) |
 | Interior-centroid size switch, bounding radius `0.01` radians | `MINIMUM_RADIUS_COSINE_FOR_FAN = cos(0.01)` in `Centroid::calculate_interior_centroid`, against the angular extent of the polygon's bounding small circle | Whether the interior centroid is the exact area moment (wider) or the fan of triangles from `C` weighted by area at their vertices' mean (narrower) | Where the two methods' errors cross (section 3.3): the fan approximation is off by about `0.3` degrees for a polygon one radian across and the exact moment loses precision on tiny polygons; at this size they agree to about `1e-10` (the comment there, from measurement) |
 | Overlay vertices, by identity | `PolygonOverlay::Overlay::build_vertices`: records are grouped by the original vertex they name (section 4.2), by union-find on record indices; `is_same_position` compares coordinates exactly where the overlay asks whether an arc starts at a vertex's output position (the cone) and in clean-up (repeated positions) | Which intersection records are one point of the overlay, and so one stop on a ring; no distance is involved, but for the next row's rounding margin (section 5.2) | The records already encode the snapped topology with `GeometryIntersect`'s thickness, so a second constant would be a second meaning of "the same point"; `PointOnSphere::operator==` has a tolerance of about the thickness and is never used (section 5.3) |
-| Vertices at one point, a chord of `1e-12` | `Overlay::find_same_point_vertices`: `SAME_POSITION`, the longest chord between the two stops of a single arc that joins two overlay vertices for which the two are made one, and then only if either stop has a record that is not a crossing | Which vertices are one although their records name no common original vertex: an input's touch of itself at a point inside the other input's edge (section 5.2) | One position but for rounding: a crossing's stored position is computed, and lies within rounding of the vertex it is at, not on it. A margin clear of the data both ways: in the prototype, over the hunt's 119,198 cases and the catalogue (section 6), the chords joined are at most `2.8e-16`, and the shortest left unjoined with a touch at either stop is `1.0e-9`. Not the thickness, which would be the contraction of section 5.7 |
+| Vertices at one point, a chord of `1e-12` | `Overlay::find_same_point_vertices`: `SAME_POSITION`, the longest chord between the two stops of a single arc that joins two overlay vertices for which the two are made one, and then only if either stop has a record that is not a crossing | Which vertices are one although their records name no common original vertex: an input's touch of itself at a point inside the other input's edge (section 5.2) | One position but for rounding: a crossing's stored position is computed, and lies within rounding of the vertex it is at, not on it. A margin clear of the data both ways: in the prototype, over the hunt's 119,198 cases and the catalogue (section 6), the chords joined are at most `2.8e-16`, and the shortest left unjoined with a touch at either stop is `1.0e-9`; in the C++, over the hunt, `1.8e-14` and `1.0e-9`. Not the thickness, which would be the contraction of section 5.7 |
 | Overlay test points, threshold off | `Overlay::is_inside_other`: `is_point_in_polygon(point, speed, false)` at a piece's first interior original vertex, or at a stalled single arc's chord midpoint; `classify_anchorless_chain` likewise counts exact parities | Which side of the other polygon a piece is on | A vertex in no record is more than `h` from the other outline (or it would be a touch), about `10^10` times point-in-polygon's rounding; the inclusive threshold would call a piece just outside `Q` inside. Only a midpoint test of a *band piece* (a single arc within `2 h` of the other outline) is decided by rounding, and point-in-polygon is itself inexact within about a zero-length edge's length of one (section 5.3) |
 | Midpoint margin order | `Overlay::classify_pieces` step 3: `minimum_distance(midpoint, other polygon)` as an angle, largest first | The order in which stalled single arcs are tested | Rounded (a cosine, resolving about `1.5e-8` radians) but it only orders: a piece with a margin is tested before a band piece, and two band pieces' margins tying is harmless (section 5.2) |
 | Self-touch cut, `h` and `1e-12` radians | `Overlay::find_self_touch_cuts`: a vertex is on a piece when its output position is within the thickness sine of the piece's own plane (in doubles, even for a segment `GreatCircleArc` calls zero length) and inside the piece by more than `ALONG_ROUNDING = 1e-12` radians. A chain's vertices are also each further along than the last by more than `ALONG_ROUNDING`, in at most `MAX_CHAIN = 16` pieces; at a passage, the vertices that the other input's pieces run to from it are within the thickness sine of the same plane, and before it or after it by more than `ALONG_ROUNDING` | Where a stretch the two inputs share is cut on one side only (an input touching itself there, section 5.2) | `h` is the thickness the records were decided with, and a tip anywhere within it of the stretch is a touch to `GeometryIntersect`: two inputs that each had such a tip threw at every distance tried from none to `0.99 h`, so a cut only at a vertex exactly on the piece would not do (section 5.7). The rounding margin keeps a vertex at the segment's end from counting as inside it one way in doubles and the other in the prototype, whose positions are exact ones rounded once |
@@ -1274,11 +1274,14 @@ crossing, whose stored position is computed (the normalised cross product of two
 within rounding of the vertex it is at, not on it: of the hunt's 239 cases with a join, 227 join a
 chord over zero, the longest `2.8e-16` (the prototype's figures, section 6). And nothing wider is
 needed, because what fails is the tie alone. With the hole's vertex of the union above moved along
-the other polygon's edge, the worst of the four area identities (section 6) was off by `5.2e-3`
-steradians at no offset, and with the join by `1e-15`; at `1e-10` radians, where
-`GeometryIntersect` orders the two stops and the overlay describes the input as it is, two points
-that far apart, by `2.5e-12`, at `1e-8` by `2.5e-10` and at half a thickness by `1.8e-8`, the same
-with the join and without it. Within the thickness the join would be the contraction that section
+the other polygon's edge, into its polygon (a neck that wide), the worst of the four area
+identities (section 6), with each area summed from its rings, was off by `5.2e-3` steradians at no
+offset, and with the join by `2e-18`; at `1e-10` radians, where `GeometryIntersect` orders the two
+stops and the overlay describes the input as it is, two points that far apart, by no more than
+that, as at `1e-8` and at half a thickness, the same with the join and without it. (By
+`get_area()` the three are off by `1.8e-12`, `1.8e-10` and `1.3e-8`, in proportion to the offset:
+that is `get_area()`'s own loss, the thin fan triangles of section 7, and no error of the
+overlay's.) Within the thickness the join would be the contraction that section
 5.7 rejects, which has the measurements. The join is made in 239 of the hunt's 119,198 cases, 222
 of the `chain` generator (one with valid inputs) and 17 of its rings opened as polylines, and in
 two of the catalogue's.
@@ -1301,9 +1304,15 @@ radians. The other input shows the arc to pass it in either of two ways:
 - **A passage.** The vertex holds a vertex of the arc's own input (the touch), and the other input
   passes it along the arc both ways: each way from it, one of the other input's single arcs with no
   partner runs to the arc's own start or end vertex, or to a vertex within `h` of the arc's plane
-  that is before it, or after it, by more than `1e-12` radians. And no such arc from it ends inside
-  the arc at a vertex that is not itself a passage: a candidate that fails either test is dropped
-  and the rest are tested again, until none is dropped.
+  that is before it, or after it, by more than `1e-12` radians. No such arc from it ends inside
+  the arc at a vertex that is not itself a passage of the arc. And, for a polygon subject, every
+  such arc that runs on beyond the arc's own start or end (to a vertex within `h` of the arc's
+  plane that is not inside the arc, and is not its start or end vertex) is itself cut at that
+  start or end vertex, through a chain or at a passage of its own. The last two conditions ask of
+  a passage what the other cuts are, so every arc's chain and its candidates by the first two are
+  found first, and a candidate that fails either of the last two is then dropped, until none is:
+  the passages kept are the largest set in which each meets all four, whatever the order of
+  dropping, since dropping one never lets another stay.
 
 A cut is a stop of the vertex that no record of the ring names, placed in order along the arc after
 the stop the cut piece starts at (keyed by that stop's first record and not by its vertex: a vertex
@@ -1330,17 +1339,35 @@ passage is found from its vertex and not by a walk from the arc's ends: each ver
 input's vertex, and has two ends of the other input's single arcs with no partner, is looked up in
 its own input's bounding tree (`visit_segments_near_point`: the segments of every leaf whose
 bounding circle, expanded by the thickness, holds the vertex's output position). Every touch on a
-stretch is then cut in one pass, on both sides, however many there are.
+stretch is then cut in one pass, on both sides, however many there are, where both inputs' edges
+pass within the thickness of each touch. Where one input's edge passes a touch and the other's
+does not (the two edges apart, below), a cut at a passage that would leave the stretch cut on one
+side only is not made for a polygon subject, and is made for a polyline.
 
 The measure is the thickness because the failure is across the whole thickness. With both tips of
-the two polygons above moved off the shared edge, the overlay threw, the inputs either way round,
+the two polygons above moved off the shared edge (the two polygons' edges still on one line), the
+overlay threw, the inputs either way round,
 at every distance tried from none to `0.99 h` (and at `0.5 h` on the other side of the edge); with
 the passage each is right, the worst area identity off by `3e-15` steradians at no distance and
 `1.1e-7` at `0.99 h`. At `1.5 h` a tip is no touch, and the output was right without the rule.
 
-The passage's conditions keep it to an input's touch of a stretch the other input runs along, and
-the last two are each held by a case of the hunt that went wrong without it (both kinds are in the
-committed sample, section 6):
+Where the two polygons' edges are apart on the stretch, the passage does not cover the whole
+thickness. Being within the thickness of one another is not transitive: where the other polygon's
+edge runs up to a thickness from its own, a tip beyond the thickness of its own edge, which is no
+touch of it, can still be a touch of the other's. That edge then has a stop at the tip, and the
+tip's own edge has none and cannot be given one within the thickness, so nothing can cut the
+stretch on both sides there. Of 12,489 random pairs of valid polygons in that band (one rectangle
+twice, the second's bottom edge level or tilted, up to `0.95 h` from the first's, with up to two
+hole tips of each up to `3 h` above their own polygon's edge), 1,800 threw before the three
+changes for an input's touch of itself (section 6) and 94 throw with them. None of the 94 was
+right before, and each has such a tip, `1.0` to `1.3 h` from its own edge.
+`SelfTouchingInputsAcrossThickness` (section 6) pins one as a known limitation, and section 7 has
+what would cure them.
+
+The passage's four conditions keep it to an input's touch of a stretch the other input runs along,
+where the cut leaves the stretch cut on both sides. The second and third are each held by a case
+of the hunt that went wrong without it (both kinds are in the committed sample, section 6), and
+the fourth by two valid polygons that did:
 
 - *A vertex of the arc's own input.* A crossing of the other input with another segment of this
   input is no touch of this input's: its rings cross there. Only a chain cuts at one (a search
@@ -1357,10 +1384,37 @@ committed sample, section 6):
   stretch is cut at some of its stops and not at others, which pairs nothing and only moves the
   band pieces' classes: the case failed two checks after 20 repairs, where it had passed. Such a
   stretch is left as it was, band pieces.
+- *Cut on both sides (a polygon subject).* A cut at a passage makes two pieces of the arc, and
+  each pairs only if the other input has a stop at the same far vertex. The second and third
+  conditions see to that inside the arc and at its ends, and nothing did where the other input's
+  arc from the touch runs on past the arc's end. If that arc has no stop there, the arc's part to
+  its end faces an arc that passes the end: the stretch is cut on one side only, one half pairs
+  and the other is band pieces. For valid polygons that share a stretch of one line the arc
+  always has the stop: the end is then the other input's vertex on its own edge, a passage of
+  that arc, and the two passages ask for each other (the alternating case; the largest set keeps
+  both). Where the two edges are apart it need not (above). One rectangle twice, the first's hole
+  with its tip `1.2 h` above its bottom edge, the second's bottom edge rising from the first's to
+  `0.9 h` above it and its hole's tip on that edge: each edge is cut at the other's tip, and the
+  second's, cut at its own tip as well, paired on one side of that tip and on the other faced the
+  first's piece running on past the first's tip. The overlay was then right at 120 of 300 random
+  rotations of the frame and threw at 180, where with no cut it is right at all of them
+  (`SelfTouchingInputsAcrossThickness`, section 6). In the hunt, 924 of the 948 cases that had a
+  cut at a passage had one of this kind (4 of them with valid inputs; `shared#0 seed 1` of the
+  committed sample is one), and each passes the comparison's checks with none made. At the
+  thickness scale the condition loses about what it gains: of the 12,489 pairs above, 26 that
+  were right before there was a cut at a passage threw with the cut on one side (15 at each of 40
+  rotations, 11 at some) and are right again, and 24 that the cut on one side had made right, at
+  each of 40 rotations, throw again, as they did before. So pairing half a stretch can be enough,
+  and can leave the outcome to rounding; only a stop for the other side would get both (section
+  7). The condition is not asked of a polyline subject, whose pieces are classified one by one,
+  with no pairing for a sector walk to rely on: there a cut on one side still gives a piece of
+  the polyline and a piece of the clip the same two vertices, so that the polyline's is along the
+  outline where neither part was (`PolylineCrossingItselfAlong`; section 5.7 has what the
+  condition did to polylines).
 
 The chain's cuts are made in 14% to 43% of the cases of the dense shared-edge generators (`chain`,
-`rays`, `shared`) and almost nowhere else. A cut at a passage is made in 948 of the hunt's 119,198
-cases, all of the `shared` generator (up to 5 cuts in a case), 10 of them with valid inputs: the
+`rays`, `shared`) and almost nowhere else. A cut at a passage is made in 24 of the hunt's 119,198
+cases, all of the `shared` generator (up to 2 cuts in a case), 6 of them with valid inputs: the
 hunt shows that the passage does no harm at the thickness scale, and that it is right for valid
 inputs far above it rests on the grid polygons of section 6. Neither this rule nor the join costs
 anything measurable where it does not apply (two 20,000-point caps, a shared edge of 2,000
@@ -1450,7 +1504,8 @@ gives `0`.
      plain ray; same-side for a common ray) and `n` the parity of the other input's rays inside.
      One unknown term follows; all known and false is a check failure. For the linking two orders
      are built from the classes, `a`, the rays inside taken in the measured order from `a`, `b`,
-     the rays outside, and its mirror image, and the walk uses the consistent one with the fewer
+     the rays outside, and the same with the two halves exchanged (`a`, the rays outside, `b`, the
+     rays inside, each half in that same order), and the walk uses the consistent one with the fewer
      inversions against the measured order, as the bundle rule chooses (ties to the first). The
      rays' relative order within a half is the other input's own arrangement, which decides only
      which kept rays pair with which (the ring structure), never the point set; but it is kept only
@@ -1459,7 +1514,7 @@ gives `0`.
      itself on `X`'s outline: a hole's tip on its own exterior) consecutive kept rays then pair
      crosswise. One such vertex heals in the split, but two on the same two rings leave two rings
      that cross at both, put into one polygon as a crossing group, with a `get_area()` near zero
-     for an intersection of two pieces three grid squares each (PR C's final review). Using the
+     for an intersection of two pieces three grid squares each. Using the
      first order whenever it had a placement, 194 of the 196 intersections with a wrong area in a
      fuzz of 24,000 pairs of small grid polygons came from this (section 6). The rule deduces
      strictly less than the sector walk would on some order, so it cannot make a consistent vertex
@@ -1898,7 +1953,9 @@ cases with valid inputs, asked of every ring), and a self-crossing within a few 
 **Polylines** (`classify_polyline_pieces`, `extract_polylines`). A polyline subject shares the
 structures above (the loop rule skips a piece with a dangling end; the join of vertices at one
 point and the self-touch cuts apply, a cut at a passage to the polyline's touch of itself as to
-the clip's); the
+the clip's, and without the condition that the stretch be cut on both sides; where a polyline
+runs along a stretch twice, or crosses itself on it, a pass along the outline can still be left
+uncut and classified by rounding, section 7); the
 spike rule does not apply to a polyline, whose hairpin from one clip vertex to another and straight
 back is a run of its own (made internal, it took its neighbours' class untested, and a polyline
 across the clip came back whole outside). The clip's pieces bound nothing and are not classified,
@@ -1935,8 +1992,10 @@ which look three margins along an edge. A margin keeps an exact test clear of th
 bounds what the crossing tests see: an overlap or a self-crossing reached only within a few margins
 is missed (section 5.2). The `1e-12` of the vertices at one point (section 5.2) is a margin too,
 for rounding, and not a second distance: it asks whether two stops are at one position, one of
-which can be computed, and the hunt's data keep clear of it by three orders of magnitude either way
-(section 1). The overlay's decisions are of section 5.2's three kinds:
+which can be computed, and the hunt's data keep clear of it either way: in the C++ the chords
+joined reach `1.8e-14`, 55 times under it, and the shortest not joined with a touch at either stop
+is `1.0e-9`, a thousand times over (section 1; section 6 has what a crossing at a small angle
+does). The overlay's decisions are of section 5.2's three kinds:
 
 - **Exact**: the identity of vertices (union-find on record indices); whether an arc starts at a
   vertex's output position, and clean-up's repeated positions (coordinates compared exactly, never
@@ -2212,7 +2271,8 @@ it consulted can raise. pyGPlates raises it as
 `symmetric_difference()` it is also the answer to a result whose outer ring would enclose more than
 a hemisphere. The overlay's hemisphere check cannot tell that from wrong classes (section 5.2), and
 wrong classes, its only possible cause for the intersection and the differences (which cannot
-exceed an input), have never been seen, so one exception serves both. A separate exception for the
+exceed an input), are known in one rare configuration (below), so one exception serves both. A
+separate exception for the
 hemisphere case was rejected
 (developer, 2026-11-13): the overlay could only guess which of the two it was, and the name fits a
 union too, since the overlay cuts both polygons into pieces.
@@ -2236,6 +2296,16 @@ wrongly, and repair cannot find the flip of several pieces it would take within 
 vertex orders are not at fault. Untried remedies: a rule for pieces running along the other outline,
 or a repair candidate flipping a chain of band pieces. It was one of 67,639 dense shared-edge cases
 among 119,198 generated, and no other generator and no real data produced one.
+
+One configuration of valid inputs is known to fail too: two polygons with an edge of each within
+the thickness of the other's and apart from it, where a hole's tip of one is a touch of the other
+polygon's edge and beyond the thickness of its own (section 7, *Touches across the thickness*).
+The stretch cannot be cut on both sides at such a tip. In the pair that
+`SelfTouchingInputsAcrossThickness` pins (section 6), a few vertices each, `classify()` does not
+throw, and the intersection, the union and both differences then throw at the hemisphere check,
+as `partition()` does; the symmetric difference returns, and reads right at every point sampled.
+94 of 12,489 random pairs in that band throw (section 5.2), and none of the 24,000 and 338 grid
+pairs of section 6, whose touches are exact.
 
 ### 5.7 Rejected alternatives
 
@@ -2392,10 +2462,19 @@ has the join.
 | At any vertex of the arc's own input within `h` of it | 5,099 | Wrong areas in two valid cases, `six#56 seed 6` and `six#260 seed 10`; `shared#464 seed 19` fails its checks |
 | ... which the other input passes along the arc one way | 4,447 | The same two valid cases |
 | ... both ways | 1,546 | `shared#464 seed 19` fails its checks |
-| ... with no arc from it ending inside at another vertex (the rule) | 1,202 | Nothing |
+| ... with no arc from it ending inside at another vertex | 1,202 | Nothing in the hunt; two valid polygons with an edge of each within the thickness of the other's throw, by rounding, that are right with no cut (section 5.2) |
+| ... and every arc from it beyond the arc's end cut at that end, for a polygon subject (the rule) | 278 | Nothing in the hunt; 24 of 12,489 pairs across the thickness that the row above gets right throw, as with no cut (section 5.2) |
 
-Two more forms of the cut were rejected:
+Three more forms of the cut were rejected:
 
+- *The table's last condition for a polyline subject too.* Of the 116,198 grid polylines of
+  section 7, 458 then had a segment along the polygon's outline in an outside piece, for 444
+  without it: 14 that the cut on one side had classified right went wrong again, 60 more had more
+  such segments, and none had fewer. All 14 meet themselves at a point of the polygon's outline.
+  A polyline's pieces are classified one by one and the clip's not at all
+  (section 5.2), so a cut on one side breaks no pairing there, and can only make a piece that was
+  classified at a midpoint on the outline one along it. `PolylineCrossingItselfAlong` (section 6)
+  fails with the condition.
 - *The chain search relaxed*: a cut at every vertex that a chain of the other input's single arcs
   with no partner reaches inside the arc, from either end, and not only along a chain that arrives
   at the far vertex (a search from one end missed staggered touches). Kept to vertices of the
@@ -2406,7 +2485,8 @@ Two more forms of the cut were rejected:
   tip, so a search back from the end reaches it. Its own code was not run with the area check,
   and those two cases fail no other check. And it finds one cut a pass where the two inputs'
   touches alternate along an edge, since no piece of either ends at a stop of the other's edge
-  (the alternating case of section 6 throws without the passage), while the cuts' key, a stop's
+  (the alternating case of section 6 throws without the passage, or returns a polygon of no
+  area, by rounding), while the cuts' key, a stop's
   record, has no place for a second pass. Without the restriction to the arc's own input's
   vertices (and without the join), 14,862 hunt cases differed and 34 failed a check or needed a
   repair.
@@ -2852,10 +2932,12 @@ with a vertex at its crossing, and a touch that is not a crossing), and against 
 written as plain loops over 400 generated pairs of rings), orientation independent of the
 inputs' and a union
 over a hemisphere throwing; self-touching inputs (identical ones, a touch on a shared edge, and
-the touches on the other's outline of `SelfTouchingInputs` and `SelfTouchingGridPairs`, below) and
+the touches on the other's outline of `SelfTouchingInputs`, `SelfTouchingInputsAcrossThickness`
+and `SelfTouchingGridPairs`, below) and
 the pairings only a rare vertex shows; polylines (across, no
 record, along under both settings, a touch and an end on the edge, a pinch, a polyline that ends
-on its own first segment along the clip's edge, a hairpin across the
+on its own first segment along the clip's edge, one that crosses the clip's edge it runs along, a
+hairpin across the
 clip and along its edge); and provenance (each kind of point, a two-plate cascade, a polyline, a
 split at a vertex holding no subject vertex). The **oracle** (`PolygonOverlayOracle.h`) reads an
 output by parity over its rings: for random points farther than `M = max(10 h, twice the widest
@@ -2892,9 +2974,22 @@ each alternating along a shared edge (four passages); 17 tips of one on an edge 
 there by the other's edge (a join); and both inputs with a vertex on their own edge at one point (a
 join through a common pair of no length). Each runs both ways round through the oracle and
 `check_areas`, and the cases of the two rules pin their joins and cuts at passages. Each of them
-fails with its rule taken out (checked with a temporary switch), but for the 17 tips, which were
-checked against the build without the rules. `PolylinePinch` (a join) and
-`PolylineTouchingItselfAlong` (two passages) are the polyline's.
+fails with its rule taken out (checked with a switch), two by the pinned count alone: in the
+test's frame the outputs of the alternating tips pass both checks without the passage, and those
+of the last pair without the join. Elsewhere on the sphere they go wrong, by rounding: over 100
+positions of the frame the first throws in 79 and returns a polygon of no area, which neither
+check sees, in 21, and the second returns one in 46 and throws in 7.
+`SelfTouchingInputsAcrossThickness` has two pairs on the same grid whose edges are apart within
+the thickness on the stretch they share (section 5.2): the rectangles whose cut at a passage would
+be on one side only, which must make no cut at a passage and pass both ways round, and the square
+with staggered tips, one of them beyond the thickness of its own edge, pinned as a known
+limitation (no self-touch cut, and every operation but the symmetric difference throws, both ways
+round). These tests catch the overlay's exception for each pair and way round, so that a failure
+reports every pair that fails and not only the first to throw. `PolylinePinch` (a join) and
+`PolylineTouchingItselfAlong` (two passages) are the polyline's, with
+`PolylineCrossingItselfAlong`: a cut at a passage on one side only, which a polyline subject
+keeps, and the piece along the outline it makes (the runs are not pinned, since the piece beyond
+the cut is still classified by rounding, section 7).
 
 The rules were found by, and for valid inputs rest on, a fuzz against an independent overlay, kept
 outside this repository with the prototype: 24,000 pairs of polygons with integer vertices on a
@@ -2913,9 +3008,10 @@ touches itself. With the filter off and the operands as generated, the failing o
 | With the order alone | 2, 52, 15, 25 | 1, 0, 16, 26 | 1, 1, 1, 0 |
 | With the join and the passage too | 0, 1, 0, 0 | none | none |
 
-Of the two rules, the join alone clears the wrong areas and the passage alone the polygons of no
-area and the exception (4, 53, 32 and 51 operations fail with neither, 1, 2, 15 and 23 with the
-join, 3, 52, 15 and 25 with the passage). The one union left is not the overlay's: its rings equal
+Of the two rules, the join alone clears the wrong areas, and the passage alone the exception and
+all but 1, 0, 2 and 3 of the polygons of no area (4, 53, 32 and 51 operations fail with neither,
+1, 2, 15 and 23 with the join, 3, 52, 17 and 28 with the passage). The one union left is not the
+overlay's: its rings equal
 the reference's ring for ring, and its area equals the two inputs' less the intersection's
 exactly, while `get_area()` of the reference's polygon is `7e-10` steradians off the sum of its own
 rings (its boundary centroid lies `7.9e-7` radians from one of its vertices, which is section 7's
@@ -2935,7 +3031,7 @@ piece for piece and class for class, under `src/unit-test/data/polygon-overlay/`
 every tie order (`GeometryIntersect` orders records along a segment by a cosine in doubles, so
 records whose cosines agree within a few ulps come out in either order where the prototype's exact
 keys see no tie); a sample of every generator, with the second run's residue, the cases that
-alone show a pairing and three that hold what a cut at a passage must leave alone (section 5.2);
+alone show a pairing and four that hold what a cut at a passage must leave alone (section 5.2);
 polylines from the prototype's polyline generators and opened rings;
 anchorless chains; the bundle vertices, whose counts of floating rays, admissible orders and
 consistent placements are pinned; and 22 constructed cases of valid inputs that touch themselves on
@@ -2969,12 +3065,13 @@ seen), and each floating-point operation is rounded on its own, so the build tur
 of `a * b + c` into one fused instruction off (`-ffp-contract=off`, `src/CMakeLists.txt`); with it
 on, as Clang has it by default on arm64, records tie and sign tests fall differently and the
 comparison fails. The prototype, its generators and its exporter
-are kept outside this repository (its configuration name is `r5r`, which mirrors for polylines the
+are kept outside this repository (its configuration name is `r5s`, which mirrors for polylines the
 spike rule's restriction to polygon rings and the along rule for a hairpin along the clip's edge,
 section 5.2, takes the one-passage rule's built order nearer the measured one, and has the
-vertices at one point and the cut at a passage, for polygon and polyline subjects; the committed
-snapshots but the constructed cases' were exported under `r5p`, which has none of the last three,
-and only the cases those change were exported again, below); a larger
+vertices at one point and the cut at a passage, for polygon and polyline subjects, with the
+passage's condition that a polygon subject's stretch be cut on both sides; the committed
+snapshots but the constructed cases' were exported under `r5p`, which has neither that order nor
+the two rules, and only the cases those change were exported again, below); a larger
 export is run through
 `GPLATES_POLYGON_OVERLAY_PROTOTYPE_CASES`. The hunt at scale ran 119,198 generated cases, and is
 what set the grouping margin and the cone's offsets (section 5.2); 9 polygon cases differ, none in a
@@ -3021,21 +3118,36 @@ Three cases of the generators' sample and five of the catalogue changed and were
 classes put a different ray inside at one vertex, so that it moves one more vertex than the
 prototype.
 
-With the vertices at one point and the cut at a passage as well (`r5r`), 12 cases differ, all of
-kinds recorded above: the 4 with coincident rings, the 4 second-step provenance losses,
-`shared#2932 seed 2`'s two crossings, and 3 in ring structure alone (`shared#220 seed 12`,
-`shared#1371 seed 2` and `shared#492 seed 5`; in another export of `r5r`, with the same pieces in
-every case, `shared#2628 seed 5` and `shared#4906 seed 10` differed that way too). No area identity
-is off in any case, and none of the 70,291 cases whose input rings cross is wrong as polygons. A
-rule applies in 1,187 cases, a join in 239 and a cut at a passage in 948 (section 5.2), and in all
-of them the C++ and the prototype agree piece for piece and class for class: every join and every
-cut is made by both. Only 11 of the 1,187 are among the 39,320 polygon cases with valid inputs, so
-for valid inputs the hunt shows that the two rules do no harm at the thickness scale, and the fuzz
-above is what shows them right. Two cases of the catalogue and two of the generators' sample
-changed and were exported again (a join in `touching rings eps=+0h`, its `hole-above` and
-`chain#146 seed 2`, a cut at a passage in `shared#0 seed 1`), and the three cases a passage must
-leave alone were added to the sample (`six#56 seed 6`, `six#260 seed 10` and `shared#464 seed 19`:
-the prototype cuts none of them either).
+With the vertices at one point and the cut at a passage as well, the passage with its first three
+conditions (`r5r`), 12 cases differed, all of kinds recorded above: the 4 with coincident rings,
+the 4 second-step provenance losses, `shared#2932 seed 2`'s two crossings, and 3 in ring structure
+alone (`shared#220 seed 12`, `shared#1371 seed 2` and `shared#492 seed 5`; in another export of
+`r5r`, with the same pieces in every case, `shared#2628 seed 5` and `shared#4906 seed 10` differed
+that way too). No area identity was off in any case, and none of the 70,291 cases whose input
+rings cross was wrong as polygons. A rule applied in 1,187 cases, a join in 239 and a cut at a
+passage in 948, and in all of them the C++ and the prototype agreed piece for piece and class for
+class: every join and every cut was made by both. Two cases of the catalogue and two of the
+generators' sample changed and were exported again (a join in `touching rings eps=+0h`, its
+`hole-above` and `chain#146 seed 2`, a cut at a passage in `shared#0 seed 1`), and the three cases
+a passage must leave alone were added to the sample (`six#56 seed 6`, `six#260 seed 10` and
+`shared#464 seed 19`: the prototype cuts none of them either).
+
+With the passage's fourth condition (`r5s`), 12 cases differ: the same but for `shared#2863 seed
+2` in place of `shared#492 seed 5`, both in ring structure alone. The condition is not the cause:
+neither case's pieces change from `r5r` to `r5s`, the prototype's ring decomposition varies with
+the export, and `shared#2863 seed 2` exported on its own under `r5r` differs the same way. No area
+identity is off in any case, and none of the 70,291 cases whose input rings cross is wrong as
+polygons. The condition changes the pieces of 924 cases, all of the `shared` generator, and each
+goes back to its pieces under `r5q`: no cut at a passage is left in it. Each of the 924 passes
+every check of the comparison, and the 4 with valid inputs the area identities, the orientation,
+the crossing groups and the second step too. A rule now applies in 263 cases, a join in 239 and a
+cut at a passage in 24 (section 5.2), and in all of them the C++ and the prototype agree piece for
+piece and class for class: every join and every cut is made by both. Only 7 of the 263 are among
+the 39,320 polygon cases with valid inputs (one join and six cuts at passages), so for valid
+inputs the hunt shows that the two rules do no harm at the thickness scale, and the fuzz above is
+what shows them right. One case of the generators' sample changed and was exported again,
+`shared#0 seed 1`, whose cut at a passage was on one side only: it is the fourth case a passage
+must leave alone, and the sample has no cut at a passage left (the constructed cases have them).
 
 The prototype decides the two rules in doubles, by the C++'s formulas, as it does the chain
 search: their measures are distances between positions, and the two programs' positions are
@@ -3046,9 +3158,17 @@ shortest not joined with a touch at either stop is `1.0e-9` (`2.6e-7` in the cat
 has a vertex `2e-15` radians from an arc's end, which the `1e-12` rounding margin is for, and no
 other comparison is nearer that margin than `1.7e-9`; and the thickness, which in the passage is a
 tolerance with no margin, is approached no nearer than `1.0e-4 h` (`1.4e-10` radians) by a
-comparison that decides anything. The C++'s own distances from the thresholds were not measured
-(its crossing positions can lie further off where two planes meet at a small angle); the
-comparison of the 1,187 cases stands in for that.
+comparison that decides anything. Of the C++'s own distances from the thresholds the join's were
+measured, over the hunt: the chords joined reach `1.8e-14`, 55 times under the threshold (its
+crossing positions lie further off than the prototype's where two planes meet at a small angle),
+and the shortest not joined with a touch at either stop is `1.0e-9`, as in the prototype. Beyond
+the hunt's data the margin is reached: where the other polygon's edge crosses an edge at a vertex
+on it at under about `1e-4` radians, the computed crossing is often more than `1e-12` from the
+vertex and the two are not joined (in 4, 18 and 26 of 30 rotations of the frame at `1e-4`, `3e-5`
+and `1e-5` radians, and in none at `3e-4`). The outputs were right all the same, the area
+identities within `1.3e-12` steradians in 200 rotations at each angle. The C++'s distances from
+the self-touch cuts' thresholds were not measured; the comparison of the 263 cases where a rule
+applies, and of the 924 where the fourth condition drops a passage, stands in for that.
 
 The partition layer's tests (`PolygonPartitionerTest.cc`) cover the three old no-intersection bugs
 (a partitioner inside the subject, a subject across a partitioner's hole, a partitioner across the
@@ -3172,12 +3292,54 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   which within about `1e-4` radians of the segment's start resolves less than that (about `1e-11`
   at `1e-5` radians, and `1.5e-8` at the start, section 4.4). So a touch and another record that
   lie between `1e-12` and that resolution apart, that close to the start of the other input's
-  segment, can still tie, and their order then decides what the join keeps it from deciding. By
-  reasoning only: no such input has been built, and the fuzz's touches are far from a segment's
-  start.
+  segment, can still tie, and their order then decides what the join keeps it from deciding. Built
+  so: the union of section 5.2 (a hole's vertex at its exterior's, inside the other polygon's
+  edge) with the hole's vertex `1e-11` radians short of its exterior's along that edge, a neck that
+  wide and so a valid input, and the edge starting `1e-5` radians before the touch. In 9 of 40
+  rotations of the frame the union's area is off by `5.2e-3` steradians, twice the hole's, as it
+  was before the join. Over 80 runs a setting (40 positions of the frame, the inputs each way
+  round), with the edge's start `1e-5` radians from the touch an area identity is off in 18 at an
+  offset of `3e-12` and in 30 at `1e-11`, and in none at `1e-12` or less (joined) or at `1e-10` or
+  more (ordered); with it `1e-4` away, in one at `3e-12`, and with it `1e-3` away in none. On the
+  Earth those offsets are 0.02 to 0.06 millimetres, which nothing digitised has, and the fuzz's
+  touches are far from a segment's start. Untried: joining also where the two stops tie in
+  `GeometryIntersect`'s own ordering key, the condition under which their order is noise, which
+  needs no second constant.
+- **Touches across the thickness.** Where two polygons' edges run within the thickness of each
+  other and apart, a hole's tip beyond the thickness of its own polygon's edge can be a touch of
+  the other's alone (section 5.2). That edge has a stop at the tip and its own has none, so the
+  stretch cannot be cut on both sides there, and the overlay can throw: in the pair traced no two
+  pieces of the stretch pair, and the band pieces' classes describe no arrangement. 94 of 12,489
+  random pairs in that band throw (section 5.2; 1,800 before the rules for an input's touch of
+  itself), each with a tip `1.0` to `1.3 h` from its own edge, and
+  `SelfTouchingInputsAcrossThickness` (section 6) pins one, which throws at each of 300 rotations
+  of the frame. A cut at a passage on one side of such a stretch got 24 of the 94 right, and made
+  26 other pairs throw that are right without it, so it is not made (section 5.2). The cure would
+  be to cut the other side too: a stop for an edge at a vertex of its own input that the other
+  input's edge shows on the stretch, though the vertex lies up to `2 h` from the edge, so that
+  every piece of the stretch would pair. It would move an edge by more than the thickness, which
+  no rule does, and it is the contraction of a neck, which gave wrong areas at `0.85 h` (section
+  5.2). Not built.
+- **A polyline along the outline that no cut pairs.** A polyline's pass along the clip's outline
+  is inside when it pairs with the clip's piece, and where it does not it is classified at a
+  midpoint on the outline, by rounding. Two configurations are left so, neither of which a valid
+  polygon subject can reach. Where the polyline runs along a stretch twice (it folds back part of
+  the way, or comes back to it later), the clip's piece on one side of the polyline's vertex is
+  already paired with the other pass, so the vertex is no passage, the longer pass is not cut,
+  and it can come back outside. Where the polyline crosses itself on the stretch, the clip's edge
+  has a stop at the crossing and the polyline's pass has none (`GeometryIntersect` intersects
+  neither input with itself); a chain of the clip's pieces through the crossing would show it,
+  but can need a cut at a passage of the clip's own first, and the cuts are found in one pass
+  (`PolylineCrossingItselfAlong`, section 6). Of 116,198 polylines on a grid (the rings of grid
+  polygons opened, and random walks through a polygon's vertices and grid points, each also
+  reversed), partitioned by grid polygons with one to three holes whose vertices are put on the
+  exterior and on each other, 444 have a segment along the outline in an outside piece (1,747
+  before the rules for an input's touch of itself); every segment midpoint clear of the outline
+  is on the right side. A second pass of the self-touch cuts would find the second
+  configuration's chain, but the cuts' key has no place for one (section 5.7).
 - **No generator of valid inputs that touch themselves above the thickness scale.** The hunt's
   generators reach the vertices at one point and the cut at a passage almost only with input rings
-  that cross (11 of its 39,320 cases with valid inputs, section 6), and the fuzz that found the
+  that cross (7 of its 39,320 cases with valid inputs, section 6), and the fuzz that found the
   defects is outside the repository; the committed tests hold its 338 failing pairs and 22
   constructed cases. A generator of grid polygons whose holes share a vertex with their exterior or
   put a vertex on its edge, checked by the area identities and the crossing groups, would need no

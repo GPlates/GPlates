@@ -2199,21 +2199,18 @@ namespace
 		}
 		return ring;
 	}
-}
 
 
-// Inputs that touch themselves (an interior ring's tip on the exterior ring, valid under OGC rules)
-// at a point on the other input's outline, far above the thickness scale: the four reproductions
-// of PR C's final review, and what else the two rules for them must do (section 5.2: vertices at
-// one point are one vertex, and a piece is cut at a passage), each both ways round. Every point
-// reads right by parity whatever the rings, so the areas and the crossing groups are what these
-// check. Each case but the first fails with one of the two rules taken out, but for the 17 tips,
-// which were checked against the overlay without either.
-TEST(PolygonOverlayTest, SelfTouchingInputs)
-{
-	// Checks the outputs, both ways round, and returns the vertices joined and the pieces cut at
-	// passages, with the inputs as given.
-	const auto check_both_ways = [](const PolygonOnSphere &P, const PolygonOnSphere &Q)
+	/**
+	 * Checks the overlay of two polygons both ways round: its classification, the oracle and
+	 * the area identities. Returns the vertices joined and the pieces cut at passages, with the
+	 * inputs as given. An exception fails that way round and no more, so that a test of several
+	 * cases goes on, and reports every case that fails and not only the first to throw.
+	 */
+	std::pair<unsigned int, unsigned int>
+	check_both_ways(
+			const PolygonOnSphere &P,
+			const PolygonOnSphere &Q)
 	{
 		std::pair<unsigned int, unsigned int> joins_and_cuts(0, 0);
 		for (bool swap : { false, true })
@@ -2221,19 +2218,41 @@ TEST(PolygonOverlayTest, SelfTouchingInputs)
 			SCOPED_TRACE(swap ? "swapped" : "as given");
 			const PolygonOnSphere &subject = swap ? Q : P;
 			const PolygonOnSphere &clip = swap ? P : Q;
-			Overlay::Overlay overlay(subject, clip);
-			classify_and_check(overlay);
-			check_oracle(subject, clip, overlay);
-			check_areas(subject, clip, overlay);
-			if (!swap)
+			try
 			{
-				joins_and_cuts = std::make_pair(
-						overlay.get_diagnostics().same_point_joins,
-						overlay.get_diagnostics().self_touch_cuts_at_passages);
+				Overlay::Overlay overlay(subject, clip);
+				if (!swap)
+				{
+					joins_and_cuts = std::make_pair(
+							overlay.get_diagnostics().same_point_joins,
+							overlay.get_diagnostics().self_touch_cuts_at_passages);
+				}
+				classify_and_check(overlay);
+				check_oracle(subject, clip, overlay);
+				check_areas(subject, clip, overlay);
+			}
+			catch (const Overlay::InconsistentOverlayException &exception)
+			{
+				ADD_FAILURE() << exception;
 			}
 		}
 		return joins_and_cuts;
-	};
+	}
+}
+
+
+// Inputs that touch themselves (an interior ring's tip on the exterior ring, valid under OGC rules)
+// at a point on the other input's outline, far above the thickness scale: the four cases found
+// in review of pull request #113, and what else the two rules for them must do (section 5.2:
+// vertices at one point are one vertex, and a piece is cut at a passage), each both ways round.
+// Every point reads right by parity whatever the rings, so the areas and the crossing groups are
+// what these check. Each case but the first fails with one of the two rules taken out. Two fail
+// by their pinned counts alone: in this frame the outputs of the alternating touches pass these
+// checks without the passage, and those of the last case without the join, though elsewhere on
+// the sphere both go wrong, by rounding (an exception, or a polygon of no area, which these
+// checks do not see).
+TEST(PolygonOverlayTest, SelfTouchingInputs)
+{
 	typedef std::pair<unsigned int, unsigned int> joins_and_cuts_type;
 
 	{
@@ -2249,9 +2268,16 @@ TEST(PolygonOverlayTest, SelfTouchingInputs)
 				grid_ring({ { 3, 2 }, { 3, 1 }, { 3, 0 }, { 2, 0 }, { 1, 0 }, { 0, 0 }, { 0, 1 },
 						{ 0, 2 }, { 1, 2 }, { 1, 3 }, { 2, 3 }, { 3, 3 } }),
 				{ grid_ring({ { 1, 1 }, { 2, 1 }, { 2, 2 }, { 1, 2 } }) });
-		Overlay::Overlay overlay(*P, *Q);
-		classify_and_check(overlay);
-		EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION).size(), 2u);
+		try
+		{
+			Overlay::Overlay overlay(*P, *Q);
+			classify_and_check(overlay);
+			EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION).size(), 2u);
+		}
+		catch (const Overlay::InconsistentOverlayException &exception)
+		{
+			ADD_FAILURE() << exception;
+		}
 		check_both_ways(*P, *Q);
 	}
 
@@ -2342,9 +2368,16 @@ TEST(PolygonOverlayTest, SelfTouchingInputs)
 		const auto P = polygon(grid_ring({ { 0, 0 }, { 18, 0 }, { 18, 3 }, { 0, 3 } }), tips);
 		const auto Q = polygon(grid_ring({ { 0, 0 }, { 0, -3 }, { 18, -3 }, { 18, 0 } }));
 		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(0, 17));
-		Overlay::Overlay overlay(*P, *Q);
-		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
-		EXPECT_TRUE(ring_sizes(overlay, Overlay::INTERSECTION).empty());
+		try
+		{
+			Overlay::Overlay overlay(*P, *Q);
+			EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+			EXPECT_TRUE(ring_sizes(overlay, Overlay::INTERSECTION).empty());
+		}
+		catch (const Overlay::InconsistentOverlayException &exception)
+		{
+			ADD_FAILURE() << exception;
+		}
 	}
 
 	{
@@ -2364,7 +2397,8 @@ TEST(PolygonOverlayTest, SelfTouchingInputs)
 		// Both inputs have a vertex on their own edge at one point, where the two edges cross:
 		// the crossing is joined to the vertices' vertex though both inputs have a piece between
 		// the two (a pair of no length; left as two, the intersection had a ring of two points
-		// a rounding apart and a third).
+		// a rounding apart and a third, or not, by rounding: not in this frame, so that here the
+		// count of joins alone holds the rule).
 		SCOPED_TRACE("both touch themselves at one point");
 		const auto P = polygon(
 				grid_ring({ { 1, 1 }, { 2, 1 }, { 4, 0 }, { 4, 2 }, { 3, 2 }, { 4, 3 }, { 0, 3 },
@@ -2378,7 +2412,85 @@ TEST(PolygonOverlayTest, SelfTouchingInputs)
 }
 
 
-// The pairs of PR C's final review's fuzz that went wrong before the one-passage rule took its
+// Inputs that touch themselves within the thickness of a stretch they share, where the two
+// inputs' edges are apart on it. Being within the thickness of one another is not transitive: a
+// hole's tip can be a touch of the other input's edge and none of its own exterior's, which the
+// other input's edge runs along. That edge then has a stop at the tip and its own has none, and
+// nothing shows the stretch cut on both sides there, so no cut at a passage is made that would
+// need it (section 5.2: every piece that runs from a passage beyond the cut piece's end is cut
+// at that end too).
+TEST(PolygonOverlayTest, SelfTouchingInputsAcrossThickness)
+{
+	typedef std::pair<unsigned int, unsigned int> joins_and_cuts_type;
+	const double h = H / 0.02;  // the thickness, in grid units
+
+	{
+		// One rectangle twice. P's hole has its tip 1.2 thicknesses above P's bottom edge, which
+		// is no touch of it. Q's bottom edge rises from P's to 0.9 thicknesses above it, and
+		// passes 0.75 thicknesses under P's tip, a touch; Q's hole has its tip on Q's own edge,
+		// 0.6 thicknesses above P's. So each edge is cut at the other's tip. Q's tip is also a
+		// touch of Q's own edge, which P's edge passes both ways: cut there as a passage, Q's
+		// edge paired with P's on one side of the tip, and on the other faced a piece of P's edge
+		// that runs on past P's tip with no stop. The overlay then threw or not by rounding (it
+		// threw at 180 of 300 rotations of the frame, and here); with no cut the output is right
+		// (at all of them).
+		SCOPED_TRACE("one tip beyond the thickness of its own edge");
+		const auto P = polygon(
+				grid_ring({ { -3, -1.5 }, { 3, -1.5 }, { 3, 1.5 }, { -3, 1.5 } }),
+				{ grid_ring({ { 0, -1.5 + 1.2 * h }, { 0.3, -0.5 }, { -0.3, -0.5 } }) });
+		const auto Q = polygon(
+				grid_ring({ { 3, -1.5 + 0.9 * h }, { -3, -1.5 }, { -3, 1.5 }, { 3, 1.5 } }),
+				{ grid_ring({ { 1, -1.5 + 0.6 * h }, { 0.7, -0.5 }, { 1.3, -0.5 } }) });
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(0, 0));
+	}
+
+	{
+		// A known limitation: this throws, as it did before there was a cut at a passage. The
+		// square of SelfTouchingInputs' interleaved touches, with Q's bottom edge 0.3 thicknesses
+		// above P's all along. P's tip is 1.05 thicknesses above P's edge, no touch of it, and
+		// 0.75 above Q's, a touch; Q's tip is 0.3 thicknesses above Q's edge and 0.6 above P's,
+		// a touch of both. Each edge is cut at the other's tip and no two of their pieces pair,
+		// as there, but here P's edge cannot be cut at P's tip, which is not on it, so Q's is not
+		// cut at Q's tip either. The band pieces' classes then describe no arrangement, and every
+		// operation but the symmetric difference throws, whatever the rounding (at each of 300
+		// rotations of the frame). Only a stop for P's edge at a vertex further from it than the
+		// thickness would pair the stretch.
+		SCOPED_TRACE("both tips, one beyond the thickness of its own edge");
+		const auto P = polygon(
+				grid_ring({ { -1.5, -1.5 }, { 1.5, -1.5 }, { 1.5, 1.5 }, { 0.5, 1.5 },
+						{ -1.5, 1.5 }, { -1.5, 0.5 } }),
+				{ grid_ring({ { -0.5, -1.5 + 1.05 * h }, { 0.5, -0.5 }, { 0.5, 0.5 } }) });
+		const auto Q = polygon(
+				grid_ring({ { 1.5, -1.5 + 0.3 * h }, { -1.5, -1.5 + 0.3 * h }, { -1.5, 1.5 },
+						{ -0.5, 1.5 }, { 1.5, 1.5 }, { 1.5, 0.5 } }),
+				{ grid_ring({ { 0.5, -1.5 + 0.6 * h }, { -0.5, -0.5 }, { -0.5, 0.5 } }) });
+		for (bool swap : { false, true })
+		{
+			SCOPED_TRACE(swap ? "swapped" : "as given");
+			Overlay::Overlay overlay(swap ? *Q : *P, swap ? *P : *Q);
+			EXPECT_EQ(overlay.get_diagnostics().self_touch_cuts, 0u);
+			EXPECT_NO_THROW(overlay.classify());
+			for (Overlay::Operation operation : ALL_OPERATIONS)
+			{
+				SCOPED_TRACE(operation);
+				std::vector<Overlay::OutputPolygon> polygons;
+				if (operation == Overlay::SYMMETRIC_DIFFERENCE)
+				{
+					EXPECT_NO_THROW(overlay.extract(operation, polygons));
+				}
+				else
+				{
+					EXPECT_THROW(
+							overlay.extract(operation, polygons),
+							Overlay::InconsistentOverlayException);
+				}
+			}
+		}
+	}
+}
+
+
+// The pairs of a fuzz of grid polygons that went wrong before the one-passage rule took its
 // order nearer the measured one and the two rules above (338 of 24,000 pairs of small polygons on
 // a grid, every one with an input that touches itself: a wrong area, a polygon of no area, or a
 // PartitionError). The fuzz compared each answer with an independent library's; here no outside
@@ -2433,16 +2545,7 @@ TEST(PolygonOverlayTest, SelfTouchingGridPairs)
 		const auto Q = polygon(
 				rings[1].front(),
 				std::vector<ring_type>(rings[1].begin() + 1, rings[1].end()));
-		for (bool swap : { false, true })
-		{
-			SCOPED_TRACE(swap ? "swapped" : "as given");
-			const PolygonOnSphere &subject = swap ? *Q : *P;
-			const PolygonOnSphere &clip = swap ? *P : *Q;
-			Overlay::Overlay overlay(subject, clip);
-			classify_and_check(overlay);
-			check_oracle(subject, clip, overlay);
-			check_areas(subject, clip, overlay);
-		}
+		check_both_ways(*P, *Q);
 	}
 	EXPECT_EQ(num_cases, 338u);
 }
@@ -3585,6 +3688,32 @@ TEST(PolygonOverlayTest, PolylineTouchingItselfAlong)
 	EXPECT_EQ(overlay.get_diagnostics().self_touch_cuts_at_passages, 2u);
 	EXPECT_EQ(overlay.get_diagnostics().along_pieces, 3u);
 	EXPECT_EQ(polyline_runs(overlay), (runs_type{ { true, 4 }, { false, 4 } }));
+	check_polyline_oracle(*L, *Q, overlay);
+}
+
+
+// A polyline along the clip's edge that crosses that edge again with a later segment, where the
+// clip has a hole's tip on the edge. The clip's edge has a stop at the crossing and none at its
+// own tip; the polyline's segment along it has one at the tip (a record names it) and none at the
+// crossing, which is the polyline's crossing of itself (GeometryIntersect intersects neither with
+// itself). So the cut of the clip's edge at the tip, a passage, is on one side only: the
+// polyline's piece from the tip runs on past the crossing, and is not cut there. A polygon
+// subject's passage would be dropped for that; a polyline's is cut all the same (section 5.2),
+// and the polyline's piece from the edge's start to the tip is then along the clip's outline,
+// inside, where uncut it was classified at its midpoint, on the outline. Its piece from the tip
+// on has no partner either way (the clip's is cut at the crossing), and is still classified at a
+// midpoint on the outline, by rounding: the runs are not pinned.
+TEST(PolygonOverlayTest, PolylineCrossingItselfAlong)
+{
+	const auto Q = polygon(
+			grid_ring({ { 0, 0 }, { 4, 0 }, { 4, 4 }, { 0, 4 } }),
+			{ grid_ring({ { 2, 0 }, { 3, 1 }, { 1, 1 } }) });
+	const auto L = PolylineOnSphere::create(
+			grid_ring({ { 0, 0 }, { 4, 0 }, { 3.5, 1 }, { 2.5, -1 } }));
+	Overlay::Overlay overlay(*L, *Q);
+	EXPECT_EQ(overlay.classify(), Overlay::RESULT_INTERSECTING);
+	EXPECT_EQ(overlay.get_diagnostics().self_touch_cuts_at_passages, 1u);
+	EXPECT_EQ(overlay.get_diagnostics().along_pieces, 1u);
 	check_polyline_oracle(*L, *Q, overlay);
 }
 

@@ -1650,7 +1650,7 @@ GPlatesMaths::PolygonOverlay::Overlay::find_same_point_vertices(
 	// an edge of the other input they name the touching input's vertices alone: two of its
 	// vertices at the point are two vertices, and a vertex on its own edge is one vertex, with the
 	// crossing of that edge and the other input's as another (section 5.2). Two things then go
-	// wrong, whatever the size of what meets there (PR C's final review):
+	// wrong, whatever the size of what meets there:
 	//
 	// - The two stops are tied along the other input's edge, so their order is noise, and one of
 	//   the two orders describes the input's two passages as crossing (a hole's tip beyond its
@@ -1669,7 +1669,10 @@ GPlatesMaths::PolygonOverlay::Overlay::find_same_point_vertices(
 	// cross product of two planes), and lies within rounding of the vertex it is at, not on it.
 	// Not within the thickness: that would contract every short piece at a touch, which fails
 	// where a neck is two vertices (section 5.7), and two vertices further apart than rounding
-	// are two points of their input, which the piece between them describes as it is.
+	// are two points of their input, which the piece between them describes as it is. (But for
+	// two a little further apart whose stops still tie in GeometryIntersect's order, which within
+	// about 1e-4 radians of a segment's start resolves less than this: section 7 has such an
+	// input, where the tie's order then decides as it did before the join.)
 	//
 	const double SAME_POSITION = 1e-12;  // radians (a chord)
 
@@ -1745,8 +1748,8 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	// of its plane. No chain need reach the piece's ends, and where both inputs touch themselves
 	// on the stretch, at different points, none does: each side is cut only at the other's tip
 	// (one side's pieces are [0, 2] [2, 3], the other's [3, 1] [1, 0]), nothing paired, and the
-	// overlay threw, or returned a ring of collinear points (PR C's final review). Three
-	// conditions keep a passage to that:
+	// overlay threw, or returned a ring of collinear points. Four conditions keep a passage to
+	// that:
 	//
 	// - The vertex holds a vertex of the piece's own input. A crossing of the other input with
 	//   another segment of this input is no touch of this input's (its rings cross there), and
@@ -1762,6 +1765,25 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 	//   itself such a touch (a crossing: an input whose rings cross). The stretch would be cut
 	//   at some of its stops and not at others, which pairs nothing and only moves the band
 	//   pieces' classes (one such case of the hunt then failed its checks).
+	// - For a polygon subject: every piece that runs along the piece from the vertex beyond the
+	//   piece's own start or end is itself cut at that start or end. Else the stretch is cut on
+	//   one side only: the cut piece's part to that end faces a piece that passes the end with
+	//   no stop. For valid polygons above the thickness it always is cut there (the end is the
+	//   other input's touch of itself, a passage of that piece: the alternating case). Within
+	//   the thickness it need not be, since being within the thickness of one another is not
+	//   transitive: a hole's tip 1.2 thicknesses from its own exterior's edge is no touch of
+	//   that edge, and it is a touch of the other input's edge where that runs between the two.
+	//   The other input's edge was then cut at its own touch of itself and this input's was not
+	//   cut at the tip, and two polygons threw that are right with no cut at all. Not asked for
+	//   a polyline subject, whose pieces are classified one by one, with no pairing for a sector
+	//   walk to rely on: there a cut on one side still gives a piece of the polyline and a piece
+	//   of the clip the same two vertices, so that the polyline's is along the outline where
+	//   neither part was (as where a polyline crosses itself on the stretch: the crossing is a
+	//   stop of the clip's edge and not of the polyline's own; with the condition, 14 more of
+	//   116,198 polylines on a grid had a segment along the outline in an outside piece).
+	//
+	// The last two conditions ask of a passage what the other cuts are, so the passages kept are
+	// the largest set in which each meets all four.
 	//
 	const double h = GeometryIntersect::Intersection::get_on_segment_start_threshold_sine();
 	const unsigned int MAX_CHAIN = 16;
@@ -1845,7 +1867,30 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		}
 	};
 
-	d_self_touch_cuts.clear();
+	//
+	// The pieces that can be cut, in piece order: each with its chain's cuts, and with the
+	// passages on it that meet the first two conditions and what the last two ask of each.
+	//
+	struct Passage
+	{
+		double along;
+		unsigned int vertex;
+		// The vertices inside the piece that the other input's pieces run to from the vertex
+		// along the piece: each has to be a passage of the piece.
+		std::vector<unsigned int> inside;
+		// The other input's pieces that run from the vertex along the piece beyond its start or
+		// end, each with that start or end vertex: each has to be cut there (a polygon subject).
+		std::vector<std::pair<unsigned int, unsigned int>> beyond;
+	};
+	struct CutPiece
+	{
+		unsigned int piece;
+		// As (angle along the segment, vertex).
+		std::vector<std::pair<double, unsigned int>> chain;
+		std::vector<Passage> passages;
+	};
+	std::vector<CutPiece> cut_pieces;
+
 	for (unsigned int p = 0; p < d_pieces.size(); ++p)
 	{
 		const Piece &piece = d_pieces[p];
@@ -1953,20 +1998,20 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 			next_end_index.push_back(0);
 		}
 
-		// The cuts, as (angle along the segment, vertex): the chain's vertices.
-		std::vector<std::pair<double, unsigned int>> cuts;
+		CutPiece cut_piece;
+		cut_piece.piece = p;
 		for (unsigned int i = 1; found && i < chain.size(); ++i)
 		{
-			cuts.push_back(std::make_pair(chain_along[i], chain[i]));
+			cut_piece.chain.push_back(std::make_pair(chain_along[i], chain[i]));
 		}
 
-		// And the passages. First the vertices on the piece that hold a vertex of its input.
+		// And the passages: the vertices on the piece that hold a vertex of its input, and that
+		// the other input passes along the piece both ways.
 		if (!found_passage_vertices)
 		{
 			find_passage_vertices();
 			found_passage_vertices = true;
 		}
-		std::vector<std::pair<double, unsigned int>> passages;
 		const auto on_segment =
 				passage_vertices.find(std::make_pair(piece.ring, *piece.single_arc_segment));
 		if (on_segment != passage_vertices.end())
@@ -1974,76 +2019,155 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 			for (unsigned int v : on_segment->second)
 			{
 				const double v_along = along(d_vertices[v].position);
-				if (v != *piece.start_vertex &&
-					v != *piece.end_vertex &&
-					is_inside(v_along) &&
-					is_within_thickness(v))
-				{
-					passages.push_back(std::make_pair(v_along, v));
-				}
-			}
-		}
-		// Then one is dropped that the other input does not pass along the piece both ways, or
-		// from which a piece along it ends inside it at a vertex that is not one of them; until
-		// none is dropped, since a vertex dropped is then such a vertex for the rest.
-		const auto is_passage = [&passages](unsigned int vertex)
-		{
-			return std::find_if(
-					passages.begin(),
-					passages.end(),
-					[vertex](const std::pair<double, unsigned int> &passage)
-					{
-						return passage.second == vertex;
-					}) != passages.end();
-		};
-		for (unsigned int i = 0; i < passages.size(); )
-		{
-			const double v_along = passages[i].first;
-			const unsigned int v = passages[i].second;
-			bool before = false;
-			bool after = false;
-			bool ends_inside = false;
-			for (const End &end : d_vertices[v].ends)
-			{
-				const Piece &other = d_pieces[end.piece];
-				if (!is_free_single_arc(other, other_side))
+				if (v == *piece.start_vertex ||
+					v == *piece.end_vertex ||
+					!is_inside(v_along) ||
+					!is_within_thickness(v))
 				{
 					continue;
 				}
-				// Where the other input's piece goes from the vertex: to the piece's own start
-				// or end, or to a vertex on the segment's great circle.
-				const unsigned int far = end.at_end ? *other.start_vertex : *other.end_vertex;
-				if (far == *piece.start_vertex)
+
+				Passage passage;
+				passage.along = v_along;
+				passage.vertex = v;
+				bool before = false;
+				bool after = false;
+				for (const End &end : d_vertices[v].ends)
 				{
-					before = true;
+					const Piece &other = d_pieces[end.piece];
+					if (!is_free_single_arc(other, other_side))
+					{
+						continue;
+					}
+					// Where the other input's piece goes from the vertex: to the piece's own start
+					// or end, or to a vertex on the segment's great circle, inside the piece or
+					// beyond its start or end.
+					const unsigned int far = end.at_end ? *other.start_vertex : *other.end_vertex;
+					if (far == *piece.start_vertex)
+					{
+						before = true;
+					}
+					else if (far == *piece.end_vertex)
+					{
+						after = true;
+					}
+					else if (far != v && is_within_thickness(far))
+					{
+						const double far_along = along(d_vertices[far].position);
+						before = before || far_along < v_along - ALONG_ROUNDING;
+						after = after || far_along > v_along + ALONG_ROUNDING;
+						if (is_inside(far_along))
+						{
+							passage.inside.push_back(far);
+						}
+						else if (d_subject_polygon)
+						{
+							passage.beyond.push_back(std::make_pair(
+									end.piece,
+									far_along < v_along ? *piece.start_vertex : *piece.end_vertex));
+						}
+					}
 				}
-				else if (far == *piece.end_vertex)
+				if (before && after)
 				{
-					after = true;
+					cut_piece.passages.push_back(passage);
 				}
-				else if (far != v && is_within_thickness(far))
-				{
-					const double far_along = along(d_vertices[far].position);
-					ends_inside = ends_inside || (is_inside(far_along) && !is_passage(far));
-					before = before || far_along < v_along - ALONG_ROUNDING;
-					after = after || far_along > v_along + ALONG_ROUNDING;
-				}
-			}
-			if (before && after && !ends_inside)
-			{
-				++i;
-			}
-			else
-			{
-				passages.erase(passages.begin() + i);
-				i = 0;
 			}
 		}
-		for (const std::pair<double, unsigned int> &passage : passages)
+		if (!cut_piece.chain.empty() || !cut_piece.passages.empty())
 		{
-			if (std::find(cuts.begin(), cuts.end(), passage) == cuts.end())
+			cut_pieces.push_back(cut_piece);
+		}
+	}
+
+	//
+	// Then a passage is dropped if a piece of the other input that runs from it along its piece
+	// ends inside the piece at a vertex that is not one of the piece's passages, or runs beyond
+	// the piece's start or end and is not cut there (through a chain or at a passage of its
+	// own); until none is dropped, since a passage dropped is no cut for the rest. What is kept
+	// does not depend on the order: dropping one never lets another stay.
+	//
+	const auto is_passage = [](const CutPiece &cut_piece, unsigned int vertex)
+	{
+		return std::find_if(
+				cut_piece.passages.begin(),
+				cut_piece.passages.end(),
+				[vertex](const Passage &passage)
+				{
+					return passage.vertex == vertex;
+				}) != cut_piece.passages.end();
+	};
+	const auto is_cut_at = [&](unsigned int piece, unsigned int vertex)
+	{
+		const auto cut_piece = std::lower_bound(
+				cut_pieces.begin(),
+				cut_pieces.end(),
+				piece,
+				[](const CutPiece &lhs, unsigned int rhs)
+				{
+					return lhs.piece < rhs;
+				});
+		if (cut_piece == cut_pieces.end() || cut_piece->piece != piece)
+		{
+			return false;
+		}
+		return is_passage(*cut_piece, vertex) ||
+				std::find_if(
+						cut_piece->chain.begin(),
+						cut_piece->chain.end(),
+						[vertex](const std::pair<double, unsigned int> &cut)
+						{
+							return cut.second == vertex;
+						}) != cut_piece->chain.end();
+	};
+	for (bool dropped = true; dropped; )
+	{
+		dropped = false;
+		for (CutPiece &cut_piece : cut_pieces)
+		{
+			for (unsigned int i = 0; i < cut_piece.passages.size(); )
 			{
-				cuts.push_back(passage);
+				const Passage &passage = cut_piece.passages[i];
+				const bool kept =
+						std::all_of(
+								passage.inside.begin(),
+								passage.inside.end(),
+								[&](unsigned int vertex)
+								{
+									return is_passage(cut_piece, vertex);
+								}) &&
+						std::all_of(
+								passage.beyond.begin(),
+								passage.beyond.end(),
+								[&](const std::pair<unsigned int, unsigned int> &piece_and_vertex)
+								{
+									return is_cut_at(
+											piece_and_vertex.first, piece_and_vertex.second);
+								});
+				if (kept)
+				{
+					++i;
+				}
+				else
+				{
+					cut_piece.passages.erase(cut_piece.passages.begin() + i);
+					dropped = true;
+				}
+			}
+		}
+	}
+
+	d_self_touch_cuts.clear();
+	for (const CutPiece &cut_piece : cut_pieces)
+	{
+		// The cuts, as (angle along the segment, vertex): the chain's vertices and the passages.
+		std::vector<std::pair<double, unsigned int>> cuts = cut_piece.chain;
+		for (const Passage &passage : cut_piece.passages)
+		{
+			const std::pair<double, unsigned int> cut(passage.along, passage.vertex);
+			if (std::find(cuts.begin(), cuts.end(), cut) == cuts.end())
+			{
+				cuts.push_back(cut);
 				++d_diagnostics.self_touch_cuts_at_passages;
 			}
 		}
@@ -2054,8 +2178,10 @@ GPlatesMaths::PolygonOverlay::Overlay::find_self_touch_cuts()
 		// In order along the piece (vertices at one angle, in vertex order).
 		std::sort(cuts.begin(), cuts.end());
 
-		const double segment_angle =
-				angle_between(segment_start, segment.end_point().position_vector());
+		const Piece &piece = d_pieces[cut_piece.piece];
+		const GreatCircleArc &segment = d_rings[piece.ring].segments[*piece.single_arc_segment];
+		const double segment_angle = angle_between(
+				segment.start_point().position_vector(), segment.end_point().position_vector());
 		const Stop &start_stop = d_stops[piece.start_stop];
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				start_stop.num_records > 0,
@@ -2654,12 +2780,13 @@ GPlatesMaths::PolygonOverlay::Overlay::solve_vertex(
 		}
 
 		// Every class known and consistent: the two orders for the linking, a, the rays inside X
-		// in their measured relative order, b, the rays outside, and its mirror image. Which one
-		// keeps the other input's arrangement depends on which way round the inside rays lie
-		// from a, so the walk below takes the consistent one nearer the measured order: the first
-		// read the other way round reverses the inside rays, and where the other input passes
-		// twice inside X (an input touching itself on X's outline) the kept rays then pair
-		// crosswise, and two such vertices on two rings leave two rings that cross.
+		// in their measured relative order, b, the rays outside, and the same with the two halves
+		// exchanged (a, the rays outside, b, the rays inside: each half in that same order, not
+		// reversed). Which one keeps the other input's arrangement depends on which way round the
+		// inside rays lie from a, so the walk below takes the consistent one nearer the measured
+		// order: the first read the other way round reverses the inside rays, and where the other
+		// input passes twice inside X (an input touching itself on X's outline) the kept rays then
+		// pair crosswise, and two such vertices on two rings leave two rings that cross.
 		std::vector<unsigned int> inside, outside;
 		for (unsigned int i = 0; i < num_rays; ++i)
 		{
