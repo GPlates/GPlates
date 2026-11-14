@@ -59,7 +59,8 @@ namespace GPlatesMaths
 	 *
 	 * Every ring of both inputs, exterior and interior, is intersected with every ring of the
 	 * other (GeometryIntersect). The intersection records are grouped into overlay *vertices* by
-	 * the original vertex they name (by identity, never by distance), and every ring is cut into
+	 * the original vertex they name (by identity, never by distance; and the records at one
+	 * position where an input touches itself), and every ring is cut into
 	 * *pieces* between consecutive vertices. Later stages classify each piece as inside or outside
 	 * the other input, and link the pieces an operation keeps into output rings.
 	 *
@@ -461,10 +462,13 @@ namespace GPlatesMaths
 
 
 		/**
-		 * An overlay vertex: the records that name a common original vertex, closed transitively.
+		 * An overlay vertex: the records that name a common original vertex, closed transitively,
+		 * with the records at their position where an input touches itself inside the other's edge
+		 * (two of its vertices there, or a vertex and the crossing of the edge it lies on:
+		 * Overlay::find_same_point_vertices).
 		 *
-		 * Records at one point that name no common original vertex (two crossings of a twist lying
-		 * on the other polygon) are separate vertices by design.
+		 * Two crossings at one point (a twist lying on the other polygon) are separate vertices
+		 * by design.
 		 */
 		class Vertex
 		{
@@ -591,7 +595,9 @@ namespace GPlatesMaths
 			unsigned int spikes = 0;              // there-and-back pairs among them
 			unsigned int common_pairs = 0;
 			unsigned int common_ambiguous = 0;    // vertex pairs with both inputs' pieces, unpaired
+			unsigned int same_point_joins = 0;    // vertices joined to another at their point
 			unsigned int self_touch_cuts = 0;     // pieces cut where the input touches itself
+			unsigned int self_touch_cuts_at_passages = 0;  // of which, with no chain through them
 			unsigned int zero_length_rays = 0;    // rays with no direction
 			unsigned int max_ends = 0;            // most ends at a vertex (a common ray: two)
 
@@ -1110,9 +1116,9 @@ namespace GPlatesMaths
 			/**
 			 * Where a ring is cut at an overlay vertex that no record of its own names: the input
 			 * touches itself there, on a stretch it shares with the other input (@a
-			 * find_self_touch_cuts). Keyed by (ring, ring-local segment, the first record of the
-			 * stop the cuts follow); each cut is (ratio along the segment, vertex), in order along
-			 * it.
+			 * find_self_touch_cuts: through a chain of the other input's pieces, or at a passage).
+			 * Keyed by (ring, ring-local segment, the first record of the stop the cuts follow);
+			 * each cut is (ratio along the segment, vertex), in order along it.
 			 */
 			std::map<std::tuple<unsigned int, unsigned int, unsigned int>,
 					std::vector<std::pair<double, unsigned int>>> d_self_touch_cuts;
@@ -1136,8 +1142,20 @@ namespace GPlatesMaths
 					Side side,
 					unsigned int segment_index) const;
 
+			//! The vertices, by the records' identities and @a joined_records (pairs of records
+			//! whose vertices are one point, from @a find_same_point_vertices).
 			void
-			build_vertices();
+			build_vertices(
+					const std::vector<std::pair<unsigned int, unsigned int>> &joined_records);
+
+			/**
+			 * The vertices that are one point of an input's touch of itself (section 5.2): two
+			 * vertices joined by a single arc of no length, at least one end of it a touch. Each
+			 * pair is appended to @a joined_records as a record of each; false if there is none.
+			 */
+			bool
+			find_same_point_vertices(
+					std::vector<std::pair<unsigned int, unsigned int>> &joined_records) const;
 
 			void
 			build_stops_and_pieces(

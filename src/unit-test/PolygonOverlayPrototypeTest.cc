@@ -60,13 +60,16 @@
 // The data file is a frozen snapshot, exported from the Phase 4a prototype of the overlay (a
 // Python implementation in exact rational arithmetic, kept outside this repository) on its
 // catalogue of configurations with several records at or near one point. The prototype ran the
-// chosen configuration ('r5q': identity vertices with the loop rule and the spike rule where the
-// other input passes the tip at most once, self-touch cuts, the LL rule, the one-passage rule with
+// chosen configuration ('r5r': identity vertices, with the vertices at one point of an input's
+// touch of itself made one, the loop rule and the spike rule where the other input passes the tip
+// at most once, self-touch cuts at chains and at passages, the LL rule, the one-passage rule with
 // its built order nearer the measured one, midpoint tests in order of margin, the bundle rule where
 // both inputs pass more than once with cones that count a ray's offsets off its segment, option 3
 // for anchorless chains; for a polyline subject, the spike rule on the clip's rings only, and a
 // polyline single arc that a clip single arc also joins along; the snapshots were exported under
-// 'r5p', which takes the first built order, and the cases that change re-exported), and the file
+// 'r5p', which takes the first built order and has neither the vertices at one point nor the cuts
+// at passages, and the cases that change re-exported under 'r5q', which has the order, and then
+// under 'r5r', which has all three), and the file
 // holds every tie order it ran, including the orders the C++ sort can produce: GeometryIntersect
 // orders records along a segment by a cosine in
 // doubles, so records whose cosines agree within a few ulps come out in either order. Format, per
@@ -1507,7 +1510,9 @@ namespace
 }
 
 
-// The Phase 4a catalogue: configurations with several records at or near one point.
+// The Phase 4a catalogue: configurations with several records at or near one point. In two of
+// them vertices at one point are made one (section 5.2): 'touching rings eps=+0h' and its
+// 'hole-above', a hole's vertex at its exterior's, inside the clip's edge.
 TEST(PolygonOverlayPrototypeTest, Catalogue)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-catalogue.txt", 400);
@@ -1522,10 +1527,20 @@ TEST(PolygonOverlayPrototypeTest, Catalogue)
 // cases that alone show the sector walk's phase and the four-kept bounce pairing
 // (six#27, #207, near#48, #277), 20 of the 'holes' generator (holes and islands in both inputs,
 // no ring crossing another: the grouping's parent choice), chain#146 seed 2, whose chain vertex
-// at a segment's end needs the self-touch cuts' rounding margin, and three for the linking's two
+// at a segment's end needs the self-touch cuts' rounding margin, three for the linking's two
 // rules for an input's touch of itself (CutsAtChainsAndSpikeWalls, below): shared#541 seed 2, a
 // dense shared edge on which the walk of the crossing test, from a vertex along the ring, must stop
-// at the other passage (without the stop it does not end), zero#563 seed 11 and shared#31 seed 14.
+// at the other passage (without the stop it does not end), zero#563 seed 11 and shared#31 seed 14;
+// and three that hold what a self-touch cut at a passage must leave alone (section 5.2), in which
+// the prototype makes no such cut either: six#56 seed 6 and six#260 seed 10, a hole's tip within a
+// thickness of its exterior's edge that the other input's edge passes one way only (a neck: cut
+// there, the areas were wrong), and shared#464 seed 19, whose input rings cross, where a piece
+// along the stretch ends at a crossing inside it (cut at the touch alone, it failed its checks).
+// Of the two rules for an input's touch of itself on the other's outline (section 5.2), each
+// applies in one case here: vertices at one point are made one in chain#146 seed 2 (a vertex of the
+// subject on its own edge, where that edge crosses the clip's: the crossing and the vertex), and a
+// cut is made at a passage in shared#0 seed 1 (a hole's vertex on its exterior's edge, along which
+// the clip runs).
 TEST(PolygonOverlayPrototypeTest, Hunt)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-hunt.txt", 100);
@@ -1559,6 +1574,20 @@ TEST(PolygonOverlayPrototypeTest, Anchorless)
 TEST(PolygonOverlayPrototypeTest, Bundle)
 {
 	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-bundle.txt", 15);
+	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
+}
+
+
+// Valid inputs that touch themselves at a point on the other's outline, far above the thickness
+// scale (section 5.2: vertices at one point are one vertex, and a piece is cut at a passage), which
+// the generators reach only at the thickness scale and almost only with rings that cross: the nine
+// configurations of PolygonOverlayTest.SelfTouchingInputs, each as given and swapped; a joined
+// vertex whose second stop on a segment a cut follows (keyed by the stop, not the vertex: keyed by
+// the vertex the cut lands inside the loop between the two stops); and the two polyline tests',
+// a join and two cuts at passages.
+TEST(PolygonOverlayPrototypeTest, SelfTouching)
+{
+	compare_file(GPLATES_UNIT_TEST_DATA_DIR "/polygon-overlay/prototype-self-touching.txt", 20);
 	EXPECT_EQ(num_chain_cut_ring_sets, 0u);
 }
 

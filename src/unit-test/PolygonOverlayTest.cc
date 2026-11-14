@@ -2171,6 +2171,210 @@ TEST(PolygonOverlayTest, LinkSymmetricDifference)
 }
 
 
+namespace
+{
+	/**
+	 * A point of a plane grid, 0.02 radians to the unit, by the frame's gnomonic projection (so
+	 * that a grid point on the line through two others lies on their great circle arc): the
+	 * shared vertices, shared edges and vertices on edges of grid polygons are exact.
+	 */
+	PointOnSphere
+	grid(
+			double x,
+			double y)
+	{
+		return F.at(0.02 * x, 0.02 * y);
+	}
+
+	ring_type
+	grid_ring(
+			const std::vector<std::pair<double, double>> &points)
+	{
+		ring_type ring;
+		for (const std::pair<double, double> &point : points)
+		{
+			ring.push_back(grid(point.first, point.second));
+		}
+		return ring;
+	}
+}
+
+
+// Inputs that touch themselves (an interior ring's tip on the exterior ring, valid under OGC rules)
+// at a point on the other input's outline, far above the thickness scale: the four reproductions
+// of PR C's final review, and what else the two rules for them must do (section 5.2: vertices at
+// one point are one vertex, and a piece is cut at a passage), each both ways round. Every point
+// reads right by parity whatever the rings, so the areas and the crossing groups are what these
+// check; and each case but the first fails with one of the two rules taken out.
+TEST(PolygonOverlayTest, SelfTouchingInputs)
+{
+	// Checks the outputs, both ways round, and returns the vertices joined and the pieces cut at
+	// passages, with the inputs as given.
+	const auto check_both_ways = [](const PolygonOnSphere &P, const PolygonOnSphere &Q)
+	{
+		std::pair<unsigned int, unsigned int> joins_and_cuts(0, 0);
+		for (bool swap : { false, true })
+		{
+			SCOPED_TRACE(swap ? "swapped" : "as given");
+			const PolygonOnSphere &subject = swap ? Q : P;
+			const PolygonOnSphere &clip = swap ? P : Q;
+			Overlay::Overlay overlay(subject, clip);
+			classify_and_check(overlay);
+			check_oracle(subject, clip, overlay);
+			check_areas(subject, clip, overlay);
+			if (!swap)
+			{
+				joins_and_cuts = std::make_pair(
+						overlay.get_diagnostics().same_point_joins,
+						overlay.get_diagnostics().self_touch_cuts_at_passages);
+			}
+		}
+		return joins_and_cuts;
+	};
+	typedef std::pair<unsigned int, unsigned int> joins_and_cuts_type;
+
+	{
+		// Two L shapes round a square hole that touches each one's exterior at a corner, on the
+		// other's outline: the one-passage rule's linking order. The intersection is two pieces of
+		// three squares each (it was one polygon of two crossing rings, of area near zero).
+		SCOPED_TRACE("one-passage order");
+		const auto P = polygon(
+				grid_ring({ { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 3 }, { 2, 3 }, { 3, 3 }, { 3, 2 },
+						{ 3, 1 }, { 2, 1 }, { 2, 0 }, { 1, 0 }, { 0, 0 } }),
+				{ grid_ring({ { 2, 2 }, { 1, 2 }, { 1, 1 }, { 2, 1 } }) });
+		const auto Q = polygon(
+				grid_ring({ { 3, 2 }, { 3, 1 }, { 3, 0 }, { 2, 0 }, { 1, 0 }, { 0, 0 }, { 0, 1 },
+						{ 0, 2 }, { 1, 2 }, { 1, 3 }, { 2, 3 }, { 3, 3 } }),
+				{ grid_ring({ { 1, 1 }, { 2, 1 }, { 2, 2 }, { 1, 2 } }) });
+		Overlay::Overlay overlay(*P, *Q);
+		classify_and_check(overlay);
+		EXPECT_EQ(ring_sizes(overlay, Overlay::INTERSECTION).size(), 2u);
+		check_both_ways(*P, *Q);
+	}
+
+	{
+		// A hole whose tip touches the exterior at one of its vertices, and a triangle one of whose
+		// edges passes through that point: two overlay vertices at one position, joined by a
+		// zero-length piece of the triangle. The union was one ring through the point twice,
+		// counting the hole as area.
+		SCOPED_TRACE("a touch inside the other's edge");
+		const auto P = polygon(
+				grid_ring({ { 0, 0 }, { 1, 0 }, { 5, 0 }, { 5, 1 }, { 4, 5 }, { 3, 5 }, { 1, 3 } }),
+				{ grid_ring({ { 1, 1 }, { 4, 1 }, { 3, 4 }, { 1, 3 } }) });
+		const auto Q = polygon(grid_ring({ { 1, 1 }, { 1, 4 }, { 0, 5 } }));
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(1, 0));
+	}
+
+	{
+		// Each input's hole touches its exterior where the other's runs: two coincident pieces
+		// that did not pair, classified on their own, so that the symmetric difference came back
+		// with a spike a grid unit long and grouped a ring as a hole of a polygon it lies outside.
+		SCOPED_TRACE("coincident pieces that did not pair");
+		const auto P = polygon(
+				grid_ring({ { 0, 1 }, { 1, 0 }, { 3, 0 }, { 2, 1 }, { 3, 1 }, { 3, 3 }, { 0, 3 },
+						{ 0, 2 } }),
+				{ grid_ring({ { 2, 1 }, { 2, 2 }, { 1, 2 } }) });
+		const auto Q = polygon(
+				grid_ring({ { 1, 2 }, { 2, 3 }, { 4, 3 }, { 3, 2 }, { 4, 2 }, { 4, 0 }, { 1, 0 },
+						{ 1, 1 } }),
+				{ grid_ring({ { 3, 2 }, { 3, 1 }, { 2, 1 } }) });
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(1, 0));
+	}
+
+	{
+		// The same square twice, each with a hole whose tip lies on the bottom edge, at different
+		// points: each side was cut only at the other's tip, nothing paired, and the overlay
+		// threw (in every operation but the symmetric difference).
+		SCOPED_TRACE("interleaved touches on a shared edge");
+		const auto P = polygon(
+				grid_ring({ { 0, 0 }, { 3, 0 }, { 3, 3 }, { 2, 3 }, { 0, 3 }, { 0, 2 } }),
+				{ grid_ring({ { 1, 0 }, { 2, 1 }, { 2, 2 } }) });
+		const auto Q = polygon(
+				grid_ring({ { 3, 0 }, { 0, 0 }, { 0, 3 }, { 1, 3 }, { 3, 3 }, { 3, 2 } }),
+				{ grid_ring({ { 2, 0 }, { 1, 1 }, { 1, 2 } }) });
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(0, 2));
+	}
+
+	{
+		// The same, the tips half a thickness short of the edge: necks, and still touches of the
+		// edge that the other input runs along, since a touch is within the thickness.
+		SCOPED_TRACE("interleaved tips within the thickness of a shared edge");
+		const double gap = 0.5 * H / 0.02;
+		const auto P = polygon(
+				grid_ring({ { 0, 0 }, { 3, 0 }, { 3, 3 }, { 2, 3 }, { 0, 3 }, { 0, 2 } }),
+				{ grid_ring({ { 1, gap }, { 2, 1 }, { 2, 2 } }) });
+		const auto Q = polygon(
+				grid_ring({ { 3, 0 }, { 0, 0 }, { 0, 3 }, { 1, 3 }, { 3, 3 }, { 3, 2 } }),
+				{ grid_ring({ { 2, gap }, { 1, 1 }, { 1, 2 } }) });
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(0, 2));
+	}
+
+	{
+		// Two tips of each input on the shared edge, alternating: no piece of either that runs
+		// from one tip to the next ends at a stop of the other's edge, so nothing but the tips'
+		// own positions on the edge finds the cuts (and all four in one pass).
+		SCOPED_TRACE("alternating touches on a shared edge");
+		const auto tip = [](double x)
+		{
+			return grid_ring({ { x, 0 }, { x + 0.4, 1 }, { x - 0.4, 1 } });
+		};
+		const auto P = polygon(
+				grid_ring({ { 0, 0 }, { 5, 0 }, { 5, 3 }, { 0, 3 } }), { tip(1), tip(3) });
+		const auto Q = polygon(
+				grid_ring({ { 5, 0 }, { 0, 0 }, { 0, 3 }, { 5, 3 } }), { tip(2), tip(4) });
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(0, 4));
+	}
+
+	{
+		// Seventeen tips of one input on an edge the other shares: more than a chain is searched
+		// for (16 pieces), so the edge was not cut, and the intersection of two polygons that only
+		// share the edge was a polygon of no area along it. Each tip is a passage.
+		SCOPED_TRACE("more touches on a shared edge than a chain is long");
+		std::vector<ring_type> tips;
+		for (unsigned int i = 1; i <= 17; ++i)
+		{
+			const double x = i;
+			tips.push_back(grid_ring({ { x, 0 }, { x + 0.3, 1 }, { x - 0.3, 1 } }));
+		}
+		const auto P = polygon(grid_ring({ { 0, 0 }, { 18, 0 }, { 18, 3 }, { 0, 3 } }), tips);
+		const auto Q = polygon(grid_ring({ { 0, 0 }, { 0, -3 }, { 18, -3 }, { 18, 0 } }));
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(0, 17));
+		Overlay::Overlay overlay(*P, *Q);
+		EXPECT_EQ(classify_and_check(overlay), Overlay::RESULT_OUTSIDE);
+		EXPECT_TRUE(ring_sizes(overlay, Overlay::INTERSECTION).empty());
+	}
+
+	{
+		// A hole's tip on its exterior's edge, and an edge of the other input through the point,
+		// across both, into the hole: the tip and the crossing of the two edges are one vertex.
+		// As two, tied along the other input's edge, one order of the two had the hole's tip
+		// beyond its exterior.
+		SCOPED_TRACE("a vertex on its own edge, crossed there");
+		const auto P = polygon(
+				grid_ring({ { 0, 0 }, { 4, 0 }, { 4, 4 }, { 0, 4 } }),
+				{ grid_ring({ { 2, 0 }, { 3, 2 }, { 1, 2 } }) });
+		const auto Q = polygon(grid_ring({ { 1.5, -1 }, { 2.5, 1 }, { 0.5, 1 } }));
+		EXPECT_EQ(check_both_ways(*P, *Q), joins_and_cuts_type(1, 0));
+	}
+
+	{
+		// Both inputs have a vertex on their own edge at one point, where the two edges cross:
+		// the crossing is joined to the vertices' vertex though both inputs have a piece between
+		// the two (a pair of no length; left as two, the intersection had a ring of two points
+		// a rounding apart and a third).
+		SCOPED_TRACE("both touch themselves at one point");
+		const auto P = polygon(
+				grid_ring({ { 1, 1 }, { 2, 1 }, { 4, 0 }, { 4, 2 }, { 3, 2 }, { 4, 3 }, { 0, 3 },
+						{ 0, 2 } }),
+				{ grid_ring({ { 1, 2 }, { 3, 1 }, { 2, 3 } }) });
+		const auto Q = polygon(
+				grid_ring({ { 1, 0 }, { 2, 0 }, { 3, 0 }, { 4, 4 }, { 3, 4 }, { 1, 2 }, { 0, 2 } }),
+				{ grid_ring({ { 1, 1 }, { 3, 3 }, { 2, 3 } }) });
+		EXPECT_EQ(check_both_ways(*P, *Q).first, 1u);
+	}
+}
+
+
 // Holes in both polygons, each wholly inside the other polygon: the intersection is one polygon
 // with both holes; in each difference the other's hole is an island; the union fills both.
 TEST(PolygonOverlayTest, GroupHolesInBoth)
@@ -3271,8 +3475,9 @@ TEST(PolygonOverlayTest, PolylineTouchAndEnd)
 
 // Through the point where the clip's exterior and a hole touch (a pinch): outside before it, inside
 // after (the hole is beside, not ahead). The crossing of the exterior's edge and the hole's vertex
-// are two vertices at one point (no original vertex in common), so the inside run starts with
-// both (near-zero output edges, section 5.5).
+// name no original vertex in common, but are at one point, so they are one vertex (section 5.2),
+// and the polyline's piece between its two stops there is a loop, which goes with the run before
+// it: the outside run ends with both stops (near-zero output edges, section 5.5).
 TEST(PolygonOverlayTest, PolylinePinch)
 {
 	const auto Q = polygon(
@@ -3281,7 +3486,32 @@ TEST(PolygonOverlayTest, PolylinePinch)
 	const auto L = PolylineOnSphere::create(ring_type{ F.at(-0.01, -0.03), F.at(0.01, -0.01) });
 	Overlay::Overlay overlay(*L, *Q);
 	overlay.classify();
-	EXPECT_EQ(polyline_runs(overlay), (runs_type{ { false, 2 }, { true, 3 } }));
+	EXPECT_EQ(overlay.get_diagnostics().same_point_joins, 1u);
+	EXPECT_EQ(polyline_runs(overlay), (runs_type{ { false, 3 }, { true, 2 } }));
+	check_polyline_oracle(*L, *Q, overlay);
+}
+
+
+// A polyline along the clip's edge that comes back to end on its own first segment, where the
+// clip has a hole's tip on that edge at another point. Each is cut where the other touches itself
+// (a record names the polyline's end point, and one the tip) and not where it does itself, since
+// GeometryIntersect intersects neither with itself, so no chain of either's pieces joins two
+// stops of the other. Each is cut at the passage (section 5.2): the polyline's three pieces on
+// the edge pair with the clip's and are along its outline, inside. (Uncut, they had no partner,
+// and were classified at their midpoints, on the clip's outline: by rounding.)
+TEST(PolygonOverlayTest, PolylineTouchingItselfAlong)
+{
+	const auto Q = polygon(
+			square(-0.01, -0.01, 0.02, 0.02),
+			{ ring_type{ F.at(0.01, -0.01), F.at(0.015, 0.0), F.at(0.005, 0.0) } });
+	const auto L = PolylineOnSphere::create(ring_type{
+			F.at(-0.01, -0.01), F.at(0.02, -0.01), F.at(0.02, -0.02), F.at(0.0, -0.02),
+			F.at(0.0, -0.01) });
+	Overlay::Overlay overlay(*L, *Q);
+	EXPECT_EQ(overlay.classify(), Overlay::RESULT_INTERSECTING);
+	EXPECT_EQ(overlay.get_diagnostics().self_touch_cuts_at_passages, 2u);
+	EXPECT_EQ(overlay.get_diagnostics().along_pieces, 3u);
+	EXPECT_EQ(polyline_runs(overlay), (runs_type{ { true, 4 }, { false, 4 } }));
 	check_polyline_oracle(*L, *Q, overlay);
 }
 

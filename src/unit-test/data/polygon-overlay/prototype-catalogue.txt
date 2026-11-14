@@ -8942,17 +8942,17 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 in vertex 2 0
 piece P 1 0 0 0 in vertex 3 3
 piece Q 0 0 0 0 in deduced 0 1
-piece Q 0 0 0 0 in deduced 1 3
+piece Q 0 0 1 0 none none 1 3
 piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out vertex 2 0
 output and 2
-ringout 3 P1.1 P1.2
 ringout 1 0 P0.1 P0.0 2
+ringout 1 P1.2 P1.1
 output diff 2
-ringout 1 0 P0.2
 ringout 1 P0.4 2
+ringout 0 P0.2 1
 output or 1
-ringout 1 P0.4 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2
+ringout 0 P0.2 1 P0.4 2 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 order 0 0
 piece P 0 0 0 0 out vertex 0 1
@@ -8960,17 +8960,17 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 in vertex 2 0
 piece P 1 0 0 0 in vertex 3 3
 piece Q 0 0 0 0 in deduced 0 3
-piece Q 0 0 0 0 in deduced 3 1
+piece Q 0 0 1 0 none none 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
 output and 2
-ringout 3 P1.2 P1.1
-ringout 0 P0.1 P0.0 2 1
+ringout 1 P1.1 P1.2
+ringout 1 2 P0.0 P0.1 0
 output diff 2
-ringout 1 P0.4 2
-ringout 1 0 P0.2
+ringout 0 1 P0.2
+ringout 1 2 P0.4
 output or 1
-ringout 0 Q0.2 Q0.1 Q0.0 Q0.3 2 P0.4 1 P0.2
+ringout 1 P0.4 2 Q0.3 Q0.0 Q0.1 Q0.2 0 P0.2
 endorder
 endcase
 case touching rings eps=+0h hole-above
@@ -9000,17 +9000,17 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 in vertex 2 0
 piece P 1 0 0 0 out vertex 3 3
 piece Q 0 0 0 0 in deduced 0 1
-piece Q 0 0 0 0 in deduced 1 3
+piece Q 0 0 1 0 none none 1 3
 piece Q 0 0 0 0 in deduced 3 2
 piece Q 0 0 0 0 out vertex 2 0
 output and 1
-ringout 0 1 2 P0.0 P0.1
+ringout 0 P0.1 P0.0 2 1
 output diff 3
-ringout 3 P1.2 P1.1
-ringout 1 0 P0.2
-ringout 1 P0.4 2
+ringout 1 P1.2 P1.1
+ringout 1 P0.2 0
+ringout 2 P0.4 1
 output or 2
-ringout 3 P1.2 P1.1
+ringout 1 P1.2 P1.1
 ringout 2 P0.4 1 P0.2 0 Q0.2 Q0.1 Q0.0 Q0.3
 endorder
 order 0 0
@@ -9019,18 +9019,18 @@ piece P 0 0 0 0 out vertex 1 2
 piece P 0 0 0 0 in vertex 2 0
 piece P 1 0 0 0 out vertex 3 3
 piece Q 0 0 0 0 in deduced 0 3
-piece Q 0 0 0 0 in deduced 3 1
+piece Q 0 0 1 0 none none 3 1
 piece Q 0 0 0 0 in deduced 1 2
 piece Q 0 0 0 0 out vertex 2 0
 output and 1
-ringout 2 1 0 P0.1 P0.0
+ringout 0 1 2 P0.0 P0.1
 output diff 3
-ringout 3 P1.1 P1.2
-ringout 1 P0.4 2
-ringout 1 0 P0.2
+ringout 1 P1.1 P1.2
+ringout 2 1 P0.4
+ringout 0 1 P0.2
 output or 2
-ringout 3 P1.2 P1.1
-ringout 0 Q0.2 Q0.1 Q0.0 Q0.3 2 P0.4 1 P0.2
+ringout 1 P1.1 P1.2
+ringout 0 P0.2 1 P0.4 2 Q0.3 Q0.0 Q0.1 Q0.2
 endorder
 endcase
 case touching rings eps=+0.3h
