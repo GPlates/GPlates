@@ -1038,8 +1038,10 @@ namespace GPlatesMaths
 			 * The output of one operation as polygons with holes (section 5.2): the rings of
 			 * @a extract_rings grouped by containment with parity depth (an even depth is an
 			 * exterior, an odd depth a hole of the ring containing it, and an island in a hole an
-			 * exterior of its own), each oriented with the output on its left, and slivers dropped
-			 * if Options::sliver_min_width is set. Rings that cross each other (where an input's
+			 * exterior of its own), each oriented with the output on its left; a polygon whose rings
+			 * touch so as to divide its interior relinked into one polygon per connected piece
+			 * (Diagnostics::polygons_relinked); and slivers dropped, piece by piece, if
+			 * Options::sliver_min_width is set. Rings that cross each other (where an input's
 			 * rings cross, do_rings_cross) go into one polygon, read by parity, so that no two
 			 * polygons overlap (Diagnostics::crossing_ring_groups); their orientation is arbitrary
 			 * (no orientation has the output on the left all round). Appended to @a polygons.
