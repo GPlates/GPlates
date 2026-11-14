@@ -1134,6 +1134,25 @@ namespace GPlatesMaths
 			std::map<std::tuple<unsigned int, unsigned int, unsigned int>,
 					std::vector<std::pair<double, unsigned int>>> d_self_touch_cuts;
 
+			//! A vertex of an input on an edge of another ring of the same input (@a
+			//! find_own_touches), as a point of that edge.
+			class OwnTouch
+			{
+			public:
+				double along;   // the angle along the segment's plane from its start
+				double ratio;   // the angle fraction along the segment (its provenance)
+				PointOnSphere position;  // the touching vertex's, exactly
+			};
+
+			/**
+			 * The touch points the walk inserts (section 5.2, rings made simple), by (ring,
+			 * ring-local segment), in order along the segment; and the stops already searched.
+			 * Mutable: found at walk time, for the vertices output (@a find_own_touches).
+			 */
+			mutable std::map<std::pair<unsigned int, unsigned int>, std::vector<OwnTouch>>
+					d_own_touches;
+			mutable std::vector<bool> d_own_touch_searched;
+
 
 			void
 			build();
@@ -1246,6 +1265,10 @@ namespace GPlatesMaths
 				bool at_end;
 
 				Provenance provenance;
+
+				//! A touch point (@a find_own_touches) inside the arc that leaves 'stop' in ring
+				//! order: its angle fraction along that stop's 'segment_out'. None otherwise.
+				boost::optional<double> touch_ratio;
 			};
 
 			typedef std::vector<WalkedPoint> walked_ring_type;
@@ -1269,6 +1292,26 @@ namespace GPlatesMaths
 					Operation operation,
 					std::vector<walked_ring_type> &walked,
 					unsigned int &num_pairing_failures) const;
+
+			/**
+			 * The touch points of @a d_own_touches for the pieces @a operation keeps (section 5.2,
+			 * rings made simple): each kept piece's original vertices of an input with interior
+			 * rings, searched once per overlay, on the edges of the input's other rings.
+			 */
+			void
+			find_own_touches(
+					Operation operation) const;
+
+			/**
+			 * Appends to @a ring a piece's points after the vertex it is left from, before the one
+			 * it arrives at, in the direction walked: its interior stops, and the touch points on
+			 * its arcs. A closed piece's (none): every stop of its ring, from the first.
+			 */
+			void
+			append_piece_points(
+					walked_ring_type &ring,
+					unsigned int piece,
+					bool at_end) const;
 
 			/**
 			 * The symmetric difference's rings before its split: the split rings of the

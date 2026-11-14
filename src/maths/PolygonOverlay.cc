@@ -351,6 +351,67 @@ namespace GPlatesMaths
 
 
 			/**
+			 * A segment's great circle in doubles, for distances from its plane and angles along
+			 * it from its start: the plane even of a segment GreatCircleArc calls zero length
+			 * (under about 1e-6 radians, where it has no rotation axis). None for a segment of no
+			 * length.
+			 */
+			class SegmentPlane
+			{
+			public:
+				static
+				boost::optional<SegmentPlane>
+				create(
+						const GreatCircleArc &segment)
+				{
+					const Vector3D start(segment.start_point().position_vector());
+					const Vector3D end(segment.end_point().position_vector());
+					const Vector3D normal = cross(start, end);
+					const double normal_length = std::sqrt(normal.magSqrd().dval());
+					if (!(normal_length > 0))
+					{
+						return boost::none;
+					}
+					SegmentPlane plane;
+					plane.d_start = start;
+					plane.d_axis = (1.0 / normal_length) * normal;
+					plane.d_length = std::atan2(normal_length, dot(start, end).dval());
+					return plane;
+				}
+
+				double
+				signed_distance(
+						const PointOnSphere &point) const
+				{
+					return dot(d_axis, Vector3D(point.position_vector())).dval();
+				}
+
+				//! atan2(axis . (start x point), start . point).
+				double
+				along(
+						const PointOnSphere &point) const
+				{
+					const Vector3D x(point.position_vector());
+					return std::atan2(
+							dot(d_axis, cross(d_start, x)).dval(),
+							dot(d_start, x).dval());
+				}
+
+				//! The angle along to the segment's end.
+				double
+				length() const
+				{
+					return d_length;
+				}
+
+			private:
+				Vector3D d_start;
+				Vector3D d_axis;
+				double d_length = 0.0;
+			};
+
+
+			/**
 			 * The hemisphere check's reference point's distance from both inputs' outlines: ten
 			 * times the thickness, so that its point-in-polygon tests, threshold off, have a
 			 * margin.
@@ -4867,11 +4928,225 @@ GPlatesMaths::PolygonOverlay::Overlay::is_kept(
 
 
 void
+GPlatesMaths::PolygonOverlay::Overlay::find_own_touches(
+		Operation operation) const
+{
+	//
+	// Where an input touches itself away from the other's outline with a vertex of one ring on an
+	// edge of another (a hole's vertex on its exterior's edge), no record is there, and the rings
+	// walked through the two have no point in common there: an output ring with a vertex on its
+	// own edge, or two rings touching where only one has a point, which no cut by position can
+	// see. So the touched edge gets a point at the vertex's position (section 5.2, rings made
+	// simple). Only between two rings of an input with interior rings: a valid polygon touches
+	// itself nowhere else (a ring touching itself is an invalid input, left as it is). Searched
+	// from the original vertices (in no record, so off the other input's outline) of the pieces
+	// the operation keeps: the touched edge's piece through the point is of the same input, on
+	// the same side of the other, so kept with it; and nothing is searched where the output is
+	// small (a large clip with holes), a polyline's, or whole. Exact up to rounding: within
+	// OWN_TOUCH_DISTANCE of the edge's plane, the scale of the join of vertices at one point.
+	// Not the thickness, which would bend an edge by up to 9 m to make a touch that is not
+	// there; a vertex farther than rounding from an edge leaves the output as valid as the input.
+	//
+	const double OWN_TOUCH_DISTANCE = 1e-12;  // radians, from the edge's plane
+	const double ALONG_ROUNDING = 1e-12;      // radians, from the edge's ends
+	if (d_own_touch_searched.size() != d_stops.size())
+	{
+		d_own_touch_searched.assign(d_stops.size(), false);
+	}
+
+	bool found = false;
+	for (unsigned int p = 0; p < d_pieces.size(); ++p)
+	{
+		const Piece &piece = d_pieces[p];
+		const RingView &ring_view = d_rings[piece.ring];
+		const PolygonOnSphere *const polygon =
+				(ring_view.side == SUBJECT) ? d_subject_polygon : &d_clip;
+		if (!polygon ||
+			polygon->number_of_interior_rings() == 0 ||
+			piece.internal ||
+			!is_kept(piece, operation).get_value_or(false))
+		{
+			continue;
+		}
+
+		// The piece's interior stops (a closed piece's: all of its ring's).
+		std::vector<unsigned int> stops;
+		if (piece.closed)
+		{
+			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+			{
+				stops.push_back(s);
+			}
+		}
+		else
+		{
+			for (unsigned int s = piece.start_stop; ; )
+			{
+				s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+				if (s == piece.end_stop)
+				{
+					break;
+				}
+				stops.push_back(s);
+			}
+		}
+
+		for (unsigned int s : stops)
+		{
+			if (d_stops[s].kind != Stop::ORIGINAL_VERTEX || d_own_touch_searched[s])
+			{
+				continue;
+			}
+			d_own_touch_searched[s] = true;
+			++d_diagnostics.own_touch_queries;
+
+			const PointOnSphere &position = d_stops[s].position;
+			const auto visit = [&](unsigned int segment_index)
+			{
+				const unsigned int ring = ring_of_segment(ring_view.side, segment_index);
+				if (ring == piece.ring)
+				{
+					return;
+				}
+				const RingView &touched = d_rings[ring];
+				const unsigned int segment = segment_index - touched.first_segment_index;
+				const boost::optional<SegmentPlane> plane =
+						SegmentPlane::create(touched.segments[segment]);
+				if (!plane || std::fabs(plane->signed_distance(position)) > OWN_TOUCH_DISTANCE)
+				{
+					return;
+				}
+				const double along = plane->along(position);
+				if (!(along > ALONG_ROUNDING && along < plane->length() - ALONG_ROUNDING))
+				{
+					return;  // at an end: a repeated position (cut by extract_rings)
+				}
+				d_own_touches[std::make_pair(ring, segment)].push_back(
+						OwnTouch{ along, along / plane->length(), position });
+				found = true;
+			};
+			visit_segments_near_point(polygon->get_bounding_tree(), position, visit);
+		}
+	}
+
+	if (found)
+	{
+		// In order along each edge, two at one point once (two holes' vertices on one edge).
+		for (auto &edge_touches : d_own_touches)
+		{
+			std::vector<OwnTouch> &touches = edge_touches.second;
+			std::stable_sort(
+					touches.begin(),
+					touches.end(),
+					[](const OwnTouch &a, const OwnTouch &b) { return a.along < b.along; });
+			unsigned int num_kept = 0;
+			for (unsigned int t = 0; t < touches.size(); ++t)
+			{
+				if (num_kept == 0 ||
+					touches[t].along > touches[num_kept - 1].along + ALONG_ROUNDING)
+				{
+					touches[num_kept++] = touches[t];
+				}
+			}
+			touches.erase(touches.begin() + num_kept, touches.end());
+		}
+	}
+}
+
+
+void
+GPlatesMaths::PolygonOverlay::Overlay::append_piece_points(
+		walked_ring_type &ring,
+		unsigned int piece_index,
+		bool at_end) const
+{
+	const Piece &piece = d_pieces[piece_index];
+	const RingView &ring_view = d_rings[piece.ring];
+
+	// The piece's stops in ring order, its end stops too (a closed piece's: its ring's, from
+	// the first, its arcs closing the ring).
+	std::vector<unsigned int> stops;
+	if (piece.closed)
+	{
+		for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
+		{
+			stops.push_back(s);
+		}
+	}
+	else
+	{
+		stops.push_back(piece.start_stop);
+		for (unsigned int s = piece.start_stop; ; )
+		{
+			s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
+			stops.push_back(s);
+			if (s == piece.end_stop)
+			{
+				break;
+			}
+		}
+	}
+
+	// In ring order: each interior stop, and the touch points strictly inside each arc, on the
+	// segment leaving the arc's first stop, by angle along it from each stop's own position.
+	walked_ring_type points;
+	const unsigned int num_arcs = piece.closed ? stops.size() : stops.size() - 1;
+	for (unsigned int k = 0; k < num_arcs; ++k)
+	{
+		const unsigned int a = stops[k];
+		if (k > 0 || piece.closed)
+		{
+			points.push_back(WalkedPoint{
+					boost::none, d_stops[a].position, a, a, piece_index, at_end, Provenance() });
+		}
+		if (d_own_touches.empty())
+		{
+			continue;
+		}
+		const auto touches = d_own_touches.find(std::make_pair(piece.ring, d_stops[a].segment_out));
+		if (touches == d_own_touches.end())
+		{
+			continue;
+		}
+		const boost::optional<SegmentPlane> plane =
+				SegmentPlane::create(ring_view.segments[d_stops[a].segment_out]);
+		if (!plane)
+		{
+			continue;
+		}
+		const unsigned int b = stops[(k + 1) % stops.size()];
+		const double along_a = plane->along(d_stops[a].position);
+		const double along_b = d_stops[b].at_vertex
+				? plane->length()  // the next ring vertex
+				: plane->along(d_stops[b].position);
+		for (const OwnTouch &touch : touches->second)
+		{
+			if (touch.along > along_a && touch.along < along_b)
+			{
+				points.push_back(WalkedPoint{
+						boost::none, touch.position, a, a, piece_index, at_end, Provenance(),
+						touch.ratio });
+				++d_diagnostics.own_touch_points_inserted;
+			}
+		}
+	}
+	if (at_end)
+	{
+		std::reverse(points.begin(), points.end());
+	}
+	ring.insert(ring.end(), points.begin(), points.end());
+}
+
+
+void
 GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 		Operation operation,
 		std::vector<walked_ring_type> &walked,
 		unsigned int &num_pairing_failures) const
 {
+	// The points where the kept pieces' input touches itself, inserted as the pieces are walked.
+	find_own_touches(operation);
+
 	// A ray, as (vertex, index into its rays).
 	typedef std::pair<unsigned int, unsigned int> ray_ref_type;
 	const ray_ref_type no_ray((std::numeric_limits<unsigned int>::max)(), 0);
@@ -5183,28 +5458,8 @@ GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 						end.at_end,
 						Provenance() });
 
-				// The piece's interior stops, in the direction walked.
-				std::vector<unsigned int> stops;
-				const RingView &ring_view = d_rings[piece.ring];
-				for (unsigned int s = piece.start_stop; ; )
-				{
-					s = (s + 1 == ring_view.end_stop) ? ring_view.first_stop : s + 1;
-					if (s == piece.end_stop)
-					{
-						break;
-					}
-					stops.push_back(s);
-				}
-				if (end.at_end)
-				{
-					std::reverse(stops.begin(), stops.end());
-				}
-				for (unsigned int s : stops)
-				{
-					ring.push_back(WalkedPoint{
-							boost::none, d_stops[s].position, s, s, end.piece, end.at_end,
-							Provenance() });
-				}
+				// The piece's interior stops and touch points, in the direction walked.
+				append_piece_points(ring, end.piece, end.at_end);
 
 				const ray_ref_type arrive = ray_of_end[2 * end.piece + (end.at_end ? 0 : 1)];
 				used[arrive.first][arrive.second] = true;
@@ -5239,12 +5494,7 @@ GPlatesMaths::PolygonOverlay::Overlay::pair_and_walk_rings(
 			is_kept(piece, operation).get_value_or(false))
 		{
 			walked_ring_type ring;
-			const RingView &ring_view = d_rings[piece.ring];
-			for (unsigned int s = ring_view.first_stop; s < ring_view.end_stop; ++s)
-			{
-				ring.push_back(WalkedPoint{
-						boost::none, d_stops[s].position, s, s, p, false, Provenance() });
-			}
+			append_piece_points(ring, p, false);
 			walked.push_back(ring);
 		}
 	}
@@ -6017,6 +6267,27 @@ GPlatesMaths::PolygonOverlay::Overlay::extract_rings(
 					entry.provenance = get_vertex_provenance(
 							*entry.vertex, entry.position, arriving_stop, entry.stop);
 					arriving_stop = entry.far_stop;
+				}
+				else if (entry.touch_ratio)
+				{
+					// A touch point: on the walked ring's own segment (not the touching vertex's
+					// location, on another ring: a coverage would take that vertex's value, and
+					// the next step of a cascade could compose neither edge beside it).
+					const RingView &ring_view = d_rings[ring_of_stop(entry.stop)];
+					const Location location{
+							ring_view.ring_index,
+							d_stops[entry.stop].segment_out,
+							*entry.touch_ratio };
+					entry.provenance = Provenance();
+					entry.provenance.clip_index = d_options.clip_index;
+					if (ring_view.side == SUBJECT)
+					{
+						compose_subject_location(ring_view, location, entry.provenance);
+					}
+					else
+					{
+						entry.provenance.clip = location;
+					}
 				}
 				else
 				{
