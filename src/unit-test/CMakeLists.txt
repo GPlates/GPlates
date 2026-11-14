@@ -22,6 +22,7 @@ set(srcs
     MipmapperTest.cc
     PartitionFeatureUtilsTest.cc
     PointInPolygonTest.cc
+    PolygonOnSphereTest.cc
     PolygonOverlayOracle.h
     PolygonOverlayPrototypeTest.cc
     PolygonOverlayRealDataTest.cc

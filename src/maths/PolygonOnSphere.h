@@ -347,6 +347,13 @@ namespace GPlatesMaths
 			distance_to(
 					const ConstIterator &other) const;
 
+			/**
+			 * The index of the current segment among all segments of the polygon
+			 * (the number of all segments at the end).
+			 */
+			ConstIterator::difference_type
+			segment_index() const;
+
 
 			// Give access to boost::iterator_adaptor.
 			friend class boost::iterator_core_access;
@@ -814,18 +821,11 @@ namespace GPlatesMaths
 		unsigned int
 		number_of_segments() const
 		{
-			// Exterior ring.
-			unsigned int num_segments = d_exterior_ring.size();
-
-			// Interior rings.
-			ring_sequence_const_iterator ring_seq_iter = d_interior_rings.begin();
-			ring_sequence_const_iterator ring_seq_end = d_interior_rings.end();
-			for ( ; ring_seq_iter != ring_seq_end; ++ring_seq_iter)
-			{
-				num_segments += ring_seq_iter->size();
-			}
-
-			return num_segments;
+			// The offset table ends with the number of all segments (and is empty without
+			// interior rings).
+			return d_interior_ring_segment_offsets.empty()
+					? d_exterior_ring.size()
+					: d_interior_ring_segment_offsets.back();
 		}
 
 		/**
@@ -1942,6 +1942,32 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Fill @a offsets (which must be empty) with the offset table of @a exterior and
+		 * @a interiors (see @a d_interior_ring_segment_offsets), leaving it empty if there are no
+		 * interior rings.
+		 */
+		static
+		void
+		make_interior_ring_segment_offsets(
+				std::vector<unsigned int> &offsets,
+				const ring_type &exterior,
+				const ring_sequence_type &interiors);
+
+
+		/**
+		 * The index, among all segments of this polygon, of the first segment of the ring
+		 * @a ring_id (0 is the exterior ring, and 1, 2, ... are the interior rings).
+		 */
+		unsigned int
+		get_ring_first_segment_index(
+				unsigned int ring_id) const
+		{
+			// Note: Ring id and interior ring index are offset by one.
+			return ring_id == 0 ? 0 : d_interior_ring_segment_offsets[ring_id - 1];
+		}
+
+
+		/**
 		 * This is the minimum number of (distinct) ring points to be passed into the 'create'
 		 * function (for each ring) to enable creation of closed, well-defined polygon rings.
 		 */
@@ -1960,6 +1986,22 @@ namespace GPlatesMaths
 		 * If any interior rings are present then the polygon is a donut polygon (a polygon with holes).
 		 */
 		ring_sequence_type d_interior_rings;
+
+		/**
+		 * For each interior ring, the index of its first segment among all segments of this polygon
+		 * (the exterior ring's, then the interior rings' in order), and then one more entry, the
+		 * number of all segments. Empty if there are no interior rings.
+		 *
+		 * This is what makes @a const_iterator random access in fact: without it, advancing and
+		 * differencing walk ring by ring, so a polygon's bounding tree, which advances from the
+		 * first arc for every leaf it builds and every leaf a query reaches, costs the square of
+		 * its number of rings to build, and their number again at each leaf of a query.
+		 *
+		 * It is made with the rings (by @a generate_rings_and_swap), never lazily, so that it adds
+		 * nothing to the state that const methods fill without synchronisation
+		 * (@a d_cached_calculations).
+		 */
+		std::vector<unsigned int> d_interior_ring_segment_offsets;
 
 		/**
 		 * Useful calculations on the polygon data.
@@ -2321,7 +2363,13 @@ namespace GPlatesMaths
 		// to a temporary sequence (rather than putting them directly into 'd_exterior_ring').
 		ring_type exterior;
 		generate_ring(exterior, exterior_begin, exterior_end);
+
+		// The offsets depend on the exterior ring's size, so are remade (from the interior rings kept).
+		std::vector<unsigned int> offsets;
+		make_interior_ring_segment_offsets(offsets, exterior, polygon.d_interior_rings);
+
 		polygon.d_exterior_ring.swap(exterior);
+		polygon.d_interior_ring_segment_offsets.swap(offsets);
 	}
 
 
@@ -2354,8 +2402,12 @@ namespace GPlatesMaths
 					interior_rings_iter->end());
 		}
 
+		std::vector<unsigned int> offsets;
+		make_interior_ring_segment_offsets(offsets, exterior, interiors);
+
 		polygon.d_exterior_ring.swap(exterior);
 		polygon.d_interior_rings.swap(interiors);
+		polygon.d_interior_ring_segment_offsets.swap(offsets);
 	}
 
 
