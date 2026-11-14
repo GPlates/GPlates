@@ -391,6 +391,113 @@ namespace GPlatesMaths
 				}
 				return false;
 			}
+
+
+			/**
+			 * The pairs of rings whose bounding circles, each widened by a margin, can meet (the
+			 * grouping, Overlay::extract): those whose intervals of angle from an axis overlap,
+			 * each interval the circle's centre's angle plus and minus its radius and the margin
+			 * (two points' angles from an axis differ by no more than the angle between them). The
+			 * axis is whichever of x, y and z gives the fewest pairs, so that rings along a
+			 * meridian or a parallel spread out along it. Without it every pair of rings was
+			 * tested, cheap as a test of their bounding circles is: 1.7 seconds for 10,000 holes
+			 * far apart.
+			 */
+			class RingSweep
+			{
+			public:
+				RingSweep(
+						const std::vector<PolygonOnSphere::non_null_ptr_to_const_type> &rings,
+						const AngularExtent &margin)
+				{
+					const unsigned int num_rings = rings.size();
+					boost::optional<unsigned long long> fewest_pairs;
+					const UnitVector3D axes[3] = {
+							UnitVector3D::xBasis(),
+							UnitVector3D::yBasis(),
+							UnitVector3D::zBasis() };
+					for (const UnitVector3D &axis : axes)
+					{
+						std::vector<Interval> intervals;
+						intervals.reserve(num_rings);
+						for (unsigned int r = 0; r < num_rings; ++r)
+						{
+							const BoundingSmallCircle &bounds =
+									rings[r]->get_bounding_small_circle();
+							const double centre = angle_between(axis, bounds.get_centre());
+							const double radius = bounds.get_angular_extent().get_angle().dval() +
+									margin.get_angle().dval();
+							intervals.push_back(Interval{ centre - radius, centre + radius, r });
+						}
+						std::stable_sort(
+								intervals.begin(),
+								intervals.end(),
+								[](const Interval &a, const Interval &b)
+								{
+									return a.begin < b.begin;
+								});
+
+						unsigned long long num_pairs = 0;
+						for (unsigned int i = 0; i < num_rings; ++i)
+						{
+							num_pairs += end_of_overlaps(intervals, i) - (i + 1);
+						}
+						if (!fewest_pairs || num_pairs < *fewest_pairs)
+						{
+							fewest_pairs = num_pairs;
+							d_intervals.swap(intervals);
+						}
+					}
+				}
+
+				//! Calls @a visit(a, b) for each pair of rings whose intervals overlap, once.
+				template <typename VisitType>
+				void
+				visit_pairs(
+						VisitType visit) const
+				{
+					for (unsigned int i = 0; i < d_intervals.size(); ++i)
+					{
+						const unsigned int end = end_of_overlaps(d_intervals, i);
+						for (unsigned int j = i + 1; j < end; ++j)
+						{
+							visit(d_intervals[i].ring, d_intervals[j].ring);
+						}
+					}
+				}
+
+			private:
+				class Interval
+				{
+				public:
+					double begin;
+					double end;
+					unsigned int ring;
+				};
+
+				//! One past the last interval, in order of their beginnings, that begins in
+				//! interval @a i.
+				static
+				unsigned int
+				end_of_overlaps(
+						const std::vector<Interval> &intervals,
+						unsigned int i)
+				{
+					const double end = intervals[i].end;
+					return std::upper_bound(
+							intervals.begin() + i + 1,
+							intervals.end(),
+							end,
+							[](double value, const Interval &interval)
+							{
+								return value < interval.begin;
+							}) -
+						intervals.begin();
+				}
+
+				//! In order of their beginnings.
+				std::vector<Interval> d_intervals;
+			};
 		}
 	}
 }
@@ -5865,9 +5972,9 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 	// each ring of another (a ring crossing one inside a ring R reaches inside R, so lies inside
 	// it), and the number of rings containing it is the same all over it. That number is its
 	// depth, and its parent the containing group of greatest depth. A ring crossing no other is a
-	// group of its own, as for any input whose rings do not cross. (The number of rings is small:
-	// every pair is tested.) The margin of both tests, as the oracle's: ten thicknesses, or twice
-	// the widest record cluster if wider (is_ring_inside_ring).
+	// group of its own, as for any input whose rings do not cross. (Every pair is tested, a pair
+	// whose bounding circles miss by those circles alone.) The margin of both tests, as the
+	// oracle's: ten thicknesses, or twice the widest record cluster if wider (is_ring_inside_ring).
 	//
 	double cluster_width = 0.0;
 	for (const Vertex &vertex : d_vertices)
@@ -5887,22 +5994,25 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 			(std::max)(HEMISPHERE_CHECK_MARGIN * h, 2 * cluster_width));
 
 	// The groups, numbered in the order of their first rings, which represent them.
+	// (A pair of rings in no pair of the sweep has bounding circles that do not meet, so does not
+	// cross. The groups are the same in any order of the pairs.)
+	const RingSweep sweep(ring_polygons, grouping_margin);
 	std::vector<unsigned int> group_root(num_rings);
 	for (unsigned int r = 0; r < num_rings; ++r)
 	{
 		group_root[r] = r;
 	}
-	for (unsigned int r = 0; r < num_rings; ++r)
-	{
-		for (unsigned int other = r + 1; other < num_rings; ++other)
-		{
-			if (find_root(group_root, r) != find_root(group_root, other) &&
-				do_rings_cross(*ring_polygons[r], *ring_polygons[other], grouping_margin))
+	sweep.visit_pairs(
+			[&](unsigned int a, unsigned int b)
 			{
-				group_root[find_root(group_root, other)] = find_root(group_root, r);
-			}
-		}
-	}
+				const unsigned int r = (std::min)(a, b);
+				const unsigned int other = (std::max)(a, b);
+				if (find_root(group_root, r) != find_root(group_root, other) &&
+					do_rings_cross(*ring_polygons[r], *ring_polygons[other], grouping_margin))
+				{
+					group_root[find_root(group_root, other)] = find_root(group_root, r);
+				}
+			});
 	std::vector<unsigned int> group_of(num_rings);
 	std::vector<std::vector<unsigned int>> groups;
 	{
@@ -5928,27 +6038,77 @@ GPlatesMaths::PolygonOverlay::Overlay::extract(
 		}
 	}
 
-	// The rings containing each group (its first ring), and its parent.
-	std::vector<std::vector<unsigned int>> containers(num_groups);
-	for (unsigned int g = 0; g < num_groups; ++g)
+	//
+	// The rings containing each group (its first ring), and its parent. A ring whose bounding
+	// circle, widened by the margin, misses the group's is no container: every point of the group's
+	// ring that is_ring_inside_ring could test is outside that circle by more than the margin, so
+	// it is outside the ring if the region outside the circle is. So a ring is tested only with
+	// the groups of its pairs in the sweep, except one wrapping round more than a hemisphere about
+	// its boundary centroid (the region outside its circle is inside it), tested with every group.
+	// Every group tested against every ring took 2 seconds for a union with 5,000 holes.
+	//
+	std::vector<boost::optional<BoundingSmallCircle>> container_bounds(num_rings);
+	std::vector<unsigned int> wrapping_rings;
+	for (unsigned int r = 0; r < num_rings; ++r)
 	{
-		for (unsigned int other = 0; other < num_rings; ++other)
+		const BoundingSmallCircle &bounds = ring_polygons[r]->get_bounding_small_circle();
+		if (ring_polygons[r]->is_outside_bounding_small_circle_outside_polygon(bounds))
 		{
-			if (group_of[other] == g)
+			container_bounds[r] = bounds.expand(grouping_margin);
+		}
+		else
+		{
+			wrapping_rings.push_back(r);
+		}
+	}
+	std::vector<std::vector<unsigned int>> containers(num_groups);
+	const auto test_container = [&](unsigned int g, unsigned int other)
+	{
+		const boost::optional<bool> inside = is_ring_inside_ring(
+				rings[groups[g].front()].points, *ring_polygons[other], grouping_margin);
+		if (!inside)
+		{
+			++d_diagnostics.coincident_rings;  // a degenerate output clean-up did not catch
+		}
+		else if (*inside)
+		{
+			containers[g].push_back(other);
+		}
+	};
+	sweep.visit_pairs(
+			[&](unsigned int a, unsigned int b)
 			{
-				continue;
-			}
-			const boost::optional<bool> inside = is_ring_inside_ring(
-					rings[groups[g].front()].points, *ring_polygons[other], grouping_margin);
-			if (!inside)
+				for (const std::pair<unsigned int, unsigned int> &ring_and_other :
+						{ std::make_pair(a, b), std::make_pair(b, a) })
+				{
+					const unsigned int ring = ring_and_other.first;
+					const unsigned int other = ring_and_other.second;
+					const unsigned int g = group_of[ring];
+					if (groups[g].front() == ring &&
+						group_of[other] != g &&
+						container_bounds[other] &&
+						intersect(
+								ring_polygons[ring]->get_bounding_small_circle(),
+								*container_bounds[other]))
+					{
+						test_container(g, other);
+					}
+				}
+			});
+	for (unsigned int other : wrapping_rings)
+	{
+		for (unsigned int g = 0; g < num_groups; ++g)
+		{
+			if (group_of[other] != g)
 			{
-				++d_diagnostics.coincident_rings;  // a degenerate output clean-up did not catch
-			}
-			else if (*inside)
-			{
-				containers[g].push_back(other);
+				test_container(g, other);
 			}
 		}
+	}
+	// In ring order, as the parent is chosen from them (the first of the most contained).
+	for (std::vector<unsigned int> &group_containers : containers)
+	{
+		std::sort(group_containers.begin(), group_containers.end());
 	}
 	std::vector<boost::optional<unsigned int>> parent(num_groups);
 	for (unsigned int g = 0; g < num_groups; ++g)

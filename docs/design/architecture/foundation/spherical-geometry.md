@@ -1883,10 +1883,20 @@ than a margin from `r'`'s outline, else the farthest of `r`'s vertices and its e
 if every one of those is on `r'` the rings coincide (counted). The margin is `max(10 h, twice the
 widest record cluster)`, the oracle's sampling margin: a margin of `s` alone let a vertex `1.6 h`
 across a gap under `2 h` between two facing holes decide that a hole lay outside its exterior, in 5
-of 119,198 generated cases, the intersection's area wrong by about a quarter. Every pair of rings
-not already in one group is given to the crossing test (which returns at once if their bounding
-circles do not meet); containment is asked of each group's first ring against every ring of the
-other groups, one point each. A group's depth is the
+of 119,198 generated cases, the intersection's area wrong by about a quarter. Both tests are asked
+only of rings whose bounding circles, widened by the margin, can meet: rings are sorted by the
+angle of their circle's centre from an axis, and only those whose intervals of that angle (plus
+and minus the radius and the margin) overlap are paired (`RingSweep`; the axis is whichever of
+`x`, `y` and `z` pairs fewest, so that rings along a meridian or a parallel spread out along it).
+Every pair of rings so paired, not already in one group, is given to the crossing test (which
+returns at once if their bounding circles do not meet); containment is asked of each group's first
+ring against each ring so paired whose widened circle meets its own, one point each. A ring whose
+circle misses that ring's is no container, provided the region outside its circle is outside it,
+since every point the containment test could take is in that region; a ring wrapping round more
+than a hemisphere about its boundary centroid, for which that is not so, is asked of every group.
+Every pair of rings was tested before: 6.8 seconds for 10,000 holes far apart, now 0.08, and 2.0
+for a union with 5,000 holes along a shared edge, now 0.4 (each hole a sliver, whose circle meets
+a hundred others). A group's depth is the
 number of rings containing it and its parent the containing group of greatest depth. An even depth
 starts a polygon, whose exterior is the group's ring of largest area (any would read the same by
 parity) and whose holes are its other rings; an odd depth puts all of the group's rings, as holes,
@@ -3349,10 +3359,13 @@ the 16 rings under `10 h` of section 5.5 are dropped, 415 at 0 Ma), and pyGPlate
   constructed cases. A generator of grid polygons whose holes share a vertex with their exterior or
   put a vertex on its edge, checked by the area identities and the crossing groups, would need no
   outside answer.
-- **The grouping is quadratic in the number of output rings** (every pair is tested), which a
-  union with thousands of holes can reach (5,000 holes, about 2 seconds); a bounding-circle filter
-  would do. And the self-touch cuts' search for passages is quadratic in the touches on one segment
-  (5,000 hole tips on one shared edge, `0.23` seconds for the intersection, section 5.2).
+- **Rings whose bounding circles meet many others.** The grouping tests every pair of rings whose
+  bounding circles meet (section 5.2), so rings that are slivers side by side, each circle meeting
+  many others, still cost in proportion to the pairs: a union with 5,000 holes along a shared edge,
+  each `0.5` degrees long and `0.004` wide, takes 0.4 seconds against the intersection's 0.05. The
+  rings' bounding trees would separate them. And the self-touch cuts' search for passages is
+  quadratic in the touches on one segment (5,000 hole tips on one shared edge, `0.23` seconds for
+  the intersection, section 5.2).
 - **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
   edge where an input folds back on itself along all of it, or a short one (its far end within the
   thickness of the arc beside it), the two differences' rings are left sharing the edge, unless
