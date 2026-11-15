@@ -7,6 +7,7 @@
 #
 set(srcs
     ApplicationStateTest.cc
+    CircleSweepTest.cc
     CommandLineParserTest.cc
     CptPaletteTest.cc
     CsvExportTest.cc
