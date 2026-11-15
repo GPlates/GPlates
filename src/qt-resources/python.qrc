@@ -6,6 +6,7 @@
 
     <file>python/scripts/hellinger/hellinger.py</file>
 
+    <file>python/api/ArgumentErrors.py</file>
     <file>python/api/Crossovers.py</file>
     <file>python/api/Feature.py</file>
     <file>python/api/GeometriesOnSphere.py</file>

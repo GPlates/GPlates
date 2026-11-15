@@ -88,7 +88,8 @@ _SKIP_CLASS_ATTRS = frozenset([
     '__reduce__', '__firstlineno__', '__static_attributes__',
 ])
 
-# A column-0 docstring signature line: 'name(args)'.
+# A column-0 docstring signature line: 'name(args)'. (The 'ArgumentError' messages read it, and
+# the type fields below, too: see 'src/qt-resources/python/api/ArgumentErrors.py'.)
 _SIG_LINE_RE = re.compile(r'^(\w+)\((.*)\)\s*$')
 
 # Sphinx info fields (one per line in the pygplates docstrings).
@@ -1150,11 +1151,6 @@ def _split_docstring_blocks(name, doc):
         match = _SIG_LINE_RE.match(line)
         if match and match.group(1) == name:
             blocks.append(OverloadBlock(match.group(2), []))
-        elif not blocks and line.strip() == name and \
-                all(not previous.strip() for previous in preamble):
-            # Docstring quirk: a leading signature missing its parentheses
-            # (eg, 'NetworkTriangulation.get_triangles').
-            blocks.append(OverloadBlock('', []))
         elif blocks:
             blocks[-1].body_lines.append(line)
         else:
