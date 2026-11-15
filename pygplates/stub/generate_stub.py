@@ -1348,6 +1348,7 @@ class StubGenerator(object):
         self.uses_numpy = False
         self.uses_overload = False
         self.uses_sequence = False
+        self.uses_mapping = False
         self.uses_os = False
         self.uses_deprecated = False
         # The MANUAL_OVERRIDES signatures ((name, overload index)) and DEPRECATED_OVERLOADS
@@ -1409,6 +1410,18 @@ class StubGenerator(object):
         return (isinstance(obj, type) and issubclass(obj, int) and
                 isinstance(getattr(obj, 'names', None), dict) and
                 isinstance(getattr(obj, 'values', None), dict))
+
+    def _parse_parameter_type_text(self, raw_text, qualified):
+        # An argument documented as a 'dict' is annotated 'Mapping', which (unlike 'dict') is
+        # covariant in its value type: a 'dict[ScalarType, list[float]]' that pyGPlates itself
+        # returns can then be passed back where 'dict[ScalarType, Iterable[float]]' is documented.
+        # It also admits a mapping that isn't a 'dict', which the bindings read as a sequence of
+        # pairs (and reject), but that is rare. A returned 'dict' stays a 'dict'.
+        annotation = self._parse_type_text(raw_text, qualified)
+        mapping_annotation = re.sub(r'\bdict\[', 'Mapping[', annotation)
+        if mapping_annotation != annotation:
+            self.uses_mapping = True
+        return mapping_annotation
 
     def _parse_type_text(self, raw_text, qualified):
         if not raw_text:
@@ -1584,6 +1597,8 @@ class StubGenerator(object):
             typing_names.append('Iterable')
         if self.uses_named_tuple:
             typing_names.append('NamedTuple')
+        if self.uses_mapping:
+            typing_names.append('Mapping')
         if self.uses_sequence:
             typing_names.append('Sequence')
         if self.uses_overload:
@@ -1949,8 +1964,8 @@ class StubGenerator(object):
                 pieces.append('*%s: Any' % parameter.name)
                 seen_default = False  # keyword-only params after '*args' need no default
                 continue
-            annotation = self._parse_type_text(type_map.get(parameter.name),
-                                               '%s(%s)' % (qualified, parameter.name))
+            annotation = self._parse_parameter_type_text(type_map.get(parameter.name),
+                                                         '%s(%s)' % (qualified, parameter.name))
             default = self._render_default(parameter)
             if default is None and seen_default:
                 # A required parameter after an optional one is not valid Python - keep
@@ -2054,7 +2069,7 @@ class StubGenerator(object):
                         annotation = getattr(parameter.annotation, '__qualname__',
                                              str(parameter.annotation))
                     else:
-                        annotation = self._parse_type_text(
+                        annotation = self._parse_parameter_type_text(
                             type_map.get(parameter.name),
                             '%s(%s)' % (qualified, parameter.name))
                     default = None

@@ -10,7 +10,7 @@
 import numpy
 import os
 
-from typing import Any, Callable, ClassVar, Iterable, NamedTuple, Sequence, overload
+from typing import Any, Callable, ClassVar, Iterable, NamedTuple, Mapping, Sequence, overload
 from typing_extensions import deprecated
 
 __version__: str
@@ -981,7 +981,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a reconstructable feature.
 
         :param feature_type: the type of feature to create
@@ -1089,7 +1089,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., left_plate: int | None = ..., right_plate: int | None = ..., reconstruction_method: str | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., left_plate: int | None = ..., right_plate: int | None = ..., reconstruction_method: str | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a tectonic section feature.
 
         :param feature_type: the type of feature to create
@@ -2562,7 +2562,7 @@ class Feature:
         .. seealso:: :meth:`get_enumeration`
         """
 
-    def set_geometry(self, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], property_name: PropertyName | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property] | tuple[Property, Property] | list[tuple[Property, Property]]:
+    def set_geometry(self, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], property_name: PropertyName | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property] | tuple[Property, Property] | list[tuple[Property, Property]]:
         """Set the geometry (or geometries) of this feature.
 
         :param geometry: the geometry or geometries (or coverage or coverages - see below) to set - if the geometry(s) is not present-day geometry then this feature will need to be reverse reconstructed to present day using (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before this feature can be reconstructed to an arbitrary reconstruction time
@@ -2882,7 +2882,7 @@ class Feature:
         .. seealso:: :meth:`get_shapefile_attribute`
         """
 
-    def set_shapefile_attributes(self, attribute_mapping: dict[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = None, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property:
+    def set_shapefile_attributes(self, attribute_mapping: Mapping[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = None, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property:
         """Sets the shapefile attributes of this feature.
 
         :param attribute_mapping: optional mapping of keys to values
@@ -4834,7 +4834,7 @@ class GmlDataBlock(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, scalar_type_to_values_mapping: dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]) -> None:
+    def __init__(self, scalar_type_to_values_mapping: Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]) -> None:
         """Create a data block containing one or more :class:`scalar types<ScalarType>` and their associated scalar values.
 
         :param scalar_type_to_values_mapping: maps each scalar type to a sequence of scalar values
@@ -5848,7 +5848,7 @@ class GpmlKeyValueDictionary(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, key_value_mapping: dict[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = ...) -> None:
+    def __init__(self, key_value_mapping: Mapping[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = ...) -> None:
         """Create a dictionary containing zero or more key/value pairs.
 
         :param key_value_mapping: optional mapping of keys to values
@@ -17178,7 +17178,7 @@ class TopologicalModel:
         .. note:: The reconstruction tree cache size of the returned rotation model is equal to the *topological_snapshot_cache_size* argument specified in the :meth:`constructor<__init__>` plus one (or unlimited if not specified).
         """
 
-    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Iterable[PointOnSphere | LatLonPoint | Sequence[float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant | None = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int | None = ..., initial_scalars: dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]] | None = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
+    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Iterable[PointOnSphere | LatLonPoint | Sequence[float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant | None = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int | None = ..., initial_scalars: Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]] | None = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
         """Reconstruct a geometry (and optional scalars) over a time span.
 
         :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points (all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. Reconstructing polylines and polygons as such is to be introduced in future.

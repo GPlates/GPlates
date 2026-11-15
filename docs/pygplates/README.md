@@ -151,7 +151,10 @@ protects a `.. versionadded::` / `.. versionchanged::` written flush at column z
    (`check_sequence`, which raises `TypeError` for an iterator, or Python `len()` and indexing).
    One exception: a field taking a `dict` or a sequence of (key, value) pairs keeps `sequence of
    (K, V) tuples` even where any iterable works. With `Iterable` in that union, mypy rejects a
-   `dict` literal, since a `dict` is an iterable of its keys.
+   `dict` literal, since a `dict` is an iterable of its keys. (The generator makes an argument's
+   `dict` a `Mapping`, which is covariant, so a `dict` that pyGPlates returns, such as
+   `dict[ScalarType, list[float]]`, can be passed back where `dict[ScalarType, iterable of float]`
+   is documented. A returned `dict` stays a `dict`.)
 10. **A point given by its coordinates** is `sequence (latitude,longitude) in degrees or (x,y,z)`,
     which the generator makes `Sequence[float]`: the converters take any non-iterator sequence
     (a list, a tuple) of the right length, which the stub can't express. A vector is `sequence
