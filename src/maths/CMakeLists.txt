@@ -18,6 +18,8 @@ set(srcs
     CartesianConvMatrix3D.h
     Centroid.cc
     Centroid.h
+    CircleSweep.cc
+    CircleSweep.h
     ConstGeometryOnSphereVisitor.h
     CubeCoordinateFrame.cc
     CubeCoordinateFrame.h

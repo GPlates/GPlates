@@ -37,6 +37,7 @@
 
 #include "AngularDistance.h"
 #include "AngularExtent.h"
+#include "CircleSweep.h"
 #include "GeometryDistance.h"
 #include "LatLonPoint.h"
 #include "MathsUtils.h"
@@ -589,137 +590,6 @@ namespace GPlatesMaths
 				}
 				return false;
 			}
-
-
-			/**
-			 * Which circles can meet, as the rings they bound (the grouping, Overlay::extract, and
-			 * the touch search, Overlay::find_own_touches): those whose intervals of angle from an
-			 * axis overlap, each interval a circle's centre's angle plus and minus its radius (two
-			 * points' angles from an axis differ by no more than the angle between them). The axis
-			 * is whichever of x, y and z gives the fewest pairs, so that rings along a meridian or
-			 * a parallel spread out along it. Without it the grouping tested every pair of rings,
-			 * cheap as a test of their bounding circles is (1.7 seconds for 10,000 holes far
-			 * apart). One axis only: rings spread over an area are still paired with every ring
-			 * in a band across it, about n^1.5 pairs for n rings on a grid (spherical-geometry.md
-			 * section 7).
-			 */
-			class CircleSweep
-			{
-			public:
-				//! A circle: its centre, and its radius in radians (with any margin added).
-				class Circle
-				{
-				public:
-					UnitVector3D centre;
-					double radius;
-				};
-
-				explicit
-				CircleSweep(
-						const std::vector<Circle> &circles)
-				{
-					boost::optional<unsigned long long> fewest_pairs;
-					for (const UnitVector3D &axis : get_axes())
-					{
-						std::vector<Interval> intervals = get_intervals(axis, circles);
-						unsigned long long num_pairs = 0;
-						for (unsigned int i = 0; i < intervals.size(); ++i)
-						{
-							num_pairs += end_of_overlaps(intervals, i) - (i + 1);
-						}
-						if (!fewest_pairs || num_pairs < *fewest_pairs)
-						{
-							fewest_pairs = num_pairs;
-							d_intervals.swap(intervals);
-						}
-					}
-				}
-
-				//! Calls @a visit(a, b) for each pair of circles whose intervals overlap, once.
-				template <typename VisitType>
-				void
-				visit_pairs(
-						VisitType visit) const
-				{
-					for (unsigned int i = 0; i < d_intervals.size(); ++i)
-					{
-						const unsigned int end = end_of_overlaps(d_intervals, i);
-						for (unsigned int j = i + 1; j < end; ++j)
-						{
-							visit(d_intervals[i].index, d_intervals[j].index);
-						}
-					}
-				}
-
-			private:
-				class Interval
-				{
-				public:
-					double begin;
-					double end;
-					unsigned int index;
-				};
-
-				static
-				std::vector<UnitVector3D>
-				get_axes()
-				{
-					return {
-							UnitVector3D::xBasis(),
-							UnitVector3D::yBasis(),
-							UnitVector3D::zBasis() };
-				}
-
-				//! The circles' intervals on @a axis, in order of their beginnings (stably).
-				static
-				std::vector<Interval>
-				get_intervals(
-						const UnitVector3D &axis,
-						const std::vector<Circle> &circles)
-				{
-					std::vector<Interval> intervals;
-					intervals.reserve(circles.size());
-					for (unsigned int c = 0; c < circles.size(); ++c)
-					{
-						const double centre = angle_between(axis, circles[c].centre);
-						intervals.push_back(Interval{
-								centre - circles[c].radius,
-								centre + circles[c].radius,
-								c });
-					}
-					std::stable_sort(
-							intervals.begin(),
-							intervals.end(),
-							[](const Interval &a, const Interval &b)
-							{
-								return a.begin < b.begin;
-							});
-					return intervals;
-				}
-
-				//! One past the last interval, in order of their beginnings, that begins in
-				//! interval @a i.
-				static
-				unsigned int
-				end_of_overlaps(
-						const std::vector<Interval> &intervals,
-						unsigned int i)
-				{
-					const double end = intervals[i].end;
-					return std::upper_bound(
-							intervals.begin() + i + 1,
-							intervals.end(),
-							end,
-							[](double value, const Interval &interval)
-							{
-								return value < interval.begin;
-							}) -
-						intervals.begin();
-				}
-
-				//! In order of their beginnings, on the axis of fewest pairs.
-				std::vector<Interval> d_intervals;
-			};
 		}
 	}
 }
@@ -5188,7 +5058,10 @@ GPlatesMaths::PolygonOverlay::Overlay::find_own_touches(
 
 	if (found)
 	{
-		// In order along each edge, two at one point once (two holes' vertices on one edge).
+		// In order along each edge, two at one point once (two holes' vertices on one edge). The
+		// first of two within ALONG_ROUNDING is kept, and of two at one distance along the edge
+		// that is the one found first (the sort is stable), so the order in which the pairs of
+		// rings were visited can decide which: CircleSweep keeps that order fixed for this reason.
 		for (auto &edge_touches : d_own_touches)
 		{
 			std::vector<OwnTouch> &touches = edge_touches.second;

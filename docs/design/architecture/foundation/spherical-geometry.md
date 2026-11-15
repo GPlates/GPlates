@@ -1108,7 +1108,9 @@ it is what the overview leaves out: the cases where several records lie at or ne
   polyline with a polygon, every Boolean operation on it, and provenance for every output point
   (section 5.2). One `Overlay` object is one call, holding references to its two inputs, the
   `GeometryIntersect::Graph` and every working vector; nothing is cached on the inputs beyond what
-  `PolygonOnSphere` already caches (its point-in-polygon tester, bounds and outside point).
+  `PolygonOnSphere` already caches (its point-in-polygon tester, bounds, outside point and bounding
+  trees). It pairs rings by their bounding circles with `CircleSweep`
+  (`src/maths/CircleSweep.{h,cc}`, section 5.2).
 
 The other callers of `PolygonPartitioner` are `PolygonOnSphere.partition()` in pyGPlates
 (`src/api/PyGeometriesOnSphere.cc`, `polygon_on_sphere_partition`) and
@@ -1920,11 +1922,17 @@ if every one of those is on `r'` the rings coincide (counted). The margin is `ma
 widest record cluster)`, the oracle's sampling margin: a margin of `s` alone let a vertex `1.6 h`
 across a gap under `2 h` between two facing holes decide that a hole lay outside its exterior, in 5
 of 119,198 generated cases, the intersection's area wrong by about a quarter. Both tests are asked
-only of rings whose bounding circles, widened by the margin, can meet: rings are sorted by the
-angle of their circle's centre from an axis, and only those whose intervals of that angle (plus
-and minus the radius and the margin) overlap are paired (`CircleSweep`; the axis is whichever of
-`x`, `y` and `z` pairs fewest, so that rings along a meridian or a parallel spread out along it).
-Every pair of rings so paired, not already in one group, is given to the crossing test (which
+only of rings whose bounding circles, widened by the margin, meet. `CircleSweep` gives those
+pairs in the order of a sweep of the circles' intervals of angle from an axis (plus and minus the
+radius and the margin; the axis is whichever of `x`, `y` and `z` pairs fewest, so that rings along
+a meridian or a parallel spread out along it). Where the sweep has few pairs per ring (64 at most,
+on average) they are its own, less those whose circles do not meet; otherwise the pairs that meet
+are found by a tree of the circles joined with itself and sorted into the sweep's order, since a
+sweep along one axis pairs every ring with every other in a band across an area the rings spread
+over (about n^1.5 pairs for n rings on a grid, few of whose circles meet). The order is kept
+because the touch search's result depends on it (below); section 5.7 has the forms of pairing set
+aside, and why the sweep's own pairs are kept where they are few. Every pair of rings so paired,
+not already in one group, is given to the crossing test (which
 returns at once if their bounding circles do not meet); containment is asked of each group's first
 ring against each ring so paired whose widened circle meets its own, one point each. A ring whose
 circle misses that ring's is no container, provided the region outside its circle is outside it,
@@ -1933,8 +1941,11 @@ than a hemisphere about its boundary centroid, for which that is not so, is aske
 Every pair of rings was tested before: 6.8 seconds for 10,000 holes far apart, now 0.08, and 2.0
 for a union with 5,000 holes along a shared edge, now 0.4 (each hole a sliver, whose circle meets
 a hundred others). Asking containment only where the circles meet, without the sweep, left the
-loop over every pair: 1.7 seconds for the 10,000 holes. (The sweep is along one axis, so rings
-spread over an area are still paired across a band of it: section 7.) A group's depth is the
+loop over every pair: 1.7 seconds for the 10,000 holes. A polygon with 80,000 small holes in a
+grid, intersected with a polygon over 2,500 of them, took 2.0 seconds by the sweep's pairs alone,
+of which the touch search 0.57 and the nesting 0.93, and takes 1.2 with the tree, of which the
+touch search about 0.29 and the nesting 0.38: what is left is work in proportion to the rings,
+such as each hole's containment test against its exterior. A group's depth is the
 number of rings containing it and its parent the containing group of greatest depth. An even depth
 starts a polygon, whose exterior is the group's ring of largest area (any would read the same by
 parity) and whose holes are its other rings; an odd depth puts all of the group's rings, as holes,
@@ -2020,6 +2031,10 @@ touch is a shared position:
   of its interior): an intersection keeping most of a subject with 200 holes and 120,000 vertices
   took 0.28 seconds, against 0.078 with none of these rules; by pairs, 0.095. (A query of each
   other ring's own tree was little better than one of the polygon's, for the second reason.)
+  The touches along each edge are then sorted by their position along it (stably), and of two
+  within `1e-12` radians of each other the first is kept: of two at one distance along the edge,
+  the one found first, so the order in which the pairs of rings are visited can decide which.
+  `CircleSweep` keeps that order whatever finds the pairs.
   Exact up to rounding, the
   scale of the join of vertices at one point: the thickness would bend an edge by up to 9 m to make
   a touch that is not there, and a vertex farther than rounding from an edge leaves the output as
@@ -2689,6 +2704,29 @@ the first design asked only that no two tie). Three more forms were set aside:
   and a second path through the grouping. Not built: only an output with a relinked polygon is
   nested twice.
 
+**For pairing the rings whose bounding circles meet** (`CircleSweep`, section 5.2, which says why
+the pairs keep the sweep's order whatever finds them). Four forms were set aside:
+
+- *A sweep in two dimensions*, the intervals open on the first axis held in an interval tree on a
+  second. An interval structure with insertion and deletion is more code than the tree of the
+  circles, and two angles from axes are nearly dependent near the great circle through the two
+  axes, where the second would separate little.
+- *A grid of cells on the sphere*: awkward for circles of very different sizes (an exterior's
+  beside its holes'), and a cube map's cells have seams at the faces' edges.
+- *The tree for every overlay*, as first built, with each node's circle made from all the circles
+  under it and every pair of circles tested by the angle between their centres. Building and
+  joining the tree costs more than the sweep's own pairs where those are few: overlays of a
+  polygon with 1,000 to 10,000 small holes far apart were 10 to 30% slower, and one with 20,000
+  holes in a grid, 39 of the sweep's pairs a ring, no faster. So the sweep's pairs are kept up to
+  64 a ring (`DEFAULT_MAX_SWEEP_PAIRS_PER_CIRCLE`; at 16, unions leaving 5,000 holes along a
+  shared edge were 3 to 5% slower, and the 80,000 holes of section 5.2 have 154), a node's circle
+  is made from its two children's, and a pair is tested by cosines, the angle deciding only those
+  near the boundary.
+- *A slack on the cosine.* Circles are taken to meet within a slack (`1e-9` radians, far below the
+  thickness), so that rounding drops no pair that meets. It is an angle and not a margin on the
+  cosine of one: such a margin is a wider angle for small circles than for the nodes that enclose
+  them, so the tree could prune two nodes while two of their circles meet.
+
 **Dropping one of a corner's two records**: section 4.5.
 
 **A parallel list of provenance tables beside the geometry lists** couples two lists by position
@@ -3108,6 +3146,15 @@ that tie between neighbours and on the random ones, and a reference that takes t
 smallest subtrees on those and on the sizes that all tie, so the test holds both rules; the rising
 and falling sizes show neither.
 
+`src/unit-test/CircleSweepTest.cc` compares `CircleSweep` with the sweep as it was (every pair
+whose intervals overlap), less the pairs whose circles do not meet, pair for pair and in order,
+with the pairs found by the tree, by the sweep and by the default choice between them. The circles
+are random, clustered, huge (past a hemisphere and past pi), coincident, centred on the axes or
+opposite each other (so that a node's centres cancel), and in pairs a hair either side of meeting
+(`1e-12` to `1e-8` radians, at reaches from `2e-6` radians to 3); and on two grids, none meeting,
+where the sweep alone paired 179,749 and 1,676,250, the second more than the default allows, so
+that the default takes the tree.
+
 The overlay's C++ tests (`src/unit-test/PolygonOverlayTest.cc`) build families of the prototype's
 catalogue in local tangent coordinates at a centre on no axis, with distances in units of the
 thickness, and check the structure stage by stage (vertices as record sets, stops, pieces, internal
@@ -3432,7 +3479,11 @@ change nothing. For the first two the code replaced was run beside the new, from
 in every overlay of the hunt and of the grid fuzz: no piece's class or method differed in 472,793
 and 178,945 classifications, and no group, container or count of coincident rings in 1,247,150 and
 238,406 extracts. With the third, the hunt's summary and the fuzz's failures and statistics were
-the same.
+the same. The hunt's summary was the same again once `CircleSweep` gave only the pairs whose
+circles meet, and with its tree finding the pairs in every overlay (its threshold set to 0, so
+that the tree is used wherever the sweep has a pair at all; by default it is used only for many
+rings). That the tree gives the sweep's pairs, in the sweep's order, is held by
+`CircleSweepTest.cc` (above).
 
 The partition layer's tests (`PolygonPartitionerTest.cc`) cover the three old no-intersection bugs
 (a partitioner inside the subject, a subject across a partitioner's hole, a partitioner across the
@@ -3615,32 +3666,31 @@ for chains of Boolean operations, whose outputs have holes touching their exteri
   many others, still cost in proportion to the pairs: a union with 5,000 holes along a shared edge,
   each `0.5` degrees long and `0.004` wide, takes 0.4 seconds against the intersection's 0.05. The
   rings' bounding trees would separate them.
-- **The touch search is made again in every overlay.** Where an input's rings touch each other
-  (section 5.2, *Rings made simple*) depends on that input alone, so the touches could be found
-  once per polygon and cached like the bounding tree, each overlay taking those at the vertices of
-  the pieces it keeps: a clip with holes is searched again for every subject it cuts. The cache
-  would be an overlay's result held in the polygon's lazily filled state (section 3.10), or in the
-  partitioner. Its worth is not measured (the search's share of a partition of many subjects by a
-  clip with many holes), and is to be judged once the sweep below is replaced, since much of the
-  search's cost for many rings is the sweep's.
-- **The rings' sweep is superlinear for rings spread over an area.** `CircleSweep` (section 5.2)
-  pairs circles whose intervals of angle from one axis overlap, so rings spread over an area, not
-  along a line, pair with every ring in a band across it: about n^1.5 candidate pairs for n rings
-  on a grid. Each is only a test of two circles, but there are many. A polygon with 80,000 small
-  holes in a 200 by 400 grid, intersected with a polygon over 2,500 of them, takes 2.0 seconds,
-  of which the touch search takes 0.57 and the nesting 0.93. The nesting is of the output outside
-  the other polygon too (77,442 rings), since `intersection()` goes through the partitioner,
-  which extracts both sides (below). At 20,000 holes the intersection takes 0.28 seconds, 0.2 of
-  it in the two. A structure that pairs only circles that meet in both dimensions (a tree of the
-  circles, or cells on the sphere) would make the sweeps linear in the pairs that meet. It serves
-  the touch search, the grouping and the containment test alike.
+- **An overlay costs in proportion to every ring of both inputs, however few the other meets.**
+  Each overlay builds and classifies the pieces of every ring, and the touch search, though it
+  tests only the vertices of kept pieces, first pairs all the rings of their input by their
+  circles. So one clip with many holes cutting many small subjects pays for all its rings in every
+  subject: 1,000 subjects, each over a few of 20,000 small holes, take 16 seconds (80,000 holes,
+  97), against 0.005 without the holes.
+  About 45% of it is the touch search (section 5.2, *Rings made simple*), the rest building and
+  classifying rings the subject never meets. The fix is an overlay whose cost follows the rings
+  the other input meets: those no record touches classified in bulk and given no pieces, and the
+  touch search only among rings near the kept pieces. Caching the touch search per polygon
+  instead (where an input's rings touch each other depends on that input alone; the cache would be
+  held in the polygon's lazily filled state, section 3.10, or in the partitioner, of which
+  `GeometryCookieCutter`, under `PlatePartitioner` and Assign Plate IDs, keeps one for each plate,
+  while `PolygonOnSphere.partition()`, `intersection()` and `difference()` make one for each call
+  and `union()` and `symmetric_difference()` none) would only halve it, so it is not made. The fix
+  waits because resolved plates and networks seldom have more than dozens of holes: it is a clip
+  with thousands (a polygon with many lakes, say) that pays.
 - **`intersection()` nests the outside's rings too.** `PolygonOnSphere.intersection()` is
   partitioning's inside, and `difference()` its outside (section 5.1). The partitioner extracts
   both sides whichever is asked for (`overlay_polygon`), since a side that the clean-up or the
   sliver filter leaves empty makes the subject whole, and the filter follows the nesting. So a
   small intersection with a polygon of many holes walks and nests every ring outside the other
-  polygon, though no polygon is built from them. Not looked into: telling that a side is not
-  empty before its rings are nested.
+  polygon, though no polygon is built from them: with the 80,000 holes of section 5.2, 77,442 of
+  the 79,943 rings nested are the outside's, and the nesting is about 0.38 of the intersection's
+  1.1 seconds. Not looked into: telling that a side is not empty before its rings are nested.
 - **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
   edge where an input folds back on itself along all of it, or a short one (its far end within the
   thickness of the arc beside it), the two differences' rings are left sharing the edge, unless
