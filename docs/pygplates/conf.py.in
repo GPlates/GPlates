@@ -332,9 +332,13 @@ class SampleCodeDirective(Directive):
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['@SPHINX_STATIC_DIR@']
 
-# Custom autosummary templates. Only '_templates/autosummary/enum.rst' exists: it is selected by the
-# ':template:' option of the Enumerations block in 'pygplates_reference.rst', because the default
-# class template lists every method and attribute a Boost.Python enum inherits from 'int'.
+# Custom autosummary templates, in '_templates/autosummary/':
+#
+# * 'enum.rst' is selected by the ':template:' option of the Enumerations block in
+#   'pygplates_reference.rst', because the default class template lists every method and attribute
+#   a Boost.Python enum inherits from 'int'.
+# * 'class.rst' replaces the default class template, adding the class attributes that Boost.Python
+#   leaves undocumented (see 'find_class_attributes').
 templates_path = ['_templates']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
@@ -600,6 +604,156 @@ def process_docstring(app, what, name, obj, options, lines):
     # 'prepare_docstring()' guarantees a trailing blank line - keep that guarantee.
     output.append('')
     lines[:] = output
+
+
+# -- Class attributes ----------------------------------------------------------
+
+# Boost.Python drops the docstring of a class attribute defined by 'class_::def_readonly()' on a
+# value that isn't a data member: the common feature types and property names, 'Vector3D.x_axis',
+# the poles, the Earth's radii and others ('def_readonly_impl()' has no use for 'doc' with
+# 'BOOST_PYTHON_NO_DATA_MEMBER', in 'boost/python/class.hpp'). Nor can Python give it one: the
+# attribute is a 'Boost.Python.StaticProperty', whose '__doc__' is read-only, and the class refuses
+# 'delattr', so it can't be replaced either. Autodoc then sees only the value, whose docstring is
+# that of its class, so it skips the attribute as undocumented, and the class's autosummary table
+# lists it with no link and no summary.
+#
+# So the text is written here instead. A feature type's or property name's is generated from its
+# value: its GPGIM name, linked to that name's entry in the GPGIM documentation. The others come
+# from '_CLASS_ATTRIBUTE_DOCSTRINGS'. The class template ('_templates/autosummary/class.rst') writes
+# the summary table of these attributes and an entry for each, after the class's other summary
+# tables.
+#
+# The template writes them, rather than autodoc and autosummary, which can't be given the text:
+# autodoc (Sphinx 9.1, at least) doesn't fire 'autodoc-process-docstring' for an attribute whose
+# value isn't a descriptor, so autosummary has no summary, and even if it did, autodoc would show
+# the value of each, which for most is just '<pygplates.FeatureType object>'.
+#
+# Every text is one sentence, since it is also the summary. A class attribute with no text here
+# fails the build, and so does an entry here that names no class attribute.
+
+_GPGIM_URL = 'http://www.gplates.org/docs/gpgim/#{}'
+
+_CLASS_ATTRIBUTE_DOCSTRINGS = {
+    'Earth.equatorial_radius_in_kms': 'The radius of the Earth at the equator, in kms (WGS-84).',
+    'Earth.mean_radius_in_kms': 'The mean radius of the Earth, in kms (WGS-84).',
+    'Earth.polar_radius_in_kms': 'The radius of the Earth at the poles, in kms (WGS-84).',
+    # Not in the GPGIM: GPlates handles it as a special case.
+    'FeatureType.gpml_unclassified_feature':
+        'The ``gpml:UnclassifiedFeature`` feature type, the default for '
+        ':meth:`Feature()<Feature.__init__>`, whose features can have any property in the GPGIM.',
+    'LatLonPoint.north_pole': 'The North pole (latitude 90, longitude 0).',
+    'LatLonPoint.south_pole': 'The South pole (latitude -90, longitude 0).',
+    'PointOnSphere.north_pole': 'The North pole, (x,y,z) = (0,0,1).',
+    'PointOnSphere.south_pole': 'The South pole, (x,y,z) = (0,0,-1).',
+    # Scalar types are not in the GPGIM (its 'gpml:CrustalThickness' is a feature type).
+    'ScalarType.gpml_crustal_stretching_factor':
+        'The ``gpml:CrustalStretchingFactor`` scalar type: the crustal stretching factor (see '
+        ':ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).',
+    'ScalarType.gpml_crustal_thickness':
+        'The ``gpml:CrustalThickness`` scalar type: the crustal thickness, in kms (see '
+        ':ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).',
+    'ScalarType.gpml_crustal_thinning_factor':
+        'The ``gpml:CrustalThinningFactor`` scalar type: the crustal thinning factor (see '
+        ':ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).',
+    'ScalarType.gpml_tectonic_subsidence':
+        'The ``gpml:TectonicSubsidence`` scalar type: the tectonic subsidence, in kms (see '
+        ':ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence`).',
+    'Strain.identity': 'The identity strain (no deformation).',
+    'StrainRate.zero': 'The zero strain rate (no deformation).',
+    'Vector3D.x_axis': 'The unit vector along the x axis, (1,0,0).',
+    'Vector3D.y_axis': 'The unit vector along the y axis, (0,1,0).',
+    'Vector3D.z_axis': 'The unit vector along the z axis, (0,0,1).',
+    'Vector3D.zero': 'The zero vector, (0,0,0).'}
+
+# The property names (attributes of 'PropertyName') of enumeration and geometry properties, which
+# their text says.
+_ENUMERATION_PROPERTY_NAMES = {
+    'gpml_absolute_reference_frame', 'gpml_crust', 'gpml_dip_side', 'gpml_dip_slip', 'gpml_edge',
+    'gpml_fold_annotation', 'gpml_motion', 'gpml_polarity_chron_orientation',
+    'gpml_primary_slip_component', 'gpml_quality', 'gpml_reconstruction_method', 'gpml_side',
+    'gpml_strike_slip', 'gpml_subduction_polarity'}
+_GEOMETRY_PROPERTY_NAMES = {
+    'gpml_average_sample_site_position', 'gpml_boundary', 'gpml_center_line_of',
+    'gpml_error_bounds', 'gpml_multi_position', 'gpml_network', 'gpml_outline_of',
+    'gpml_pole_position', 'gpml_position', 'gpml_seed_points', 'gpml_unclassified_geometry'}
+
+def class_attribute_text(class_name, attribute_name, value):
+    """
+    The text of a feature type or property name class attribute, generated from its value.
+    """
+    if class_name not in ('FeatureType', 'PropertyName'):
+        return None
+    qualified_name = value.to_qualified_string()
+    link = '`{} <{}>`__'.format(qualified_name, _GPGIM_URL.format(qualified_name))
+    if class_name == 'FeatureType':
+        return 'The {} feature type.'.format(link)
+    if attribute_name in _ENUMERATION_PROPERTY_NAMES:
+        return 'The name of the {} :class:`enumeration<Enumeration>` property.'.format(link)
+    if attribute_name in _GEOMETRY_PROPERTY_NAMES:
+        return 'The name of the {} geometry property.'.format(link)
+    return 'The name of the {} property.'.format(link)
+
+def find_class_attributes():
+    """
+    Return the class attributes that Boost.Python leaves undocumented, by class name.
+
+    Each class has a list of its attributes, in name order, and each attribute is a dict of its
+    name, text, type and, for a number, its value.
+    """
+    import pygplates
+
+    def is_class_attribute(member):
+        return type(member).__name__ == 'StaticProperty'
+
+    class_attributes = {}
+    documented = set()
+    for class_name, cls in sorted(vars(pygplates).items()):
+        # Skip a second name for the same class (the entries go on the class's own page).
+        if not isinstance(cls, type) or cls.__name__ != class_name:
+            continue
+        # A nested class (such as 'PolygonOnSphere.Orientation') is documented on its outer class's
+        # page, where the class template doesn't reach, so none of its attributes would appear.
+        for nested_name, nested_cls in vars(cls).items():
+            if (isinstance(nested_cls, type) and
+                    any(map(is_class_attribute, vars(nested_cls).values()))):
+                raise ValueError("the nested class 'pygplates.{}.{}' has class attributes, which "
+                                 "conf.py can't document".format(class_name, nested_name))
+        for attribute_name, member in sorted(vars(cls).items()):
+            if not is_class_attribute(member):
+                continue
+            key = '{}.{}'.format(class_name, attribute_name)
+            value = getattr(cls, attribute_name)
+            text = _CLASS_ATTRIBUTE_DOCSTRINGS.get(key)
+            if text is None:
+                text = class_attribute_text(class_name, attribute_name, value)
+            elif (hasattr(value, 'to_qualified_string') and
+                  '``{}``'.format(value.to_qualified_string()) not in text):
+                # A hand-written text names the value (eg, ``gpml:CrustalThickness``), so a value
+                # renamed in C++ must not leave the old name behind.
+                raise ValueError(
+                    "the text of the class attribute 'pygplates.{}' in '_CLASS_ATTRIBUTE_DOCSTRINGS' "
+                    "doesn't name its value ``{}``".format(key, value.to_qualified_string()))
+            if text is None:
+                raise ValueError("the class attribute 'pygplates.{}' has no documentation: add it "
+                                 "to '_CLASS_ATTRIBUTE_DOCSTRINGS' in conf.py".format(key))
+            class_attributes.setdefault(class_name, []).append({
+                'name': attribute_name,
+                'text': text,
+                'type': type(value).__name__,
+                'value': repr(value) if isinstance(value, (int, float)) else None})
+            documented.add(key)
+
+    unused = sorted(set(_CLASS_ATTRIBUTE_DOCSTRINGS) - documented)
+    unused += sorted('PropertyName.' + name
+                     for name in _ENUMERATION_PROPERTY_NAMES | _GEOMETRY_PROPERTY_NAMES
+                     if 'PropertyName.' + name not in documented)
+    if unused:
+        raise ValueError("conf.py documents class attributes that pygplates doesn't have: "
+                         "{}".format(', '.join(unused)))
+    return class_attributes
+
+# For the class template ('_templates/autosummary/class.rst').
+autosummary_context = {'class_attributes': find_class_attributes()}
 
 
 # -- Primer anchor redirect ----------------------------------------------------

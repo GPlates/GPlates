@@ -121,10 +121,7 @@ export_lat_lon_point()
 					"LatLonPoints are *not* equality (``==``, ``!=``) comparable (will raise ``TypeError`` "
 					"when compared) and are not hashable (cannot be used as a key in a ``dict``).\n"
 					"\n"
-					"As a convenience the North and South poles are available as class attributes:\n"
-					"\n"
-					"* ``pygplates.LatLonPoint.north_pole``\n"
-					"* ``pygplates.LatLonPoint.south_pole``\n"
+					"The North and South poles are available as class attributes, :attr:`north_pole` and :attr:`south_pole`.\n"
 					"\n"
 					"A *LatLonPoint* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
@@ -185,6 +182,7 @@ export_lat_lon_point()
 				"    if pygplates.LatLonPoint.is_valid_longitude(longitude):\n"
 				"      ...\n")
 		.staticmethod("is_valid_longitude")
+		// Boost.Python can't document these (see *Class attributes* in docs/pygplates/README.md).
 		// Static property 'pygplates.LatLonPoint.north_pole'...
 		.def_readonly("north_pole", GPlatesApi::lat_lon_point_north_pole)
 		// Static property 'pygplates.LatLonPoint.south_pole'...
