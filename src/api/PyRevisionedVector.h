@@ -160,7 +160,7 @@ namespace GPlatesApi
 					"  Add the elements in sequence *t* to the end.\n"
 					"\n"
 					"  :param t: the elements to add\n"
-					"  :type t: sequence of " + element_type + "\n";
+					"  :type t: iterable of " + element_type + "\n";
 			const std::string insert_docstring =
 					"insert(i,x)\n"
 					"  Insert element *x* at index *i*.\n"

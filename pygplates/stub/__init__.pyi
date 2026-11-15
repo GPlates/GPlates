@@ -10,7 +10,7 @@
 import numpy
 import os
 
-from typing import Any, Callable, ClassVar, Iterable, NamedTuple, Sequence, overload
+from typing import Any, Callable, ClassVar, Iterable, NamedTuple, Mapping, Sequence, overload
 from typing_extensions import deprecated
 
 __version__: str
@@ -704,13 +704,13 @@ class Feature:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, feature_type: FeatureType = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> None:
+    def __init__(self, feature_type: FeatureType | None = ..., feature_id: FeatureId | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> None:
         """Create a new feature instance that is (initially) empty (has no properties).
 
         :param feature_type: the type of feature
-        :type feature_type: FeatureType
+        :type feature_type: FeatureType, or None
         :param feature_id: the feature identifier
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param verify_information_model: whether to check *feature_type* with the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *feature_type* is not a recognised feature type
@@ -742,13 +742,13 @@ class Feature:
     def __setstate__(self, state: Any) -> None: ...
 
     @overload
-    def add(self, property_name: PropertyName, property_value: PropertyValue | Sequence[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def add(self, property_name: PropertyName, property_value: PropertyValue | Iterable[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Adds a property (or properties) to this feature.
 
         :param property_name: the name of the property (or properties) to add
         :type property_name: PropertyName
         :param property_value: the value (or values) of the property (or properties) to add
-        :type property_value: PropertyValue, or sequence (eg, list or tuple) of PropertyValue
+        :type property_value: PropertyValue, or iterable of PropertyValue
         :param verify_information_model: whether to check the information model before adding (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property added to the feature, or a ``list`` of properties added if *property_value* is a sequence of property values
@@ -769,11 +769,11 @@ class Feature:
         """
 
     @overload
-    def add(self, properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> list[Property]:
+    def add(self, properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> list[Property]:
         """Adds properties to this feature.
 
         :param properties: the property name/value pairs to add
-        :type properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param verify_information_model: whether to check the information model before adding (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the list of properties added to the feature
@@ -810,7 +810,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_flowline(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., left_plate: int = ..., right_plate: int = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_flowline(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., left_plate: int | None = ..., right_plate: int | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a flowline feature.
 
         :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
@@ -818,21 +818,21 @@ class Feature:
         :param times: the list of times
         :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: str
+        :type description: str, or None
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
-        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
+        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant), or None
         :param left_plate: the left plate id, if not specified then a `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property is not added
-        :type left_plate: int
+        :type left_plate: int, or None
         :param right_plate: the right plate id, if not specified then a `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added
-        :type right_plate: int
+        :type right_plate: int, or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *left_plate*) - this is only required if *seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
-        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
+        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int]), or None
         :param verify_information_model: whether to check the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :rtype: Feature
@@ -900,7 +900,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_motion_path(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., relative_plate: int = ..., reconstruction_plate_id: int = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_motion_path(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., relative_plate: int | None = ..., reconstruction_plate_id: int | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a motion path feature.
 
         :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
@@ -908,21 +908,21 @@ class Feature:
         :param times: the list of times
         :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: str
+        :type description: str, or None
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
-        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
+        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant), or None
         :param relative_plate: the relative plate id, if not specified then a `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_ property is not added
-        :type relative_plate: int
+        :type relative_plate: int, or None
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
-        :type reconstruction_plate_id: int
+        :type reconstruction_plate_id: int, or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
-        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
+        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int]), or None
         :param verify_information_model: whether to check the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :rtype: Feature
@@ -981,29 +981,29 @@ class Feature:
         """
 
     @staticmethod
-    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., reconstruction_plate_id: int = ..., conjugate_plate_id: int | Sequence[int] = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a reconstructable feature.
 
         :param feature_type: the type of feature to create
         :type feature_type: FeatureType
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
-        :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere (or a coverage or a sequence of coverages)
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, iterable of float] | sequence of tuple[ScalarType, iterable of float]])
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: str
+        :type description: str, or None
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
-        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
+        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant), or None
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
-        :type reconstruction_plate_id: int
+        :type reconstruction_plate_id: int, or None
         :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ properties are added - **note** that not all `reconstructable features <http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_ have a conjugate plate ID (*conjugate_plate_id* is provided to support the `Isochron feature type <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_)
-        :type conjugate_plate_id: int, or sequence of int
+        :type conjugate_plate_id: int, or iterable of int, or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
-        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
+        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int]), or None
         :param verify_information_model: whether to check the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :rtype: Feature
@@ -1089,35 +1089,35 @@ class Feature:
         """
 
     @staticmethod
-    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., reconstruction_plate_id: int = ..., conjugate_plate_id: int | Sequence[int] = ..., left_plate: int = ..., right_plate: int = ..., reconstruction_method: str = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., left_plate: int | None = ..., right_plate: int | None = ..., reconstruction_method: str | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a tectonic section feature.
 
         :param feature_type: the type of feature to create
         :type feature_type: FeatureType
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
-        :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere (or a coverage or a sequence of coverages)
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, iterable of float] | sequence of tuple[ScalarType, iterable of float]])
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: str
+        :type description: str, or None
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
-        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
+        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant), or None
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
-        :type reconstruction_plate_id: int
+        :type reconstruction_plate_id: int, or None
         :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ properties are added
-        :type conjugate_plate_id: int, or sequence of int
+        :type conjugate_plate_id: int, or iterable of int, or None
         :param left_plate: the left plate id, if not specified then a `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property is not added
-        :type left_plate: int
+        :type left_plate: int, or None
         :param right_plate: the right plate id, if not specified then a `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added
-        :type right_plate: int
-        :param reconstruction_method: the reconstruction method, if not specified then a `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) - note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should generally be used unless backward compatibility with old GPlates versions is required
-        :type reconstruction_method: str  (see `supported values <http://www.gplates.org, or docs, or gpgim/#gpml:ReconstructionMethodEnumeration>`_)
+        :type right_plate: int, or None
+        :param reconstruction_method: the reconstruction method, if not specified then a `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) - note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should generally be used unless backward compatibility with old GPlates versions is required (see the `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)
+        :type reconstruction_method: str, or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
-        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
+        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int]), or None
         :param verify_information_model: whether to check the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :rtype: Feature
@@ -1178,23 +1178,23 @@ class Feature:
         """
 
     @staticmethod
-    def create_topological_feature(feature_type: FeatureType, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Sequence[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_topological_feature(feature_type: FeatureType, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Iterable[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a topological feature.
 
         :param feature_type: the type of feature to create
         :type feature_type: FeatureType
         :param topological_geometry: the topological geometry or geometries
-        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or a sequence (eg, list or tuple) of them
+        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or an iterable (eg, list or tuple) of them
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: str
+        :type description: str, or None
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
-        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
+        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant), or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param verify_information_model: whether to check the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :rtype: Feature
@@ -1236,7 +1236,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_topological_network_feature(topological_network_geometry: GpmlTopologicalNetwork, network_feature_type: FeatureType = FeatureType.gpml_topological_network, name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., rift_parameters: tuple = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_topological_network_feature(topological_network_geometry: GpmlTopologicalNetwork, network_feature_type: FeatureType = FeatureType.gpml_topological_network, name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., rift_parameters: tuple[int, int] | tuple[int, int, float | None] | tuple[int, int, float | None, float | None] | tuple[int, int, float | None, float | None, float | None] | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         r"""Create a topological *network* feature.
 
         :param topological_network_geometry: the topological *network* geometry
@@ -1244,18 +1244,18 @@ class Feature:
         :param network_feature_type: The type of *network* feature to create. Defaults to ``pygplates.FeatureType.gpml_topological_network``.
         :type network_feature_type: FeatureType
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: str
+        :type description: str, or None
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
-        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
+        :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant), or None
         :param rift_parameters: An optional tuple containing between 2 and 5 rift parameters. If a tuple is specified, then the first two parameters must be specified, and are the rift's conjugate left/right plate IDs (it doesn't matter which is left or right; can swap them). These 2 parameters will add the feature properties ``gpml:riftLeftPlate``/``gpml:riftRightPlate``. The remaining 3 rift parameters are optional and are equivalent to the 3 rift parameters in :class:`ResolveTopologyParameters`. If any of these 3 parameters are specified then they'll override those in :class:`ResolveTopologyParameters` (for the returned network feature only). Any of these 3 parameters can be ``None``. Those that are *not* ``None`` will add an associated feature property to the returned network feature. The first optional parameter is the rift exponential stretching constant (see :attr:`ResolveTopologyParameters.rift_exponential_stretching_constant`) which adds the feature property ``gpml:riftExponentialStretchingConstant``. The second optional parameter is the rift strain rate resolution (see :attr:`ResolveTopologyParameters.rift_strain_rate_resolution`) which adds the feature property ``gpml::riftStrainRateResolutionLog10`` (with the property name indicating that :math:`\log_{10}(param)` is stored in the property). The third optional parameter is the rift edge length threshold in degrees (see :attr:`ResolveTopologyParameters.rift_edge_length_threshold_degrees`) which adds the feature property ``gpml:riftEdgeLengthThresholdDegrees``.
 
-        :type rift_parameters: tuple
+        :type rift_parameters: tuple (int, int [, float or None [, float or None [, float or None]]]), or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param verify_information_model: whether to check the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :rtype: Feature
@@ -1300,7 +1300,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_total_reconstruction_sequence(fixed_plate_id: int, moving_plate_id: int, total_reconstruction_pole: GpmlIrregularSampling, name: str | Sequence[str] = ..., description: str = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_total_reconstruction_sequence(fixed_plate_id: int, moving_plate_id: int, total_reconstruction_pole: GpmlIrregularSampling, name: str | Iterable[str] | None = ..., description: str | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a rotation feature for a fixed/moving plate pair.
 
         :param fixed_plate_id: the fixed plate id
@@ -1310,13 +1310,13 @@ class Feature:
         :param total_reconstruction_pole: the time-sequence of rotations
         :type total_reconstruction_pole: GpmlIrregularSampling of GpmlFiniteRotation
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
-        :type description: str
+        :type description: str, or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
-        :type feature_id: FeatureId
+        :type feature_id: FeatureId, or None
         :param verify_information_model: whether to check the information model (default) or not
         :type verify_information_model: VerifyInformationModel
         :rtype: Feature
@@ -1342,11 +1342,11 @@ class Feature:
           rotation_feature.set_total_reconstruction_pole(550, 801, total_reconstruction_pole_801_rel_550)
         """
 
-    def get(self, property_query: PropertyName | Callable[[Property], Any], property_return: PropertyReturn = PropertyReturn.exactly_one) -> Property | list[Property] | None:
+    def get(self, property_query: PropertyName | Callable[[Property], Any] | None, property_return: PropertyReturn = PropertyReturn.exactly_one) -> Property | list[Property] | None:
         r"""Returns one or more properties matching a property name or predicate.
 
-        :param property_query: the property name (or predicate function) that matches the property (or properties) to get
-        :type property_query: PropertyName, or callable (accepting single Property argument)
+        :param property_query: the property name (or predicate function) that matches the property (or properties) to get, or ``None`` to match every property
+        :type property_query: PropertyName, or callable (accepting single Property argument), or None
         :param property_return: whether to return exactly one property, the first property or all matching properties
         :type property_return: PropertyReturn
         :rtype: Property, or list of Property, or None
@@ -1624,11 +1624,11 @@ class Feature:
         :rtype: FeatureType
         """
 
-    def get_geometries(self, property_query: PropertyName | Callable[[Property], Any] = ..., coverage_return: CoverageReturn = CoverageReturn.geometry_only) -> list[GeometryOnSphere] | list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]]:
+    def get_geometries(self, property_query: PropertyName | Callable[[Property], Any] | None = ..., coverage_return: CoverageReturn = CoverageReturn.geometry_only) -> list[GeometryOnSphere] | list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]]:
         """Return a list of the *present day* geometries of this feature.
 
         :param property_query: The optional property name or predicate function used to find the geometry properties. If not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then non-default geometry properties are queried instead.
-        :type property_query: PropertyName, or callable (accepting single Property argument)
+        :type property_query: PropertyName, or callable (accepting single Property argument), or None
         :param coverage_return: whether to return geometries only (the default), or coverages (where a coverage is a geometry and associated per-point scalar values)
         :type coverage_return: CoverageReturn
         :returns: the geometries - or coverages (2-tuples of geometry and a ``dict`` mapping :class:`ScalarType` to a ``list`` of scalar values) if *CoverageReturn.geometry_and_scalars* is specified
@@ -1654,11 +1654,11 @@ class Feature:
            When *property_query* not specified and no *default* geometries found then *non-default* geometries are returned.
         """
 
-    def get_geometry(self, property_query: PropertyName | Callable[[Property], Any] = ..., property_return: PropertyReturn = PropertyReturn.exactly_one, coverage_return: CoverageReturn = CoverageReturn.geometry_only) -> GeometryOnSphere | list[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, list[float]]] | list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]] | None:
+    def get_geometry(self, property_query: PropertyName | Callable[[Property], Any] | None = ..., property_return: PropertyReturn = PropertyReturn.exactly_one, coverage_return: CoverageReturn = CoverageReturn.geometry_only) -> GeometryOnSphere | list[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, list[float]]] | list[tuple[GeometryOnSphere, dict[ScalarType, list[float]]]] | None:
         """Return the *present day* geometry (or geometries) of this feature.
 
         :param property_query: The optional property name or predicate function used to find the geometry property or properties. If not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead. And if there are no default geometry properties then non-default geometry properties are queried instead.
-        :type property_query: PropertyName, or callable (accepting single Property argument)
+        :type property_query: PropertyName, or callable (accepting single Property argument), or None
         :param property_return: whether to return exactly one geometry, the first geometry or all geometries
         :type property_return: PropertyReturn
         :param coverage_return: whether to return geometry(s) only (the default), or coverage(s) (where a coverage is a geometry and associated per-point scalar values)
@@ -2153,11 +2153,11 @@ class Feature:
         .. seealso:: :meth:`set_times`
         """
 
-    def get_topological_geometries(self, property_query: PropertyName | Callable[[Property], Any] = ...) -> list[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork]:
+    def get_topological_geometries(self, property_query: PropertyName | Callable[[Property], Any] | None = ...) -> list[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork]:
         """Return a list of topological geometries of this feature.
 
         :param property_query: The optional property name or predicate function used to find the topological geometry properties. If not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead. And if there are no default topological geometry properties then non-default topological geometry properties are queried instead.
-        :type property_query: PropertyName, or callable (accepting single Property argument)
+        :type property_query: PropertyName, or callable (accepting single Property argument), or None
         :rtype: list of GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork
 
         | This is a convenient alternative to :meth:`get_topological_geometry` that returns a ``list`` of matching topological geometries without having to specify ``pygplates.PropertyReturn.all``.
@@ -2182,11 +2182,11 @@ class Feature:
            When *property_query* not specified and no *default* topological geometries found then *non-default* topological geometries are returned.
         """
 
-    def get_topological_geometry(self, property_query: PropertyName | Callable[[Property], Any] = ..., property_return: PropertyReturn = PropertyReturn.exactly_one) -> GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | list[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork] | None:
+    def get_topological_geometry(self, property_query: PropertyName | Callable[[Property], Any] | None = ..., property_return: PropertyReturn = PropertyReturn.exactly_one) -> GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | list[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork] | None:
         """Return the topological geometry (or geometries) of this feature.
 
         :param property_query: The optional property name or predicate function used to find the topological geometry property or properties. If not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead. And if there are no default topological geometry properties then non-default topological geometry properties are queried instead.
-        :type property_query: PropertyName, or callable (accepting single Property argument)
+        :type property_query: PropertyName, or callable (accepting single Property argument), or None
         :param property_return: whether to return exactly one topological geometry, the first geometry or all topological geometries
         :type property_return: PropertyReturn
         :rtype: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or list of them, or None
@@ -2302,11 +2302,11 @@ class Feature:
         .. seealso:: :meth:`set_valid_time` and :meth:`is_valid_at_time`
         """
 
-    def get_value(self, property_query: PropertyName | Callable[[Property], Any], time: float | GeoTimeInstant = 0, property_return: PropertyReturn = PropertyReturn.exactly_one) -> PropertyValue | list[PropertyValue] | None:
+    def get_value(self, property_query: PropertyName | Callable[[Property], Any] | None, time: float | GeoTimeInstant = 0, property_return: PropertyReturn = PropertyReturn.exactly_one) -> PropertyValue | list[PropertyValue] | None:
         """Returns one or more values of properties matching a property name or predicate.
 
-        :param property_query: the property name (or predicate function) that matches the property (or properties) to get
-        :type property_query: PropertyName, or callable (accepting single Property argument)
+        :param property_query: the property name (or predicate function) that matches the property (or properties) to get, or ``None`` to match every property
+        :type property_query: PropertyName, or callable (accepting single Property argument), or None
         :param time: the time to extract value (defaults to present day)
         :type time: float or GeoTimeInstant
         :param property_return: whether to return exactly one property, the first property or all matching properties
@@ -2361,11 +2361,11 @@ class Feature:
         .. seealso:: :meth:`get_valid_time` and :meth:`set_valid_time`
         """
 
-    def remove(self, property_query: PropertyName | Property | Callable[[Property], Any] | Sequence[PropertyName | Property | Callable[[Property], Any]]) -> None:
+    def remove(self, property_query: PropertyName | Property | Callable[[Property], Any] | Iterable[PropertyName | Property | Callable[[Property], Any]]) -> None:
         """Removes properties from this feature.
 
         :param property_query: one or more property names, property instances or predicate functions that determine which properties to remove
-        :type property_query: PropertyName, or Property, or callable (accepting single Property argument), or a sequence (eg, list or tuple) of any combination of them
+        :type property_query: PropertyName, or Property, or callable (accepting single Property argument), or an iterable (eg, list, tuple or generator) of any combination of them
         :raises ValueError: if any specified :class:`Property` is not currently a property in this feature
 
         All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property in this feature is ignored. However if any specified :class:`Property` is not currently a property in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must have previously been added (in other words the property *values* are not compared - it actually looks for the same property *instance*). If ``ValueError`` is raised then no properties are removed.
@@ -2405,13 +2405,13 @@ class Feature:
         .. seealso:: :meth:`add`
         """
 
-    def set(self, property_name: PropertyName, property_value: PropertyValue | Sequence[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set(self, property_name: PropertyName, property_value: PropertyValue | Iterable[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets a property (or properties) to this feature.
 
         :param property_name: the name of the property (or properties) to set
         :type property_name: PropertyName
         :param property_value: the value (or values) of the property (or properties) to set
-        :type property_value: PropertyValue, or sequence (eg, list or tuple) of PropertyValue
+        :type property_value: PropertyValue, or iterable of PropertyValue
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property set in the feature, or a ``list`` of properties set if *property_value* is a sequence of property values
@@ -2436,13 +2436,13 @@ class Feature:
         .. seealso:: :meth:`get`
         """
 
-    def set_boolean(self, property_name: PropertyName, boolean: bool | Sequence[bool], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_boolean(self, property_name: PropertyName, boolean: bool | Iterable[bool], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the boolean property value associated with *property_name*.
 
         :param property_name: the property name of the boolean property
         :type property_name: PropertyName
         :param boolean: the boolean or booleans
-        :type boolean: bool, or sequence of bool
+        :type boolean: bool, or iterable of bool
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the boolean, or properties containing the booleans
@@ -2461,11 +2461,11 @@ class Feature:
         .. seealso:: :meth:`get_boolean`
         """
 
-    def set_conjugate_plate_id(self, conjugate_plate_id: int | Sequence[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_conjugate_plate_id(self, conjugate_plate_id: int | Iterable[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Set the conjugate plate ID (or IDs) of this feature.
 
         :param conjugate_plate_id: the conjugate plate ID or plate IDs
-        :type conjugate_plate_id: int, or sequence of int
+        :type conjugate_plate_id: int, or iterable of int
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the conjugate plate ID, or properties containing the conjugate plate IDs
@@ -2512,13 +2512,13 @@ class Feature:
         .. seealso:: :meth:`get_description`
         """
 
-    def set_double(self, property_name: PropertyName, double: float | Sequence[float], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_double(self, property_name: PropertyName, double: float | Iterable[float], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the floating-point (double) property value associated with *property_name*.
 
         :param property_name: the property name of the float property
         :type property_name: PropertyName
         :param double: the float or floats
-        :type double: float, or sequence of float
+        :type double: float, or iterable of float
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the float, or properties containing the floats
@@ -2562,15 +2562,15 @@ class Feature:
         .. seealso:: :meth:`get_enumeration`
         """
 
-    def set_geometry(self, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], property_name: PropertyName = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property] | tuple[Property, Property] | list[tuple[Property, Property]]:
+    def set_geometry(self, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], property_name: PropertyName | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property] | tuple[Property, Property] | list[tuple[Property, Property]]:
         """Set the geometry (or geometries) of this feature.
 
         :param geometry: the geometry or geometries (or coverage or coverages - see below) to set - if the geometry(s) is not present-day geometry then this feature will need to be reverse reconstructed to present day using (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before this feature can be reconstructed to an arbitrary reconstruction time
-        :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere (or a coverage or a sequence of coverages - see below)
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, iterable of float] | sequence of tuple[ScalarType, iterable of float]])
         :param property_name: the optional property name of the geometry property or properties to set, if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead
-        :type property_name: PropertyName
+        :type property_name: PropertyName, or None
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and this feature's existing properties (eg, reconstruction plate id) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
-        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int])
+        :type reverse_reconstruct: tuple (RotationModel, float or GeoTimeInstant [, int]), or None
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the geometry property or properties set in the feature (or 2-tuple of geometry property and scalars property, or list of those, if a coverage or coverages was specified for *geometry*)
@@ -2679,13 +2679,13 @@ class Feature:
         .. seealso:: :meth:`get_geometry_import_time`
         """
 
-    def set_integer(self, property_name: PropertyName, integer: int | Sequence[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_integer(self, property_name: PropertyName, integer: int | Iterable[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the integer property value associated with *property_name*.
 
         :param property_name: the property name of the integer property
         :type property_name: PropertyName
         :param integer: the integer or integers
-        :type integer: int, or sequence of int
+        :type integer: int, or iterable of int
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the integer, or properties containing the integers
@@ -2726,11 +2726,11 @@ class Feature:
         .. seealso:: :meth:`get_left_plate`
         """
 
-    def set_name(self, name: str | Sequence[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_name(self, name: str | Iterable[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Set the name (or names) of this feature.
 
         :param name: the name or names
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the name, or properties containing the names
@@ -2847,7 +2847,7 @@ class Feature:
         .. seealso:: :meth:`get_right_plate`
         """
 
-    def set_shapefile_attribute(self, key: str, value: int | float | str, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property:
+    def set_shapefile_attribute(self, key: str, value: int | float | str, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> GpmlKeyValueDictionary:
         """Sets the value of a shapefile attribute associated with a key.
 
         :param key: the key of the shapefile attribute
@@ -2856,8 +2856,8 @@ class Feature:
         :type value: int, float or str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
-        :returns: the property containing all the shapefile attributes
-        :rtype: Property containing a GpmlKeyValueDictionary property value
+        :returns: the property value containing all the shapefile attributes
+        :rtype: GpmlKeyValueDictionary
         :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property (although all feature :class:`types<FeatureType>` do support it).
         :raises InformationModelError: if a `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property name is found in this feature but the property value is not a :class:`GpmlKeyValueDictionary` (this should not normally happen).
 
@@ -2882,15 +2882,15 @@ class Feature:
         .. seealso:: :meth:`get_shapefile_attribute`
         """
 
-    def set_shapefile_attributes(self, attribute_mapping: dict[str, int | float | str] | Sequence[tuple[Any, Any]] | None = None, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property:
+    def set_shapefile_attributes(self, attribute_mapping: Mapping[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = None, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property:
         """Sets the shapefile attributes of this feature.
 
         :param attribute_mapping: optional mapping of keys to values
-        :type attribute_mapping: dict mapping each key (str) to a value (int, float or str),     or a sequence of (key, value) tuples, or None
+        :type attribute_mapping: dict[str, int | float | str], or sequence of tuple[str, int | float | str], or None
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing all the shapefile attributes
-        :rtype: Property containing a GpmlKeyValueDictionary property value
+        :rtype: Property
         :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property (although all feature :class:`types<FeatureType>` do support it).
         :raises InformationModelError: if a `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_         property name is found in this feature but the property value is not a :class:`GpmlKeyValueDictionary` (this should not normally happen).
 
@@ -2927,13 +2927,13 @@ class Feature:
         .. seealso:: :meth:`get_shapefile_attributes`
         """
 
-    def set_string(self, property_name: PropertyName, string: str | Sequence[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_string(self, property_name: PropertyName, string: str | Iterable[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the string property value associated with *property_name*.
 
         :param property_name: the property name of the string property
         :type property_name: PropertyName
         :param string: the string or strings
-        :type string: str, or sequence of str
+        :type string: str, or iterable of str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the string, or properties containing the strings
@@ -2991,13 +2991,13 @@ class Feature:
            Sets the geometry import time of a flowline that has none, and raises *ValueError* for a repeated time.
         """
 
-    def set_topological_geometry(self, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Sequence[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], property_name: PropertyName = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_topological_geometry(self, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Iterable[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], property_name: PropertyName | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Set the topological geometry (or geometries) of this feature.
 
         :param topological_geometry: the topological geometry or geometries to set
-        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or a sequence (eg, list or tuple) of them
+        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or an iterable (eg, list or tuple) of them
         :param property_name: the optional property name of the topological geometry property or properties to set, if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead
-        :type property_name: PropertyName
+        :type property_name: PropertyName, or None
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the topological geometry property set in the feature, or a ``list`` of properties set if *topological_geometry* is a sequence
@@ -3056,7 +3056,7 @@ class Feature:
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
-        :rtype: tuple of three Property
+        :rtype: tuple[Property, Property, Property]
         :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>`         does not support `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_,         `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_ and         `pygplates.PropertyName.gpml_total_reconstruction_pole <http://www.gplates.org/docs/gpgim/#gpml:totalReconstructionPole>`_ properties.
 
         This is a convenience method that wraps :meth:`set` for the common properties
@@ -3172,11 +3172,11 @@ class FeatureCollection:
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, features: str | os.PathLike | Sequence[Feature] | Feature = ...) -> None:
+    def __init__(self, features: str | os.PathLike | FeatureCollection | Sequence[Feature] | Feature | None = ...) -> None:
         """Create a new feature collection instance.
 
         :param features: an optional filename, or sequence of features, or a single feature
-        :type features: str, or os.PathLike, or a sequence (eg, list or tuple) of Feature, or a single Feature
+        :type features: str, or os.PathLike, or FeatureCollection, or a sequence (eg, list or tuple) of Feature, or a single Feature, or None
         :raises OpenFileForReadingError: if file is not readable (if filename specified)
         :raises FileFormatNotSupportedError: if file format (identified by the filename extension) does not support reading (when filename specified)
 
@@ -3226,11 +3226,11 @@ class FeatureCollection:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def add(self, feature: Feature | Sequence[Feature]) -> None:
+    def add(self, feature: Feature | Iterable[Feature]) -> None:
         """Adds one or more features to this collection.
 
         :param feature: one or more features to add
-        :type feature: Feature or sequence (eg, list or tuple) of Feature
+        :type feature: Feature, or iterable of Feature
 
         A feature collection is an *unordered* collection of features so there is no concept of where a feature is inserted in the sequence of features.
 
@@ -3287,11 +3287,11 @@ class FeatureCollection:
         """
 
     @staticmethod
-    def read(filename: str | os.PathLike | Sequence[str | os.PathLike]) -> FeatureCollection | list[FeatureCollection]:
+    def read(filename: str | os.PathLike | Iterable[str | os.PathLike]) -> FeatureCollection | list[FeatureCollection]:
         """Reads one or more feature collections (from one or more files).
 
         :param filename: the name of the file (or files) to read
-        :type filename: str, or os.PathLike, or sequence of str/os.PathLike
+        :type filename: str, or os.PathLike, or iterable of str/os.PathLike
         :rtype: FeatureCollection, list of FeatureCollection
         :raises OpenFileForReadingError: if any file is not readable
         :raises FileFormatNotSupportedError: if any file format (identified by a filename extension) does not support reading
@@ -3318,11 +3318,11 @@ class FeatureCollection:
            Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), rather than returning an empty feature collection.
         """
 
-    def remove(self, feature_query: FeatureType | FeatureId | Feature | Callable[[Feature], Any] | Sequence[FeatureType | FeatureId | Feature | Callable[[Feature], Any]]) -> None:
+    def remove(self, feature_query: FeatureType | FeatureId | Feature | Callable[[Feature], Any] | Iterable[FeatureType | FeatureId | Feature | Callable[[Feature], Any]]) -> None:
         """Removes features from this collection.
 
         :param feature_query: one or more feature types, feature IDs, feature instances or predicate functions that determine which features to remove
-        :type feature_query: FeatureType, or FeatureId, or Feature, or callable (accepting single Feature argument), or a sequence (eg, list or tuple) of any combination of them
+        :type feature_query: FeatureType, or FeatureId, or Feature, or callable (accepting single Feature argument), or an iterable (eg, list, tuple or generator) of any combination of them
         :raises ValueError: if any specified :class:`Feature` is not currently a feature in this collection
 
         All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable (if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` or predicate callable that does not match a feature in this collection is ignored. However if any specified :class:`Feature` is not currently a feature in this collection then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* must have previously been added (in other words the feature *values* are not compared - it actually looks for the same feature *instance*). If ``ValueError`` is raised then no features are removed. A :class:`Feature` added to this collection more than once (see :meth:`add`) has every copy removed.
@@ -3998,13 +3998,13 @@ class FiniteRotation:
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, pole: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], angle_radians: float) -> None:
+    def __init__(self, pole: PointOnSphere | LatLonPoint | Sequence[float], angle_radians: float) -> None:
         """A *FiniteRotation* object can be constructed in more than one way...
 
         Create a finite rotation from an Euler pole and a rotation angle (in *radians*).
 
         :param pole: the Euler pole.
-        :type pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type pole: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param angle_radians: the rotation angle (in *radians*).
         :type angle_radians: float
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
@@ -4024,13 +4024,13 @@ class FiniteRotation:
         """
 
     @overload
-    def __init__(self, from_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, from_point: PointOnSphere | LatLonPoint | Sequence[float], to_point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a finite rotation that rotates one point to another along the great circle arc connecting them.
 
         :param from_point: the point to rotate *from*
-        :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_point: the point to rotate *to*
-        :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
@@ -4068,7 +4068,7 @@ class FiniteRotation:
     def __str__(self) -> str: ...
 
     @staticmethod
-    def are_equal(finite_rotation1: FiniteRotation, finite_rotation2: FiniteRotation, threshold_degrees: float = ...) -> bool:
+    def are_equal(finite_rotation1: FiniteRotation, finite_rotation2: FiniteRotation, threshold_degrees: float | None = ...) -> bool:
         """Return whether two finite rotations have equal pole latitude, longitude and angle to within a threshold in degrees.
 
         :param finite_rotation1: the first finite rotation
@@ -4076,7 +4076,7 @@ class FiniteRotation:
         :param finite_rotation2: the second finite rotation
         :type finite_rotation2: FiniteRotation
         :param threshold_degrees: optional closeness threshold in degrees
-        :type threshold_degrees: float
+        :type threshold_degrees: float, or None
         :rtype: bool
 
         If *threshold_degrees* is *not* specified then this function is the same as equality comparison (``==``).
@@ -4141,13 +4141,13 @@ class FiniteRotation:
         """
 
     @staticmethod
-    def create_great_circle_point_rotation(from_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> FiniteRotation:
+    def create_great_circle_point_rotation(from_point: PointOnSphere | LatLonPoint | Sequence[float], to_point: PointOnSphere | LatLonPoint | Sequence[float]) -> FiniteRotation:
         """Create a finite rotation that rotates one point to another along the great circle arc connecting them.
 
         :param from_point: the point to rotate *from*
-        :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_point: the point to rotate *to*
-        :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: FiniteRotation
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
@@ -4185,17 +4185,17 @@ class FiniteRotation:
         """
 
     @staticmethod
-    def create_segment_rotation(from_segment_start: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], from_segment_end: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_segment_start: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_segment_end: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> FiniteRotation:
+    def create_segment_rotation(from_segment_start: PointOnSphere | LatLonPoint | Sequence[float], from_segment_end: PointOnSphere | LatLonPoint | Sequence[float], to_segment_start: PointOnSphere | LatLonPoint | Sequence[float], to_segment_end: PointOnSphere | LatLonPoint | Sequence[float]) -> FiniteRotation:
         """Create a finite rotation that rotates the *from* line segment to the *to* line segment.
 
         :param from_segment_start: the start point of the segment to rotate *from*
-        :type from_segment_start: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_segment_start: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param from_segment_end: the end point of the segment to rotate *from*
-        :type from_segment_end: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_segment_end: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_segment_start: the start point of the segment to rotate *to*
-        :type to_segment_start: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_segment_start: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_segment_end: the end point of the segment to rotate *to*
-        :type to_segment_end: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_segment_end: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: FiniteRotation
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
@@ -4218,15 +4218,15 @@ class FiniteRotation:
         """
 
     @staticmethod
-    def create_small_circle_point_rotation(rotation_pole: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], from_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> FiniteRotation:
+    def create_small_circle_point_rotation(rotation_pole: PointOnSphere | LatLonPoint | Sequence[float], from_point: PointOnSphere | LatLonPoint | Sequence[float], to_point: PointOnSphere | LatLonPoint | Sequence[float]) -> FiniteRotation:
         """Create a finite rotation, using the specified rotation pole, that rotates *from_point* to *to_point*.
 
         :param rotation_pole: the rotation pole to rotate around
-        :type rotation_pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type rotation_pole: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param from_point: the point to rotate *from*
-        :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_point: the point to rotate *to*
-        :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: FiniteRotation
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
@@ -4298,11 +4298,11 @@ class FiniteRotation:
           pole_latitude, pole_longitude, angle_degrees = finite_rotation.get_lat_lon_euler_pole_and_angle_degrees()
         """
 
-    def get_rotation_distance(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> float:
+    def get_rotation_distance(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> float:
         """Return the distance that a point rotates along its small circle rotation arc (in radians).
 
         :param point: the point being rotated (the start point of the rotation arc)
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: float
 
         Returns the distance along the (small circle) rotation arc from the start point *point* to the end point ``finite_rotation * point``. Note that the returned distance is not the angle of rotation - it is the actual distance on the unit radius sphere (hence radians). To convert to distance on the Earth's surface multiply by the Earth radius (see :class:`Earth`).
@@ -4834,11 +4834,11 @@ class GmlDataBlock(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, scalar_type_to_values_mapping: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]]) -> None:
+    def __init__(self, scalar_type_to_values_mapping: Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]) -> None:
         """Create a data block containing one or more :class:`scalar types<ScalarType>` and their associated scalar values.
 
         :param scalar_type_to_values_mapping: maps each scalar type to a sequence of scalar values
-        :type scalar_type_to_values_mapping: dict mapping each ScalarType to a sequence of float, or a sequence of (ScalarType, sequence of float) tuples
+        :type scalar_type_to_values_mapping: dict mapping each ScalarType to an iterable of float, or a sequence of (ScalarType, iterable of float) tuples
         :raises ValueError: if *scalar_type_to_values_mapping* is empty, or if each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values.
 
         To create ``gpml:VelocityColat`` and ``gpml:VelocityLon`` scalar values:
@@ -4899,13 +4899,13 @@ class GmlDataBlock(PropertyValue):
         .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.
         """
 
-    def set(self, scalar_type: ScalarType, scalar_values: Sequence[float]) -> None:
+    def set(self, scalar_type: ScalarType, scalar_values: Iterable[float]) -> None:
         """Sets the scalar values of the data block associated with a scalar type.
 
         :param scalar_type: the type of the scalars
         :type scalar_type: ScalarType
         :param scalar_values: the scalar values associated with *scalar_type*
-        :type scalar_values: sequence (eg, list or tuple) of float
+        :type scalar_values: iterable of float
         :raises ValueError: if the length of *scalar_values* does not match the length of existing scalar values for other :class:`scalar types<ScalarType>`.
 
         To set (or replace) the scalar values associated with ``gpml:VelocityColat``:
@@ -5050,11 +5050,11 @@ class GmlPoint(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a property value representing a point geometry.
 
         :param point: the point geometry
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
 
         ::
 
@@ -5069,11 +5069,11 @@ class GmlPoint(PropertyValue):
         :rtype: PointOnSphere
         """
 
-    def set_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def set_point(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Sets the point geometry of this property value.
 
         :param point: the point geometry
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         """
 
 class GmlPolygon(PropertyValue):
@@ -5303,11 +5303,11 @@ class GpmlArray(PropertyValue):
 
     def __iadd__(self, other: Any) -> Any: ...
 
-    def __init__(self, elements: Sequence[Any]) -> None:
+    def __init__(self, elements: Iterable[PropertyValue]) -> None:
         """Create an array from a sequence of property value elements.
 
         :param elements: A sequence of :class:`PropertyValue` elements.
-        :type elements: Any sequence such as a list or a tuple
+        :type elements: iterable of PropertyValue
         :raises RuntimeError: if sequence is empty
 
         Note that all elements should have the same type (such as :class:`GmlTimePeriod`).
@@ -5344,11 +5344,11 @@ class GpmlArray(PropertyValue):
         :rtype: int
         """
 
-    def extend(self, t: Sequence[PropertyValue]) -> None:
+    def extend(self, t: Iterable[PropertyValue]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`PropertyValue`
+        :type t: iterable of :class:`PropertyValue`
         """
 
     def index(self, x: PropertyValue, i: int = ..., j: int = ...) -> int:
@@ -5584,11 +5584,11 @@ class GpmlIrregularSampling(PropertyValue):
 
     def __iadd__(self, other: Any) -> Any: ...
 
-    def __init__(self, time_samples: Sequence[Any]) -> None:
+    def __init__(self, time_samples: Iterable[GpmlTimeSample]) -> None:
         """Create an irregularly sampled time-dependent property from a sequence of time samples.
 
         :param time_samples: A sequence of :class:`GpmlTimeSample` elements, in any order (they are sorted by time, from most recent to least recent).
-        :type time_samples: Any sequence such as a list or a tuple
+        :type time_samples: iterable of GpmlTimeSample
         :raises RuntimeError: if time sample sequence is empty
 
         .. note:: The sequence of time samples must **not** be empty (for technical implementation reasons), otherwise a *RuntimeError* exception will be thrown.
@@ -5626,11 +5626,11 @@ class GpmlIrregularSampling(PropertyValue):
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeSample]) -> None:
+    def extend(self, t: Iterable[GpmlTimeSample]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeSample`
+        :type t: iterable of :class:`GpmlTimeSample`
         """
 
     def get_enabled_time_samples(self) -> list[GpmlTimeSample]:
@@ -5848,11 +5848,11 @@ class GpmlKeyValueDictionary(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, key_value_mapping: dict[str, int | float | str] | Sequence[tuple[Any, Any]] | None = ...) -> None:
+    def __init__(self, key_value_mapping: Mapping[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = ...) -> None:
         """Create a dictionary containing zero or more key/value pairs.
 
         :param key_value_mapping: optional mapping of keys to values
-        :type key_value_mapping: dict mapping each key (str) to a value (int, float or str), or a sequence of (key, value) tuples, or None
+        :type key_value_mapping: dict[str, int | float | str], or sequence of tuple[str, int | float | str], or None
 
         To create an empty dictionary:
         ::
@@ -5878,13 +5878,13 @@ class GpmlKeyValueDictionary(PropertyValue):
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def get(self, key: str, default_value: int | float | str | None = ...) -> int | float | str | Any | None:
+    def get(self, key: str, default_value: Any = ...) -> int | float | str | Any | None:
         """Returns the value of the dictionary element associated with a key.
 
         :param key: the key of the dictionary element
         :type key: str
         :param default_value: the default value to return if the key does not exist in the dictionary (if not specified then it defaults to None)
-        :type default_value: int or float or str or None
+        :type default_value: any
         :returns: the value associated with *key*, otherwise *default_value* if *key* does not exist
         :rtype: int or float or str or type(default_value) or None
 
@@ -5938,7 +5938,7 @@ class GpmlOldPlatesHeader(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, region_number: int, reference_number: int, string_number: int, geographic_description: str, plate_id_number: float, age_of_appearance: float, age_of_disappearance: int, data_type_code: str, data_type_code_number: int, data_type_code_number_additional: str, conjugate_plate_id_number: int, colour_code: int, number_of_points: int) -> None:
+    def __init__(self, region_number: int, reference_number: int, string_number: int, geographic_description: str, plate_id_number: int, age_of_appearance: float, age_of_disappearance: float, data_type_code: str, data_type_code_number: int, data_type_code_number_additional: str, conjugate_plate_id_number: int, colour_code: int, number_of_points: int) -> None:
         """Create a property value containing PLATES metadata.
 
         :param region_number: region number
@@ -5950,11 +5950,11 @@ class GpmlOldPlatesHeader(PropertyValue):
         :param geographic_description: geographic description
         :type geographic_description: str
         :param plate_id_number: plate id number
-        :type plate_id_number: float
+        :type plate_id_number: int
         :param age_of_appearance: age of appearance
         :type age_of_appearance: float
         :param age_of_disappearance: age of disappearance
-        :type age_of_disappearance: int
+        :type age_of_disappearance: float
         :param data_type_code: data type code
         :type data_type_code: str
         :param data_type_code_number: data type code number
@@ -6208,11 +6208,11 @@ class GpmlPiecewiseAggregation(PropertyValue):
 
     def __iadd__(self, other: Any) -> Any: ...
 
-    def __init__(self, time_windows: Sequence[Any]) -> None:
+    def __init__(self, time_windows: Iterable[GpmlTimeWindow]) -> None:
         """Create a piecewise-constant time-dependent property from a sequence of time windows.
 
         :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.
-        :type time_windows: Any sequence such as a list or a tuple
+        :type time_windows: iterable of GpmlTimeWindow
         :raises RuntimeError: if time window sequence is empty
 
         .. note:: The sequence of time windows must **not** be empty (for technical implementation reasons), otherwise a *RuntimeError* exception will be thrown.
@@ -6247,11 +6247,11 @@ class GpmlPiecewiseAggregation(PropertyValue):
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeWindow]) -> None:
+    def extend(self, t: Iterable[GpmlTimeWindow]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeWindow`
+        :type t: iterable of :class:`GpmlTimeWindow`
         """
 
     def get_time_window_containing_time(self, time: float | GeoTimeInstant) -> GpmlTimeWindow | None:
@@ -6447,15 +6447,15 @@ class GpmlPolarityChronId(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, era: str = ..., major_region: int = ..., minor_region: str = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> None:
+    def __init__(self, era: str | None = ..., major_region: int | None = ..., minor_region: str | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> None:
         """Create a polarity chron id property value.
 
         :param era: the era of the chron ('Cenozoic' or 'Mesozoic')
-        :type era: str
+        :type era: str, or None
         :param major_region: the number indicating the major region the chron is in - Cenozoic isochrons have been classified into broad regions identified by the numbers 1 to 34, Mesozoic isochrons use the numbers 1 to 29
-        :type major_region: int
+        :type major_region: int, or None
         :param minor_region: the sequence of letters indicating the sub-region the chron is located in - the letters a-z are used for the initial sub-region, and if further polarity reversals have been discovered within that chron, a second letter is appended, and so on
-        :type minor_region: str
+        :type minor_region: str, or None
         :param verify_information_model: whether to check the information model for valid *era*
         :type verify_information_model: VerifyInformationModel
         :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and *era* is not a recognised era value
@@ -6665,11 +6665,11 @@ class GpmlPropertyDelegateList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlPropertyDelegate]) -> None:
+    def extend(self, t: Iterable[GpmlPropertyDelegate]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlPropertyDelegate`
+        :type t: iterable of :class:`GpmlPropertyDelegate`
         """
 
     def index(self, x: GpmlPropertyDelegate, i: int = ..., j: int = ...) -> int:
@@ -6952,11 +6952,11 @@ class GpmlTimeSampleList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeSample]) -> None:
+    def extend(self, t: Iterable[GpmlTimeSample]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeSample`
+        :type t: iterable of :class:`GpmlTimeSample`
         """
 
     def index(self, x: GpmlTimeSample, i: int = ..., j: int = ...) -> int:
@@ -7214,11 +7214,11 @@ class GpmlTimeWindowList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeWindow]) -> None:
+    def extend(self, t: Iterable[GpmlTimeWindow]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeWindow`
+        :type t: iterable of :class:`GpmlTimeWindow`
         """
 
     def index(self, x: GpmlTimeWindow, i: int = ..., j: int = ...) -> int:
@@ -7287,11 +7287,11 @@ class GpmlTopologicalLine(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, sections: Sequence[Any]) -> None:
+    def __init__(self, sections: Iterable[GpmlTopologicalSection]) -> None:
         """Create a topological line made from topological sections.
 
         :param sections: A sequence of :class:`GpmlTopologicalSection` elements
-        :type sections: Any sequence such as a list or a tuple
+        :type sections: iterable of GpmlTopologicalSection
 
         ::
 
@@ -7387,13 +7387,13 @@ class GpmlTopologicalNetwork(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, boundary_sections: Sequence[Any], interiors: Sequence[Any] | None = None) -> None:
+    def __init__(self, boundary_sections: Iterable[GpmlTopologicalSection], interiors: Iterable[GpmlPropertyDelegate] | None = None) -> None:
         """Create a topological network made from boundary topological sections and interior geometries.
 
         :param boundary_sections: A sequence of :class:`GpmlTopologicalSection` elements
-        :type boundary_sections: Any sequence such as a list or a tuple
+        :type boundary_sections: iterable of GpmlTopologicalSection
         :param interiors: A sequence of :class:`GpmlPropertyDelegate` elements
-        :type interiors: Any sequence such as a list or a tuple
+        :type interiors: iterable of GpmlPropertyDelegate
 
         ::
 
@@ -7486,11 +7486,11 @@ class GpmlTopologicalPolygon(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, exterior_sections: Sequence[Any]) -> None:
+    def __init__(self, exterior_sections: Iterable[GpmlTopologicalSection]) -> None:
         """Create a topological polygon made from topological sections.
 
         :param exterior_sections: A sequence of :class:`GpmlTopologicalSection` elements
-        :type exterior_sections: Any sequence such as a list or a tuple
+        :type exterior_sections: iterable of GpmlTopologicalSection
 
         ::
 
@@ -7761,11 +7761,11 @@ class GpmlTopologicalSectionList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTopologicalSection]) -> None:
+    def extend(self, t: Iterable[GpmlTopologicalSection]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTopologicalSection`
+        :type t: iterable of :class:`GpmlTopologicalSection`
         """
 
     def index(self, x: GpmlTopologicalSection, i: int = ..., j: int = ...) -> int:
@@ -7842,13 +7842,13 @@ class GreatCircleArc:
 
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
-    def __init__(self, start_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], end_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, start_point: PointOnSphere | LatLonPoint | Sequence[float], end_point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a great circle arc from two points.
 
         :param start_point: the start point of the arc.
-        :type start_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type start_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param end_point: the end point of the arc.
-        :type end_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type end_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises IndeterminateResultError: if points are antipodal (opposite each other)
 
         | An arc is specified by a start-point and an end-point:
@@ -8282,11 +8282,11 @@ class LocalCartesian:
 
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
-    def __init__(self, local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, local_origin: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a local cartesian coordinate system at a point on the sphere.
 
         :param local_origin: the origin of the local coordinate system
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origin: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
 
         ::
 
@@ -8301,13 +8301,13 @@ class LocalCartesian:
 
     @overload
     @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[tuple[float, float, float]]:
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, vectors: Iterable[Vector3D | Sequence[float]]) -> list[tuple[float, float, float]]:
         """Converts geocentric vectors to spherical coordinates in local North/East/Down coordinate systems, each at its own origin.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each vector
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param vectors: the geocentric vectors
-        :type vectors: any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: iterable of Vector3D or sequence (x,y,z)
         :returns: list of (magnitude, azimuth, inclination)
         :rtype: list[tuple[float, float, float]]
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
@@ -8334,22 +8334,22 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)')
     @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> tuple[float, float, float]: ...
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | Sequence[float], vector: Vector3D | Sequence[float]) -> tuple[float, float, float]: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)')
     @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> tuple[float, float, float]: ...
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | Sequence[float], x: float, y: float, z: float) -> tuple[float, float, float]: ...
 
     @overload
     @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
+    def convert_from_geocentric_to_north_east_down(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, vectors: Iterable[Vector3D | Sequence[float]]) -> list[Vector3D]:
         """Converts geocentric vectors to cartesian vectors in local North/East/Down coordinate systems, each at its own origin.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each vector
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param vectors: the geocentric vectors
-        :type vectors: any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: iterable of Vector3D or sequence (x,y,z)
         :returns: list of local cartesian North/East/Down vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
@@ -8376,22 +8376,22 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)')
     @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
+    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | Sequence[float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)')
     @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D: ...
+    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | Sequence[float], x: float, y: float, z: float) -> Vector3D: ...
 
     @overload
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], local_coordinates: Sequence[tuple[float, float, float]]) -> list[Vector3D]:
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | MultiPointOnSphere | PolylineOnSphere | PolygonOnSphere, local_coordinates: Iterable[Sequence[float]]) -> list[Vector3D]:
         """Converts spherical coordinates in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each local coordinate
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or MultiPointOnSphere, or PolylineOnSphere, or PolygonOnSphere
         :param local_coordinates: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinates: any sequence of (float, float, float) tuples
+        :type local_coordinates: iterable of sequence (magnitude, azimuth, inclination)
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *local_coordinates* have different lengths
@@ -8418,22 +8418,22 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], local_coordinate: Sequence[float]) -> Vector3D: ...
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], local_coordinate: Sequence[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], magnitude: float, azimuth: float, inclination: float) -> Vector3D: ...
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], magnitude: float, azimuth: float, inclination: float) -> Vector3D: ...
 
     @overload
     @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
+    def convert_from_north_east_down_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, vectors: Iterable[Vector3D | Sequence[float]]) -> list[Vector3D]:
         """Converts cartesian vectors in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each vector
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param vectors: the local cartesian North/East/Down vectors
-        :type vectors: any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: iterable of Vector3D or sequence (x,y,z)
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
@@ -8460,12 +8460,12 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)')
     @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
+    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)')
     @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D: ...
+    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], x: float, y: float, z: float) -> Vector3D: ...
 
     @overload
     def from_geocentric_to_magnitude_azimuth_inclination(self, vector: Vector3D | Sequence[float]) -> tuple[float, float, float]:
@@ -8556,7 +8556,7 @@ class LocalCartesian:
         Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.
 
         :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinate: sequence (such as list or tuple) of float
+        :type local_coordinate: sequence (magnitude, azimuth, inclination)
         :returns: geocentric vector
         :rtype: Vector3D
 
@@ -8726,13 +8726,13 @@ class MultiPointOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]]) -> None:
+    def __init__(self, points: Iterable[PointOnSphere | LatLonPoint | Sequence[float]]) -> None:
         """A *MultiPointOnSphere* object can be constructed in more than one way...
 
         Create a multi-point from a sequence of (x,y,z) or (latitude,longitude) points.
 
         :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
+        :type points: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
         :raises InsufficientPointsForMultiPointConstructionError: if point sequence is empty
@@ -8889,11 +8889,11 @@ class NetRotation:
         """
 
     @staticmethod
-    def create_sample_from_finite_rotation(point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], sample_area: float, finite_rotation: FiniteRotation, time_interval: float = 1.0) -> NetRotation:
+    def create_sample_from_finite_rotation(point: PointOnSphere | LatLonPoint | Sequence[float], sample_area: float, finite_rotation: FiniteRotation, time_interval: float = 1.0) -> NetRotation:
         """Creates a net rotation contribution from a finite rotation at a point sample.
 
         :param point: The point that contributes to net rotation.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param sample_area: The surface area around the point in steradians (square radians).
         :type sample_area: float
         :param finite_rotation: The finite rotation over the specified time interval.
@@ -8927,11 +8927,11 @@ class NetRotation:
         """
 
     @staticmethod
-    def create_sample_from_rotation_rate(point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], sample_area: float, rotation_rate_vector: Vector3D) -> NetRotation:
+    def create_sample_from_rotation_rate(point: PointOnSphere | LatLonPoint | Sequence[float], sample_area: float, rotation_rate_vector: Vector3D) -> NetRotation:
         """Creates a net rotation contribution from a rotation rate vector at a point sample.
 
         :param point: The point that contributes to net rotation.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param sample_area: The surface area around the point in steradians (square radians).
         :type sample_area: float
         :param rotation_rate_vector: The rotation rate vector (with magnitude in radians per Myr).
@@ -8992,7 +8992,7 @@ class NetRotationModel:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, topological_model: TopologicalModel, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Sequence[tuple[PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], float]] = ...) -> None:
+    def __init__(self, topological_model: TopologicalModel, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Iterable[tuple[PointOnSphere | LatLonPoint | Sequence[float], float]] = ...) -> None:
         r"""Net rotation snapshots will be calculated from the specified topological model, and using the requested parameters.
 
         :param topological_model: The topological model to calculate net rotations with.
@@ -9002,7 +9002,7 @@ class NetRotationModel:
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
-        :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point_distribution: int, or iterable of tuple (point, float) where point is a PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:
@@ -9094,7 +9094,7 @@ class NetRotationSnapshot:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, topological_snapshot: TopologicalSnapshot, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Sequence[tuple[PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], float]] = ...) -> None:
+    def __init__(self, topological_snapshot: TopologicalSnapshot, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Iterable[tuple[PointOnSphere | LatLonPoint | Sequence[float], float]] = ...) -> None:
         r"""Create a net rotation snapshot from the specified topological snapshot, and using the requested parameters.
 
         :param topological_snapshot: The topological snapshot to calculate net rotation with.
@@ -9104,7 +9104,7 @@ class NetRotationSnapshot:
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
-        :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point_distribution: int, or iterable of tuple (point, float) where point is a PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:
@@ -9159,11 +9159,11 @@ class NetRotationSnapshot:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def get_net_rotation(self, resolved_topology: ResolvedTopologicalBoundary | ResolvedTopologicalNetwork = ...) -> NetRotation | dict[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork, NetRotation] | None:
+    def get_net_rotation(self, resolved_topology: ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None = ...) -> NetRotation | dict[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork, NetRotation] | None:
         r"""Return the net rotation of the specified resolved topology (or a net rotation for each topology as a ``dict``).
 
         :param resolved_topology: Optional resolved topology to retrieve net rotation for. If not specified then net rotations for all resolved boundaries and networks that **contribute net rotation** are returned (returned as a ``dict``).
-        :type resolved_topology: ResolvedTopologicalBoundary or ResolvedTopologicalNetwork
+        :type resolved_topology: ResolvedTopologicalBoundary or ResolvedTopologicalNetwork, or None
         :returns: If *resolved_topology* is specified then returns the :class:`NetRotation` of that resolved topology boundary or network (or ``None`` if *resolved_topology* does **not contribute net rotation**). Otherwise returns a ``dict`` mapping each :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` that **contributes net rotation** to its :class:`NetRotation`.
         :rtype: NetRotation, or dict[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork, NetRotation], or None
         :raises ValueError: if *resolved_topology* is specified but is neither a :class:`ResolvedTopologicalBoundary` nor a :class:`ResolvedTopologicalNetwork`.
@@ -10235,7 +10235,7 @@ class PlatePartitioner:
     def __hash__(self) -> int: ...
 
     @overload
-    def __init__(self, partitioning_plates: Sequence[ReconstructionGeometry], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float | None = ...) -> None:
+    def __init__(self, partitioning_plates: Sequence[ReconstructionGeometry], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int | None = ..., sliver_width_threshold_radians: float | None = ...) -> None:
         """A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...
 
         The *sort_partitioning_plates* parameter determines the order in which the partitioning plates are searched. See :class:`SortPartitioningPlates` for the sorting criteria of each value, and why the order matters when plates overlap.
@@ -10261,11 +10261,11 @@ class PlatePartitioner:
         :param partitioning_plates: A sequence of reconstructed/resolved plates to partition with.
         :type partitioning_plates: Any sequence of ReconstructionGeometry
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
         :param sort_partitioning_plates: optional sort order of partitioning plates (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
         :type sort_partitioning_plates: SortPartitioningPlates, or None
         :param anchor_plate_id: The anchored plate id that *partitioning_plates* were reconstructed/resolved with (and that is used to reverse reconstruct in :meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
         :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps every piece
         :type sliver_width_threshold_radians: float, or None
         :raises DifferentTimesInPartitioningPlatesError: if all partitioning plates do not have the same :meth:`reconstruction times<ReconstructionGeometry.get_reconstruction_time>`
@@ -10293,19 +10293,19 @@ class PlatePartitioner:
         """
 
     @overload
-    def __init__(self, partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant = 0, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int = ..., sliver_width_threshold_radians: float | None = ...) -> None:
+    def __init__(self, partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, reconstruction_time: float | GeoTimeInstant = 0, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int | None = ..., sliver_width_threshold_radians: float | None = ...) -> None:
         """Create a partitioner by reconstructing/resolving plates from a sequence of plate features.
 
         :param partitioning_features: A sequence of plate features to partition with.
         :type partitioning_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
         :param reconstruction_time: the specific geological time to reconstruct/resolve the *partitioning_features* to (defaults to zero)
         :type reconstruction_time: float or GeoTimeInstant
         :param sort_partitioning_plates: optional sort order of partitioning plates (defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)
         :type sort_partitioning_plates: SortPartitioningPlates, or None
         :param anchor_plate_id: The anchored plate id used to reconstruct/resolve *partitioning_features* (and that is used to reverse reconstruct in :meth:`partition_features`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
         :param sliver_width_threshold_radians: a cut polygon's pieces narrower than this are dropped (see above); defaults to about 90 metres on the Earth, and zero keeps every piece
         :type sliver_width_threshold_radians: float, or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`, or *sliver_width_threshold_radians* is negative or NaN
@@ -10330,14 +10330,14 @@ class PlatePartitioner:
 
     def __ne__(self, other: object) -> bool: ...
 
-    def partition_features(self, features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], properties_to_copy: Sequence[PropertyName | PartitionProperty] = ..., partition_method: PartitionMethod = PartitionMethod.split_into_plates, partition_return: PartitionReturn = PartitionReturn.combined_partitioned_and_unpartitioned) -> list[Feature] | tuple[list[Feature], list[Feature]] | tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]:
+    def partition_features(self, features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], properties_to_copy: Sequence[PropertyName | PartitionProperty] | Callable[[Feature, Feature], Any] = ..., partition_method: PartitionMethod = PartitionMethod.split_into_plates, partition_return: PartitionReturn = PartitionReturn.combined_partitioned_and_unpartitioned) -> list[Feature] | tuple[list[Feature], list[Feature]] | tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]:
         """Partitions features into partitioning plates.
 
         :param features: the features to partition
         :type features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
         :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features         (defaults to just the reconstruction plate ID)
-        :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
+        :type properties_to_copy: sequence of PropertyName or PartitionProperty, or callable (accepting a partitioning Feature and a partitioned Feature)
 
         :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
         :type partition_method: PartitionMethod
@@ -10487,11 +10487,11 @@ class PlatePartitioner:
            is inconsistent.
         """
 
-    def partition_geometry(self, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], partitioned_inside_geometries: list[tuple[ReconstructionGeometry, list[GeometryOnSphere]]] | None = ..., partitioned_outside_geometries: list[GeometryOnSphere] | None = ...) -> bool:
+    def partition_geometry(self, geometry: GeometryOnSphere | Iterable[GeometryOnSphere], partitioned_inside_geometries: list[tuple[ReconstructionGeometry, list[GeometryOnSphere]]] | None = ..., partitioned_outside_geometries: list[GeometryOnSphere] | None = ...) -> bool:
         """Partitions one or more geometries into partitioning plates.
 
         :param geometry: the geometry, or geometries, to partition
-        :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere
         :param partitioned_inside_geometries: optional list of geometries partitioned *inside* the partitioning plates (note that the list is *not* cleared first)
         :type partitioned_inside_geometries: list of 2-tuple (ReconstructionGeometry, list of GeometryOnSphere), or None
         :param partitioned_outside_geometries: optional list of geometries partitioned *outside* all partitioning plates (note that the list is *not* cleared first)
@@ -10528,11 +10528,11 @@ class PlatePartitioner:
         .. seealso:: :meth:`PolygonOnSphere.partition`
         """
 
-    def partition_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> ReconstructionGeometry | None:
+    def partition_point(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> ReconstructionGeometry | None:
         """A convenient alternative to :meth:`partition_geometry`, for a point, that finds the first partitioning plate (if any) containing the point.
 
         :param point: the point to partition
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: ReconstructionGeometry or None
 
         .. note:: ``None`` is returned if *point* is not contained by any partitioning plates.
@@ -10581,13 +10581,13 @@ class PointOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, point: PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]) -> None:
+    def __init__(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """A *PointOnSphere* object can be constructed in more than one way...
 
         Create a *PointOnSphere* instance from a (x,y,z) or (latitude,longitude) point.
 
         :param point: (x,y,z) point, or (latitude,longitude) point (in degrees)
-        :type point: PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
@@ -10843,15 +10843,15 @@ class PolygonOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, exterior_ring: Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]], interior_rings: Sequence[Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]]] | None = ...) -> None:
+    def __init__(self, exterior_ring: Iterable[PointOnSphere | LatLonPoint | Sequence[float]], interior_rings: Iterable[Iterable[PointOnSphere | LatLonPoint | Sequence[float]]] | None = ...) -> None:
         """A *PolygonOnSphere* object can be constructed in more than one way...
 
         Create a polygon from an exterior ring and optional interior rings, where each ring is a sequence of (x,y,z) or (latitude,longitude) points.
 
         :param exterior_ring: Exterior ring sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type exterior_ring: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float).
+        :type exterior_ring: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z).
         :param interior_rings: Optional sequence of interior rings where each ring is a sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type interior_rings: Any sequence of rings (where ring is any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)), or None.
+        :type interior_rings: iterable of rings (where ring is iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)), or None
         :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
         :raises InvalidPointsForPolygonConstructionError: if any ring has less than three points or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)
@@ -10959,7 +10959,7 @@ class PolygonOnSphere(GeometryOnSphere):
 
     @overload
     @deprecated('The points argument is renamed exterior_ring')
-    def __init__(self, *, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]]) -> None: ...
+    def __init__(self, *, points: Iterable[PointOnSphere | LatLonPoint | Sequence[float]]) -> None: ...
 
     def __iter__(self) -> Any: ...
 
@@ -11320,11 +11320,11 @@ class PolygonOnSphere(GeometryOnSphere):
         .. versionadded:: 1.1
         """
 
-    def is_point_in_polygon(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> bool:
+    def is_point_in_polygon(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> bool:
         """Determines whether the specified point lies within the interior of this polygon.
 
         :param point: the point to be tested
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: bool
 
         Test if a (latitude, longitude) point is inside a polygon:
@@ -11647,13 +11647,13 @@ class PolylineOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]]) -> None:
+    def __init__(self, points: Iterable[PointOnSphere | LatLonPoint | Sequence[float]]) -> None:
         """A *PolylineOnSphere* object can be constructed in more than one way...
 
         Create a polyline from a sequence of (x,y,z) or (latitude,longitude) points.
 
         :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
+        :type points: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
         :raises InvalidPointsForPolylineConstructionError: if sequence has less than two points or if any two points (adjacent in the *points* sequence) are antipodal to each other (on opposite sides of the globe)
@@ -11860,7 +11860,7 @@ class PolylineOnSphere(GeometryOnSphere):
         """
 
     @staticmethod
-    def rotation_interpolate(from_polyline: GeometryOnSphere, to_polyline: GeometryOnSphere, rotation_pole: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], interpolate: float | list[float], minimum_latitude_overlap_radians: float = 0, maximum_latitude_non_overlap_radians: float = 0, maximum_distance_threshold_radians: float = ..., flatten_longitude_overlaps: FlattenLongitudeOverlaps = FlattenLongitudeOverlaps.no, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere | None]:
+    def rotation_interpolate(from_polyline: GeometryOnSphere, to_polyline: GeometryOnSphere, rotation_pole: PointOnSphere | LatLonPoint | Sequence[float], interpolate: float | Iterable[float], minimum_latitude_overlap_radians: float = 0, maximum_latitude_non_overlap_radians: float = 0, maximum_distance_threshold_radians: float | None = ..., flatten_longitude_overlaps: FlattenLongitudeOverlaps = FlattenLongitudeOverlaps.no, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere] | None:
         r"""Interpolates between two polylines about a rotation pole.
 
         :param from_polyline: the polyline to interpolate *from*
@@ -11868,21 +11868,21 @@ class PolylineOnSphere(GeometryOnSphere):
         :param to_polyline: the polyline to interpolate *to*
         :type to_polyline: GeometryOnSphere
         :param rotation_pole: the rotation axis to interpolate around
-        :type rotation_pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type rotation_pole: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param interpolate: if a single number then *interpolate* is the interval spacing, in radians, between *from_polyline* and *to_polyline* at which to generate interpolated polylines - otherwise if a sequence of numbers (eg, list or tuple) then *interpolate* is the sequence of interpolate ratios, in the range [0,1], at which to generate interpolated polylines (with 0 meaning *from_polyline* and 1 meaning *to_polyline*)
-        :type interpolate: float, or list of float
+        :type interpolate: float, or iterable of float
         :param minimum_latitude_overlap_radians: required amount of latitude overlap of polylines
         :type minimum_latitude_overlap_radians: float - defaults to zero
         :param maximum_latitude_non_overlap_radians: allowed non-overlapping latitude region
         :type maximum_latitude_non_overlap_radians: float - defaults to zero
         :param maximum_distance_threshold_radians: maximum distance (in radians) between *from_polyline* and *to_polyline* - if specified and if exceeded then ``None`` is returned
-        :type maximum_distance_threshold_radians: float - default is no threshold detection
+        :type maximum_distance_threshold_radians: float, or None
         :param flatten_longitude_overlaps: whether or not to ensure *from_polyline* and *to_polyline* do not overlap in longitude (in North pole reference frame of *rotation_pole*) and how to correct the overlap (defaults to *FlattenLongitudeOverlaps.no*)
         :type flatten_longitude_overlaps: FlattenLongitudeOverlaps
         :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore *from_polyline* and *to_polyline* if they are not :class:`PolylineOnSphere` (ignoring equates to returning ``None``) - defaults to *PolylineConversion.ignore_non_polyline*
         :type polyline_conversion: PolylineConversion
         :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping latitude ranges or if maximum distance threshold exceeded or if either polyline is not a :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.ignore_non_polyline*)
-        :rtype: list of PolylineOnSphere or None
+        :rtype: list of PolylineOnSphere, or None
         :raises GeometryTypeError: if *from_polyline* or *to_polyline* are not of type :class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)
         :raises ValueError: if *interpolate* is a single number that is not positive (or is so small that the number of interpolated polylines doesn't fit a 32-bit unsigned integer), or is a sequence containing a ratio outside the range [0,1]
 
@@ -12960,17 +12960,17 @@ class ReconstructModel:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], anchor_plate_id: int = ..., reconstruct_snapshot_cache_size: int = ...) -> None:
+    def __init__(self, reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, anchor_plate_id: int | None = ..., reconstruct_snapshot_cache_size: int | None = ...) -> None:
         """Create from reconstructable features and a rotation model.
 
         :param reconstructable_features: The features to reconstruct as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.
         :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
         :param anchor_plate_id: The anchored plate id used for reconstructions. Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
         :param reconstruct_snapshot_cache_size: Number of reconstruct snapshots to cache internally. Defaults to unlimited.
-        :type reconstruct_snapshot_cache_size: int
+        :type reconstruct_snapshot_cache_size: int, or None
         :raises ValueError: if *reconstruct_snapshot_cache_size* is zero
 
         Load a reconstruct model (and its associated rotation model):
@@ -13043,17 +13043,17 @@ class ReconstructSnapshot:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ...) -> None:
+    def __init__(self, reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int | None = ...) -> None:
         """Create from reconstructable features and a rotation model at a specific reconstruction time.
 
         :param reconstructable_features: The reconstructable features as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.
         :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
         :param reconstruction_time: the specific geological time to reconstruct to
         :type reconstruction_time: float or GeoTimeInstant
         :param anchor_plate_id: The anchored plate id used for all reconstructions. Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
 
         Create a reconstruct snapshot by reconstructing features at a specific reconstruction time:
         ::
@@ -13109,11 +13109,11 @@ class ReconstructSnapshot:
         .. note:: This is the same as the :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of :meth:`get_rotation_model`.
         """
 
-    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id) -> list[ReconstructedFeatureGeometry | None]:
+    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id) -> list[ReconstructedFeatureGeometry | None]:
         """Returns the reconstructed static polygons that contain the specified points.
 
         :param points: sequence of points at which to find containing reconstructed static polygons
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons (defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)
         :type sort_reconstructed_static_polygons: SortReconstructedStaticPolygons, or None
         :returns: the reconstructed static polygon containing each point (``None`` for each point *outside* all reconstructed static polygons)
@@ -13140,11 +13140,11 @@ class ReconstructSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[ReconstructedFeatureGeometry | None]]:
+    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[ReconstructedFeatureGeometry | None]]:
         """Returns the velocities of the specified points (as determined by the reconstructed static polygons that contain them).
 
         :param points: sequence of points at which to calculate velocities
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
@@ -13610,7 +13610,7 @@ class ReconstructedGeometryTimeSpan:
 
     def __ne__(self, other: object) -> bool: ...
 
-    def get_crustal_stretching_factors(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float] | None:
+    def get_crustal_stretching_factors(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float | None] | None:
         """Returns crustal stretching factors at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract reconstructed crustal stretching factors. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13618,7 +13618,7 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return crustal stretching factors associated with inactive points. If ``True`` then each crustal stretching factor corresponding to an inactive point stores ``None`` and hence the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). By default only crustal stretching factors for active points are returned.
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[float], or None
+        :rtype: list[float | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.
@@ -13626,7 +13626,7 @@ class ReconstructedGeometryTimeSpan:
         .. versionadded:: 0.50
         """
 
-    def get_crustal_thicknesses(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float] | None:
+    def get_crustal_thicknesses(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float | None] | None:
         """Returns crustal thicknesses (in kms) at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract reconstructed crustal thicknesses. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13634,7 +13634,7 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return crustal thicknesses associated with inactive points. If ``True`` then each crustal thickness corresponding to an inactive point stores ``None`` and hence the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). By default only crustal thicknesses for active points are returned.
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[float], or None
+        :rtype: list[float | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.
@@ -13642,7 +13642,7 @@ class ReconstructedGeometryTimeSpan:
         .. versionadded:: 0.50
         """
 
-    def get_crustal_thinning_factors(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float] | None:
+    def get_crustal_thinning_factors(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float | None] | None:
         """Returns crustal thinning factors at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract reconstructed crustal thinning factors. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13650,7 +13650,7 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return crustal thinning factors associated with inactive points. If ``True`` then each crustal thinning factor corresponding to an inactive point stores ``None`` and hence the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). By default only crustal thinning factors for active points are returned.
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[float], or None
+        :rtype: list[float | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.
@@ -13658,7 +13658,7 @@ class ReconstructedGeometryTimeSpan:
         .. versionadded:: 0.50
         """
 
-    def get_geometry_points(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[PointOnSphere] | None:
+    def get_geometry_points(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[PointOnSphere | None] | None:
         """Returns geometry points at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract reconstructed geometry points. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13666,29 +13666,29 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return inactive geometry points. If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of the ``list`` of points is equal to the number of points in the initial geometry (which are all initially active). By default only active points are returned.
         :type return_inactive_points: bool
         :returns: list of :class:`PointOnSphere`, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[PointOnSphere], or None
+        :rtype: list[PointOnSphere | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points` in the *Primer* documentation.
         """
 
-    def get_scalar_values(self, reconstruction_time: float | GeoTimeInstant, scalar_type: ScalarType = ..., return_inactive_points: bool = False) -> list[float] | dict[ScalarType, list[float]] | None:
+    def get_scalar_values(self, reconstruction_time: float | GeoTimeInstant, scalar_type: ScalarType | None = ..., return_inactive_points: bool = False) -> list[float | None] | dict[ScalarType, list[float | None]] | None:
         """Returns scalar values at a specific reconstruction time either for a single scalar type (as a ``list``) or for all scalar types (as a ``dict``).
 
         :param reconstruction_time: Time to extract reconstructed scalar values. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
         :type reconstruction_time: float or GeoTimeInstant
         :param scalar_type: Optional scalar type to retrieve scalar values for (returned as a ``list``). If not specified then all scalar values for all scalar types are returned (returned as a ``dict``).
-        :type scalar_type: ScalarType
+        :type scalar_type: ScalarType, or None
         :param return_inactive_points: Whether to return scalars associated with inactive points. If ``True`` then each scalar corresponding to an inactive point stores ``None`` instead of a scalar and hence the size of each ``list`` of scalars is equal to the number of points (and scalars) in the initial geometry (which are all initially active). By default only scalars for active points are returned.
         :type return_inactive_points: bool
         :returns: If *scalar_type* is specified then a ``list`` of scalar values associated with *scalar_type* at *reconstruction_time* (or ``None`` if no matching scalar type), otherwise a ``dict`` mapping available scalar types with their associated scalar values ``list`` at *reconstruction_time* (or ``None`` if no scalar types are available). Returns ``None`` if no points are active at *reconstruction_time*.
-        :rtype: list[float], or dict[ScalarType, list[float]], or None
+        :rtype: list[float | None], or dict[ScalarType, list[float | None]], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values` in the *Primer* documentation.
         """
 
-    def get_strain_rates(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[StrainRate] | None:
+    def get_strain_rates(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[StrainRate | None] | None:
         """Returns the strain rates at geometry points in resolved topologies at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract strain rates. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13696,7 +13696,7 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return strain rates associated with inactive points. If ``True`` then each strain rate corresponding to an inactive point stores ``None`` instead of a strain rate and hence the size of the ``list`` of strain rates is equal to the number of points in the initial geometry (which are all initially active). By default only strain rates for active points are returned.
         :type return_inactive_points: bool
         :returns: list of :class:`StrainRate`, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[StrainRate], or None
+        :rtype: list[StrainRate | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates` in the *Primer* documentation.
@@ -13706,7 +13706,7 @@ class ReconstructedGeometryTimeSpan:
         .. versionadded:: 0.46
         """
 
-    def get_strains(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[Strain] | None:
+    def get_strains(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[Strain | None] | None:
         """Returns the strains accumulated at geometry points in resolved topologies at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract accumulated strains. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13714,7 +13714,7 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return strains associated with inactive points. If ``True`` then each strain corresponding to an inactive point stores ``None`` instead of a strain and hence the size of the ``list`` of strains is equal to the number of points in the initial geometry (which are all initially active). By default only strains for active points are returned.
         :type return_inactive_points: bool
         :returns: list of :class:`Strain`, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[Strain], or None
+        :rtype: list[Strain | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strains` in the *Primer* documentation.
@@ -13722,7 +13722,7 @@ class ReconstructedGeometryTimeSpan:
         .. versionadded:: 0.46
         """
 
-    def get_tectonic_subsidences(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float] | None:
+    def get_tectonic_subsidences(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[float | None] | None:
         """Returns tectonic subsidence values (in kms) at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract reconstructed tectonic subsidence values. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13730,7 +13730,7 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return tectonic subsidence values associated with inactive points. If ``True`` then each tectonic subsidence value corresponding to an inactive point stores ``None`` and hence the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). By default only tectonic subsidence values for active points are returned.
         :type return_inactive_points: bool
         :returns: list of float, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[float], or None
+        :rtype: list[float | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence` in the *Primer* documentation.
@@ -13751,7 +13751,7 @@ class ReconstructedGeometryTimeSpan:
         .. versionadded:: 0.50
         """
 
-    def get_topology_point_locations(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[TopologyPointLocation] | None:
+    def get_topology_point_locations(self, reconstruction_time: float | GeoTimeInstant, return_inactive_points: bool = False) -> list[TopologyPointLocation | None] | None:
         """Returns the locations of geometry points in resolved topologies at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract topology point locations. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13759,13 +13759,13 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return topology locations associated with inactive points. If ``True`` then each topology location corresponding to an inactive point stores ``None`` instead of a topology location and hence the size of the ``list`` of topology locations is equal to the number of points in the initial geometry (which are all initially active). By default only topology locations for active points are returned.
         :type return_inactive_points: bool
         :returns: list of :class:`TopologyPointLocation`, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[TopologyPointLocation], or None
+        :rtype: list[TopologyPointLocation | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
         .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_topology_locations` in the *Primer* documentation.
         """
 
-    def get_velocities(self, reconstruction_time: float | GeoTimeInstant, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_inactive_points: bool = False) -> list[Vector3D] | None:
+    def get_velocities(self, reconstruction_time: float | GeoTimeInstant, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_inactive_points: bool = False) -> list[Vector3D | None] | None:
         """Returns the velocities at geometry points in resolved topologies at a specific reconstruction time.
 
         :param reconstruction_time: Time to extract velocities. Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).
@@ -13781,7 +13781,7 @@ class ReconstructedGeometryTimeSpan:
         :param return_inactive_points: Whether to return velocities associated with inactive points. If ``True`` then each velocity corresponding to an inactive point stores ``None`` instead of a velocity and hence the size of the ``list`` of velocities is equal to the number of points in the initial geometry (which are all initially active). By default only velocities for active points are returned.
         :type return_inactive_points: bool
         :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*
-        :rtype: list[Vector3D], or None
+        :rtype: list[Vector3D | None], or None
         :raises ValueError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
         :raises ValueError: if *velocity_delta_time* is negative or zero.
 
@@ -14588,11 +14588,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         """Same as :meth:`get_boundary_sub_segments`.
         """
 
-    def get_point_location(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> TopologyPointLocation:
+    def get_point_location(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> TopologyPointLocation:
         """Determines whether the specified point lies within this resolved topological boundary.
 
         :param point: the point to be tested
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: TopologyPointLocation
 
         If the point lies within this resolved topological boundary then :meth:`TopologyPointLocation.located_in_resolved_boundary` will return this resolved topological boundary, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``).
@@ -14619,11 +14619,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> StrainRate | None:
+    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> StrainRate | None:
         """Returns zero strain rate (if the specified point lies within this resolved topological boundary).
 
         :param point: the point to calculate strain rate at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: StrainRate or None
 
         If the point lies within this resolved topological boundary then ``pygplates.StrainRate.zero`` will be returned (since this is a *rigid* plate), otherwise ``None`` will be returned (to indicate the *point* is outside this resolved topological boundary).
@@ -14644,11 +14644,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
+    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | Sequence[float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
         """Returns the velocity of the specified point (if it lies within this resolved topological boundary).
 
         :param point: the point to calculate velocity at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
@@ -14789,11 +14789,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. versionadded:: 0.50
         """
 
-    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant) -> PointOnSphere | None:
+    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | Sequence[float], reconstruction_time: float | GeoTimeInstant) -> PointOnSphere | None:
         """Incrementally reconstruct the specified point (if it lies within this resolved topological boundary) to the specified reconstruction time.
 
         :param point: The point to reconstruct. It is the position at the :meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :rtype: PointOnSphere or None
@@ -15103,11 +15103,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.50
         """
 
-    def get_point_location(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> TopologyPointLocation:
+    def get_point_location(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> TopologyPointLocation:
         """Determines whether the specified point lies within this resolved topological network.
 
         :param point: the point to be tested
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: TopologyPointLocation
 
         If the point lies within this resolved topological network then :meth:`TopologyPointLocation.located_in_resolved_network` will return this resolved topological network, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``).
@@ -15153,11 +15153,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> StrainRate | None:
+    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> StrainRate | None:
         """Returns the strain rate of the specified point (if it lies within this resolved topological network).
 
         :param point: the point to calculate strain rate at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: StrainRate or None
 
         If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) then a strain rate will be returned, otherwise ``None`` will be returned.
@@ -15193,11 +15193,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
+    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | Sequence[float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
         """Returns the velocity of the specified point (if it lies within this resolved topological network).
 
         :param point: the point to calculate velocity at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
@@ -15377,11 +15377,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant, use_natural_neighbour_interpolation: bool = True) -> PointOnSphere | None:
+    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | Sequence[float], reconstruction_time: float | GeoTimeInstant, use_natural_neighbour_interpolation: bool = True) -> PointOnSphere | None:
         """Incrementally reconstruct the specified point (if it lies within this resolved topological network) to the specified reconstruction time.
 
         :param point: The point to reconstruct. It is the position at the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :param use_natural_neighbour_interpolation: If ``True`` and *point* lies within the deforming region, then the reconstructed point is the interpolation of the natural neighbour deformed triangulation vertex positions (otherwise barycentric interpolation is used). Defaults to ``True``.
@@ -15565,7 +15565,7 @@ class ResolvedTopologicalSharedSubSegment:
         """Same as :meth:`get_resolved_geometry`.
         """
 
-    def get_overriding_and_subducting_plates(self, return_subduction_polarity: bool = False, enforce_single_plates: bool = True) -> tuple[ReconstructionGeometry | None, ReconstructionGeometry | None] | tuple[ReconstructionGeometry | None, ReconstructionGeometry | None, str] | None:
+    def get_overriding_and_subducting_plates(self, return_subduction_polarity: bool = False, enforce_single_plates: bool = True) -> tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None] | tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, str] | None:
         """Returns the overriding and subducting plates at this subduction zone.
 
         :param return_subduction_polarity: whether to also return the subduction polarity (defaults to ``False``)
@@ -15580,7 +15580,7 @@ class ResolvedTopologicalSharedSubSegment:
                   one overriding network or one overriding plate and network attached to this sub-segment, or ``None`` if
                   *enforce_single_plates* is ``True`` and there is not exactly one subducting plate or one subducting network or one
                   subducting plate and network attached to this sub-segment
-        :rtype: tuple[ReconstructionGeometry | None, ReconstructionGeometry | None], or         tuple[ReconstructionGeometry | None, ReconstructionGeometry | None, str], or None
+        :rtype: tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None], or         tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, str], or None
 
         .. note:: If there is an overriding plate and an overriding network attached to this sub-segment then the
            overriding network is returned (since networks overlay plates). The same applies to *subducting* plates and networks.
@@ -15632,7 +15632,7 @@ class ResolvedTopologicalSharedSubSegment:
            * Added *enforce_single_plates* argument.
         """
 
-    def get_overriding_plate(self, return_subduction_polarity: bool = False, enforce_single_plate: bool = True) -> ReconstructionGeometry | tuple[ReconstructionGeometry | None, str] | None:
+    def get_overriding_plate(self, return_subduction_polarity: bool = False, enforce_single_plate: bool = True) -> ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, str] | None:
         """Returns the overriding plate (or network) at this subduction zone.
 
         :param return_subduction_polarity: whether to also return the subduction polarity
@@ -15644,7 +15644,7 @@ class ResolvedTopologicalSharedSubSegment:
                   is ``True``, or ``None`` if the subduction polarity is not 'Left' or 'Right' (or doesn't exist), or ``None`` if
                   *enforce_single_plate* is ``True`` and there is not exactly one overriding plate or one overriding network or
                   one overriding plate and network attached to this sub-segment
-        :rtype: ReconstructionGeometry, or tuple[ReconstructionGeometry | None, str], or None
+        :rtype: ResolvedTopologicalBoundary, or ResolvedTopologicalNetwork, or tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, str], or None
 
         .. note:: If there is an overriding plate and an overriding network attached to this sub-segment then the
            overriding network is returned (since networks overlay plates).
@@ -15784,10 +15784,10 @@ class ResolvedTopologicalSharedSubSegment:
         .. versionadded:: 0.50
         """
 
-    def get_sharing_resolved_topologies(self) -> list[ReconstructionGeometry]:
+    def get_sharing_resolved_topologies(self) -> list[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]:
         """Returns a list of resolved topologies sharing this sub-segment.
 
-        :rtype: list of ReconstructionGeometry
+        :rtype: list[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]
 
         .. note:: | The resolved topologies (that share this sub-segment) can be :class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.
                   | :class:`ResolvedTopologicalLine` is excluded since it does not have a *boundary*.
@@ -15861,7 +15861,7 @@ class ResolvedTopologicalSharedSubSegment:
         .. versionadded:: 0.22
         """
 
-    def get_subducting_plate(self, return_subduction_polarity: bool = False, enforce_single_plate: bool = True) -> ReconstructionGeometry | tuple[ReconstructionGeometry | None, str] | None:
+    def get_subducting_plate(self, return_subduction_polarity: bool = False, enforce_single_plate: bool = True) -> ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, str] | None:
         """Returns the subducting plate (or network) at this subduction zone.
 
         :param return_subduction_polarity: whether to also return the subduction polarity
@@ -15873,7 +15873,7 @@ class ResolvedTopologicalSharedSubSegment:
                   is ``True``, or ``None`` if the subduction polarity is not 'Left' or 'Right' (or doesn't exist), or ``None`` if
                   *enforce_single_plate* is ``True`` and there is not exactly one subducting plate or one subducting network or
                   one subducting plate and network attached to this sub-segment
-        :rtype: ReconstructionGeometry, or tuple[ReconstructionGeometry | None, str], or None
+        :rtype: ResolvedTopologicalBoundary, or ResolvedTopologicalNetwork, or tuple[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork | None, str], or None
 
         .. note:: If there is a subducting plate and a subducting network attached to this sub-segment then the
            subducting network is returned (since networks overlay plates).
@@ -16240,7 +16240,7 @@ class RotationModel:
         """
 
     @overload
-    def __init__(self, rotation_model: RotationModel, reconstruction_tree_cache_size: int = 2, default_anchor_plate_id: int = ...) -> None:
+    def __init__(self, rotation_model: RotationModel, reconstruction_tree_cache_size: int = 2, default_anchor_plate_id: int | None = ...) -> None:
         """Use an existing rotation model but adapt it with a potentially different cache size and/or default anchor plate ID.
 
         :param rotation_model: an existing rotation model
@@ -16249,7 +16249,7 @@ class RotationModel:
         :type reconstruction_tree_cache_size: int
         :raises ValueError: if *reconstruction_tree_cache_size* is zero
         :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. Defaults to the default anchor plate of *rotation_model*.
-        :type default_anchor_plate_id: int
+        :type default_anchor_plate_id: int, or None
 
         This is useful if you want to use an existing rotation model but with a larger cache size or a different default anchor plate ID:
         ::
@@ -16287,13 +16287,13 @@ class RotationModel:
         .. versionadded:: 0.29
         """
 
-    def get_reconstruction_tree(self, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ...) -> ReconstructionTree:
+    def get_reconstruction_tree(self, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int | None = ...) -> ReconstructionTree:
         """Return the reconstruction tree associated with the specified instant of geological time and anchored plate id.
 
         :param reconstruction_time: time at which to create a reconstruction tree (in Ma)
         :type reconstruction_time: float or GeoTimeInstant
         :param anchor_plate_id: The id of the anchored plate that *equivalent* rotations are calculated with respect to. If not specified then the *default* anchor plate id (specified in :meth:`constructor<__init__>`) is used.
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
         :rtype: ReconstructionTree
         :raises InterpolationError: if *reconstruction_time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
@@ -16303,7 +16303,7 @@ class RotationModel:
            *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id* in :meth:`constructor<__init__>`).
         """
 
-    def get_rotation(self, to_time: float | GeoTimeInstant, moving_plate_id: int, from_time: float | GeoTimeInstant = ..., fixed_plate_id: int = ..., anchor_plate_id: int = ..., use_identity_for_missing_plate_ids: bool = True) -> FiniteRotation | None:
+    def get_rotation(self, to_time: float | GeoTimeInstant, moving_plate_id: int, from_time: float | GeoTimeInstant | None = ..., fixed_plate_id: int | None = ..., anchor_plate_id: int | None = ..., use_identity_for_missing_plate_ids: bool = True) -> FiniteRotation | None:
         """Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* plate and from the time *from_time* to the time *to_time*.
 
         :param to_time: time at which the moving plate is being rotated *to* (in Ma)
@@ -16311,11 +16311,11 @@ class RotationModel:
         :param moving_plate_id: the plate id of the moving plate
         :type moving_plate_id: int
         :param from_time: time at which the moving plate is being rotated *from* (in Ma)
-        :type from_time: float or GeoTimeInstant
+        :type from_time: float or GeoTimeInstant, or None
         :param fixed_plate_id: the plate id of the fixed plate (defaults to *anchor_plate_id* if not specified)
-        :type fixed_plate_id: int
+        :type fixed_plate_id: int, or None
         :param anchor_plate_id: The id of the anchored plate. If not specified then the *default* anchor plate id (specified in :meth:`constructor<__init__>`) is used.
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
         :param use_identity_for_missing_plate_ids: whether to return an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` for missing plate ids (default is to use identity rotation)
         :type use_identity_for_missing_plate_ids: bool
         :rtype: FiniteRotation, or None
@@ -17121,19 +17121,19 @@ class TopologicalModel:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], anchor_plate_id: int = ..., default_resolve_topology_parameters: ResolveTopologyParameters = ..., topological_snapshot_cache_size: int = ...) -> None:
+    def __init__(self, topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, anchor_plate_id: int | None = ..., default_resolve_topology_parameters: ResolveTopologyParameters | None = ..., topological_snapshot_cache_size: int | None = ...) -> None:
         """Create from topological features and a rotation model.
 
         :param topological_features: The topological boundary and/or network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple (entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.
         :type topological_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
         :param anchor_plate_id: The anchored plate id used for all reconstructions (resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
         :param default_resolve_topology_parameters: Default parameters used to resolve topologies. Note that these can optionally be overridden in *topological_features*. Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).
-        :type default_resolve_topology_parameters: ResolveTopologyParameters
+        :type default_resolve_topology_parameters: ResolveTopologyParameters, or None
         :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.
-        :type topological_snapshot_cache_size: int
+        :type topological_snapshot_cache_size: int, or None
         :raises ValueError: if *topological_snapshot_cache_size* is zero
 
         .. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.
@@ -17178,23 +17178,23 @@ class TopologicalModel:
         .. note:: The reconstruction tree cache size of the returned rotation model is equal to the *topological_snapshot_cache_size* argument specified in the :meth:`constructor<__init__>` plus one (or unlimited if not specified).
         """
 
-    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Sequence[PointOnSphere | tuple[float, float, float] | tuple[float, float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
+    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Iterable[PointOnSphere | LatLonPoint | Sequence[float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant | None = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int | None = ..., initial_scalars: Mapping[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]] | None = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
         """Reconstruct a geometry (and optional scalars) over a time span.
 
         :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points (all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. Reconstructing polylines and polygons as such is to be introduced in future.
-        :type geometry: MultiPointOnSphere, or PointOnSphere, or PolylineOnSphere, or PolygonOnSphere, or sequence of points (where a point can be PointOnSphere or (x,y,z) tuple or (latitude,longitude) tuple in degrees)
+        :type geometry: MultiPointOnSphere, or PointOnSphere, or PolylineOnSphere, or PolygonOnSphere, or iterable of points (where a point can be PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z))
         :param initial_time: The time that reconstruction by topologies starts at. If it's not one of the time slots (from *oldest_time* to *youngest_time* in steps of *time_increment*) then it's snapped to the nearest one, at a cost in accuracy: if *reconstruction_plate_id* is specified then the present-day *geometry* is rigidly rotated to that time slot's time (so it's correct for that time slot), otherwise *geometry* is treated as being at that time slot's time.
         :type initial_time: float or GeoTimeInstant
         :param oldest_time: Oldest time in the history of topologies. Defaults to *initial_time*.
-        :type oldest_time: float or GeoTimeInstant
+        :type oldest_time: float or GeoTimeInstant, or None
         :param youngest_time: Youngest time in the history of topologies. Defaults to present day.
         :type youngest_time: float or GeoTimeInstant
         :param time_increment: Time step in the history of topologies (``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My. There can be at most 100,000 time slots (``(oldest_time - youngest_time) / time_increment + 1``). Note that the run time grows with the square of the number of time slots (and memory linearly), so a small increment over a long time span is expensive.
         :type time_increment: float
         :param reconstruction_plate_id: If specified then *geometry* is assumed to be a snapshot at present day, and this will rotate it to *initial_time*. If not specified then *geometry* is assumed to already be a snapshot at *initial_time* - this is the default.
-        :type reconstruction_plate_id: int
+        :type reconstruction_plate_id: int, or None
         :param initial_scalars: optional mapping of scalar types to sequences of initial scalar values
-        :type initial_scalars: dict mapping each ScalarType to a sequence of float, or a sequence of (ScalarType, sequence of float) tuples
+        :type initial_scalars: dict mapping each ScalarType to an iterable of float, or a sequence of (ScalarType, iterable of float) tuples, or None
         :param deactivate_points: Specify how points are deactivated when reconstructed forward and/or backward in time, or specify ``None`` to disable deactivation of points (which is useful if you know your points are on continental crust where they're typically always active, as opposed to oceanic crust that is produced at mid-ocean ridges and consumed at subduction zones). Note that you can use your own class derived from :class:`ReconstructedGeometryTimeSpan.DeactivatePoints` or use the provided class :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`. Defaults to a default-constructed :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`.
         :type deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints or None
         :param deformation_uses_natural_neighbour_interpolation: If ``True`` then any point that lies (at any time) within a deforming region of a resolved topological network will be reconstructed using natural neighbour interpolation (otherwise barycentric interpolation will be used) - see :meth:`ResolvedTopologicalNetwork.reconstruct_point`. Defaults to ``True``.
@@ -17258,19 +17258,19 @@ class TopologicalSnapshot:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., default_resolve_topology_parameters: ResolveTopologyParameters = ...) -> None:
+    def __init__(self, topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int | None = ..., default_resolve_topology_parameters: ResolveTopologyParameters | None = ...) -> None:
         """Create from topological features and a rotation model at a specific reconstruction time.
 
         :param topological_features: The topological boundary and/or network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple (entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.
         :type topological_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
         :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-        :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+        :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
         :param reconstruction_time: the specific geological time to resolve to
         :type reconstruction_time: float or GeoTimeInstant
         :param anchor_plate_id: The anchored plate id used for all reconstructions (resolving topologies, and reconstructing regular features). Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).
-        :type anchor_plate_id: int
+        :type anchor_plate_id: int, or None
         :param default_resolve_topology_parameters: Default parameters used to resolve topologies. Note that these can optionally be overridden in *topological_features*. Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).
-        :type default_resolve_topology_parameters: ResolveTopologyParameters
+        :type default_resolve_topology_parameters: ResolveTopologyParameters, or None
 
         .. seealso:: :ref:`pygplates_primer_topological_snapshot` in the *Primer* documentation.
 
@@ -17289,13 +17289,13 @@ class TopologicalSnapshot:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def calculate_plate_boundary_statistics(self, uniform_point_spacing_radians: float, first_uniform_point_spacing_radians: float = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, include_network_boundaries: bool = False, boundary_section_filter: FeatureType | list[FeatureType] | Callable[[ResolvedTopologicalSection], Any] = ..., return_shared_sub_segment_dict: bool = False) -> list[PlateBoundaryStatistic] | dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]:
+    def calculate_plate_boundary_statistics(self, uniform_point_spacing_radians: float, first_uniform_point_spacing_radians: float | None = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, include_network_boundaries: bool = False, boundary_section_filter: FeatureType | Sequence[FeatureType] | Callable[[ResolvedTopologicalSection], Any] | None = ..., return_shared_sub_segment_dict: bool = False) -> list[PlateBoundaryStatistic] | dict[ResolvedTopologicalSharedSubSegment, list[PlateBoundaryStatistic]]:
         """Calculate statistics at uniformly spaced points along plate boundaries.
 
         :param uniform_point_spacing_radians: Spacing between uniform points along plate boundaries (in radians). See :meth:`PolylineOnSphere.to_uniform_points`.
         :type uniform_point_spacing_radians: float
         :param first_uniform_point_spacing_radians: Spacing of first uniform point in each :class:`resolved topological section <ResolvedTopologicalSection>` (in radians). Each resolved topological section is associated with a specific boundary :class:`Feature` and represents the :meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>` that are the parts of it that actually contribute to plate boundaries. So, this parameter is the distance from the *first* vertex of the *first* shared sub-segment (*along* the sub-segment). And note that the uniform spacing is continuous across adjacent shared sub-segments, unless there's a gap between them (eg, that no plate uses as part of its boundary), in which case the spacing is reset to *first_uniform_point_spacing_radians* for the next shared sub-segment (after the gap). See :meth:`PolylineOnSphere.to_uniform_points`. Defaults to half of *uniform_point_spacing_radians*.
-        :type first_uniform_point_spacing_radians: float
+        :type first_uniform_point_spacing_radians: float, or None
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
@@ -17307,7 +17307,7 @@ class TopologicalSnapshot:
         :param include_network_boundaries: Whether to calculate statistics along *network* boundaries that are **not** also plate boundaries (defaults to ``False``). If a deforming network shares a boundary with a plate then it'll get included regardless of this option.
         :type include_network_boundaries: bool
         :param boundary_section_filter: Optionally restrict boundary sections to those that match a feature type, or match one of several feature types, or match a filter function. Defaults to ``None`` (meaning accept all boundary sections).
-        :type boundary_section_filter: FeatureType, or list of FeatureType, or callable (accepting a single ResolvedTopologicalSection)
+        :type boundary_section_filter: FeatureType, or sequence of FeatureType, or callable (accepting a single ResolvedTopologicalSection), or None
         :param return_shared_sub_segment_dict: Whether to return a ``dict`` mapping each :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` (ie, a boundary section shared by one or more plates) to a ``list`` of :class:`PlateBoundaryStatistic` associated with it. If ``False`` then just returns one large ``list`` of :class:`PlateBoundaryStatistic` for all plate boundaries. Defaults to ``False``.
         :type return_shared_sub_segment_dict: bool
         :returns: list of :class:`PlateBoundaryStatistic` for all uniform points, or (if *return_shared_sub_segment_dict* is ``True``) a ``dict`` mapping each :class:`ResolvedTopologicalSharedSubSegment` to a list of :class:`PlateBoundaryStatistic`
@@ -17406,11 +17406,11 @@ class TopologicalSnapshot:
         .. note:: This is the same as the :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of :meth:`get_rotation_model`.
         """
 
-    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ...) -> list[TopologyPointLocation]:
+    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, resolve_topology_types: ResolveTopologyType | int = ...) -> list[TopologyPointLocation]:
         """Returns the resolved topological boundaries/networks that contain the specified points.
 
         :param points: sequence of points at which to find containing topologies
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param resolve_topology_types: specifies the resolved topology types to search - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
         :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :rtype: list of TopologyPointLocation
@@ -17439,11 +17439,11 @@ class TopologicalSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_strain_rates(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., return_point_locations: bool = False) -> list[StrainRate | None] | tuple[list[StrainRate | None], list[TopologyPointLocation]]:
+    def get_point_strain_rates(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, resolve_topology_types: ResolveTopologyType | int = ..., return_point_locations: bool = False) -> list[StrainRate | None] | tuple[list[StrainRate | None], list[TopologyPointLocation]]:
         """Returns the strain rates of the specified points (as determined by the resolved topological boundaries/networks that contain them).
 
         :param points: sequence of points at which to calculate strain rates
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param resolve_topology_types: specifies the resolved topology types to use for strain rates - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
         :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``
@@ -17478,11 +17478,11 @@ class TopologicalSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[TopologyPointLocation]]:
+    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, resolve_topology_types: ResolveTopologyType | int = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[TopologyPointLocation]]:
         """Returns the velocities of the specified points (as determined by the resolved topological boundaries/networks that contain them).
 
         :param points: sequence of points at which to calculate velocities
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param resolve_topology_types: specifies the resolved topology types to use for calculating velocities - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
         :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
@@ -17570,11 +17570,11 @@ class TopologicalSnapshot:
         .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model may be different to that of the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified in the :meth:`constructor<__init__>`.
         """
 
-    def reconstruct_points(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant, resolve_topology_types: ResolveTopologyType | int = ..., use_natural_neighbour_interpolation: bool = True, return_input_if_not_intersect: bool = False) -> list[PointOnSphere | None]:
+    def reconstruct_points(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, reconstruction_time: float | GeoTimeInstant, resolve_topology_types: ResolveTopologyType | int = ..., use_natural_neighbour_interpolation: bool = True, return_input_if_not_intersect: bool = False) -> list[PointOnSphere | None]:
         """Incrementally reconstruct the specified points (that lie within resolved topological boundaries/networks searched in this snapshot) to the specified reconstruction time.
 
         :param points: sequence of points to reconstruct
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this snapshot <get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :param resolve_topology_types: specifies the resolved topology types to search - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
@@ -17910,7 +17910,7 @@ class Vector3D:
 
     @overload
     @staticmethod
-    def create_normalized(xyz: Sequence[tuple[float, float, float]] | Vector3D) -> Vector3D:
+    def create_normalized(xyz: Sequence[float] | Vector3D) -> Vector3D:
         """See :meth:`create_normalised`.
         """
 
@@ -18484,11 +18484,11 @@ class XsString(PropertyValue):
         :type string: str
         """
 
-def calculate_velocities(domain_points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], finite_rotation: FiniteRotation, time_interval_in_my: float, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> list[Vector3D]:
+def calculate_velocities(domain_points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, finite_rotation: FiniteRotation, time_interval_in_my: float, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> list[Vector3D]:
     """Calculate velocities at a sequence of points assuming movement due to a finite rotation over a time interval.
 
     :param domain_points: sequence of points at which to calculate velocities
-    :type domain_points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+    :type domain_points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
     :param finite_rotation: the rotation pole and angle
     :type finite_rotation: FiniteRotation
     :param time_interval_in_my: the time interval (in millions of years) that the rotation angle encompasses
@@ -18527,7 +18527,7 @@ def convert_lat_lon_point_to_point_on_sphere(*args: Any, **kwargs: Any) -> Any: 
 
 def convert_point_on_sphere_to_lat_lon_point(*args: Any, **kwargs: Any) -> Any: ...
 
-def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], crossover_filter: Callable[[Crossover], Any] | None = None, crossover_type_function: Callable[..., Any] | CrossoverType = ...) -> list[Crossover]:
+def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], crossover_filter: Callable[[Crossover], Any] | None = None, crossover_type_function: Callable[..., Any] | int = ...) -> list[Crossover]:
     r"""Find crossovers in rotation features.
 
     :param rotation_features: A rotation feature collection, or rotation filename, or         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``)         of any combination of those four types
@@ -18537,7 +18537,7 @@ def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | F
     :type crossover_filter: callable (accepting single Crossover argument), or None
 
     :param crossover_type_function: A function that determines a crossover's type, or one of the         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a CrossoverType enumerated value
+    :type crossover_type_function: callable, or int (a CrossoverType value)
 
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
     :rtype: list[Crossover]
@@ -18560,9 +18560,9 @@ def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | F
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
     | *old_crossover_fixed_plate_id*      | int                                 | The fixed plate ID before (older than) the crossover.                               |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *young_crossover_rotation_sequence* | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
+    | *young_crossover_rotation_sequence* | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *old_crossover_rotation_sequence*   | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
+    | *old_crossover_rotation_sequence*   | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
 
     .. note:: Younger means more recent (smaller time values) and older means less recent (larger time values).
@@ -18681,16 +18681,14 @@ def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | F
 
       crossovers = pygplates.find_crossovers('rotations.rot')
       for crossover in crossovers:
-          print 'Crossover time: %f' % crossover.time
-          print 'Crossover moving plate ID: %d' % crossover.moving_plate_id
-          print 'Crossover younger fixed plate ID: %d' % crossover.young_crossover_fixed_plate_id
-          print 'Crossover older fixed ID: %d' % crossover.old_crossover_fixed_plate_id
-          print 'Crossover younger finite rotation: %d' % \
-              crossover.young_crossover_rotation_sequence[-1] \
-              .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
-          print 'Crossover older finite rotation: %d' % \
-              crossover.old_crossover_rotation_sequence[0] \
-                .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
+          print('Crossover time: %f' % crossover.time)
+          print('Crossover moving plate ID: %d' % crossover.moving_plate_id)
+          print('Crossover younger fixed plate ID: %d' % crossover.young_crossover_fixed_plate_id)
+          print('Crossover older fixed ID: %d' % crossover.old_crossover_fixed_plate_id)
+          young_rotation = crossover.young_crossover_rotation_sequence[-1].get_value().get_finite_rotation()
+          old_rotation = crossover.old_crossover_rotation_sequence[0].get_value().get_finite_rotation()
+          print('Crossover younger finite rotation: %s' % (young_rotation.get_lat_lon_euler_pole_and_angle_degrees(),))
+          print('Crossover older finite rotation: %s' % (old_rotation.get_lat_lon_euler_pole_and_angle_degrees(),))
 
     Find crossovers affecting moving plate 801 assuming all crossovers are of type
     *CrossoverType.synch_old_crossover_and_stages*:
@@ -18706,20 +18704,20 @@ def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | F
        (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
 
-def partition_into_plates(partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], features_to_partition: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], properties_to_copy: Sequence[PropertyName | PartitionProperty] = ..., reconstruction_time: float | GeoTimeInstant = 0, partition_method: PartitionMethod = PartitionMethod.split_into_plates, partition_return: PartitionReturn = PartitionReturn.combined_partitioned_and_unpartitioned, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int | None = None, sliver_width_threshold_radians: float | None = None) -> list[Feature] | tuple[list[Feature], list[Feature]] | tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]:
+def partition_into_plates(partitioning_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, features_to_partition: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], properties_to_copy: Sequence[PropertyName | PartitionProperty] | Callable[[Feature, Feature], Any] = ..., reconstruction_time: float | GeoTimeInstant = 0, partition_method: PartitionMethod = PartitionMethod.split_into_plates, partition_return: PartitionReturn = PartitionReturn.combined_partitioned_and_unpartitioned, sort_partitioning_plates: SortPartitioningPlates | None = SortPartitioningPlates.by_partition_type_then_plate_id, anchor_plate_id: int | None = None, sliver_width_threshold_radians: float | None = None) -> list[Feature] | tuple[list[Feature], list[Feature]] | tuple[list[tuple[ReconstructionGeometry, list[Feature]]], list[Feature]]:
     """Partition features into plates.
 
     :param partitioning_features: the partitioning features
     :type partitioning_features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename,         or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike,         or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature,         or sequence of any combination of those four types, or RotationModel
 
     :param features_to_partition: the features to be partitioned
     :type features_to_partition: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
+    :type properties_to_copy: sequence of PropertyName or PartitionProperty, or callable (accepting a partitioning Feature and a partitioned Feature)
 
     :param reconstruction_time: the specific geological time to reconstruct/resolve the         *partitioning_features* to (defaults to zero)
     :type reconstruction_time: float or GeoTimeInstant
@@ -18937,13 +18935,13 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
     """
 
 @overload
-def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstructed_geometries: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., **output_parameters: Any) -> None:
+def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, reconstructed_geometries: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., **output_parameters: Any) -> None:
     """Reconstruct regular geological features (including motion paths and flowlines) to a specific geological time.
 
     :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types
     :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
     :param reconstructed_geometries: the :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or :class:`reconstructed motion paths<ReconstructedMotionPath>` or :class:`reconstructed flowlines<ReconstructedFlowline>` (depending on the optional keyword argument *reconstruct_type* - see *output_parameters* table) are either exported to a file (with specified filename) or *appended* to a Python ``list`` (note that the list is *not* cleared first and note that the list contents are affected by *group_with_feature* - see *output_parameters* table)
     :type reconstructed_geometries: str, or os.PathLike or list
     :param reconstruction_time: the specific geological time to reconstruct to
@@ -19092,13 +19090,13 @@ def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike 
 @deprecated('The recon_files, rot_files, time, anchor_plate_id, export_file_name form is deprecated: use reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, reconstruction_time, anchor_plate_id)')
 def reconstruct(recon_files: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rot_files: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], time: float, anchor_plate_id: int | None, export_file_name: str | os.PathLike) -> None: ...
 
-def resolve_topologies(topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], resolved_topologies: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, resolved_topological_sections: str | os.PathLike | list = ..., anchor_plate_id: int = ..., default_resolve_topology_parameters: ResolveTopologyParameters = ..., **output_parameters: Any) -> None:
+def resolve_topologies(topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, resolved_topologies: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, resolved_topological_sections: str | os.PathLike | list = ..., anchor_plate_id: int = ..., default_resolve_topology_parameters: ResolveTopologyParameters = ..., **output_parameters: Any) -> None:
     """Resolve topological features (lines, boundaries and networks) to a specific geological time.
 
     :param topological_features: The topological boundary and network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple (entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.
     :type topological_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
     :param resolved_topologies: the :class:`resolved topological lines<ResolvedTopologicalLine>`, :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (depending on the optional keyword argument *resolve_topology_types* - see *output_parameters* table) are either exported to a file (with specified filename) or *appended* to a python ``list`` (note that the list is *not* cleared first)
     :type resolved_topologies: str, or os.PathLike or list
     :param reconstruction_time: the specific geological time to resolve to
@@ -19270,17 +19268,17 @@ def resolve_topologies(topological_features: FeatureCollection | str | os.PathLi
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
 
-def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ...) -> None:
+def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]] | RotationModel, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int | None = ...) -> None:
     """Reverse reconstruct geological features from a specific geological time.
 
     :param reconstructable_features: A reconstructable feature collection, or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types - all features used as input and output
     :type reconstructable_features: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, or sequence of any combination of those four types, or RotationModel
     :param reconstruction_time: the specific geological time to reverse reconstruct from (note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).
     :type reconstruction_time: float or GeoTimeInstant
     :param anchor_plate_id: The anchored plate id used during reverse reconstruction. Defaults to the default anchor plate of *rotation_model*.
-    :type anchor_plate_id: int
+    :type anchor_plate_id: int, or None
     :raises OpenFileForReadingError: if any input file is not readable (when filenames specified)
     :raises OpenFileForWritingError: if *reconstructable_features* specifies any filename that is not writeable (if any filenames are specified)
     :raises FileFormatNotSupportedError: if any input file format (identified by any reconstructable and rotation filename extensions) does not support reading, or any reconstructable file format does not support writing (when filenames specified)
@@ -19325,20 +19323,20 @@ def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.P
        Raises :class:`FileFormatNotSupportedError` for a reconstructable file that can't be written back (such as ``.vgp``), which was left unchanged, or can't be read (such as ``.xy``), which was read as empty and written back empty.
     """
 
-def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], crossover_filter: Callable[[Crossover], Any] | Sequence[Crossover] | None = None, crossover_threshold_degrees: float | None = None, crossover_type_function: Callable[..., Any] | CrossoverType | None = ..., crossover_results: list[tuple[Crossover, int]] | None = None) -> bool:
+def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], crossover_filter: Callable[[Crossover], Any] | Iterable[Crossover] | None = None, crossover_threshold_degrees: float | None = None, crossover_type_function: Callable[..., Any] | int | None = ..., crossover_results: list[tuple[Crossover, int]] | None = None) -> bool:
     r"""Synchronise crossovers in rotation features.
 
     :param rotation_features: A rotation feature collection, or rotation filename, or         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``)         of any combination of those four types - all features are used as input and output
     :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines         which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to         synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised -         a crossover is a named-tuple 'Crossover' (see table below)
-    :type crossover_filter: callable (accepting single Crossover argument), or         sequence of Crossover, or None
+    :type crossover_filter: callable (accepting single Crossover argument), or iterable of Crossover, or None
 
     :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the         old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by         more than this amount
     :type crossover_threshold_degrees: float or None
 
     :param crossover_type_function: A function that determines a crossover's type, or one of the         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* -         can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
-    :type crossover_type_function: a callable, or a CrossoverType enumerated value, or None
+    :type crossover_type_function: callable, or int (a CrossoverType value), or None
 
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or         *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of         *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate         at the crossover time) - the list is sorted by crossover time - default is None
     :type crossover_results: list[tuple[Crossover, int]], or None
@@ -19368,9 +19366,9 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
     | *old_crossover_fixed_plate_id*      | int                                 | The fixed plate ID before (older than) the crossover.                               |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *young_crossover_rotation_sequence* | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
+    | *young_crossover_rotation_sequence* | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *old_crossover_rotation_sequence*   | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
+    | *old_crossover_rotation_sequence*   | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
 
     .. seealso:: :func:`find_crossovers` for more information on the young/old rotation sequences in named-tuple 'Crossover'.

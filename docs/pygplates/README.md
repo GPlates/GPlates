@@ -145,6 +145,24 @@ protects a `.. versionadded::` / `.. versionchanged::` written flush at column z
 8. Other conventions: a parameter taking an enumeration names the enumeration type
    (`:type property_return: PropertyReturn`), not a list of its values; "returns the *default*
    argument" cases are written `type(default)`; numpy arrays are `numpy.ndarray`.
+9. **`iterable of X` or `sequence of X` follows the binding.** Write `iterable of X` when it reads
+   the argument with `PythonExtractUtils::extract_iterable` (one pass, so any iterable works: a
+   generator, `zip(...)`, a numpy array), and `sequence of X` when it needs a real sequence
+   (`check_sequence`, which raises `TypeError` for an iterator, or Python `len()` and indexing).
+   One exception: a field taking a `dict` or a sequence of (key, value) pairs keeps `sequence of
+   (K, V) tuples` even where any iterable works. With `Iterable` in that union, mypy rejects a
+   `dict` literal, since a `dict` is an iterable of its keys. (The generator makes an argument's
+   `dict` a `Mapping`, which is covariant, so a `dict` that pyGPlates returns, such as
+   `dict[ScalarType, list[float]]`, can be passed back where `dict[ScalarType, iterable of float]`
+   is documented. A returned `dict` stays a `dict`.)
+10. **A point given by its coordinates** is `sequence (latitude,longitude) in degrees or (x,y,z)`,
+    which the generator makes `Sequence[float]`: the converters take any non-iterator sequence
+    (a list, a tuple) of the right length, which the stub can't express. A vector is `sequence
+    (such as list or tuple) of float`, or `sequence (x,y,z)` as the element of a sequence (where
+    `or sequence of float` would trip the generator's bare-`or` lint). Any group of coordinates
+    (`sequence (magnitude, azimuth, inclination)`) is a sequence, even where the binding would
+    also take an iterator. A value the binding *returns* as a tuple stays a tuple
+    (`tuple (float, float)`).
 
 `intersphinx` is enabled for the Python and numpy documentation, so `str`, `int`, `os.PathLike`
 and `numpy.ndarray` resolve to their upstream pages. Note `None` never links — it is documented

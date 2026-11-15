@@ -205,7 +205,7 @@ def set_name(feature, name, verify_information_model=VerifyInformationModel.yes)
     Set the name (or names) of this feature.
     
     :param name: the name or names
-    :type name: str, or sequence of str
+    :type name: str, or iterable of str
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
     :returns: the property containing the name, or properties containing the names
@@ -826,7 +826,7 @@ def set_conjugate_plate_id(feature, conjugate_plate_id, verify_information_model
     Set the conjugate plate ID (or IDs) of this feature.
     
     :param conjugate_plate_id: the conjugate plate ID or plate IDs
-    :type conjugate_plate_id: int, or sequence of int
+    :type conjugate_plate_id: int, or iterable of int
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
     :returns: the property containing the conjugate plate ID, or properties containing the conjugate plate IDs
@@ -1134,8 +1134,8 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
     :type value: int, float or str
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
-    :returns: the property containing all the shapefile attributes
-    :rtype: Property containing a GpmlKeyValueDictionary property value
+    :returns: the property value containing all the shapefile attributes
+    :rtype: GpmlKeyValueDictionary
     :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_ \
         property (although all feature :class:`types<FeatureType>` do support it).
@@ -1248,12 +1248,11 @@ def set_shapefile_attributes(feature, attribute_mapping=None, verify_information
     Sets the shapefile attributes of this feature.
     
     :param attribute_mapping: optional mapping of keys to values
-    :type attribute_mapping: dict mapping each key (str) to a value (int, float or str), \
-    or a sequence of (key, value) tuples, or None
+    :type attribute_mapping: dict[str, int | float | str], or sequence of tuple[str, int | float | str], or None
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
     :returns: the property containing all the shapefile attributes
-    :rtype: Property containing a GpmlKeyValueDictionary property value
+    :rtype: Property
     :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_ \
         property (although all feature :class:`types<FeatureType>` do support it).
@@ -1380,7 +1379,7 @@ def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, tota
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
     :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
-    :rtype: tuple of three Property
+    :rtype: tuple[Property, Property, Property]
     :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_, \
         `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_ and \
