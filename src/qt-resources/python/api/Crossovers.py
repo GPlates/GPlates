@@ -187,7 +187,7 @@ def find_crossovers(
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: a callable, or a CrossoverType enumerated value
+    :type crossover_type_function: callable, or int
     
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
     :rtype: list[Crossover]
@@ -210,9 +210,9 @@ def find_crossovers(
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
     | *old_crossover_fixed_plate_id*      | int                                 | The fixed plate ID before (older than) the crossover.                               |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *young_crossover_rotation_sequence* | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
+    | *young_crossover_rotation_sequence* | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *old_crossover_rotation_sequence*   | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
+    | *old_crossover_rotation_sequence*   | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
     
     .. note:: Younger means more recent (smaller time values) and older means less recent (larger time values).
@@ -331,16 +331,14 @@ def find_crossovers(
     
       crossovers = pygplates.find_crossovers('rotations.rot')
       for crossover in crossovers:
-          print 'Crossover time: %f' % crossover.time
-          print 'Crossover moving plate ID: %d' % crossover.moving_plate_id
-          print 'Crossover younger fixed plate ID: %d' % crossover.young_crossover_fixed_plate_id
-          print 'Crossover older fixed ID: %d' % crossover.old_crossover_fixed_plate_id
-          print 'Crossover younger finite rotation: %d' % \\
-              crossover.young_crossover_rotation_sequence[-1] \\
-              .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
-          print 'Crossover older finite rotation: %d' % \\
-              crossover.old_crossover_rotation_sequence[0] \\
-                .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
+          print('Crossover time: %f' % crossover.time)
+          print('Crossover moving plate ID: %d' % crossover.moving_plate_id)
+          print('Crossover younger fixed plate ID: %d' % crossover.young_crossover_fixed_plate_id)
+          print('Crossover older fixed ID: %d' % crossover.old_crossover_fixed_plate_id)
+          young_rotation = crossover.young_crossover_rotation_sequence[-1].get_value().get_finite_rotation()
+          old_rotation = crossover.old_crossover_rotation_sequence[0].get_value().get_finite_rotation()
+          print('Crossover younger finite rotation: %s' % (young_rotation.get_lat_lon_euler_pole_and_angle_degrees(),))
+          print('Crossover older finite rotation: %s' % (old_rotation.get_lat_lon_euler_pole_and_angle_degrees(),))
     
     Find crossovers affecting moving plate 801 assuming all crossovers are of type
     *CrossoverType.synch_old_crossover_and_stages*:
@@ -514,7 +512,7 @@ def synchronise_crossovers(
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* - \
         can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
-    :type crossover_type_function: a callable, or a CrossoverType enumerated value, or None
+    :type crossover_type_function: callable, or int, or None
     
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered \
         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \
@@ -556,9 +554,9 @@ def synchronise_crossovers(
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
     | *old_crossover_fixed_plate_id*      | int                                 | The fixed plate ID before (older than) the crossover.                               |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *young_crossover_rotation_sequence* | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
+    | *young_crossover_rotation_sequence* | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations after (younger than) the crossover. |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
-    | *old_crossover_rotation_sequence*   | list of :class:`GpmlFiniteRotation` | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
+    | *old_crossover_rotation_sequence*   | list of :class:`GpmlTimeSample`     | The time sequence of *enabled* finite rotations before (older than) the crossover.  |
     +-------------------------------------+-------------------------------------+-------------------------------------------------------------------------------------+
     
     .. seealso:: :func:`find_crossovers` for more information on the young/old rotation sequences in named-tuple 'Crossover'.

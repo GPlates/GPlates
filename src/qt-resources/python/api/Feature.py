@@ -1134,8 +1134,8 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
     :type value: int, float or str
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
-    :returns: the property containing all the shapefile attributes
-    :rtype: Property containing a GpmlKeyValueDictionary property value
+    :returns: the property value containing all the shapefile attributes
+    :rtype: GpmlKeyValueDictionary
     :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_ \
         property (although all feature :class:`types<FeatureType>` do support it).
@@ -1252,7 +1252,7 @@ def set_shapefile_attributes(feature, attribute_mapping=None, verify_information
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
     :returns: the property containing all the shapefile attributes
-    :rtype: Property containing a GpmlKeyValueDictionary property value
+    :rtype: Property
     :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support the `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_ \
         property (although all feature :class:`types<FeatureType>` do support it).
@@ -1379,7 +1379,7 @@ def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, tota
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: VerifyInformationModel
     :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
-    :rtype: tuple of three Property
+    :rtype: tuple[Property, Property, Property]
     :raises InformationModelError: if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
         does not support `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_, \
         `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_ and \

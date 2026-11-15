@@ -871,7 +871,7 @@ export_feature_collection()
 				"  Create a new feature collection instance.\n"
 				"\n"
 				"  :param features: an optional filename, or sequence of features, or a single feature\n"
-				"  :type features: str, or os.PathLike, or a sequence (eg, list or tuple) of Feature, "
+				"  :type features: str, or os.PathLike, or FeatureCollection, or a sequence (eg, list or tuple) of Feature, "
 				"or a single Feature, or None\n"
 				"  :raises OpenFileForReadingError: if file is not readable (if filename specified)\n"
 				"  :raises FileFormatNotSupportedError: if file format (identified by the filename "

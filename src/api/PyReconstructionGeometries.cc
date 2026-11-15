@@ -4188,7 +4188,7 @@ export_resolved_topological_shared_sub_segment()
 				"get_sharing_resolved_topologies()\n"
 				"  Returns a list of resolved topologies sharing this sub-segment.\n"
 				"\n"
-				"  :rtype: list of ReconstructionGeometry\n"
+				"  :rtype: list[ResolvedTopologicalBoundary | ResolvedTopologicalNetwork]\n"
 				"\n"
 				"  .. note:: | The resolved topologies (that share this sub-segment) can be "
 				":class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.\n"

@@ -185,7 +185,7 @@ def plate_partitioner_partition_features(
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
+    :type properties_to_copy: sequence of PropertyName or PartitionProperty, or callable (accepting a partitioning Feature and a partitioned Feature)
     
     :param partition_method: how the features are to be partitioned by the partitioning plates (defaults to *PartitionMethod.split_into_plates*)
     :type partition_method: PartitionMethod
@@ -573,8 +573,8 @@ def partition_into_plates(
     
     :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, \
         or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
-    :type rotation_model: RotationModel. Or FeatureCollection, or str, or os.PathLike, \
-        or Feature, or sequence of Feature, or sequence of any combination of those four types
+    :type rotation_model: FeatureCollection, or str, or os.PathLike, or Feature, or sequence of Feature, \
+        or sequence of any combination of those four types, or RotationModel
     
     :param features_to_partition: the features to be partitioned
     :type features_to_partition: FeatureCollection, or str, or os.PathLike, or Feature, \
@@ -582,7 +582,7 @@ def partition_into_plates(
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
         (defaults to just the reconstruction plate ID)
-    :type properties_to_copy: sequence of any combination of PropertyName and PartitionProperty enumeration values
+    :type properties_to_copy: sequence of PropertyName or PartitionProperty, or callable (accepting a partitioning Feature and a partitioned Feature)
     
     :param reconstruction_time: the specific geological time to reconstruct/resolve the \
         *partitioning_features* to (defaults to zero)
