@@ -11,6 +11,7 @@ import numpy
 import os
 
 from typing import Any, Callable, ClassVar, Iterable, NamedTuple, Sequence, overload
+from typing_extensions import deprecated
 
 __version__: str
 
@@ -4547,6 +4548,7 @@ class GeometryOnSphere:
            Geometry is immutable so there's no need to clone (instead you can just share the geometry).
         """
 
+    @overload
     def distance(self, other_geometry: GeometryOnSphere, distance_threshold_radians: float | None = ..., return_closest_positions: bool = False, return_closest_indices: bool = False, geometry_is_solid: bool = False, other_geometry_is_solid: bool = False) -> float | tuple[float, PointOnSphere, PointOnSphere] | tuple[float, int, int] | tuple[float, PointOnSphere, PointOnSphere, int, int] | None:
         r"""Returns the (minimum) distance between this geometry and another geometry (in radians).
 
@@ -4635,6 +4637,10 @@ class GeometryOnSphere:
         .. versionchanged:: 1.1
          Can be called on a geometry (``geometry.distance(other_geometry)``), as well as on the :class:`GeometryOnSphere` class (it was a static method). Renamed the arguments *geometry2*, *geometry1_is_solid* and *geometry2_is_solid* to *other_geometry*, *geometry_is_solid* and *other_geometry_is_solid* (the old names, including *geometry1*, still work, but cannot be mixed with the new names in the same call).
         """
+
+    @overload
+    @deprecated('Call distance() on a geometry, eg geometry.distance(other_geometry): geometry2, geometry1_is_solid and geometry2_is_solid are renamed other_geometry, geometry_is_solid and other_geometry_is_solid')
+    def distance(geometry1: GeometryOnSphere, geometry2: GeometryOnSphere, distance_threshold_radians: float | None = ..., return_closest_positions: bool = False, return_closest_indices: bool = False, geometry1_is_solid: bool = False, geometry2_is_solid: bool = False) -> float | tuple[float, PointOnSphere, PointOnSphere] | tuple[float, int, int] | tuple[float, PointOnSphere, PointOnSphere, int, int] | None: ...  # pyright: ignore[reportSelfClsParameterName]
 
     def get_points(self) -> Sequence[PointOnSphere]:
         """Returns a *read-only* sequence of :class:`points<PointOnSphere>` in this geometry.
@@ -8293,6 +8299,7 @@ class LocalCartesian:
 
     def __ne__(self, other: object) -> bool: ...
 
+    @overload
     @staticmethod
     def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[tuple[float, float, float]]:
         """Converts geocentric vectors to spherical coordinates in local North/East/Down coordinate systems, each at its own origin.
@@ -8324,6 +8331,17 @@ class LocalCartesian:
            Deprecated converting at a single origin with ``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, vector)`` and ``convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)`` instead.
         """
 
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)')
+    @staticmethod
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> tuple[float, float, float]: ...
+
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)')
+    @staticmethod
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> tuple[float, float, float]: ...
+
+    @overload
     @staticmethod
     def convert_from_geocentric_to_north_east_down(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
         """Converts geocentric vectors to cartesian vectors in local North/East/Down coordinate systems, each at its own origin.
@@ -8355,6 +8373,17 @@ class LocalCartesian:
            Deprecated converting at a single origin with ``convert_from_geocentric_to_north_east_down(local_origin, vector)`` and ``convert_from_geocentric_to_north_east_down(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)`` instead.
         """
 
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)')
+    @staticmethod
+    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
+
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)')
+    @staticmethod
+    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D: ...
+
+    @overload
     @staticmethod
     def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], local_coordinates: Sequence[tuple[float, float, float]]) -> list[Vector3D]:
         """Converts spherical coordinates in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
@@ -8386,6 +8415,17 @@ class LocalCartesian:
            Deprecated converting at a single origin with ``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, local_coordinate)`` and ``convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, magnitude, azimuth, inclination)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)`` instead.
         """
 
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
+    @staticmethod
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], local_coordinate: Sequence[float]) -> Vector3D: ...
+
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
+    @staticmethod
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], magnitude: float, azimuth: float, inclination: float) -> Vector3D: ...
+
+    @overload
     @staticmethod
     def convert_from_north_east_down_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
         """Converts cartesian vectors in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
@@ -8416,6 +8456,16 @@ class LocalCartesian:
         .. versionchanged:: 1.1
            Deprecated converting at a single origin with ``convert_from_north_east_down_to_geocentric(local_origin, vector)`` and ``convert_from_north_east_down_to_geocentric(local_origin, x, y, z)``. They still work, but use ``pygplates.LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)`` instead.
         """
+
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)')
+    @staticmethod
+    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
+
+    @overload
+    @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)')
+    @staticmethod
+    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D: ...
 
     @overload
     def from_geocentric_to_magnitude_azimuth_inclination(self, vector: Vector3D | Sequence[float]) -> tuple[float, float, float]:
@@ -10906,6 +10956,10 @@ class PolygonOnSphere(GeometryOnSphere):
 
         .. note:: The created polygon will have no interior rings unless *geometry* is also a :class:`PolygonOnSphere` and has interior rings.
         """
+
+    @overload
+    @deprecated('The points argument is renamed exterior_ring')
+    def __init__(self, *, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]]) -> None: ...
 
     def __iter__(self) -> Any: ...
 
@@ -16213,6 +16267,10 @@ class RotationModel:
         .. versionadded:: 0.29
         """
 
+    @overload
+    @deprecated('The clone_rotation_features argument is ignored, and can be removed')
+    def __init__(self, rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstruction_tree_cache_size: int = 150, *, clone_rotation_features: bool) -> None: ...
+
     def __le__(self, other: Any) -> bool: ...
 
     def __lt__(self, other: Any) -> bool: ...
@@ -17766,6 +17824,7 @@ class Vector3D:
 
     def __sub__(self, other: Any) -> Any: ...
 
+    @overload
     def angle_between(self, other_vector: Vector3D | Sequence[float]) -> float:
         """Returns the angle between this vector and another vector (in radians).
 
@@ -17802,6 +17861,10 @@ class Vector3D:
         .. versionchanged:: 1.1
            Can be called on a vector (``vector.angle_between(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
+
+    @overload
+    @deprecated('Call angle_between() on a Vector3D, eg vector.angle_between(other_vector): vector2 is renamed other_vector, and the vector it is called on must be a Vector3D')
+    def angle_between(vector1: Vector3D | Sequence[float], vector2: Vector3D | Sequence[float]) -> float: ...  # pyright: ignore[reportSelfClsParameterName]
 
     @overload
     @staticmethod
@@ -17857,6 +17920,7 @@ class Vector3D:
         """See :meth:`create_normalised`.
         """
 
+    @overload
     def cross(self, other_vector: Vector3D | Sequence[float]) -> Vector3D:
         """Returns the cross product of this vector and another vector.
 
@@ -17892,6 +17956,11 @@ class Vector3D:
            Can be called on a vector (``vector.cross(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
 
+    @overload
+    @deprecated('Call cross() on a Vector3D, eg vector.cross(other_vector): vector2 is renamed other_vector, and the vector it is called on must be a Vector3D')
+    def cross(vector1: Vector3D | Sequence[float], vector2: Vector3D | Sequence[float]) -> Vector3D: ...  # pyright: ignore[reportSelfClsParameterName]
+
+    @overload
     def dot(self, other_vector: Vector3D | Sequence[float]) -> float:
         """Returns the dot product of this vector and another vector.
 
@@ -17924,6 +17993,10 @@ class Vector3D:
         .. versionchanged:: 1.1
            Can be called on a vector (``vector.dot(other_vector)``), as well as on the :class:`Vector3D` class (it was a static method). Renamed the argument *vector2* to *other_vector* (the old names, *vector1* and *vector2*, still work, but cannot be mixed with the new name in the same call).
         """
+
+    @overload
+    @deprecated('Call dot() on a Vector3D, eg vector.dot(other_vector): vector2 is renamed other_vector, and the vector it is called on must be a Vector3D')
+    def dot(vector1: Vector3D | Sequence[float], vector2: Vector3D | Sequence[float]) -> float: ...  # pyright: ignore[reportSelfClsParameterName]
 
     def get_magnitude(self) -> float:
         """Returns the magnitude, or length, of the vector.
@@ -18171,6 +18244,10 @@ class Version:
 
         .. deprecated:: 0.34
         """
+
+    @overload
+    @deprecated('The prerelease_suffix argument is renamed release_suffix')
+    def __init__(self, major: int, minor: int, patch: int = 0, *, prerelease_suffix: str | None) -> None: ...
 
     def __le__(self, other: Any) -> bool: ...
 
@@ -18859,6 +18936,7 @@ def partition_into_plates(partitioning_features: FeatureCollection | str | os.Pa
        scalar coverages carried to the pieces, and so on.
     """
 
+@overload
 def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], reconstructed_geometries: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, anchor_plate_id: int = ..., **output_parameters: Any) -> None:
     """Reconstruct regular geological features (including motion paths and flowlines) to a specific geological time.
 
@@ -19009,6 +19087,10 @@ def reconstruct(reconstructable_features: FeatureCollection | str | os.PathLike 
        * Added *export_force_boundary_orientation* argument.
        * Changed underlying bit values for *ReconstructType.feature_geometry*, *ReconstructType.motion_path* and *ReconstructType.flowline*.
     """
+
+@overload
+@deprecated('The recon_files, rot_files, time, anchor_plate_id, export_file_name form is deprecated: use reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, reconstruction_time, anchor_plate_id)')
+def reconstruct(recon_files: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rot_files: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], time: float, anchor_plate_id: int | None, export_file_name: str | os.PathLike) -> None: ...
 
 def resolve_topologies(topological_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], rotation_model: RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], resolved_topologies: str | os.PathLike | list, reconstruction_time: float | GeoTimeInstant, resolved_topological_sections: str | os.PathLike | list = ..., anchor_plate_id: int = ..., default_resolve_topology_parameters: ResolveTopologyParameters = ..., **output_parameters: Any) -> None:
     """Resolve topological features (lines, boundaries and networks) to a specific geological time.

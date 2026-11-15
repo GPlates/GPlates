@@ -80,6 +80,30 @@ file as deltas, so an API change costs kilobytes, not another copy of a megabyte
 `python -m mypy.stubtest pygplates` against an installed wheel is advisory at best: Boost.Python
 function objects are not inspectable, so it reports every def as noise.
 
+## Deprecated forms
+
+A form kept for compatibility (an old argument name, or a call through the class that a method
+replaced) has no docstring, so that `help()` and Sphinx don't show the documentation twice. So the
+docstrings can't put it in the stub, and `DEPRECATED_OVERLOADS` in `generate_stub.py` lists those
+forms by hand. Each is emitted as an `@overload` marked `@deprecated` (PEP 702), after the
+documented overloads. A type checker then reports a call that only a deprecated overload accepts
+as deprecated, rather than as an error. A call that a documented overload also accepts (such as
+`Vector3D.dot(v1, v2)`, positionally) matches that one first, and is not reported.
+
+Add an entry when a binding gains a deprecated form, and remove it with the form. An entry's types
+are copied from the documented overloads, so change them together. Entries apply only to
+Boost.Python functions with a signature line, and the generator fails on one it never applies, as
+it does on a `MANUAL_OVERRIDES` signature it never uses.
+
+A deprecated instance-method form whose receiver is passed by its old name
+(`Vector3D.dot(vector1=..., vector2=...)`) can't call its first parameter `self`, so the generator
+silences pyright's warning about that on its line.
+
+To check the entries, run `mypy --enable-error-code deprecated` (mypy leaves the code off by
+default) and pyright (Pylance shows a deprecated call struck through) on a script that makes each
+deprecated call and each documented one. They should report the deprecated calls, and nothing
+else. pyright's report on the stub itself should stay empty.
+
 ## Safe docstring sweeps
 
 A style sweep over the two docstring corpora (`src/api/*.cc` and `src/qt-resources/python/api/*.py`)
