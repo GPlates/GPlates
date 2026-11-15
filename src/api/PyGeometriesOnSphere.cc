@@ -1026,10 +1026,7 @@ export_point_on_sphere()
 					".. note:: Since a *PointOnSphere* is **immutable** it contains no operations or "
 					"methods that modify its state.\n"
 					"\n"
-					"Convenience class static data are available for the North and South poles:\n"
-					"\n"
-					"* ``pygplates.PointOnSphere.north_pole``\n"
-					"* ``pygplates.PointOnSphere.south_pole``\n"
+					"The North and South poles are available as class attributes, :attr:`north_pole` and :attr:`south_pole`.\n"
 					"\n"
 					"A *PointOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
@@ -1130,6 +1127,7 @@ export_point_on_sphere()
 		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>>())
+		// Boost.Python can't document these (see *Class attributes* in docs/pygplates/README.md).
 		// Static property 'pygplates.PointOnSphere.north_pole'...
 		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole.get())
 		// Static property 'pygplates.PointOnSphere.south_pole'...

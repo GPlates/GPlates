@@ -254,13 +254,8 @@ export_vector_3d()
 					"  vector2 = pygplates.Vector3D(...)\n"
 					"  vector_interp = t * vector1 + (1-t) * vector2\n"
 					"\n"
-					"Convenience class static data are available for the zero vector (all zero components) and "
-					"the x, y and z axes (unit vectors in the respective directions):\n"
-					"\n"
-					"* ``pygplates.Vector3D.zero``\n"
-					"* ``pygplates.Vector3D.x_axis``\n"
-					"* ``pygplates.Vector3D.y_axis``\n"
-					"* ``pygplates.Vector3D.z_axis``\n"
+					"The zero vector and the unit vectors along the x, y and z axes are available as class attributes, "
+					":attr:`zero`, :attr:`x_axis`, :attr:`y_axis` and :attr:`z_axis`.\n"
 					"\n"
 					"For example, to create a vector from a triplet of axis basis weights (triplet of scalars):\n"
 					"::\n"
@@ -332,6 +327,7 @@ export_vector_3d()
 		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::Vector3D>>())
+		// Boost.Python can't document these (see *Class attributes* in docs/pygplates/README.md).
 		// Static property 'pygplates.Vector3D.zero'...
 		.def_readonly("zero", GPlatesApi::vector_zero)
 		// Static property 'pygplates.Vector3D.x_axis'...

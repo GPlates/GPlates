@@ -43,11 +43,9 @@ export_earth()
 			"Earth",
 			"Various Earth-related parameters (such as radius).\n"
 			"\n"
-			"The following *radius* parameters are available as class attributes:\n"
-			"\n"
-			"* ``pygplates.Earth.equatorial_radius_in_kms``: radius at equator (6378.137 kms)\n"
-			"* ``pygplates.Earth.polar_radius_in_kms``: radius at the poles (6356.7523142 kms)\n"
-			"* ``pygplates.Earth.mean_radius_in_kms``: mean radius (6371.009 kms)\n"
+			"The *radius* parameters are available as class attributes: :attr:`equatorial_radius_in_kms` "
+			"(6378.137 kms), :attr:`polar_radius_in_kms` (6356.7523142 kms) and :attr:`mean_radius_in_kms` "
+			"(6371.009 kms).\n"
 			"\n"
 			"For example, to access the mean radius:\n"
 			"::\n"
@@ -57,6 +55,7 @@ export_earth()
 			".. note:: The *radius* parameters are based on the WGS-84 coordinate system.\n",
 			bp::init<>("__init__()\n")) // Sphinx autosummary complains if signature not present in docstring.
 
+		// Boost.Python can't document these (see *Class attributes* in docs/pygplates/README.md).
 		// Radius parameters...
 		.def_readonly("equatorial_radius_in_kms", GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS)
 		.def_readonly("polar_radius_in_kms", GPlatesUtils::Earth::POLAR_RADIUS_KMS)

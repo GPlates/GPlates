@@ -295,9 +295,7 @@ export_strain()
 					"\n"
 					"Strain rates are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
-					"Convenience class static data is available for the zero strain rate:\n"
-					"\n"
-					"* ``pygplates.StrainRate.zero``\n"
+					"The zero strain rate is available as a class attribute, :attr:`zero`.\n"
 					"\n"
 					"A *StrainRate* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
@@ -342,6 +340,7 @@ export_strain()
 		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::DeformationStrainRate>>())
+		// Boost.Python can't document this (see *Class attributes* in docs/pygplates/README.md).
 		// Static property 'pygplates.StrainRate.zero'...
 		.def_readonly("zero", GPlatesApi::zero_strain_rate)
 		.def("get_dilatation_rate",
@@ -580,9 +579,7 @@ export_strain()
 					"\n"
 					"Strains are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
-					"Convenience class static data is available for the identity strain:\n"
-					"\n"
-					"* ``pygplates.Strain.identity``\n"
+					"The identity strain is available as a class attribute, :attr:`identity`.\n"
 					"\n"
 					"A *Strain* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
@@ -639,6 +636,7 @@ export_strain()
 		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::DeformationStrain>>())
+		// Boost.Python can't document this (see *Class attributes* in docs/pygplates/README.md).
 		// Static property 'pygplates.Strain.identity'...
 		.def_readonly("identity", GPlatesApi::identity_strain)
 		.def("get_dilatation",

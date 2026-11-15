@@ -108,6 +108,27 @@ those signature lines, dedents each block, and re-emits every extra one as a `py
 is that block's body. Read that function before changing docstring layout — in particular it also
 protects a `.. versionadded::` / `.. versionchanged::` written flush at column zero.
 
+### Class attributes
+
+A class attribute that Boost.Python defines with `def_readonly()` on a value that isn't a data
+member (`FeatureType.gpml_coastline`, `Vector3D.x_axis`, `Earth.mean_radius_in_kms` and the like)
+can't have a docstring: Boost.Python drops it, and Python can't add one. Its documentation lives in
+`conf.py.in` instead:
+
+- A feature type's or property name's text is generated from its value: its GPGIM name, linked to
+  that name's entry in the GPGIM documentation. A property name of an enumeration or geometry
+  property is also in `_ENUMERATION_PROPERTY_NAMES` or `_GEOMETRY_PROPERTY_NAMES`, and its text
+  says so.
+- Any other's text is one sentence in `_CLASS_ATTRIBUTE_DOCSTRINGS`. An attribute added without
+  one fails the docs build, and so does an entry for an attribute that no longer exists, a text
+  that doesn't name its value (where the value has a qualified name, eg `gpml:CrustalThickness`),
+  and an attribute of a nested class (documented on its outer class's page, which the template
+  doesn't reach).
+
+The class template (`_templates/autosummary/class.rst`) writes the attributes' summary table and
+an entry for each. A class docstring refers to them ("listed under *Attributes* below", or by an
+`:attr:` role) rather than listing them again.
+
 ### Type fields
 
 `:type x:` / `:rtype:` fields feed **two** consumers: Sphinx auto-links them, and
@@ -348,8 +369,9 @@ undocumented. `autodoc_default_options` supplies the defaults instead:
   A role in a docstring that names a member through a derived class resolves the same way.
 - `'show-inheritance': True` — show base classes.
 
-Autosummary *templates* are not used; the defaults plus `autodoc_default_options` give good enough
-output.
+Two autosummary templates, in `_templates/autosummary/`, change the defaults: `enum.rst` (selected
+by the Enumerations block of `pygplates_reference.rst`) leaves out the members an enum inherits
+from `int`, and `class.rst` adds the class attributes (see *Class attributes* above).
 
 ### Adding, removing or renaming classes and functions
 

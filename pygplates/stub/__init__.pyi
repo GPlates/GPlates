@@ -371,11 +371,7 @@ class DifferentTimesInPartitioningPlatesError(PreconditionViolationError):
 class Earth:
     """Various Earth-related parameters (such as radius).
 
-    The following *radius* parameters are available as class attributes:
-
-    * ``pygplates.Earth.equatorial_radius_in_kms``: radius at equator (6378.137 kms)
-    * ``pygplates.Earth.polar_radius_in_kms``: radius at the poles (6356.7523142 kms)
-    * ``pygplates.Earth.mean_radius_in_kms``: mean radius (6371.009 kms)
+    The *radius* parameters are available as class attributes: :attr:`equatorial_radius_in_kms` (6378.137 kms), :attr:`polar_radius_in_kms` (6356.7523142 kms) and :attr:`mean_radius_in_kms` (6371.009 kms).
 
     For example, to access the mean radius:
     ::
@@ -3482,60 +3478,9 @@ class FeatureType:
 
     All comparison operators (==, !=, <, <=, >, >=) are supported. FeatureType is hashable (can be used as a key in a ``dict``).
 
-    The default feature type for :meth:`Feature()<Feature.__init__>` is ``pygplates.FeatureType.gpml_unclassified_feature`` (which is the same as ``pygplates.FeatureType.create_gpml('UnclassifiedFeature')``).
+    The default feature type for :meth:`Feature()<Feature.__init__>` is :attr:`pygplates.FeatureType.gpml_unclassified_feature` (which is the same as ``pygplates.FeatureType.create_gpml('UnclassifiedFeature')``).
 
-    As a convenience the following common feature types are available as class attributes:
-
-    * `pygplates.FeatureType.gpml_aseismic_ridge <http://www.gplates.org/docs/gpgim/#gpml:AseismicRidge>`_
-    * `pygplates.FeatureType.gpml_basic_rock_unit <http://www.gplates.org/docs/gpgim/#gpml:BasicRockUnit>`_
-    * `pygplates.FeatureType.gpml_basin <http://www.gplates.org/docs/gpgim/#gpml:Basin>`_
-    * `pygplates.FeatureType.gpml_closed_continental_boundary <http://www.gplates.org/docs/gpgim/#gpml:ClosedContinentalBoundary>`_
-    * `pygplates.FeatureType.gpml_closed_plate_boundary <http://www.gplates.org/docs/gpgim/#gpml:ClosedPlateBoundary>`_
-    * `pygplates.FeatureType.gpml_coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_
-    * `pygplates.FeatureType.gpml_continental_crust <http://www.gplates.org/docs/gpgim/#gpml:ContinentalCrust>`_
-    * `pygplates.FeatureType.gpml_continental_fragment <http://www.gplates.org/docs/gpgim/#gpml:ContinentalFragment>`_
-    * `pygplates.FeatureType.gpml_continental_rift <http://www.gplates.org/docs/gpgim/#gpml:ContinentalRift>`_
-    * `pygplates.FeatureType.gpml_craton <http://www.gplates.org/docs/gpgim/#gpml:Craton>`_
-    * `pygplates.FeatureType.gpml_extended_continental_crust <http://www.gplates.org/docs/gpgim/#gpml:ExtendedContinentalCrust>`_
-    * `pygplates.FeatureType.gpml_fault <http://www.gplates.org/docs/gpgim/#gpml:Fault>`_
-    * `pygplates.FeatureType.gpml_flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
-    * `pygplates.FeatureType.gpml_fold_plane <http://www.gplates.org/docs/gpgim/#gpml:FoldPlane>`_
-    * `pygplates.FeatureType.gpml_fracture_zone <http://www.gplates.org/docs/gpgim/#gpml:FractureZone>`_
-    * `pygplates.FeatureType.gpml_fracture_zone_identification <http://www.gplates.org/docs/gpgim/#gpml:FractureZoneIdentification>`_
-    * `pygplates.FeatureType.gpml_geological_lineation <http://www.gplates.org/docs/gpgim/#gpml:GeologicalLineation>`_
-    * `pygplates.FeatureType.gpml_geological_plane <http://www.gplates.org/docs/gpgim/#gpml:GeologicalPlane>`_
-    * `pygplates.FeatureType.gpml_hot_spot <http://www.gplates.org/docs/gpgim/#gpml:HotSpot>`_
-    * `pygplates.FeatureType.gpml_hot_spot_trail <http://www.gplates.org/docs/gpgim/#gpml:HotSpotTrail>`_
-    * `pygplates.FeatureType.gpml_inferred_paleo_boundary <http://www.gplates.org/docs/gpgim/#gpml:InferredPaleoBoundary>`_
-    * `pygplates.FeatureType.gpml_island_arc <http://www.gplates.org/docs/gpgim/#gpml:IslandArc>`_
-    * `pygplates.FeatureType.gpml_isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_
-    * `pygplates.FeatureType.gpml_large_igneous_province <http://www.gplates.org/docs/gpgim/#gpml:LargeIgneousProvince>`_
-    * `pygplates.FeatureType.gpml_magnetic_anomaly_identification <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyIdentification>`_
-    * `pygplates.FeatureType.gpml_magnetic_anomaly_lineation <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyLineation>`_
-    * `pygplates.FeatureType.gpml_magnetic_anomaly_ship_track <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyShipTrack>`_
-    * `pygplates.FeatureType.gpml_mid_ocean_ridge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`_
-    * `pygplates.FeatureType.gpml_motion_path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
-    * `pygplates.FeatureType.gpml_oceanic_crust <http://www.gplates.org/docs/gpgim/#gpml:OceanicCrust>`_
-    * `pygplates.FeatureType.gpml_ophiolite <http://www.gplates.org/docs/gpgim/#gpml:Ophiolite>`_
-    * `pygplates.FeatureType.gpml_orogenic_belt <http://www.gplates.org/docs/gpgim/#gpml:OrogenicBelt>`_
-    * `pygplates.FeatureType.gpml_passive_continental_boundary <http://www.gplates.org/docs/gpgim/#gpml:PassiveContinentalBoundary>`_
-    * `pygplates.FeatureType.gpml_pluton <http://www.gplates.org/docs/gpgim/#gpml:Pluton>`_
-    * `pygplates.FeatureType.gpml_pseudo_fault <http://www.gplates.org/docs/gpgim/#gpml:PseudoFault>`_
-    * `pygplates.FeatureType.gpml_seamount <http://www.gplates.org/docs/gpgim/#gpml:Seamount>`_
-    * `pygplates.FeatureType.gpml_slab_edge <http://www.gplates.org/docs/gpgim/#gpml:SlabEdge>`_
-    * `pygplates.FeatureType.gpml_subduction_zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_
-    * `pygplates.FeatureType.gpml_suture <http://www.gplates.org/docs/gpgim/#gpml:Suture>`_
-    * `pygplates.FeatureType.gpml_terrane_boundary <http://www.gplates.org/docs/gpgim/#gpml:TerraneBoundary>`_
-    * `pygplates.FeatureType.gpml_topological_closed_plate_boundary <http://www.gplates.org/docs/gpgim/#gpml:TopologicalClosedPlateBoundary>`_
-    * `pygplates.FeatureType.gpml_topological_network <http://www.gplates.org/docs/gpgim/#gpml:TopologicalNetwork>`_
-    * `pygplates.FeatureType.gpml_topological_slab_boundary <http://www.gplates.org/docs/gpgim/#gpml:TopologicalSlabBoundary>`_
-    * `pygplates.FeatureType.gpml_total_reconstruction_sequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`_
-    * `pygplates.FeatureType.gpml_transform <http://www.gplates.org/docs/gpgim/#gpml:Transform>`_
-    * `pygplates.FeatureType.gpml_transitional_crust <http://www.gplates.org/docs/gpgim/#gpml:TransitionalCrust>`_
-    * `pygplates.FeatureType.gpml_unconformity <http://www.gplates.org/docs/gpgim/#gpml:Unconformity>`_
-    * `pygplates.FeatureType.gpml_unknown_contact <http://www.gplates.org/docs/gpgim/#gpml:UnknownContact>`_
-    * `pygplates.FeatureType.gpml_virtual_geomagnetic_pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_
-    * `pygplates.FeatureType.gpml_volcano <http://www.gplates.org/docs/gpgim/#gpml:Volcano>`_
+    Common feature types are available as class attributes, listed under *Attributes* below.
 
     A *FeatureType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.
 
@@ -8124,10 +8069,7 @@ class LatLonPoint:
 
     LatLonPoints are *not* equality (``==``, ``!=``) comparable (will raise ``TypeError`` when compared) and are not hashable (cannot be used as a key in a ``dict``).
 
-    As a convenience the North and South poles are available as class attributes:
-
-    * ``pygplates.LatLonPoint.north_pole``
-    * ``pygplates.LatLonPoint.south_pole``
+    The North and South poles are available as class attributes, :attr:`north_pole` and :attr:`south_pole`.
 
     A *LatLonPoint* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.
 
@@ -10557,10 +10499,7 @@ class PointOnSphere(GeometryOnSphere):
 
     .. note:: Since a *PointOnSphere* is **immutable** it contains no operations or methods that modify its state.
 
-    Convenience class static data are available for the North and South poles:
-
-    * ``pygplates.PointOnSphere.north_pole``
-    * ``pygplates.PointOnSphere.south_pole``
+    The North and South poles are available as class attributes, :attr:`north_pole` and :attr:`south_pole`.
 
     A *PointOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.
 
@@ -12231,66 +12170,7 @@ class PropertyName:
 
     All comparison operators (==, !=, <, <=, >, >=) are supported. PropertyName is hashable (can be used as a key in a ``dict``).
 
-    As a convenience the following common property names are available as class attributes:
-
-    * `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_
-    * `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_
-    * `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_
-    * `pygplates.PropertyName.gpml_average_age <http://www.gplates.org/docs/gpgim/#gpml:averageAge>`_
-    * `pygplates.PropertyName.gpml_average_declination <http://www.gplates.org/docs/gpgim/#gpml:averageDeclination>`_
-    * `pygplates.PropertyName.gpml_average_inclination <http://www.gplates.org/docs/gpgim/#gpml:averageInclination>`_
-    * `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_
-    * `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_
-    * `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_
-    * `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_
-    * `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_
-    * `pygplates.PropertyName.gpml_polarity_chron_id <http://www.gplates.org/docs/gpgim/#gpml:polarityChronId>`_
-    * `pygplates.PropertyName.gpml_polarity_chron_offset <http://www.gplates.org/docs/gpgim/#gpml:polarityChronOffset>`_
-    * `pygplates.PropertyName.gpml_pole_a95 <http://www.gplates.org/docs/gpgim/#gpml:poleA95>`_
-    * `pygplates.PropertyName.gpml_pole_dm <http://www.gplates.org/docs/gpgim/#gpml:poleDm>`_
-    * `pygplates.PropertyName.gpml_pole_dp <http://www.gplates.org/docs/gpgim/#gpml:poleDp>`_
-    * `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_
-    * `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_
-    * `pygplates.PropertyName.gpml_relative_plate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`_
-    * `pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees <http://www.gplates.org/docs/gpgim/#gpml:rift_edgeLength_threshold_degrees>`_
-    * `pygplates.PropertyName.gpml_rift_exponential_stretching_constant <http://www.gplates.org/docs/gpgim/#gpml:rift_exponential_stretching_constant>`_
-    * `pygplates.PropertyName.gpml_rift_left_plate <http://www.gplates.org/docs/gpgim/#gpml:rift_left_plate>`_
-    * `pygplates.PropertyName.gpml_rift_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rift_right_plate>`_
-    * `pygplates.PropertyName.gpml_rift_strain_rate_resolution_log10 <http://www.gplates.org/docs/gpgim/#gpml:rift_strain_rate_resolution_log10>`_
-    * `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_
-    * `pygplates.PropertyName.gpml_shapefile_attributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`_
-    * `pygplates.PropertyName.gpml_times <http://www.gplates.org/docs/gpgim/#gpml:times>`_
-    * `pygplates.PropertyName.gpml_total_reconstruction_pole <http://www.gplates.org/docs/gpgim/#gpml:totalReconstructionPole>`_
-
-    As a convenience the following common :class:`enumeration<Enumeration>` property names are available as class attributes:
-
-    * `pygplates.PropertyName.gpml_absolute_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:absoluteReferenceFrame>`_
-    * `pygplates.PropertyName.gpml_crust <http://www.gplates.org/docs/gpgim/#gpml:crust>`_
-    * `pygplates.PropertyName.gpml_dip_side <http://www.gplates.org/docs/gpgim/#gpml:dipSide>`_
-    * `pygplates.PropertyName.gpml_dip_slip <http://www.gplates.org/docs/gpgim/#gpml:dipSlip>`_
-    * `pygplates.PropertyName.gpml_edge <http://www.gplates.org/docs/gpgim/#gpml:edge>`_
-    * `pygplates.PropertyName.gpml_fold_annotation <http://www.gplates.org/docs/gpgim/#gpml:foldAnnotation>`_
-    * `pygplates.PropertyName.gpml_motion <http://www.gplates.org/docs/gpgim/#gpml:motion>`_
-    * `pygplates.PropertyName.gpml_polarity_chron_orientation <http://www.gplates.org/docs/gpgim/#gpml:polarityChronOrientation>`_
-    * `pygplates.PropertyName.gpml_primary_slip_component <http://www.gplates.org/docs/gpgim/#gpml:primarySlipComponent>`_
-    * `pygplates.PropertyName.gpml_quality <http://www.gplates.org/docs/gpgim/#gpml:quality>`_
-    * `pygplates.PropertyName.gpml_side <http://www.gplates.org/docs/gpgim/#gpml:side>`_
-    * `pygplates.PropertyName.gpml_strike_slip <http://www.gplates.org/docs/gpgim/#gpml:strikeSlip>`_
-    * `pygplates.PropertyName.gpml_subduction_polarity <http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity>`_
-
-    As a convenience the following common *geometry* property names are available as class attributes:
-
-    * `pygplates.PropertyName.gpml_average_sample_site_position <http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition>`_
-    * `pygplates.PropertyName.gpml_boundary <http://www.gplates.org/docs/gpgim/#gpml:boundary>`_
-    * `pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_
-    * `pygplates.PropertyName.gpml_error_bounds <http://www.gplates.org/docs/gpgim/#gpml:errorBounds>`_
-    * `pygplates.PropertyName.gpml_multi_position <http://www.gplates.org/docs/gpgim/#gpml:multiPosition>`_
-    * `pygplates.PropertyName.gpml_network <http://www.gplates.org/docs/gpgim/#gpml:network>`_
-    * `pygplates.PropertyName.gpml_outline_of <http://www.gplates.org/docs/gpgim/#gpml:outlineOf>`_
-    * `pygplates.PropertyName.gpml_pole_position <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`_
-    * `pygplates.PropertyName.gpml_position <http://www.gplates.org/docs/gpgim/#gpml:position>`_
-    * `pygplates.PropertyName.gpml_seed_points <http://www.gplates.org/docs/gpgim/#gpml:seedPoints>`_
-    * `pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_
+    Common property names are available as class attributes, listed under *Attributes* below, including the names of some :class:`enumeration<Enumeration>` and geometry properties.
 
     A *PropertyName* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.
 
@@ -16369,12 +16249,7 @@ class ScalarType:
 
     All comparison operators (==, !=, <, <=, >, >=) are supported. ScalarType is hashable (can be used as a key in a ``dict``).
 
-    As a convenience the following common property names are available as class attributes:
-
-    * pygplates.ScalarType.gpml_crustal_thickness
-    * pygplates.ScalarType.gpml_crustal_stretching_factor
-    * pygplates.ScalarType.gpml_crustal_thinning_factor
-    * pygplates.ScalarType.gpml_tectonic_subsidence
+    Common scalar types are available as class attributes, listed under *Attributes* below.
 
     A *ScalarType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.
 
@@ -16642,9 +16517,7 @@ class Strain:
 
     Strains are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).
 
-    Convenience class static data is available for the identity strain:
-
-    * ``pygplates.Strain.identity``
+    The identity strain is available as a class attribute, :attr:`identity`.
 
     A *Strain* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.
 
@@ -16914,9 +16787,7 @@ class StrainRate:
 
     Strain rates are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).
 
-    Convenience class static data is available for the zero strain rate:
-
-    * ``pygplates.StrainRate.zero``
+    The zero strain rate is available as a class attribute, :attr:`zero`.
 
     A *StrainRate* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.
 
@@ -17724,12 +17595,7 @@ class Vector3D:
       vector2 = pygplates.Vector3D(...)
       vector_interp = t * vector1 + (1-t) * vector2
 
-    Convenience class static data are available for the zero vector (all zero components) and the x, y and z axes (unit vectors in the respective directions):
-
-    * ``pygplates.Vector3D.zero``
-    * ``pygplates.Vector3D.x_axis``
-    * ``pygplates.Vector3D.y_axis``
-    * ``pygplates.Vector3D.z_axis``
+    The zero vector and the unit vectors along the x, y and z axes are available as class attributes, :attr:`zero`, :attr:`x_axis`, :attr:`y_axis` and :attr:`z_axis`.
 
     For example, to create a vector from a triplet of axis basis weights (triplet of scalars):
     ::
