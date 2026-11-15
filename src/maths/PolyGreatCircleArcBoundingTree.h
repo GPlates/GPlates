@@ -27,7 +27,9 @@
 #define GPLATES_MATHS_POLYGREATCIRCLEARCBOUNDINGTREE_H
 
 #include <algorithm>
+#include <functional>  // std::greater
 #include <iterator>  // std::distance, std::advance
+#include <queue>
 #include <utility>
 #include <vector>
 #include <boost/iterator/iterator_traits.hpp>
@@ -322,29 +324,41 @@ namespace GPlatesMaths
 	private:
 
 		/**
-		 * Used to sort partitions by their number of bounded arcs.
+		 * A partition's sub-tree waiting to be merged, ordered by its number of bounded arcs and then
+		 * its first arc (see @a initialise_partitions).
 		 */
-		class SortPartitionsByNumBoundedArcs
+		struct MergeEntry
 		{
-		public:
-			explicit
-			SortPartitionsByNumBoundedArcs(
-					const node_impl_seq_type &nodes) :
-				d_nodes(&nodes)
-			{  }
+			unsigned int num_bounded_great_circle_arcs;
+			unsigned int bounded_great_circle_arcs_begin_index;
+			unsigned int slot;
+			unsigned int node_index;
 
 			bool
-			operator()(
-					unsigned int left_partition_node_index,
-					unsigned int right_partition_node_index) const
+			operator>(
+					const MergeEntry &other) const
 			{
-				return (*d_nodes)[left_partition_node_index].num_bounded_great_circle_arcs <
-						(*d_nodes)[right_partition_node_index].num_bounded_great_circle_arcs;
+				if (num_bounded_great_circle_arcs != other.num_bounded_great_circle_arcs)
+				{
+					return num_bounded_great_circle_arcs > other.num_bounded_great_circle_arcs;
+				}
+				return bounded_great_circle_arcs_begin_index >
+						other.bounded_great_circle_arcs_begin_index;
 			}
-
-		private:
-			const node_impl_seq_type *d_nodes;
 		};
+
+		MergeEntry
+		make_merge_entry(
+				unsigned int slot,
+				unsigned int node_index) const
+		{
+			const NodeImpl &node = d_nodes[node_index];
+			return MergeEntry{
+					node.num_bounded_great_circle_arcs,
+					node.bounded_great_circle_arcs_begin_index,
+					slot,
+					node_index };
+		}
 
 
 		/**
@@ -524,84 +538,105 @@ namespace GPlatesMaths
 		// efficient bounding hierarchy *inside* a partition because we are not doing things like median splits
 		// along longest axes when building the tree, but it still works pretty well due to the fact that the
 		// arcs (at least within a partition) are connected and hence have spatial locality.
-		while (partition_node_indices.size() >= 2)
+		//
+		// Each merge takes the *first* sub-tree (in arc order) with the fewest arcs, and merges
+		// it with whichever neighbour has fewer arcs (the right one on a tie). Keep that order
+		// exactly: the tree's shape decides the order in which GeometryIntersect finds
+		// intersections that tie, and the polygon overlay's output depends on that order. A
+		// min-heap keyed by (number of arcs, first arc index) gives that sub-tree, since the
+		// sub-trees cover disjoint ranges of arcs in arc order. The sub-trees stay in slots (one
+		// per partition), linked to their neighbours. A heap entry is skipped once its slot holds
+		// another sub-tree, or none (merged into its neighbour's). Searching the sub-trees for the
+		// smallest at each merge, and erasing from the vector, were quadratic in a polygon's rings.
+		const unsigned int num_partitions = partition_node_indices.size();
+		const unsigned int no_slot = num_partitions;
+		const unsigned int no_node = static_cast<unsigned int>(-1);
+		std::vector<unsigned int> previous_slots(num_partitions);
+		std::vector<unsigned int> next_slots(num_partitions);
+		typedef std::priority_queue<MergeEntry, std::vector<MergeEntry>, std::greater<MergeEntry>>
+				merge_queue_type;
+		merge_queue_type merge_queue;
+		for (unsigned int slot = 0; slot < num_partitions; ++slot)
 		{
-			typedef std::vector<unsigned int>::iterator partition_merge_iter_type;
+			previous_slots[slot] = (slot == 0) ? no_slot : slot - 1;
+			next_slots[slot] = slot + 1;  // the last slot's is 'no_slot'
+			merge_queue.push(make_merge_entry(slot, partition_node_indices[slot]));
+		}
 
-			// Find the partitioned sub-tree with smallest number of bounded arcs.
-			const SortPartitionsByNumBoundedArcs sort_partitions_predicate(d_nodes);
-			const partition_merge_iter_type min_partition_iter =
-					std::min_element(
-							partition_node_indices.begin(),
-							partition_node_indices.end(),
-							sort_partitions_predicate);
+		unsigned int root_slot = 0;
+		for (unsigned int num_sub_trees = num_partitions; num_sub_trees >= 2; )
+		{
+			const MergeEntry entry = merge_queue.top();
+			merge_queue.pop();
+
+			const unsigned int min_slot = entry.slot;
+			if (partition_node_indices[min_slot] != entry.node_index)
+			{
+				// The sub-tree of this entry has since been merged.
+				continue;
+			}
 
 			// Get adjacent (left/right) partitions.
 			// We may have two adjacent partitions but should at least have one adjacent.
-			partition_merge_iter_type left_adjacent_partition_iter = partition_node_indices.end();
-			partition_merge_iter_type right_adjacent_partition_iter = partition_node_indices.end();
-			if (min_partition_iter != partition_node_indices.begin())
-			{
-				left_adjacent_partition_iter = min_partition_iter - 1;
-			}
-			if (min_partition_iter + 1 != partition_node_indices.end())
-			{
-				right_adjacent_partition_iter = min_partition_iter + 1;
-			}
+			const unsigned int left_slot = previous_slots[min_slot];
+			const unsigned int right_slot = next_slots[min_slot];
 
 			// Find the adjacent (left or right) partition that has smallest number of bounded arcs.
-			partition_merge_iter_type next_min_partition_iter;
-			if (left_adjacent_partition_iter != partition_node_indices.end() &&
-				right_adjacent_partition_iter != partition_node_indices.end())
+			bool merge_with_left;
+			if (left_slot != no_slot && right_slot != no_slot)
 			{
 				// Have both left and right partitions, so compare them.
-				if (sort_partitions_predicate(*left_adjacent_partition_iter, *right_adjacent_partition_iter))
-				{
-					next_min_partition_iter = left_adjacent_partition_iter;
-				}
-				else
-				{
-					next_min_partition_iter = right_adjacent_partition_iter;
-				}
-			}
-			else if (left_adjacent_partition_iter != partition_node_indices.end())
-			{
-				// Only have a partition on the left.
-				next_min_partition_iter = left_adjacent_partition_iter;
+				merge_with_left =
+						d_nodes[partition_node_indices[left_slot]].num_bounded_great_circle_arcs <
+						d_nodes[partition_node_indices[right_slot]].num_bounded_great_circle_arcs;
 			}
 			else
 			{
-				// Only have a partition on the right.
+				// Only have a partition on one side.
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						right_adjacent_partition_iter != partition_node_indices.end(),
+						left_slot != no_slot || right_slot != no_slot,
 						GPLATES_ASSERTION_SOURCE);
-				next_min_partition_iter = right_adjacent_partition_iter;
+				merge_with_left = (left_slot != no_slot);
 			}
 
 			// Merge the two adjacent nodes making sure to combine them in the correct (left/right) order.
+			// The merged sub-tree takes the smallest's slot, and the neighbour's slot is unlinked.
 			unsigned int merged_partition_node_index;
-			if (next_min_partition_iter == left_adjacent_partition_iter)
+			if (merge_with_left)
 			{
 				merged_partition_node_index = add_internal_node(
-						*left_adjacent_partition_iter/*first_child_node_index*/,
-						*min_partition_iter/*second_child_node_index*/);
+						partition_node_indices[left_slot]/*first_child_node_index*/,
+						partition_node_indices[min_slot]/*second_child_node_index*/);
+
+				partition_node_indices[left_slot] = no_node;
+				previous_slots[min_slot] = previous_slots[left_slot];
+				if (previous_slots[min_slot] != no_slot)
+				{
+					next_slots[previous_slots[min_slot]] = min_slot;
+				}
 			}
-			else // next_min_partition_iter == right_adjacent_partition_iter ...
+			else
 			{
 				merged_partition_node_index = add_internal_node(
-						*min_partition_iter/*first_child_node_index*/,
-						*right_adjacent_partition_iter/*second_child_node_index*/);
+						partition_node_indices[min_slot]/*first_child_node_index*/,
+						partition_node_indices[right_slot]/*second_child_node_index*/);
+
+				partition_node_indices[right_slot] = no_node;
+				next_slots[min_slot] = next_slots[right_slot];
+				if (next_slots[min_slot] != no_slot)
+				{
+					previous_slots[next_slots[min_slot]] = min_slot;
+				}
 			}
 
-			// Erase both partitions from sequence and replace with merged node.
-			//
-			// This is the same as replacing the min partition with merged partition and
-			// erasing next min (left or right) partition.
-			*min_partition_iter = merged_partition_node_index;
-			partition_node_indices.erase(next_min_partition_iter);
+			partition_node_indices[min_slot] = merged_partition_node_index;
+			merge_queue.push(make_merge_entry(min_slot, merged_partition_node_index));
+
+			root_slot = min_slot;
+			--num_sub_trees;
 		}
 
-		d_root_node_index = partition_node_indices.front();
+		d_root_node_index = partition_node_indices[root_slot];
 	}
 
 

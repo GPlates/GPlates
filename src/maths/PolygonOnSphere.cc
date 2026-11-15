@@ -317,6 +317,31 @@ GPlatesMaths::PolygonOnSphere::PolygonOnSphere() :
 }
 
 
+void
+GPlatesMaths::PolygonOnSphere::make_interior_ring_segment_offsets(
+		std::vector<unsigned int> &offsets,
+		const ring_type &exterior,
+		const ring_sequence_type &interiors)
+{
+	if (interiors.empty())
+	{
+		return;
+	}
+
+	offsets.reserve(interiors.size() + 1);
+
+	unsigned int first_segment_index = exterior.size();
+	for (const ring_type &interior : interiors)
+	{
+		offsets.push_back(first_segment_index);
+		first_segment_index += interior.size();
+	}
+
+	// The number of all segments.
+	offsets.push_back(first_segment_index);
+}
+
+
 GPlatesMaths::PolygonOnSphere::ConstructionParameterValidity
 GPlatesMaths::PolygonOnSphere::evaluate_segment_endpoint_validity(
 		const PointOnSphere &p1,
@@ -1329,76 +1354,49 @@ GPlatesMaths::PolygonOnSphere::ConstIterator::advance(
 		return;
 	}
 
-	if (n > 0)
+	const PolygonOnSphere &polygon = *d_polygon_ptr;
+	const unsigned int last_ring_id = polygon.d_interior_rings.size();
+
+	// Within the current ring (the common case), or onto its end if it is the last ring.
+	const difference_type ring_size = d_current_ring_ptr->size();
+	const difference_type index_in_ring = (d_current_ring_iter - d_current_ring_ptr->begin()) + n;
+	if (index_in_ring >= 0 &&
+		(index_in_ring < ring_size ||
+			(index_in_ring == ring_size && d_current_ring_id == last_ring_id)))
 	{
-		// Advance forward through the rings if necessary.
-		while (n >= d_current_ring_ptr->end() - d_current_ring_iter)
-		{
-			// Advance forward through all remaining elements in the current ring.
-			n -= d_current_ring_ptr->end() - d_current_ring_iter;
-
-			if (d_current_ring_id < d_polygon_ptr->d_interior_rings.size())
-			{
-				// Advance to an interior ring (from either the exterior ring or an interior ring).
-				++d_current_ring_id;
-
-				// Note: Ring id and interior ring index are offset by one.
-				d_current_ring_ptr = &d_polygon_ptr->d_interior_rings[d_current_ring_id - 1];
-				d_current_ring_iter = d_current_ring_ptr->begin();
-			}
-			else
-			{
-				// Make sure we've not been asked to advance *past* the end of all rings.
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						n == 0,
-						GPLATES_ASSERTION_SOURCE);
-
-				// We're at end of all rings so just leave current iterator pointing to end
-				// of current ring (which is either the exterior ring, or last interior ring if any).
-				d_current_ring_iter = d_current_ring_ptr->end();
-				return;
-			}
-		}
-		
-		// The desired iterator is now in the current ring, so advance (forward) within the current ring.
-		std::advance(d_current_ring_iter, n);
+		d_current_ring_iter = d_current_ring_ptr->begin() + index_in_ring;
+		return;
 	}
-	else if (n < 0)
-	{
-		// Advance backward through the rings if necessary.
-		while (n < d_current_ring_ptr->begin() - d_current_ring_iter)
-		{
-			// Advance backward through all remaining elements in the current ring.
-			//
-			// Note: This might subtract zero if current iterator at beginning of current ring.
-			// In this case we will just be advancing (backward) to the previous ring with
-			// no change in 'n' until the next look iteration.
-			n -= d_current_ring_ptr->begin() - d_current_ring_iter;
 
-			// Make sure we've not been asked to advance *before* the beginning of all rings.
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					d_current_ring_id > 0,
-					GPLATES_ASSERTION_SOURCE);
+	// Into another ring. Make sure we've not been asked to advance *before* the beginning,
+	// or *past* the end, of all rings.
+	const difference_type index =
+			static_cast<difference_type>(polygon.get_ring_first_segment_index(d_current_ring_id)) +
+			index_in_ring;
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			index >= 0 && index <= static_cast<difference_type>(polygon.number_of_segments()),
+			GPLATES_ASSERTION_SOURCE);
+	const unsigned int target_segment_index = static_cast<unsigned int>(index);
 
-			--d_current_ring_id;
+	// Find the ring by the offset table (there are interior rings here: without them, every
+	// segment and the end are in the one ring, above). The end of all rings is the last ring's end,
+	// as 'create_end' makes it. Otherwise the ring id is the number of interior rings starting at
+	// or before the segment (the table's last entry, the number of all segments, is beyond it), so
+	// a segment at a ring's start is that ring's begin, never the previous ring's end, as when
+	// incrementing.
+	const std::vector<unsigned int> &offsets = polygon.d_interior_ring_segment_offsets;
+	d_current_ring_id = (target_segment_index == offsets.back())
+			? last_ring_id
+			: static_cast<unsigned int>(
+					std::upper_bound(offsets.begin(), offsets.end() - 1, target_segment_index) -
+						offsets.begin());
 
-			if (d_current_ring_id == 0)
-			{
-				// We've moved into the exterior ring (from the first interior ring).
-				d_current_ring_ptr = &d_polygon_ptr->d_exterior_ring;
-			}
-			else
-			{
-				// Note: Ring id and interior ring index are offset by one.
-				d_current_ring_ptr = &d_polygon_ptr->d_interior_rings[d_current_ring_id - 1];
-			}
-
-			d_current_ring_iter = d_current_ring_ptr->end();
-		}
-		
-		// The desired iterator is now in the current ring, so advance (backward) within the current ring.
-		std::advance(d_current_ring_iter, n);
-	}
+	// Note: Ring id and interior ring index are offset by one.
+	d_current_ring_ptr = (d_current_ring_id == 0)
+			? &polygon.d_exterior_ring
+			: &polygon.d_interior_rings[d_current_ring_id - 1];
+	d_current_ring_iter = d_current_ring_ptr->begin() +
+			(target_segment_index - polygon.get_ring_first_segment_index(d_current_ring_id));
 }
 
 
@@ -1411,65 +1409,18 @@ GPlatesMaths::PolygonOnSphere::ConstIterator::distance_to(
 			GPLATES_ASSERTION_SOURCE,
 			"Attempted to compare an uninitialised iterator.");
 
-	const int ring_id_difference =
-			static_cast<int>(other.d_current_ring_id) - static_cast<int>(d_current_ring_id);
+	return other.segment_index() - segment_index();
+}
 
-	if (ring_id_difference == 0)
-	{
-		// Both iterators reference the same ring, so just return the difference.
-		return std::distance(d_current_ring_iter, other.d_current_ring_iter);
-	}
 
-	difference_type difference = 0;
+GPlatesMaths::PolygonOnSphere::ConstIterator::difference_type
+GPlatesMaths::PolygonOnSphere::ConstIterator::segment_index() const
+{
+	const unsigned int ring_first_segment_index =
+			d_polygon_ptr->get_ring_first_segment_index(d_current_ring_id);
 
-	// Ring iteration variables for going forward or backward through the rings.
-	int ring_id_increment;
-	unsigned int num_rings_to_difference;
-	if (ring_id_difference > 0)
-	{
-		ring_id_increment = 1;
-		num_rings_to_difference = ring_id_difference;
-
-		// Add in the difference from current iterator to the beginning of the current ring.
-		// We use begin of current ring since we'll be adding current ring size to go to next ring.
-		difference += std::distance(d_current_ring_iter, d_current_ring_ptr->begin());
-
-		// Add in the difference from beginning of current ring (in 'other' iterator) to
-		// current ring iterator (in 'other' iterator).
-		// We use begin of ring since we used begin above.
-		difference += std::distance(other.d_current_ring_ptr->begin(), other.d_current_ring_iter);
-	}
-	else // ring_id_difference < 0 ...
-	{
-		ring_id_increment = -1;
-		num_rings_to_difference = -ring_id_difference;
-
-		// Add in the difference from current iterator to the end of the current ring.
-		// We use end of current ring since we'll be subtracting current ring size to go to previous ring.
-		difference += std::distance(d_current_ring_iter, d_current_ring_ptr->end());
-
-		// Add in the difference from end of current ring (in 'other' iterator) to
-		// current ring iterator (in 'other' iterator).
-		// We use end of ring since we used end above.
-		difference += std::distance(other.d_current_ring_ptr->end(), other.d_current_ring_iter);
-	}
-
-	// Advance (forward or backward) through the rings.
-	unsigned int ring_id = d_current_ring_id;
-	for (unsigned int n = 0; n < num_rings_to_difference; ++n, ring_id += ring_id_increment)
-	{
-		if (ring_id == 0)
-		{
-			difference += ring_id_increment * d_polygon_ptr->d_exterior_ring.size();
-		}
-		else
-		{
-			// Note: Ring id and interior ring index are offset by one.
-			difference += ring_id_increment * d_polygon_ptr->d_interior_rings[ring_id - 1].size();
-		}
-	}
-
-	return difference;
+	return static_cast<difference_type>(ring_first_segment_index) +
+			(d_current_ring_iter - d_current_ring_ptr->begin());
 }
 
 

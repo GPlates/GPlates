@@ -724,13 +724,13 @@ the tree, 1.6-1.8 times slower than 4 / 200.
 
 ### 3.10 Thread safety
 
-The polygon's `CachedCalculations` (the centroid, the bounds, the interior reference with `R`,
-the second reference point `R2` and its status, the point-in-polygon tester and the call count) is
-created and filled lazily by `const` methods without synchronisation, and so is the tester's count
-of edge-testing queries; the comments at both say so. One polygon must therefore not be queried
-from two threads at once. This is acceptable because pyGPlates holds the Python GIL during these
-calls, and in GPlates only a script running in its Python thread, sharing a polygon with the GUI
-thread, could do so.
+The polygon's `CachedCalculations` (the centroid, the bounds, the interior reference with `R`, the
+second reference point `R2` and its status, the point-in-polygon tester and the call count, and the
+bounding trees) is created and filled lazily by `const` methods without synchronisation, and so is
+the tester's count of edge-testing queries; the comments at both say so. One polygon must therefore
+not be queried from two threads at once. This is acceptable because pyGPlates holds the Python GIL
+during these calls, and in GPlates only a script running in its Python thread, sharing a polygon
+with the GUI thread, could do so.
 
 ## 4. Intersection
 
@@ -864,6 +864,22 @@ bounding small circles over runs of consecutive arcs, with at most 8 arcs in a l
 circles do not intersect, and otherwise splits the larger node first. At a pair of leaves it tests
 every pair of arcs. A polygon gives either its whole tree (`get_bounding_tree()`) or its exterior
 ring's tree (`get_exterior_ring_bounding_tree()`).
+
+A polygon's whole tree has a subtree per ring, each ring's arcs halved down to the leaves. The
+subtrees are then joined two neighbours at a time, so that small rings lie deep: the first one (in
+arc order) with the fewest arcs, with whichever neighbour has fewer (the right one on a tie). A
+heap keyed by the number of arcs and then the first arc finds each (`initialise_partitions`). A
+node finds its arcs by jumping from the polygon's first arc (a query does so at each leaf it
+reaches), which `PolygonOnSphere`'s iterator does by a table of its rings' offsets
+(`d_interior_ring_segment_offsets`, bisected for a jump into another ring; section 4.5 has why a
+table, made with the rings), so neither building the tree nor descending it walks the rings. A
+linear search for the smallest subtree, and an iterator that stepped ring by ring, made the
+building quadratic in the number of rings (at 20,000 small holes, about a second before any test),
+and each leaf a query reached cost in proportion to them. The intersections are found in the order
+of the descent, so the tree's shape is part of the result: it decides which of two tied
+intersections comes first (section 4.4, *Ordering*), and a change of the joining order would change
+the outputs that depend on the tie order (section 6).
+`PolygonOnSphereTest.BoundingTreeShapeKeepsMergeOrder` holds the order.
 
 The pruning is sound because the circles are expanded by the thickness. A leaf's circle is
 centred on the centroid of its arcs, with a radius reaching the farthest point of any of them
@@ -1041,6 +1057,18 @@ what it needs from the records: their types, segment indices and order along bot
 geometry's last vertex, where it is now placed at that vertex (section 4.2). It would make the rule
 uniform, but would move topology junctions at a section's last vertex by up to the thickness, for
 no consumer that needs it. The header documents the exception instead.
+
+**An index carried in the polygon's iterator, or an offset table made on first use**, for the jumps
+a polygon's bounding tree makes from its first arc (section 4.2). An iterator over all the rings
+that also held its index among all the segments would give the difference of two iterators at
+once, but a jump into another ring would still need the rings' offsets, and every iterator, and
+every increment, would carry the index. A table made on first use would be one more piece of
+state filled lazily by `const` methods, which section 3.10 has to excuse. So the table is made
+with the rings (`generate_rings_and_swap`, which every `create` and the scribe's loading go
+through) and never changes, and a polygon without interior rings has an empty one, which allocates
+nothing. Measured on 20,000 such polygons of 12 points: creating them is about 2% slower with the
+table, and iterating, indexing, distance and intersection are within the spread of the timings
+(up to 3% either way).
 
 ## 5. Partitioning
 
@@ -1905,7 +1933,8 @@ than a hemisphere about its boundary centroid, for which that is not so, is aske
 Every pair of rings was tested before: 6.8 seconds for 10,000 holes far apart, now 0.08, and 2.0
 for a union with 5,000 holes along a shared edge, now 0.4 (each hole a sliver, whose circle meets
 a hundred others). Asking containment only where the circles meet, without the sweep, left the
-loop over every pair: 1.7 seconds for the 10,000 holes. A group's depth is the
+loop over every pair: 1.7 seconds for the 10,000 holes. (The sweep is along one axis, so rings
+spread over an area are still paired across a band of it: section 7.) A group's depth is the
 number of rings containing it and its parent the containing group of greatest depth. An even depth
 starts a polygon, whose exterior is the group's ring of largest area (any would read the same by
 parity) and whose holes are its other rings; an odd depth puts all of the group's rings, as holes,
@@ -3069,6 +3098,16 @@ intersection's point is replaced by a line's end), through the overlay tests bel
 through the topology and partition tests. `GreatCircleArc::intersect` is exercised through the
 distance tests above.
 
+The bounding trees that prune it are tested in `src/unit-test/PolygonOnSphereTest.cc`: a polygon's
+iterator over all its rings, every jump from every position to every other (the end included) and
+every difference against a walk by increments, and its refusal to move beyond either end; and the
+shape of a polygon's whole tree against a reference of the joining order of section 4.2, over ring
+sizes that tie in their number of arcs, tie between neighbours, rise, fall and vary at random. A
+reference that joins a subtree to its left neighbour on a tie differs from the tree on the sizes
+that tie between neighbours and on the random ones, and a reference that takes the last of the
+smallest subtrees on those and on the sizes that all tie, so the test holds both rules; the rising
+and falling sizes show neither.
+
 The overlay's C++ tests (`src/unit-test/PolygonOverlayTest.cc`) build families of the prototype's
 catalogue in local tangent coordinates at a centre on no axis, with distances in units of the
 thickness, and check the structure stage by stage (vertices as record sets, stops, pieces, internal
@@ -3576,19 +3615,32 @@ for chains of Boolean operations, whose outputs have holes touching their exteri
   many others, still cost in proportion to the pairs: a union with 5,000 holes along a shared edge,
   each `0.5` degrees long and `0.004` wide, takes 0.4 seconds against the intersection's 0.05. The
   rings' bounding trees would separate them.
-- **A polygon's bounding tree is quadratic in its rings.** `PolyGreatCircleArcBoundingTree` builds
-  a subtree per ring and merges them by a linear search for the smallest per merge, and it finds a
-  node's arcs by `std::advance` from the polygon's first arc, which `PolygonOnSphere`'s iterator
-  does ring by ring. So `GeometryIntersect` over a polygon with many holes is quadratic in them
-  even where nothing meets: an intersection of a polygon with 5,000 small holes far apart and a
-  polygon apart from it takes 0.08 seconds, with 20,000 holes 1.3 (0.15 again, the tree cached),
-  where the overlay's own work is 0.03. A ring offset table in the polygon would make the iterator's
-  steps logarithmic, and a heap the merges; the merge order must be kept, since the tree's shape
-  decides the order in which tied records are found. Likewise `compose_subject_location` (section
-  5.4) passes over every subject ring for each point it composes, so a cascade with provenance is
-  quadratic in the subject's holes. And the touch search of section 5.2 depends on its input
-  alone, so it could be made once per polygon and cached like the bounding tree: a clip with holes
-  is searched again for every subject it cuts.
+- **The touch search is made again in every overlay.** Where an input's rings touch each other
+  (section 5.2, *Rings made simple*) depends on that input alone, so the touches could be found
+  once per polygon and cached like the bounding tree, each overlay taking those at the vertices of
+  the pieces it keeps: a clip with holes is searched again for every subject it cuts. The cache
+  would be an overlay's result held in the polygon's lazily filled state (section 3.10), or in the
+  partitioner. Its worth is not measured (the search's share of a partition of many subjects by a
+  clip with many holes), and is to be judged once the sweep below is replaced, since much of the
+  search's cost for many rings is the sweep's.
+- **The rings' sweep is superlinear for rings spread over an area.** `CircleSweep` (section 5.2)
+  pairs circles whose intervals of angle from one axis overlap, so rings spread over an area, not
+  along a line, pair with every ring in a band across it: about n^1.5 candidate pairs for n rings
+  on a grid. Each is only a test of two circles, but there are many. A polygon with 80,000 small
+  holes in a 200 by 400 grid, intersected with a polygon over 2,500 of them, takes 2.0 seconds,
+  of which the touch search takes 0.57 and the nesting 0.93. The nesting is of the output outside
+  the other polygon too (77,442 rings), since `intersection()` goes through the partitioner,
+  which extracts both sides (below). At 20,000 holes the intersection takes 0.28 seconds, 0.2 of
+  it in the two. A structure that pairs only circles that meet in both dimensions (a tree of the
+  circles, or cells on the sphere) would make the sweeps linear in the pairs that meet. It serves
+  the touch search, the grouping and the containment test alike.
+- **`intersection()` nests the outside's rings too.** `PolygonOnSphere.intersection()` is
+  partitioning's inside, and `difference()` its outside (section 5.1). The partitioner extracts
+  both sides whichever is asked for (`overlay_polygon`), since a side that the clean-up or the
+  sliver filter leaves empty makes the subject whole, and the filter follows the nesting. So a
+  small intersection with a polygon of many holes walks and nests every ring outside the other
+  polygon, though no polygon is built from them. Not looked into: telling that a side is not
+  empty before its rings are nested.
 - **Walls the symmetric difference leaves unjoined** (the spike rule, section 5.2). Along a shared
   edge where an input folds back on itself along all of it, or a short one (its far end within the
   thickness of the arc beside it), the two differences' rings are left sharing the edge, unless

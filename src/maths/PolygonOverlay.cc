@@ -599,7 +599,9 @@ namespace GPlatesMaths
 			 * is whichever of x, y and z gives the fewest pairs, so that rings along a meridian or
 			 * a parallel spread out along it. Without it the grouping tested every pair of rings,
 			 * cheap as a test of their bounding circles is (1.7 seconds for 10,000 holes far
-			 * apart).
+			 * apart). One axis only: rings spread over an area are still paired with every ring
+			 * in a band across it, about n^1.5 pairs for n rings on a grid (spherical-geometry.md
+			 * section 7).
 			 */
 			class CircleSweep
 			{
@@ -7772,27 +7774,22 @@ GPlatesMaths::PolygonOverlay::Overlay::compose_subject_location(
 		return;
 	}
 
-	// The table's index of a vertex of the subject (its rings' points in order).
+	// The table's index of a vertex of the subject (its rings' points in order). A polygon ring has
+	// as many points as segments, so a ring's first point is at its first segment's index; a
+	// polyline subject is one ring, from 0. (Summing the rings before it, for every point composed,
+	// was quadratic in the subject's rings.)
+	const unsigned int num_subject_rings = d_side_rings_end[SUBJECT] - d_side_rings_begin[SUBJECT];
 	const auto table_index = [&](unsigned int ring_index, unsigned int vertex_index)
 	{
-		unsigned int index = 0;
-		for (unsigned int r = d_side_rings_begin[SUBJECT]; r < d_side_rings_end[SUBJECT]; ++r)
-		{
-			if (d_rings[r].ring_index == ring_index)
-			{
-				break;
-			}
-			index += d_rings[r].num_vertices();
-		}
-		return index + vertex_index;
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				ring_index < num_subject_rings,
+				GPLATES_ASSERTION_SOURCE);
+		const RingView &subject_ring = d_rings[d_side_rings_begin[SUBJECT] + ring_index];
+		return subject_ring.first_segment_index + vertex_index;
 	};
-	unsigned int num_points = 0;
-	for (unsigned int r = d_side_rings_begin[SUBJECT]; r < d_side_rings_end[SUBJECT]; ++r)
-	{
-		num_points += d_rings[r].num_vertices();
-	}
+	const RingView &last_ring = d_rings[d_side_rings_end[SUBJECT] - 1];
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			table->size() == num_points,
+			table->size() == last_ring.first_segment_index + last_ring.num_vertices(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// A vertex of the piece: its own provenance (from the original, or an earlier cut).
