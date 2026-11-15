@@ -140,4 +140,5 @@ export_pure_python_api()
 	export_pure_python_code(":/python/api/Property.py");
 	export_pure_python_code(":/python/api/PropertyValues.py");
 	export_pure_python_code(":/python/api/ReconstructionGeometries.py");
+	export_pure_python_code(":/python/api/ArgumentErrors.py");
 }

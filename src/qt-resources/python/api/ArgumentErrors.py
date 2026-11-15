@@ -1,0 +1,235 @@
+# Copyright (C) 2026 The University of Sydney, Australia
+#
+# This file is part of GPlates.
+#
+# GPlates is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License, version 2, as published by
+# the Free Software Foundation.
+#
+# GPlates is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+#
+# Clearer messages when no overload of a pyGPlates function accepts the arguments of a call.
+#
+# Boost.Python then raises 'Boost.Python.ArgumentError' (a 'TypeError'), whose message lists the
+# C++ signatures of the function's overloads:
+#
+#   Python argument types in
+#       PolylineOnSphere.get_arc_length(PolylineOnSphere, str)
+#   did not match C++ signature:
+#       get_arc_length(class GPlatesMaths::PolylineOnSphere {lvalue})
+#
+# This replaces them with the signatures in the function's docstring, each followed by the types
+# its ':type:' fields give the parameters:
+#
+#   Positional argument types in
+#       PolylineOnSphere.get_arc_length(PolylineOnSphere, str)
+#   did not match this signature:
+#       PolylineOnSphere.get_arc_length()
+#
+# ('Positional', since Boost.Python lists no keyword arguments.) A function whose docstring has no
+# signature (a pickle-only constructor, say) gets the docstring's first paragraph instead, and one
+# with no docstring (most special methods) keeps its C++ signatures.
+#
+# It replaces the '__str__' of the exception class, so it costs nothing until a message is shown
+# ('args[0]' keeps Boost.Python's message). The class belongs to the Boost.Python library, which
+# other modules may share (in a conda environment; a wheel bundles its own copy), so a message is
+# rewritten only if it names a pyGPlates function and its C++ signatures name the parameters that
+# the function documents. Otherwise it is passed on unchanged.
+#
+# The alternatives were worse: a catch-all overload for every function (defined first, so that
+# Boost.Python tries it last, when nothing else matches) touches every '.def' and adds a signature
+# that the docstrings and the stub would have to hide; and a Python wrapper around every function
+# adds a call to every call, including the hot ones. Boost.Python itself comes from conda-forge and
+# the wheel images, so it can't be patched.
+#
+def _install_argument_error_messages():
+    import re
+
+    # Boost.Python creates the class when it raises its first argument error.
+    try:
+        Vector3D.get_magnitude(None)
+    except TypeError as error:
+        argument_error_class = type(error)
+    else:
+        return
+    if (argument_error_class.__module__ != 'Boost.Python' or
+            argument_error_class.__name__ != 'ArgumentError'):
+        return
+
+    boost_python_function_type = type(Vector3D.get_magnitude)
+    pygplates_dict = globals()
+    original_str = argument_error_class.__str__
+
+    message_re = re.compile(
+        r'Python argument types in\n'
+        r'    (?P<qualified_name>[\w.]+)\((?P<argument_types>[^\n]*)\)\n'
+        r'did not match C\+\+ signature:\n'
+        r'(?P<cpp_signatures>.*)\Z',
+        re.DOTALL)
+    # The docstring forms that 'pygplates/stub/generate_stub.py' also reads ('_SIG_LINE_RE',
+    # '_TYPE_FIELD_RE' and '_BULLET_TYPE_FIELD_RE' there; 'docs/pygplates/README.md' has them):
+    # a column-0 signature line, 'name(arguments)'; and a ':type name: text' field, or a nested
+    # class's '* **name** (text): ...' bullet.
+    signature_line_re = re.compile(r'(\w+)\((.*)\)\s*\Z')
+    type_field_res = (
+        re.compile(r'\s*:type\s+([\w*]+):\s*(.*?)\s*\Z'),
+        re.compile(r'\s*\*\s+\*\*(\w+)\*\*\s+\((.*?)\):\s'))
+    # A cross-reference, eg ':class:`PointOnSphere`' or ':meth:`its name<Feature.get_name>`'.
+    role_re = re.compile(r':\w+:`([^`]*)`')
+    # Emphasis and literals, eg '*name*' and '``None``'.
+    inline_markup_re = re.compile(r'\*\*|\*|``')
+    # A C++ parameter that 'UnnamedArgumentPatcher' (in 'PyGPlatesModule.cc') named 'None'.
+    unnamed_parameter_re = re.compile(r'(?<=\S) None(?=[,)])')
+
+    def role_text(match):
+        """The text Sphinx shows for a cross-reference."""
+        content = match.group(1)
+        title, _, target = content.partition('<')
+        if target:
+            return title.strip()
+        if content.startswith('~'):
+            return content.rsplit('.', 1)[-1]
+        return content[len('pygplates.'):] if content.startswith('pygplates.') else content
+
+    def find_function(qualified_name):
+        """The pyGPlates function that Boost.Python's 'qualified_name' names, or None."""
+        namespace_name, _, function_name = qualified_name.rpartition('.')
+        namespace = pygplates_dict
+        # A module function's is 'None' (Boost.Python couldn't get the module's name).
+        if namespace_name != 'None':
+            # A class, or a class nested in one ('NetworkTriangulation.Triangle').
+            for class_name in namespace_name.split('.'):
+                cls = namespace.get(class_name)
+                if not (isinstance(cls, type) and cls.__module__.startswith('pygplates')):
+                    return None
+                namespace = cls.__dict__
+        function = namespace.get(function_name)
+        if isinstance(function, (staticmethod, classmethod)):
+            function = function.__func__
+        if type(function) is not boost_python_function_type or function.__name__ != function_name:
+            return None
+        return function
+
+    def documented_signatures(function):
+        """[(arguments, {parameter name: type})], for each signature that 'function' documents."""
+        signatures = []
+        for line in (function.__doc__ or '').split('\n'):
+            match = signature_line_re.match(line)
+            if match and match.group(1) == function.__name__:
+                signatures.append((match.group(2), {}))
+            elif signatures:
+                for type_field_re in type_field_res:
+                    match = type_field_re.match(line)
+                    if match:
+                        parameter_types = signatures[-1][1]
+                        parameter_types.setdefault(
+                                match.group(1).lstrip('*'), role_re.sub(role_text, match.group(2)))
+                        break
+        # A '__init__(...)' line introduces text about all the signatures.
+        return [signature for signature in signatures if signature[0].strip() != '...']
+
+    def parameter_names(arguments):
+        """The parameter names in a signature's arguments, eg 'x' and 'y' in 'x, [y=(1, 2)]'."""
+        names = []
+        depth = 0
+        quote = None
+        argument = ''
+        # A comma in a default value is inside parentheses or quotes.
+        for char in arguments + ',':
+            if quote:
+                if char == quote:
+                    quote = None
+            elif char in '\'"':
+                quote = char
+            elif char == '(':
+                depth += 1
+            elif char == ')':
+                depth -= 1
+            elif char == ',' and depth == 0:
+                name = argument.split('=', 1)[0].strip(' []*')
+                if name:
+                    names.append(name)
+                argument = ''
+                continue
+            argument += char
+        return names
+
+    def first_paragraph(function):
+        """The first paragraph of the docstring of 'function', skipping a 'name(...)' line."""
+        lines = []
+        for line in (function.__doc__ or '').split('\n'):
+            line = line.strip()
+            if line and not signature_line_re.match(line):
+                lines.append(line)
+            elif lines:
+                break
+        return inline_markup_re.sub('', role_re.sub(role_text, ' '.join(lines)))
+
+    def rewrite(message):
+        match = message_re.match(message)
+        if not match:
+            return None
+        qualified_name = match.group('qualified_name')
+        function = find_function(qualified_name)
+        if function is None:
+            return None
+        signatures = documented_signatures(function)
+        cpp_signatures = match.group('cpp_signatures')
+        # Another module's function can have the same name, but its C++ signatures are unlikely to
+        # also name our parameters. (Ours do, since a keyword argument works only by its C++ name.)
+        for arguments, _ in signatures:
+            for name in parameter_names(arguments):
+                if not re.search(r'(?<=[\s&*])%s(?=[=,)])' % re.escape(name), cpp_signatures):
+                    return None
+
+        namespace_name, _, function_name = qualified_name.rpartition('.')
+        if namespace_name == 'None':
+            qualified_name = display_name = 'pygplates.' + function_name
+        elif function_name == '__init__':
+            # How a constructor is called, eg 'RotationModel(...)'.
+            display_name = namespace_name
+        else:
+            display_name = qualified_name
+        lines = [
+            'Positional argument types in',
+            '    %s(%s)' % (qualified_name, match.group('argument_types'))]
+
+        if signatures:
+            lines.append('did not match %s:' % (
+                    'this signature' if len(signatures) == 1 else 'any of these signatures'))
+            for arguments, parameter_types in signatures:
+                lines.append('    %s(%s)' % (display_name, arguments))
+                for name in parameter_names(arguments):
+                    if name in parameter_types:
+                        lines.append('        %s: %s' % (name, parameter_types[name]))
+        else:
+            paragraph = first_paragraph(function)
+            if paragraph:
+                lines.append('did not match any signature:')
+                lines.append('    ' + paragraph)
+            else:
+                lines.append('did not match C++ signature:')
+                lines.append(unnamed_parameter_re.sub('', cpp_signatures))
+        return '\n'.join(lines)
+
+    def __str__(self):
+        message = original_str(self)
+        try:
+            return rewrite(message) or message
+        except Exception:
+            # A failure here must not hide the error being reported.
+            return message
+
+    argument_error_class.__str__ = __str__
+
+_install_argument_error_messages()
+del _install_argument_error_messages

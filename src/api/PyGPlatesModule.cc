@@ -343,8 +343,9 @@ namespace
 	 * This replaces each 'None' slot, in every overload of every Boost.Python function it visits,
 	 * with '(None,)': a name that no keyword can match (they are strings), with no default. So the
 	 * overload is rejected, as the ticket's patch does, and the call raises 'ArgumentError' if no
-	 * other overload matches. The 'ArgumentError' message then shows such a slot as
-	 * '<C++ type> None' in its list of C++ signatures.
+	 * other overload matches. Boost's list of C++ signatures in the 'ArgumentError' message shows
+	 * such a slot as '<C++ type> None', which 'ArgumentErrors.py' removes (where it doesn't
+	 * replace the list with the documented signatures).
 	 *
 	 * Boost also reads 'm_arg_names' to join the docstrings of overloads whose arity differs by
 	 * one, and treats an unnamed slot differently from a '(None,)' one there: this could only split

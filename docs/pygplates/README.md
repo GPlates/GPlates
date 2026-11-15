@@ -88,6 +88,15 @@ __init__()
 Without it, autosummary reports `error while formatting arguments for ...: <Boost.Python.function
 object> is not a Python function`.
 
+The signature lines also make the message of a `Boost.Python.ArgumentError`, raised when no
+overload accepts the arguments of a call: `src/qt-resources/python/api/ArgumentErrors.py` lists the
+function's documented signatures, each followed by its parameters' `:type:` fields, in place of
+Boost.Python's C++ signatures. It does so only if each documented parameter has the same name in
+the C++ (its `bp::arg`), which a keyword argument needs anyway; `pygplates-test` fails for a
+function where one doesn't. A function without a signature line gets the first paragraph of its
+docstring instead (so a pickle-only constructor's "You cannot directly instantiate this class from
+Python." is what a caller sees).
+
 Do not mark a static method in the body (the old `[*staticmethod*]` marker). Boost.Python's
 `.staticmethod()` installs a real `staticmethod` descriptor, which Sphinx detects and renders as
 the italic *static* prefix itself (and which `process_docstring` reads for its `:staticmethod:`
@@ -133,7 +142,8 @@ an entry for each. A class docstring refers to them ("listed under *Attributes* 
 
 `:type x:` / `:rtype:` fields feed **two** consumers: Sphinx auto-links them, and
 `pygplates/stub/generate_stub.py` parses them to produce the type stub
-`pygplates/stub/__init__.pyi` (see `pygplates/stub/README.md`). One style serves both.
+`pygplates/stub/__init__.pyi` (see `pygplates/stub/README.md`). One style serves both. (The
+`ArgumentError` message also shows the `:type x:` fields, as written; see *Signature and body*.)
 
 1. **`:type x:` and `:rtype:` contain only a type expression, 100% markup-free** — no
    `:class:`/`:meth:` roles, no ``` ``literals`` ```, no `*emphasis*`. Sphinx auto-links every

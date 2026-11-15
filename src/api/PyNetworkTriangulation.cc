@@ -256,7 +256,7 @@ export_network_triangulation()
 						bp::no_init)
 			.def("get_triangles",
 					&GPlatesApi::NetworkTriangulation::get_triangles_view,
-					"get_triangles\n"
+					"get_triangles()\n"
 					"  Returns a read-only sequence of the triangles in this triangulation.\n"
 					"\n"
 					"  :rtype: a read-only sequence of NetworkTriangulation.Triangle\n"
@@ -287,7 +287,7 @@ export_network_triangulation()
 					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
 			.def("get_vertices",
 					&GPlatesApi::NetworkTriangulation::get_vertices_view,
-					"get_vertices\n"
+					"get_vertices()\n"
 					"  Returns a read-only sequence of the vertices in this triangulation.\n"
 					"\n"
 					"  :rtype: a read-only sequence of NetworkTriangulation.Vertex\n"

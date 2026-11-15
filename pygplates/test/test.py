@@ -5,6 +5,7 @@ Unit tests for the pygplates native library.
 """
 
 import os
+import re
 import sys
 import pickle
 import platform
@@ -187,6 +188,127 @@ class VersionCase(unittest.TestCase):
             self.assertTrue(version == pickle.loads(pickle.dumps(version)))
 
 
+class ArgumentErrorCase(unittest.TestCase):
+    """
+    When no overload accepts the arguments of a call, 'ArgumentError' lists the documented
+    signatures, not Boost.Python's C++ ones (see 'src/qt-resources/python/api/ArgumentErrors.py').
+    """
+
+    def _message(self, function, *arguments):
+        with self.assertRaises(TypeError) as context:
+            function(*arguments)
+        self.assertEqual(type(context.exception).__name__, 'ArgumentError')
+        return str(context.exception)
+
+    def test_method(self):
+        polyline = pygplates.PolylineOnSphere([(0, 0), (0, 10)])
+        self.assertEqual(
+                self._message(polyline.get_arc_length, 'x'),
+                'Positional argument types in\n'
+                '    PolylineOnSphere.get_arc_length(PolylineOnSphere, str)\n'
+                'did not match this signature:\n'
+                '    PolylineOnSphere.get_arc_length()')
+
+    def test_overloaded_constructor(self):
+        message = self._message(pygplates.FiniteRotation, (0, 0), 'x')
+        self.assertTrue(message.startswith(
+                'Positional argument types in\n'
+                '    FiniteRotation.__init__(FiniteRotation, tuple, str)\n'
+                'did not match any of these signatures:\n'
+                '    FiniteRotation(pole, angle_radians)\n'
+                '        pole: '), message)
+        self.assertIn(
+                '\n        angle_radians: float\n    FiniteRotation(from_point, to_point)\n', message)
+        self.assertTrue(message.endswith('\n    FiniteRotation()'), message)
+        # Not the pickle-only constructor, which isn't documented.
+        self.assertNotIn('Bytes', message)
+
+    def test_functions(self):
+        # A module function (which Boost.Python names 'None.calculate_velocities').
+        message = self._message(pygplates.calculate_velocities, 'x', 1, 2)
+        self.assertTrue(message.startswith(
+                'Positional argument types in\n'
+                '    pygplates.calculate_velocities(str, int, int)\n'
+                'did not match this signature:\n'
+                '    pygplates.calculate_velocities(domain_points, finite_rotation, '), message)
+        # A static method.
+        self.assertTrue(self._message(pygplates.FeatureType.create_gpml, 1).endswith(
+                '\n    FeatureType.create_gpml(name)\n        name: str'))
+        # A method of a nested class, whose parameters are documented in a list.
+        message = self._message(pygplates.NetworkTriangulation.Triangle.get_vertex, 1, 2)
+        self.assertTrue(message.endswith(
+                '\n    NetworkTriangulation.Triangle.get_vertex(index)\n        index: int'), message)
+
+    def test_without_documented_signature(self):
+        # The docstring's first paragraph.
+        self.assertTrue(self._message(pygplates.FeatureType, 'gpml:Coastline').endswith(
+                '\ndid not match any signature:\n'
+                '    You cannot directly instantiate this class from Python.'))
+        # Its markup removed (it's 'See :meth:`create_normalised`.').
+        self.assertTrue(self._message(pygplates.Vector3D.create_normalized).endswith(
+                '\n    See create_normalised.'))
+        # No docstring: the C++ signatures.
+        self.assertIn(
+                '\ndid not match C++ signature:\n', self._message(pygplates.PolylineOnSphere.__len__, 1))
+        # Without the 'None' that 'UnnamedArgumentPatcher' (in 'PyGPlatesModule.cc') names the
+        # receiver (which 'args[0]', Boost.Python's message, still has).
+        with self.assertRaises(TypeError) as context:
+            pygplates.ReconstructionTreeBuilder.build_reconstruction_tree(1, 2, 3, 4)
+        self.assertIn('\ndid not match C++ signature:\n', str(context.exception))
+        self.assertNotIn(' None,', str(context.exception))
+        self.assertIn(' None,', context.exception.args[0])
+
+    def test_other_messages_unchanged(self):
+        # Other Boost.Python modules can share the class (in a conda environment).
+        try:
+            pygplates.Vector3D.get_magnitude(None)
+        except TypeError as error:
+            argument_error_class = type(error)
+        for message in (
+                'Python argument types in\n    Molecule.get_atoms(Molecule, int)\n'
+                'did not match C++ signature:\n    get_atoms(class Molecule {lvalue} self)',
+                'Python argument types in\n    None.parse_formula(int)\n'
+                'did not match C++ signature:\n    parse_formula(std::string formula)',
+                'Python argument types in\n    PolylineOnSphere.get_atoms(PolylineOnSphere, int)\n'
+                'did not match C++ signature:\n    get_atoms(class Molecule {lvalue} self)',
+                # The name of a pyGPlates function, but not the names of its parameters.
+                'Python argument types in\n    None.calculate_velocities(int)\n'
+                'did not match C++ signature:\n    calculate_velocities(int x)',
+                'not a Boost.Python message'):
+            self.assertEqual(str(argument_error_class(message)), message)
+
+    def test_every_function(self):
+        # Boost.Python checks the number of arguments before converting any, so too many raises
+        # 'ArgumentError' without running the function. ('RAW_FUNCTIONS' accept any number.)
+        import keyword_argument_probe
+        functions = keyword_argument_probe.boost_python_functions(pygplates.pygplates)
+        unexpected = []
+        num_rewritten = 0
+        for name, function in functions:
+            try:
+                function(*[None] * 30)
+            except TypeError as error:
+                message = str(error)
+            else:
+                unexpected.append('%s returned' % name)
+                continue
+            cpp_signatures = message.partition('\ndid not match C++ signature:\n')[2]
+            if not cpp_signatures:
+                num_rewritten += 1
+            elif (function.__doc__ or '').strip():
+                # A function with a docstring has its message rewritten. (Only if each parameter
+                # it documents is named in its C++ signatures, which is also what a keyword
+                # argument needs: see 'rewrite()' in 'ArgumentErrors.py'.)
+                unexpected.append('%s: %s' % (name, message))
+            elif re.search(r'\S None[,)]', cpp_signatures):
+                # A receiver named 'None' by 'UnnamedArgumentPatcher' (in 'PyGPlatesModule.cc').
+                unexpected.append('%s: %s' % (name, message))
+        self.assertEqual(unexpected, [])
+        # Every documented function (645 of the 1739 functions and accessors when this was written;
+        # the rest are mostly special methods).
+        self.assertGreater(num_rewritten, 600)
+
+
 class KeywordArgumentCase(unittest.TestCase):
     """
     Documented argument names work as keyword arguments (they once raised 'ArgumentError'), and
@@ -351,6 +473,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            ArgumentErrorCase,
             HashableCase,
             IterableArgumentCase,
             KeywordArgumentCase,
