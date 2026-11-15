@@ -176,6 +176,112 @@ MANUAL_OVERRIDES = {
     },
 }
 
+# Forms that still work, for compatibility, but are deprecated, and so have no docstring (one
+# would repeat in 'help()' and Sphinx): the docstrings cannot supply them. Each is emitted as an
+# '@overload' marked '@deprecated' (PEP 702), after the documented overloads, so that a type
+# checker reports a deprecation rather than an error. A call that a documented overload also
+# accepts (eg, 'Vector3D.dot(vector, other_vector)' positionally) matches that one first, and is
+# not reported. The types are copies of the documented overloads' (a deprecated form takes what
+# its replacement takes), so change them with those.
+#
+# Applied to a Boost.Python function with a signature line in its docstring (a pure-Python
+# function, or one emitted from MANUAL_OVERRIDES alone, would need support adding), and the stub
+# generation fails on an entry that is never applied.
+#
+# An instance method's form that names its first argument (the old name of the argument that is
+# now the receiver, as in 'Vector3D.dot(vector1=..., vector2=...)') has no 'self', which pyright
+# warns about, so the generator silences that warning on its line.
+#
+# Key: fully qualified name. Value: list of ('def name(...) -> T' line, as for MANUAL_OVERRIDES,
+# deprecation message).
+_POINT = 'PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]'
+_VECTOR = 'Vector3D | Sequence[float]'
+_FEATURES = ('FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | '
+             'Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]]')
+_ROTATION_MODEL = ('RotationModel | FeatureCollection | str | os.PathLike | Feature | '
+                   'Sequence[Feature] | Sequence[RotationModel | FeatureCollection | str | '
+                   'os.PathLike | Feature | Sequence[Feature]]')
+_SINGLE_ORIGIN_MESSAGE = ('Converting at a single origin is deprecated: use the matching method of '
+                          'a LocalCartesian at that origin, eg '
+                          'LocalCartesian(local_origin).%(method)s(%(argument)s)')
+_VECTOR3D_MESSAGE = ('Call %(method)s() on a Vector3D, eg vector.%(method)s(other_vector): '
+                     'vector2 is renamed other_vector, and the vector it is called on must be a '
+                     'Vector3D')
+
+
+def _single_origin_forms(method, *arguments):
+    """The two deprecated single-origin forms of 'LocalCartesian.convert_<method>()'.
+
+    'arguments' are (vector argument, its type, [three scalar argument names], return type).
+    """
+    vector_argument, vector_type, scalar_arguments, return_type = arguments
+    message = _SINGLE_ORIGIN_MESSAGE % {'method': method, 'argument': vector_argument}
+    return [
+        ('def convert_%s(local_origin: %s, %s: %s) -> %s'
+         % (method, _POINT, vector_argument, vector_type, return_type), message),
+        ('def convert_%s(local_origin: %s, %s) -> %s'
+         % (method, _POINT, ', '.join('%s: float' % name for name in scalar_arguments),
+            return_type), message),
+    ]
+
+
+DEPRECATED_OVERLOADS = {
+    'GeometryOnSphere.distance': [
+        ('def distance(geometry1: GeometryOnSphere, geometry2: GeometryOnSphere, '
+         'distance_threshold_radians: float | None = ..., return_closest_positions: bool = False, '
+         'return_closest_indices: bool = False, geometry1_is_solid: bool = False, '
+         'geometry2_is_solid: bool = False) -> float | tuple[float, PointOnSphere, PointOnSphere]'
+         ' | tuple[float, int, int] | tuple[float, PointOnSphere, PointOnSphere, int, int] | None',
+         'Call distance() on a geometry, eg geometry.distance(other_geometry): geometry2, '
+         'geometry1_is_solid and geometry2_is_solid are renamed other_geometry, '
+         'geometry_is_solid and other_geometry_is_solid'),
+    ],
+    'LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination': _single_origin_forms(
+        'from_geocentric_to_magnitude_azimuth_inclination',
+        'vector', _VECTOR, ('x', 'y', 'z'), 'tuple[float, float, float]'),
+    'LocalCartesian.convert_from_geocentric_to_north_east_down': _single_origin_forms(
+        'from_geocentric_to_north_east_down', 'vector', _VECTOR, ('x', 'y', 'z'), 'Vector3D'),
+    'LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric': _single_origin_forms(
+        'from_magnitude_azimuth_inclination_to_geocentric',
+        'local_coordinate', 'Sequence[float]', ('magnitude', 'azimuth', 'inclination'), 'Vector3D'),
+    'LocalCartesian.convert_from_north_east_down_to_geocentric': _single_origin_forms(
+        'from_north_east_down_to_geocentric', 'vector', _VECTOR, ('x', 'y', 'z'), 'Vector3D'),
+    'PolygonOnSphere.__init__': [
+        ('def __init__(self, *, points: Sequence[%s]) -> None' % _POINT,
+         'The points argument is renamed exterior_ring'),
+    ],
+    'RotationModel.__init__': [
+        ('def __init__(self, rotation_features: %s, reconstruction_tree_cache_size: int = 150, *, '
+         'clone_rotation_features: bool) -> None' % _FEATURES,
+         'The clone_rotation_features argument is ignored, and can be removed'),
+    ],
+    # Also covers the class form with a tuple as the first argument ('Vector3D.dot((x, y, z), v)').
+    'Vector3D.angle_between': [
+        ('def angle_between(vector1: %s, vector2: %s) -> float' % (_VECTOR, _VECTOR),
+         _VECTOR3D_MESSAGE % {'method': 'angle_between'}),
+    ],
+    'Vector3D.cross': [
+        ('def cross(vector1: %s, vector2: %s) -> Vector3D' % (_VECTOR, _VECTOR),
+         _VECTOR3D_MESSAGE % {'method': 'cross'}),
+    ],
+    'Vector3D.dot': [
+        ('def dot(vector1: %s, vector2: %s) -> float' % (_VECTOR, _VECTOR),
+         _VECTOR3D_MESSAGE % {'method': 'dot'}),
+    ],
+    'Version.__init__': [
+        ('def __init__(self, major: int, minor: int, patch: int = 0, *, '
+         'prerelease_suffix: str | None) -> None',
+         'The prerelease_suffix argument is renamed release_suffix'),
+    ],
+    'reconstruct': [
+        ('def reconstruct(recon_files: %s, rot_files: %s, time: float, anchor_plate_id: int | None, '
+         'export_file_name: str | os.PathLike) -> None' % (_FEATURES, _ROTATION_MODEL),
+         'The recon_files, rot_files, time, anchor_plate_id, export_file_name form is deprecated: '
+         'use reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, '
+         'reconstruction_time, anchor_plate_id)'),
+    ],
+}
+
 # Word spellings of primitive types found in the ':type:' fields.
 _WORD_TYPES = {
     'int': 'int', 'integer': 'int', 'integers': 'int', 'ints': 'int', 'long': 'int',
@@ -1205,6 +1311,12 @@ class StubGenerator(object):
         self.uses_overload = False
         self.uses_sequence = False
         self.uses_os = False
+        self.uses_deprecated = False
+        # The MANUAL_OVERRIDES signatures ((name, overload index)) and DEPRECATED_OVERLOADS
+        # entries applied, so that 'generate()' can refuse one that never is (a rename, or a
+        # lost overload, would otherwise drop it silently).
+        self.overrides_used = set()
+        self.deprecated_used = set()
         # Dotted paths (from the module) at which each pygplates class is reachable - see
         # 'qualified_name()'.
         self._class_paths = None
@@ -1404,6 +1516,16 @@ class StubGenerator(object):
             body.append('')
             body.extend(self._emit_module_member(name, obj))
 
+        unused = ['MANUAL_OVERRIDES[%r][%d]' % key for key in sorted(
+            set((name, index) for name, signatures in MANUAL_OVERRIDES.items()
+                for index in signatures) - self.overrides_used)]
+        unused += ['DEPRECATED_OVERLOADS[%r]' % name
+                   for name in sorted(set(DEPRECATED_OVERLOADS) - self.deprecated_used)]
+        if unused:
+            raise RuntimeError(
+                'Never applied (no such member, overload or signature line): %s'
+                % ', '.join(unused))
+
         text = '\n'.join(body) + '\n'
         return _HEADER + text.replace('IMPORTS_PLACEHOLDER', self._imports_block(), 1)
 
@@ -1432,6 +1554,10 @@ class StubGenerator(object):
             if lines:
                 lines.append('')
             lines.append('from typing import %s' % ', '.join(typing_names))
+        if self.uses_deprecated:
+            # Type checkers ship stubs for 'typing_extensions', so a stub can import from it
+            # whichever Python it is checked for ('warnings.deprecated' is new in 3.13).
+            lines.append('from typing_extensions import deprecated')
         return '\n'.join(lines)
 
     def _emit_module_member(self, name, obj):
@@ -1648,6 +1774,7 @@ class StubGenerator(object):
             if overrides:
                 # Manual replacement signature(s) for a member whose docstring has no
                 # signature line ('Vector3D.create_normalized').
+                self.overrides_used.update((qualified, index) for index in overrides)
                 signatures = [overrides[index] for index in sorted(overrides)]
                 for signature in signatures:
                     self._note_annotation_usage(signature)
@@ -1697,6 +1824,7 @@ class StubGenerator(object):
                 signature = self._build_signature(name, block, qualified, in_class,
                                                   is_static, owner)
             else:
+                self.overrides_used.add((qualified, index))
                 self._note_annotation_usage(signature)
             doc_text = _clean_docstring_text(block.body_lines)
             duplicate = next((entry for entry in rendered if entry[0] == signature), None)
@@ -1716,8 +1844,12 @@ class StubGenerator(object):
         if prose_text:
             rendered[0][1] = prose_text + \
                 ('\n\n' + rendered[0][1] if rendered[0][1] else '')
+        deprecated = DEPRECATED_OVERLOADS.get(qualified, [])
+        if deprecated:
+            self.deprecated_used.add(qualified)
+            self.uses_deprecated = True
         lines = []
-        emit_overloads = len(rendered) > 1
+        emit_overloads = len(rendered) + len(deprecated) > 1
         if emit_overloads:
             self.uses_overload = True
         for signature, doc_text in rendered:
@@ -1726,6 +1858,17 @@ class StubGenerator(object):
                 lines.append('')
             lines.extend(self._emit_def(signature, doc_text, is_static, indent,
                                         decorators))
+        # After the documented overloads, so that a call they accept is not reported.
+        for signature, message in deprecated:
+            self._note_annotation_usage(signature)
+            first_parameter = re.match(r'def \w+\((\w*)', signature).group(1)
+            comment = None
+            if in_class and not is_static and first_parameter not in ('self', 'cls'):
+                comment = 'pyright: ignore[reportSelfClsParameterName]'
+            lines.append('')
+            lines.extend(self._emit_def(signature, '', is_static, indent,
+                                        ['@overload', '@deprecated(%r)' % message],
+                                        comment=comment))
         return lines
 
     def _build_signature(self, name, block, qualified, in_class, is_static, owner=None):
@@ -1807,7 +1950,7 @@ class StubGenerator(object):
             return '...'
         return None
 
-    def _emit_def(self, signature, doc_text, is_static, indent, decorators):
+    def _emit_def(self, signature, doc_text, is_static, indent, decorators, comment=None):
         lines = []
         for decorator in decorators:
             lines.append(indent + decorator)
@@ -1818,7 +1961,8 @@ class StubGenerator(object):
             lines.append(indent + signature + ':')
             lines.extend(doc_lines)
         else:
-            lines.append(indent + signature + ': ...')
+            lines.append(indent + signature + ': ...' +
+                         ('  # ' + comment if comment else ''))
         return lines
 
     # -- Pure-Python functions (injected from qt-resources) ----------------
@@ -1844,6 +1988,7 @@ class StubGenerator(object):
         overrides = MANUAL_OVERRIDES.get(qualified, {})
         signature = overrides.get(0)
         if signature is not None:
+            self.overrides_used.add((qualified, 0))
             self._note_annotation_usage(signature)
         else:
             try:

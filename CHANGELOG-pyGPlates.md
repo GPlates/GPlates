@@ -10,6 +10,7 @@ Changes since 1.0.0:
 
 * Supports Python 3.9 to 3.15 (Python 3.8 is no longer supported).
 * Type stub included in the package (PEP 561), so editors and type checkers get completion, signature help and type checking for the whole API.
+  * Forms that still work, for compatibility, are marked deprecated in it, so type checkers report a deprecation rather than an error (eg, the old argument names of `Vector3D.dot()`, and converting at a single origin with `LocalCartesian.convert_...()`).
 * The API reference documents every enumeration (eg, `PartitionMethod`) and exception (eg, `InvalidLatLonError`) on its own page, and parameter types and raised exceptions now link to those pages.
 * Pickling is much faster (eg, a `RotationModel` pickles about 7 times faster and unpickles about 5 times faster).
   * Pickles written by pyGPlates 1.0 can still be loaded, but pickles written by 1.1 cannot be loaded by 1.0.
@@ -23,8 +24,6 @@ Changes since 1.0.0:
   * Their argument `vector2` is renamed `other_vector`. The old names (`vector1` and `vector2`) still work, but not mixed with the new one in the same call.
   * Calling them on a vector with two other vectors (eg, `vec.dot(vec1, vec2)`, which ignored `vec`) no longer works.
 * Deprecated converting at a single origin with the `LocalCartesian.convert_...()` functions (eg, `convert_from_geocentric_to_north_east_down(local_origin, vector)`). They still work, but use the matching method of a `LocalCartesian` at that origin instead (eg, `LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)`). The `convert_...()` functions that convert a sequence of vectors, each at its own origin, are unchanged.
-* Type stub: arguments that take an (x,y,z) vector or a (magnitude, azimuth, inclination) tuple (eg, in `Vector3D.dot()` and `LocalCartesian`) now accept a tuple or list of floats. The stub expected a sequence of tuples, so type checkers rejected correct calls.
-* Type stub: some forms that still work, for compatibility, aren't in the stub, so type checkers report them as errors. These are the old argument names of `GeometryOnSphere.distance()` and `Vector3D.angle_between()`/`dot()`/`cross()`, converting at a single origin with `LocalCartesian.convert_...()`, and calling `Vector3D.angle_between()`/`dot()`/`cross()` on the class with an (x,y,z) tuple as the first argument.
 * `GpmlTopologicalSection.create()` accepts a feature whose geometry is a polygon (returning a line section), as the topology building tools in GPlates do.
 * `GpmlTopologicalSection.create()` and `create_network_interior()` take a `property_return` argument: with `PropertyReturn.first` they reference a feature that has more than one geometry with the same property name, instead of returning `None`.
 * Added an `anchor_plate_id` argument to `PlatePartitioner` and `partition_into_plates()` (it defaults to the rotation model's default anchor plate, which was previously always used):

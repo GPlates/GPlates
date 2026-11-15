@@ -351,10 +351,10 @@ export_vector_3d()
 		// with those old keyword names. Also exclude a docstring for it, since we don't want it
 		// documented anymore...
 		//
-		// The vector it's called on must be named ('vector'), although that name is undocumented. A
-		// call with the old keyword names reaches the non-deprecated overload first, and with
-		// keywords Boost.Python fills each argument not passed positionally by looking up its name:
-		// an unnamed one crashes it (instead of rejecting that overload).
+		// The vector it's called on is named ('vector'), although that name is undocumented. That
+		// once also kept a call with the old keyword names, which reaches the non-deprecated
+		// overload first, from crashing Boost.Python; 'UnnamedArgumentPatcher' (PyGPlatesModule.cc)
+		// now prevents that crash for every function.
 		.def("angle_between",
 				&GPlatesApi::vector_angle_between,
 				(bp::arg("vector1"), bp::arg("vector2")))
