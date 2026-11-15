@@ -1129,7 +1129,7 @@ export_net_rotation()
 				"\n"
 				"  :param resolved_topology: Optional resolved topology to retrieve net rotation for. If not specified then net rotations for all "
 				"resolved boundaries and networks that **contribute net rotation** are returned (returned as a ``dict``).\n"
-				"  :type resolved_topology: ResolvedTopologicalBoundary or ResolvedTopologicalNetwork\n"
+				"  :type resolved_topology: ResolvedTopologicalBoundary or ResolvedTopologicalNetwork, or None\n"
 				"  :returns: If *resolved_topology* is specified then returns the :class:`NetRotation` of that resolved topology boundary or network "
 				"(or ``None`` if *resolved_topology* does **not contribute net rotation**). Otherwise returns a ``dict`` mapping each "
 				":class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` that **contributes net rotation** to its :class:`NetRotation`.\n"

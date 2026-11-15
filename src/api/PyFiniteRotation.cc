@@ -721,7 +721,7 @@ export_finite_rotation()
 				"  :param finite_rotation2: the second finite rotation\n"
 				"  :type finite_rotation2: FiniteRotation\n"
 				"  :param threshold_degrees: optional closeness threshold in degrees\n"
-				"  :type threshold_degrees: float\n"
+				"  :type threshold_degrees: float, or None\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  If *threshold_degrees* is *not* specified then this function is the same as equality "

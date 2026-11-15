@@ -804,7 +804,7 @@ export_reconstruct()
 			"  :type reconstruction_time: float or GeoTimeInstant\n"
 			"  :param anchor_plate_id: The anchored plate id used during reverse reconstruction. "
 			"Defaults to the default anchor plate of *rotation_model*.\n"
-			"  :type anchor_plate_id: int\n"
+			"  :type anchor_plate_id: int, or None\n"
 			"  :raises OpenFileForReadingError: if any input file is not readable (when filenames specified)\n"
 			"  :raises OpenFileForWritingError: if *reconstructable_features* specifies any filename that "
 			"is not writeable (if any filenames are specified)\n"

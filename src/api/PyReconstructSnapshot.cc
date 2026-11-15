@@ -1131,7 +1131,7 @@ export_reconstruct_snapshot()
 			"  :type reconstruction_time: float or GeoTimeInstant\n"
 			"  :param anchor_plate_id: The anchored plate id used for all reconstructions. "
 			"Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).\n"
-			"  :type anchor_plate_id: int\n"
+			"  :type anchor_plate_id: int, or None\n"
 			"\n"
 			"  Create a reconstruct snapshot by reconstructing features at a specific reconstruction time:\n"
 			"  ::\n"
