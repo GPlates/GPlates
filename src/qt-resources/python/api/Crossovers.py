@@ -503,8 +503,7 @@ def synchronise_crossovers(
         which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to \
         synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised - \
         a crossover is a named-tuple 'Crossover' (see table below)
-    :type crossover_filter: callable (accepting single Crossover argument), or \
-        sequence of Crossover, or None
+    :type crossover_filter: callable (accepting single Crossover argument), or iterable of Crossover, or None
     
     :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the \
         old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by \

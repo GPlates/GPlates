@@ -2532,7 +2532,7 @@ export_polyline_on_sphere()
 				"otherwise if a sequence of numbers (eg, list or tuple) then *interpolate* is the sequence of "
 				"interpolate ratios, in the range [0,1], at which to generate interpolated polylines "
 				"(with 0 meaning *from_polyline* and 1 meaning *to_polyline*)\n"
-				"  :type interpolate: float, or list of float\n"
+				"  :type interpolate: float, or iterable of float\n"
 				"  :param minimum_latitude_overlap_radians: required amount of latitude overlap of polylines\n"
 				"  :type minimum_latitude_overlap_radians: float - defaults to zero\n"
 				"  :param maximum_latitude_non_overlap_radians: allowed non-overlapping latitude region\n"

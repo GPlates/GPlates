@@ -1008,7 +1008,7 @@ export_local_cartesian()
 				"  Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.\n"
 				"\n"
 				"  :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)\n"
-				"  :type local_coordinate: sequence (such as list or tuple) of float\n"
+				"  :type local_coordinate: iterable of float\n"
 				"  :returns: geocentric vector\n"
 				"  :rtype: Vector3D\n"
 				"\n"

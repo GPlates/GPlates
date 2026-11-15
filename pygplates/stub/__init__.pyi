@@ -742,13 +742,13 @@ class Feature:
     def __setstate__(self, state: Any) -> None: ...
 
     @overload
-    def add(self, property_name: PropertyName, property_value: PropertyValue | Sequence[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def add(self, property_name: PropertyName, property_value: PropertyValue | Iterable[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Adds a property (or properties) to this feature.
 
         :param property_name: the name of the property (or properties) to add
         :type property_name: PropertyName
         :param property_value: the value (or values) of the property (or properties) to add
-        :type property_value: PropertyValue, or sequence (eg, list or tuple) of PropertyValue
+        :type property_value: PropertyValue, or iterable of PropertyValue
         :param verify_information_model: whether to check the information model before adding (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property added to the feature, or a ``list`` of properties added if *property_value* is a sequence of property values
@@ -769,11 +769,11 @@ class Feature:
         """
 
     @overload
-    def add(self, properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> list[Property]:
+    def add(self, properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> list[Property]:
         """Adds properties to this feature.
 
         :param properties: the property name/value pairs to add
-        :type properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param verify_information_model: whether to check the information model before adding (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the list of properties added to the feature
@@ -810,7 +810,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_flowline(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., left_plate: int = ..., right_plate: int = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_flowline(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Iterable[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., left_plate: int = ..., right_plate: int = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a flowline feature.
 
         :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
@@ -818,7 +818,7 @@ class Feature:
         :param times: the list of times
         :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
         :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
@@ -828,7 +828,7 @@ class Feature:
         :param right_plate: the right plate id, if not specified then a `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added
         :type right_plate: int
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *left_plate*) - this is only required if *seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
@@ -900,7 +900,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_motion_path(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., relative_plate: int = ..., reconstruction_plate_id: int = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_motion_path(seed_geometry: PointOnSphere | MultiPointOnSphere, times: Sequence[float | GeoTimeInstant], name: str | Iterable[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., relative_plate: int = ..., reconstruction_plate_id: int = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a motion path feature.
 
         :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
@@ -908,7 +908,7 @@ class Feature:
         :param times: the list of times
         :type times: sequence (eg, list or tuple) of float or GeoTimeInstant
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
         :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
@@ -918,7 +918,7 @@ class Feature:
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
         :type reconstruction_plate_id: int
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
@@ -981,7 +981,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., reconstruction_plate_id: int = ..., conjugate_plate_id: int | Sequence[int] = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], name: str | Iterable[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., reconstruction_plate_id: int = ..., conjugate_plate_id: int | Iterable[int] = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a reconstructable feature.
 
         :param feature_type: the type of feature to create
@@ -989,7 +989,7 @@ class Feature:
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
         :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere (or a coverage or a sequence of coverages)
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
         :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
@@ -997,9 +997,9 @@ class Feature:
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
         :type reconstruction_plate_id: int
         :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ properties are added - **note** that not all `reconstructable features <http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature>`_ have a conjugate plate ID (*conjugate_plate_id* is provided to support the `Isochron feature type <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_)
-        :type conjugate_plate_id: int, or sequence of int
+        :type conjugate_plate_id: int, or iterable of int
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
@@ -1089,7 +1089,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., reconstruction_plate_id: int = ..., conjugate_plate_id: int | Sequence[int] = ..., left_plate: int = ..., right_plate: int = ..., reconstruction_method: str = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], name: str | Iterable[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., reconstruction_plate_id: int = ..., conjugate_plate_id: int | Iterable[int] = ..., left_plate: int = ..., right_plate: int = ..., reconstruction_method: str = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] = ..., feature_id: FeatureId = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a tectonic section feature.
 
         :param feature_type: the type of feature to create
@@ -1097,7 +1097,7 @@ class Feature:
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
         :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere (or a coverage or a sequence of coverages)
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
         :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
@@ -1105,7 +1105,7 @@ class Feature:
         :param reconstruction_plate_id: the reconstruction plate id, if not specified then a `pygplates.PropertyName.gpml_reconstruction_plate_id <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`_ property is not added
         :type reconstruction_plate_id: int
         :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_ properties are added
-        :type conjugate_plate_id: int, or sequence of int
+        :type conjugate_plate_id: int, or iterable of int
         :param left_plate: the left plate id, if not specified then a `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_ property is not added
         :type left_plate: int
         :param right_plate: the right plate id, if not specified then a `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added
@@ -1113,7 +1113,7 @@ class Feature:
         :param reconstruction_method: the reconstruction method, if not specified then a `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) - note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should generally be used unless backward compatibility with old GPlates versions is required
         :type reconstruction_method: str  (see `supported values <http://www.gplates.org, or docs, or gpgim/#gpml:ReconstructionMethodEnumeration>`_)
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
@@ -1178,21 +1178,21 @@ class Feature:
         """
 
     @staticmethod
-    def create_topological_feature(feature_type: FeatureType, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Sequence[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_topological_feature(feature_type: FeatureType, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Iterable[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], name: str | Iterable[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a topological feature.
 
         :param feature_type: the type of feature to create
         :type feature_type: FeatureType
         :param topological_geometry: the topological geometry or geometries
-        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or a sequence (eg, list or tuple) of them
+        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or an iterable (eg, list or tuple) of them
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
         :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
         :type valid_time: a tuple of (float or GeoTimeInstant, float or GeoTimeInstant)
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param verify_information_model: whether to check the information model (default) or not
@@ -1236,7 +1236,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_topological_network_feature(topological_network_geometry: GpmlTopologicalNetwork, network_feature_type: FeatureType = FeatureType.gpml_topological_network, name: str | Sequence[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., rift_parameters: tuple = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_topological_network_feature(topological_network_geometry: GpmlTopologicalNetwork, network_feature_type: FeatureType = FeatureType.gpml_topological_network, name: str | Iterable[str] = ..., description: str = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] = ..., rift_parameters: tuple = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         r"""Create a topological *network* feature.
 
         :param topological_network_geometry: the topological *network* geometry
@@ -1244,7 +1244,7 @@ class Feature:
         :param network_feature_type: The type of *network* feature to create. Defaults to ``pygplates.FeatureType.gpml_topological_network``.
         :type network_feature_type: FeatureType
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
         :type description: str
         :param valid_time: the (begin_time, end_time) tuple, if not specified then a `pygplates.PropertyName.gml_valid_time <http://www.gplates.org/docs/gpgim/#gml:validTime>`_ property is not added
@@ -1253,7 +1253,7 @@ class Feature:
 
         :type rift_parameters: tuple
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param verify_information_model: whether to check the information model (default) or not
@@ -1300,7 +1300,7 @@ class Feature:
         """
 
     @staticmethod
-    def create_total_reconstruction_sequence(fixed_plate_id: int, moving_plate_id: int, total_reconstruction_pole: GpmlIrregularSampling, name: str | Sequence[str] = ..., description: str = ..., other_properties: Sequence[tuple[PropertyName, PropertyValue | Sequence[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_total_reconstruction_sequence(fixed_plate_id: int, moving_plate_id: int, total_reconstruction_pole: GpmlIrregularSampling, name: str | Iterable[str] = ..., description: str = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] = ..., feature_id: FeatureId = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a rotation feature for a fixed/moving plate pair.
 
         :param fixed_plate_id: the fixed plate id
@@ -1310,11 +1310,11 @@ class Feature:
         :param total_reconstruction_pole: the time-sequence of rotations
         :type total_reconstruction_pole: GpmlIrregularSampling of GpmlFiniteRotation
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
         :type description: str
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
-        :type other_properties: a sequence (eg, list or tuple) of (PropertyName, PropertyValue or sequence of PropertyValue)
+        :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue)
         :param feature_id: the feature identifier, if not specified then a unique feature identifier is created
         :type feature_id: FeatureId
         :param verify_information_model: whether to check the information model (default) or not
@@ -2361,11 +2361,11 @@ class Feature:
         .. seealso:: :meth:`get_valid_time` and :meth:`set_valid_time`
         """
 
-    def remove(self, property_query: PropertyName | Property | Callable[[Property], Any] | Sequence[PropertyName | Property | Callable[[Property], Any]]) -> None:
+    def remove(self, property_query: PropertyName | Property | Callable[[Property], Any] | Iterable[PropertyName | Property | Callable[[Property], Any]]) -> None:
         """Removes properties from this feature.
 
         :param property_query: one or more property names, property instances or predicate functions that determine which properties to remove
-        :type property_query: PropertyName, or Property, or callable (accepting single Property argument), or a sequence (eg, list or tuple) of any combination of them
+        :type property_query: PropertyName, or Property, or callable (accepting single Property argument), or an iterable (eg, list, tuple or generator) of any combination of them
         :raises ValueError: if any specified :class:`Property` is not currently a property in this feature
 
         All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property in this feature is ignored. However if any specified :class:`Property` is not currently a property in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must have previously been added (in other words the property *values* are not compared - it actually looks for the same property *instance*). If ``ValueError`` is raised then no properties are removed.
@@ -2405,13 +2405,13 @@ class Feature:
         .. seealso:: :meth:`add`
         """
 
-    def set(self, property_name: PropertyName, property_value: PropertyValue | Sequence[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set(self, property_name: PropertyName, property_value: PropertyValue | Iterable[PropertyValue], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets a property (or properties) to this feature.
 
         :param property_name: the name of the property (or properties) to set
         :type property_name: PropertyName
         :param property_value: the value (or values) of the property (or properties) to set
-        :type property_value: PropertyValue, or sequence (eg, list or tuple) of PropertyValue
+        :type property_value: PropertyValue, or iterable of PropertyValue
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property set in the feature, or a ``list`` of properties set if *property_value* is a sequence of property values
@@ -2436,13 +2436,13 @@ class Feature:
         .. seealso:: :meth:`get`
         """
 
-    def set_boolean(self, property_name: PropertyName, boolean: bool | Sequence[bool], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_boolean(self, property_name: PropertyName, boolean: bool | Iterable[bool], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the boolean property value associated with *property_name*.
 
         :param property_name: the property name of the boolean property
         :type property_name: PropertyName
         :param boolean: the boolean or booleans
-        :type boolean: bool, or sequence of bool
+        :type boolean: bool, or iterable of bool
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the boolean, or properties containing the booleans
@@ -2461,11 +2461,11 @@ class Feature:
         .. seealso:: :meth:`get_boolean`
         """
 
-    def set_conjugate_plate_id(self, conjugate_plate_id: int | Sequence[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_conjugate_plate_id(self, conjugate_plate_id: int | Iterable[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Set the conjugate plate ID (or IDs) of this feature.
 
         :param conjugate_plate_id: the conjugate plate ID or plate IDs
-        :type conjugate_plate_id: int, or sequence of int
+        :type conjugate_plate_id: int, or iterable of int
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the conjugate plate ID, or properties containing the conjugate plate IDs
@@ -2512,13 +2512,13 @@ class Feature:
         .. seealso:: :meth:`get_description`
         """
 
-    def set_double(self, property_name: PropertyName, double: float | Sequence[float], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_double(self, property_name: PropertyName, double: float | Iterable[float], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the floating-point (double) property value associated with *property_name*.
 
         :param property_name: the property name of the float property
         :type property_name: PropertyName
         :param double: the float or floats
-        :type double: float, or sequence of float
+        :type double: float, or iterable of float
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the float, or properties containing the floats
@@ -2679,13 +2679,13 @@ class Feature:
         .. seealso:: :meth:`get_geometry_import_time`
         """
 
-    def set_integer(self, property_name: PropertyName, integer: int | Sequence[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_integer(self, property_name: PropertyName, integer: int | Iterable[int], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the integer property value associated with *property_name*.
 
         :param property_name: the property name of the integer property
         :type property_name: PropertyName
         :param integer: the integer or integers
-        :type integer: int, or sequence of int
+        :type integer: int, or iterable of int
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the integer, or properties containing the integers
@@ -2726,11 +2726,11 @@ class Feature:
         .. seealso:: :meth:`get_left_plate`
         """
 
-    def set_name(self, name: str | Sequence[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_name(self, name: str | Iterable[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Set the name (or names) of this feature.
 
         :param name: the name or names
-        :type name: str, or sequence of str
+        :type name: str, or iterable of str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the name, or properties containing the names
@@ -2882,11 +2882,11 @@ class Feature:
         .. seealso:: :meth:`get_shapefile_attribute`
         """
 
-    def set_shapefile_attributes(self, attribute_mapping: dict[str, int | float | str] | Sequence[tuple[Any, Any]] | None = None, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property:
+    def set_shapefile_attributes(self, attribute_mapping: dict[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = None, verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property:
         """Sets the shapefile attributes of this feature.
 
         :param attribute_mapping: optional mapping of keys to values
-        :type attribute_mapping: dict mapping each key (str) to a value (int, float or str),     or a sequence of (key, value) tuples, or None
+        :type attribute_mapping: dict[str, int | float | str], or sequence of tuple[str, int | float | str], or None
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing all the shapefile attributes
@@ -2927,13 +2927,13 @@ class Feature:
         .. seealso:: :meth:`get_shapefile_attributes`
         """
 
-    def set_string(self, property_name: PropertyName, string: str | Sequence[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_string(self, property_name: PropertyName, string: str | Iterable[str], verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Sets the string property value associated with *property_name*.
 
         :param property_name: the property name of the string property
         :type property_name: PropertyName
         :param string: the string or strings
-        :type string: str, or sequence of str
+        :type string: str, or iterable of str
         :param verify_information_model: whether to check the information model before setting (default) or not
         :type verify_information_model: VerifyInformationModel
         :returns: the property containing the string, or properties containing the strings
@@ -2991,11 +2991,11 @@ class Feature:
            Sets the geometry import time of a flowline that has none, and raises *ValueError* for a repeated time.
         """
 
-    def set_topological_geometry(self, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Sequence[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], property_name: PropertyName = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
+    def set_topological_geometry(self, topological_geometry: GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork | Iterable[GpmlTopologicalLine | GpmlTopologicalPolygon | GpmlTopologicalNetwork], property_name: PropertyName = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property]:
         """Set the topological geometry (or geometries) of this feature.
 
         :param topological_geometry: the topological geometry or geometries to set
-        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or a sequence (eg, list or tuple) of them
+        :type topological_geometry: GpmlTopologicalLine or GpmlTopologicalPolygon or GpmlTopologicalNetwork, or an iterable (eg, list or tuple) of them
         :param property_name: the optional property name of the topological geometry property or properties to set, if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead
         :type property_name: PropertyName
         :param verify_information_model: whether to check the information model before setting (default) or not
@@ -3226,11 +3226,11 @@ class FeatureCollection:
 
     def __setstate__(self, state: Any) -> None: ...
 
-    def add(self, feature: Feature | Sequence[Feature]) -> None:
+    def add(self, feature: Feature | Iterable[Feature]) -> None:
         """Adds one or more features to this collection.
 
         :param feature: one or more features to add
-        :type feature: Feature or sequence (eg, list or tuple) of Feature
+        :type feature: Feature, or iterable of Feature
 
         A feature collection is an *unordered* collection of features so there is no concept of where a feature is inserted in the sequence of features.
 
@@ -3287,11 +3287,11 @@ class FeatureCollection:
         """
 
     @staticmethod
-    def read(filename: str | os.PathLike | Sequence[str | os.PathLike]) -> FeatureCollection | list[FeatureCollection]:
+    def read(filename: str | os.PathLike | Iterable[str | os.PathLike]) -> FeatureCollection | list[FeatureCollection]:
         """Reads one or more feature collections (from one or more files).
 
         :param filename: the name of the file (or files) to read
-        :type filename: str, or os.PathLike, or sequence of str/os.PathLike
+        :type filename: str, or os.PathLike, or iterable of str/os.PathLike
         :rtype: FeatureCollection, list of FeatureCollection
         :raises OpenFileForReadingError: if any file is not readable
         :raises FileFormatNotSupportedError: if any file format (identified by a filename extension) does not support reading
@@ -3318,11 +3318,11 @@ class FeatureCollection:
            Raises :class:`FileFormatNotSupportedError` for a format that is write only (such as ``.xy``), rather than returning an empty feature collection.
         """
 
-    def remove(self, feature_query: FeatureType | FeatureId | Feature | Callable[[Feature], Any] | Sequence[FeatureType | FeatureId | Feature | Callable[[Feature], Any]]) -> None:
+    def remove(self, feature_query: FeatureType | FeatureId | Feature | Callable[[Feature], Any] | Iterable[FeatureType | FeatureId | Feature | Callable[[Feature], Any]]) -> None:
         """Removes features from this collection.
 
         :param feature_query: one or more feature types, feature IDs, feature instances or predicate functions that determine which features to remove
-        :type feature_query: FeatureType, or FeatureId, or Feature, or callable (accepting single Feature argument), or a sequence (eg, list or tuple) of any combination of them
+        :type feature_query: FeatureType, or FeatureId, or Feature, or callable (accepting single Feature argument), or an iterable (eg, list, tuple or generator) of any combination of them
         :raises ValueError: if any specified :class:`Feature` is not currently a feature in this collection
 
         All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable (if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` or predicate callable that does not match a feature in this collection is ignored. However if any specified :class:`Feature` is not currently a feature in this collection then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* must have previously been added (in other words the feature *values* are not compared - it actually looks for the same feature *instance*). If ``ValueError`` is raised then no features are removed. A :class:`Feature` added to this collection more than once (see :meth:`add`) has every copy removed.
@@ -4834,11 +4834,11 @@ class GmlDataBlock(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, scalar_type_to_values_mapping: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]]) -> None:
+    def __init__(self, scalar_type_to_values_mapping: dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]) -> None:
         """Create a data block containing one or more :class:`scalar types<ScalarType>` and their associated scalar values.
 
         :param scalar_type_to_values_mapping: maps each scalar type to a sequence of scalar values
-        :type scalar_type_to_values_mapping: dict mapping each ScalarType to a sequence of float, or a sequence of (ScalarType, sequence of float) tuples
+        :type scalar_type_to_values_mapping: dict mapping each ScalarType to an iterable of float, or a sequence of (ScalarType, iterable of float) tuples
         :raises ValueError: if *scalar_type_to_values_mapping* is empty, or if each :class:`scalar type<ScalarType>` is not mapped to the same number of scalar values.
 
         To create ``gpml:VelocityColat`` and ``gpml:VelocityLon`` scalar values:
@@ -4899,13 +4899,13 @@ class GmlDataBlock(PropertyValue):
         .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.
         """
 
-    def set(self, scalar_type: ScalarType, scalar_values: Sequence[float]) -> None:
+    def set(self, scalar_type: ScalarType, scalar_values: Iterable[float]) -> None:
         """Sets the scalar values of the data block associated with a scalar type.
 
         :param scalar_type: the type of the scalars
         :type scalar_type: ScalarType
         :param scalar_values: the scalar values associated with *scalar_type*
-        :type scalar_values: sequence (eg, list or tuple) of float
+        :type scalar_values: iterable of float
         :raises ValueError: if the length of *scalar_values* does not match the length of existing scalar values for other :class:`scalar types<ScalarType>`.
 
         To set (or replace) the scalar values associated with ``gpml:VelocityColat``:
@@ -5303,11 +5303,11 @@ class GpmlArray(PropertyValue):
 
     def __iadd__(self, other: Any) -> Any: ...
 
-    def __init__(self, elements: Sequence[Any]) -> None:
+    def __init__(self, elements: Iterable[PropertyValue]) -> None:
         """Create an array from a sequence of property value elements.
 
         :param elements: A sequence of :class:`PropertyValue` elements.
-        :type elements: Any sequence such as a list or a tuple
+        :type elements: iterable of PropertyValue
         :raises RuntimeError: if sequence is empty
 
         Note that all elements should have the same type (such as :class:`GmlTimePeriod`).
@@ -5344,11 +5344,11 @@ class GpmlArray(PropertyValue):
         :rtype: int
         """
 
-    def extend(self, t: Sequence[PropertyValue]) -> None:
+    def extend(self, t: Iterable[PropertyValue]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`PropertyValue`
+        :type t: iterable of :class:`PropertyValue`
         """
 
     def index(self, x: PropertyValue, i: int = ..., j: int = ...) -> int:
@@ -5584,11 +5584,11 @@ class GpmlIrregularSampling(PropertyValue):
 
     def __iadd__(self, other: Any) -> Any: ...
 
-    def __init__(self, time_samples: Sequence[Any]) -> None:
+    def __init__(self, time_samples: Iterable[GpmlTimeSample]) -> None:
         """Create an irregularly sampled time-dependent property from a sequence of time samples.
 
         :param time_samples: A sequence of :class:`GpmlTimeSample` elements, in any order (they are sorted by time, from most recent to least recent).
-        :type time_samples: Any sequence such as a list or a tuple
+        :type time_samples: iterable of GpmlTimeSample
         :raises RuntimeError: if time sample sequence is empty
 
         .. note:: The sequence of time samples must **not** be empty (for technical implementation reasons), otherwise a *RuntimeError* exception will be thrown.
@@ -5626,11 +5626,11 @@ class GpmlIrregularSampling(PropertyValue):
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeSample]) -> None:
+    def extend(self, t: Iterable[GpmlTimeSample]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeSample`
+        :type t: iterable of :class:`GpmlTimeSample`
         """
 
     def get_enabled_time_samples(self) -> list[GpmlTimeSample]:
@@ -5848,11 +5848,11 @@ class GpmlKeyValueDictionary(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, key_value_mapping: dict[str, int | float | str] | Sequence[tuple[Any, Any]] | None = ...) -> None:
+    def __init__(self, key_value_mapping: dict[str, int | float | str] | Sequence[tuple[str, int | float | str]] | None = ...) -> None:
         """Create a dictionary containing zero or more key/value pairs.
 
         :param key_value_mapping: optional mapping of keys to values
-        :type key_value_mapping: dict mapping each key (str) to a value (int, float or str), or a sequence of (key, value) tuples, or None
+        :type key_value_mapping: dict[str, int | float | str], or sequence of tuple[str, int | float | str], or None
 
         To create an empty dictionary:
         ::
@@ -6208,11 +6208,11 @@ class GpmlPiecewiseAggregation(PropertyValue):
 
     def __iadd__(self, other: Any) -> Any: ...
 
-    def __init__(self, time_windows: Sequence[Any]) -> None:
+    def __init__(self, time_windows: Iterable[GpmlTimeWindow]) -> None:
         """Create a piecewise-constant time-dependent property from a sequence of time windows.
 
         :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.
-        :type time_windows: Any sequence such as a list or a tuple
+        :type time_windows: iterable of GpmlTimeWindow
         :raises RuntimeError: if time window sequence is empty
 
         .. note:: The sequence of time windows must **not** be empty (for technical implementation reasons), otherwise a *RuntimeError* exception will be thrown.
@@ -6247,11 +6247,11 @@ class GpmlPiecewiseAggregation(PropertyValue):
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeWindow]) -> None:
+    def extend(self, t: Iterable[GpmlTimeWindow]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeWindow`
+        :type t: iterable of :class:`GpmlTimeWindow`
         """
 
     def get_time_window_containing_time(self, time: float | GeoTimeInstant) -> GpmlTimeWindow | None:
@@ -6665,11 +6665,11 @@ class GpmlPropertyDelegateList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlPropertyDelegate]) -> None:
+    def extend(self, t: Iterable[GpmlPropertyDelegate]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlPropertyDelegate`
+        :type t: iterable of :class:`GpmlPropertyDelegate`
         """
 
     def index(self, x: GpmlPropertyDelegate, i: int = ..., j: int = ...) -> int:
@@ -6952,11 +6952,11 @@ class GpmlTimeSampleList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeSample]) -> None:
+    def extend(self, t: Iterable[GpmlTimeSample]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeSample`
+        :type t: iterable of :class:`GpmlTimeSample`
         """
 
     def index(self, x: GpmlTimeSample, i: int = ..., j: int = ...) -> int:
@@ -7214,11 +7214,11 @@ class GpmlTimeWindowList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTimeWindow]) -> None:
+    def extend(self, t: Iterable[GpmlTimeWindow]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTimeWindow`
+        :type t: iterable of :class:`GpmlTimeWindow`
         """
 
     def index(self, x: GpmlTimeWindow, i: int = ..., j: int = ...) -> int:
@@ -7287,11 +7287,11 @@ class GpmlTopologicalLine(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, sections: Sequence[Any]) -> None:
+    def __init__(self, sections: Iterable[GpmlTopologicalSection]) -> None:
         """Create a topological line made from topological sections.
 
         :param sections: A sequence of :class:`GpmlTopologicalSection` elements
-        :type sections: Any sequence such as a list or a tuple
+        :type sections: iterable of GpmlTopologicalSection
 
         ::
 
@@ -7387,13 +7387,13 @@ class GpmlTopologicalNetwork(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, boundary_sections: Sequence[Any], interiors: Sequence[Any] | None = None) -> None:
+    def __init__(self, boundary_sections: Iterable[GpmlTopologicalSection], interiors: Iterable[GpmlPropertyDelegate] | None = None) -> None:
         """Create a topological network made from boundary topological sections and interior geometries.
 
         :param boundary_sections: A sequence of :class:`GpmlTopologicalSection` elements
-        :type boundary_sections: Any sequence such as a list or a tuple
+        :type boundary_sections: iterable of GpmlTopologicalSection
         :param interiors: A sequence of :class:`GpmlPropertyDelegate` elements
-        :type interiors: Any sequence such as a list or a tuple
+        :type interiors: iterable of GpmlPropertyDelegate
 
         ::
 
@@ -7486,11 +7486,11 @@ class GpmlTopologicalPolygon(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, exterior_sections: Sequence[Any]) -> None:
+    def __init__(self, exterior_sections: Iterable[GpmlTopologicalSection]) -> None:
         """Create a topological polygon made from topological sections.
 
         :param exterior_sections: A sequence of :class:`GpmlTopologicalSection` elements
-        :type exterior_sections: Any sequence such as a list or a tuple
+        :type exterior_sections: iterable of GpmlTopologicalSection
 
         ::
 
@@ -7761,11 +7761,11 @@ class GpmlTopologicalSectionList:
         :rtype: int
         """
 
-    def extend(self, t: Sequence[GpmlTopologicalSection]) -> None:
+    def extend(self, t: Iterable[GpmlTopologicalSection]) -> None:
         """Add the elements in sequence *t* to the end.
 
         :param t: the elements to add
-        :type t: sequence of :class:`GpmlTopologicalSection`
+        :type t: iterable of :class:`GpmlTopologicalSection`
         """
 
     def index(self, x: GpmlTopologicalSection, i: int = ..., j: int = ...) -> int:
@@ -8418,7 +8418,7 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], local_coordinate: Sequence[float]) -> Vector3D: ...
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], local_coordinate: Iterable[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
@@ -8548,7 +8548,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Sequence[float]) -> Vector3D:
+    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Iterable[float]) -> Vector3D:
         """Converts local spherical coordinates to a geocentric vector.
 
         This method can be called in more than one way...
@@ -8556,7 +8556,7 @@ class LocalCartesian:
         Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.
 
         :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinate: sequence (such as list or tuple) of float
+        :type local_coordinate: iterable of float
         :returns: geocentric vector
         :rtype: Vector3D
 
@@ -10487,11 +10487,11 @@ class PlatePartitioner:
            is inconsistent.
         """
 
-    def partition_geometry(self, geometry: GeometryOnSphere | Sequence[GeometryOnSphere], partitioned_inside_geometries: list[tuple[ReconstructionGeometry, list[GeometryOnSphere]]] | None = ..., partitioned_outside_geometries: list[GeometryOnSphere] | None = ...) -> bool:
+    def partition_geometry(self, geometry: GeometryOnSphere | Iterable[GeometryOnSphere], partitioned_inside_geometries: list[tuple[ReconstructionGeometry, list[GeometryOnSphere]]] | None = ..., partitioned_outside_geometries: list[GeometryOnSphere] | None = ...) -> bool:
         """Partitions one or more geometries into partitioning plates.
 
         :param geometry: the geometry, or geometries, to partition
-        :type geometry: GeometryOnSphere, or sequence (eg, list or tuple) of GeometryOnSphere
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere
         :param partitioned_inside_geometries: optional list of geometries partitioned *inside* the partitioning plates (note that the list is *not* cleared first)
         :type partitioned_inside_geometries: list of 2-tuple (ReconstructionGeometry, list of GeometryOnSphere), or None
         :param partitioned_outside_geometries: optional list of geometries partitioned *outside* all partitioning plates (note that the list is *not* cleared first)
@@ -11860,7 +11860,7 @@ class PolylineOnSphere(GeometryOnSphere):
         """
 
     @staticmethod
-    def rotation_interpolate(from_polyline: GeometryOnSphere, to_polyline: GeometryOnSphere, rotation_pole: PointOnSphere | LatLonPoint | Sequence[float], interpolate: float | list[float], minimum_latitude_overlap_radians: float = 0, maximum_latitude_non_overlap_radians: float = 0, maximum_distance_threshold_radians: float = ..., flatten_longitude_overlaps: FlattenLongitudeOverlaps = FlattenLongitudeOverlaps.no, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere | None]:
+    def rotation_interpolate(from_polyline: GeometryOnSphere, to_polyline: GeometryOnSphere, rotation_pole: PointOnSphere | LatLonPoint | Sequence[float], interpolate: float | Iterable[float], minimum_latitude_overlap_radians: float = 0, maximum_latitude_non_overlap_radians: float = 0, maximum_distance_threshold_radians: float = ..., flatten_longitude_overlaps: FlattenLongitudeOverlaps = FlattenLongitudeOverlaps.no, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere | None]:
         r"""Interpolates between two polylines about a rotation pole.
 
         :param from_polyline: the polyline to interpolate *from*
@@ -11870,7 +11870,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :param rotation_pole: the rotation axis to interpolate around
         :type rotation_pole: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param interpolate: if a single number then *interpolate* is the interval spacing, in radians, between *from_polyline* and *to_polyline* at which to generate interpolated polylines - otherwise if a sequence of numbers (eg, list or tuple) then *interpolate* is the sequence of interpolate ratios, in the range [0,1], at which to generate interpolated polylines (with 0 meaning *from_polyline* and 1 meaning *to_polyline*)
-        :type interpolate: float, or list of float
+        :type interpolate: float, or iterable of float
         :param minimum_latitude_overlap_radians: required amount of latitude overlap of polylines
         :type minimum_latitude_overlap_radians: float - defaults to zero
         :param maximum_latitude_non_overlap_radians: allowed non-overlapping latitude region
@@ -17178,7 +17178,7 @@ class TopologicalModel:
         .. note:: The reconstruction tree cache size of the returned rotation model is equal to the *topological_snapshot_cache_size* argument specified in the :meth:`constructor<__init__>` plus one (or unlimited if not specified).
         """
 
-    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Iterable[PointOnSphere | LatLonPoint | Sequence[float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
+    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Iterable[PointOnSphere | LatLonPoint | Sequence[float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
         """Reconstruct a geometry (and optional scalars) over a time span.
 
         :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points (all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. Reconstructing polylines and polygons as such is to be introduced in future.
@@ -17194,7 +17194,7 @@ class TopologicalModel:
         :param reconstruction_plate_id: If specified then *geometry* is assumed to be a snapshot at present day, and this will rotate it to *initial_time*. If not specified then *geometry* is assumed to already be a snapshot at *initial_time* - this is the default.
         :type reconstruction_plate_id: int
         :param initial_scalars: optional mapping of scalar types to sequences of initial scalar values
-        :type initial_scalars: dict mapping each ScalarType to a sequence of float, or a sequence of (ScalarType, sequence of float) tuples
+        :type initial_scalars: dict mapping each ScalarType to an iterable of float, or a sequence of (ScalarType, iterable of float) tuples
         :param deactivate_points: Specify how points are deactivated when reconstructed forward and/or backward in time, or specify ``None`` to disable deactivation of points (which is useful if you know your points are on continental crust where they're typically always active, as opposed to oceanic crust that is produced at mid-ocean ridges and consumed at subduction zones). Note that you can use your own class derived from :class:`ReconstructedGeometryTimeSpan.DeactivatePoints` or use the provided class :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`. Defaults to a default-constructed :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`.
         :type deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints or None
         :param deformation_uses_natural_neighbour_interpolation: If ``True`` then any point that lies (at any time) within a deforming region of a resolved topological network will be reconstructed using natural neighbour interpolation (otherwise barycentric interpolation will be used) - see :meth:`ResolvedTopologicalNetwork.reconstruct_point`. Defaults to ``True``.
@@ -19325,14 +19325,14 @@ def reverse_reconstruct(reconstructable_features: FeatureCollection | str | os.P
        Raises :class:`FileFormatNotSupportedError` for a reconstructable file that can't be written back (such as ``.vgp``), which was left unchanged, or can't be read (such as ``.xy``), which was read as empty and written back empty.
     """
 
-def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], crossover_filter: Callable[[Crossover], Any] | Sequence[Crossover] | None = None, crossover_threshold_degrees: float | None = None, crossover_type_function: Callable[..., Any] | CrossoverType | None = ..., crossover_results: list[tuple[Crossover, int]] | None = None) -> bool:
+def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]], crossover_filter: Callable[[Crossover], Any] | Iterable[Crossover] | None = None, crossover_threshold_degrees: float | None = None, crossover_type_function: Callable[..., Any] | CrossoverType | None = ..., crossover_results: list[tuple[Crossover, int]] | None = None) -> bool:
     r"""Synchronise crossovers in rotation features.
 
     :param rotation_features: A rotation feature collection, or rotation filename, or         rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``)         of any combination of those four types - all features are used as input and output
     :type rotation_features: FeatureCollection, or str, or os.PathLike, or Feature,         or sequence of Feature, or sequence of any combination of those four types
 
     :param crossover_filter: Optional predicate function (accepting a single crossover argument) that determines         which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to         synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised -         a crossover is a named-tuple 'Crossover' (see table below)
-    :type crossover_filter: callable (accepting single Crossover argument), or         sequence of Crossover, or None
+    :type crossover_filter: callable (accepting single Crossover argument), or iterable of Crossover, or None
 
     :param crossover_threshold_degrees: If specified then crossovers are synchronised only if the         old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by         more than this amount
     :type crossover_threshold_degrees: float or None

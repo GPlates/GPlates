@@ -243,7 +243,7 @@ DEPRECATED_OVERLOADS = {
         'from_geocentric_to_north_east_down', 'vector', _VECTOR, ('x', 'y', 'z'), 'Vector3D'),
     'LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric': _single_origin_forms(
         'from_magnitude_azimuth_inclination_to_geocentric',
-        'local_coordinate', 'Sequence[float]', ('magnitude', 'azimuth', 'inclination'), 'Vector3D'),
+        'local_coordinate', 'Iterable[float]', ('magnitude', 'azimuth', 'inclination'), 'Vector3D'),
     'LocalCartesian.convert_from_north_east_down_to_geocentric': _single_origin_forms(
         'from_north_east_down_to_geocentric', 'vector', _VECTOR, ('x', 'y', 'z'), 'Vector3D'),
     'PolygonOnSphere.__init__': [
