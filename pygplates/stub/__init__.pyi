@@ -981,13 +981,13 @@ class Feature:
         """
 
     @staticmethod
-    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, list[float]] | Sequence[tuple[ScalarType, Sequence[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, list[float]] | Sequence[tuple[ScalarType, Sequence[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_reconstructable_feature(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a reconstructable feature.
 
         :param feature_type: the type of feature to create
         :type feature_type: FeatureType
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
-        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, list[float]] | sequence of tuple[ScalarType, sequence of float]])
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, iterable of float] | sequence of tuple[ScalarType, iterable of float]])
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
         :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
@@ -1089,13 +1089,13 @@ class Feature:
         """
 
     @staticmethod
-    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, list[float]] | Sequence[tuple[ScalarType, Sequence[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, list[float]] | Sequence[tuple[ScalarType, Sequence[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., left_plate: int | None = ..., right_plate: int | None = ..., reconstruction_method: str | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
+    def create_tectonic_section(feature_type: FeatureType, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], name: str | Iterable[str] | None = ..., description: str | None = ..., valid_time: tuple[float | GeoTimeInstant, float | GeoTimeInstant] | None = ..., reconstruction_plate_id: int | None = ..., conjugate_plate_id: int | Iterable[int] | None = ..., left_plate: int | None = ..., right_plate: int | None = ..., reconstruction_method: str | None = ..., other_properties: Iterable[tuple[PropertyName, PropertyValue | Iterable[PropertyValue]]] | None = ..., feature_id: FeatureId | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Feature:
         """Create a tectonic section feature.
 
         :param feature_type: the type of feature to create
         :type feature_type: FeatureType
         :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages - see :meth:`set_geometry` for the coverage forms) - if geometry is not present-day geometry then the created feature will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time
-        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, list[float]] | sequence of tuple[ScalarType, sequence of float]])
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, iterable of float] | sequence of tuple[ScalarType, iterable of float]])
         :param name: the name or names, if not specified then no `pygplates.PropertyName.gml_name <http://www.gplates.org/docs/gpgim/#gml:name>`_ properties are added
         :type name: str, or iterable of str, or None
         :param description: the description, if not specified then a `pygplates.PropertyName.gml_description <http://www.gplates.org/docs/gpgim/#gml:description>`_ property is not added
@@ -1110,7 +1110,7 @@ class Feature:
         :type left_plate: int, or None
         :param right_plate: the right plate id, if not specified then a `pygplates.PropertyName.gpml_right_plate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`_ property is not added
         :type right_plate: int, or None
-        :param reconstruction_method: the reconstruction method, if not specified then a `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) - note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should generally be used unless backward compatibility with old GPlates versions is required
+        :param reconstruction_method: the reconstruction method, if not specified then a `pygplates.PropertyName.gpml_reconstruction_method <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`_ property is not added (note that a missing property essentially defaults to 'ByPlateId' behaviour) - note that 'HalfStageRotationVersion3' is the latest and most accurate half-stage method and should generally be used unless backward compatibility with old GPlates versions is required (see the `supported values <http://www.gplates.org/docs/gpgim/#gpml:ReconstructionMethodEnumeration>`_)
         :type reconstruction_method: str, or None
         :param other_properties: any extra property name/value pairs to add, these can alternatively be added later with :meth:`add`
         :type other_properties: iterable of (PropertyName, PropertyValue or iterable of PropertyValue), or None
@@ -2562,11 +2562,11 @@ class Feature:
         .. seealso:: :meth:`get_enumeration`
         """
 
-    def set_geometry(self, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, list[float]] | Sequence[tuple[ScalarType, Sequence[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, list[float]] | Sequence[tuple[ScalarType, Sequence[float]]]]], property_name: PropertyName | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property] | tuple[Property, Property] | list[tuple[Property, Property]]:
+    def set_geometry(self, geometry: GeometryOnSphere | Iterable[GeometryOnSphere] | tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]] | Iterable[tuple[GeometryOnSphere, dict[ScalarType, Iterable[float]] | Sequence[tuple[ScalarType, Iterable[float]]]]], property_name: PropertyName | None = ..., reverse_reconstruct: tuple[RotationModel, float | GeoTimeInstant] | tuple[RotationModel, float | GeoTimeInstant, int] | None = ..., verify_information_model: VerifyInformationModel = VerifyInformationModel.yes) -> Property | list[Property] | tuple[Property, Property] | list[tuple[Property, Property]]:
         """Set the geometry (or geometries) of this feature.
 
         :param geometry: the geometry or geometries (or coverage or coverages - see below) to set - if the geometry(s) is not present-day geometry then this feature will need to be reverse reconstructed to present day using (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before this feature can be reconstructed to an arbitrary reconstruction time
-        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, list[float]] | sequence of tuple[ScalarType, sequence of float]])
+        :type geometry: GeometryOnSphere, or iterable of GeometryOnSphere, or coverage, or iterable of coverage (where coverage is tuple[GeometryOnSphere, dict[ScalarType, iterable of float] | sequence of tuple[ScalarType, iterable of float]])
         :param property_name: the optional property name of the geometry property or properties to set, if not specified then the :meth:`default geometry property name<FeatureType.get_default_geometry_property_name>` associated with this feature's :class:`type<FeatureType>` is used instead
         :type property_name: PropertyName, or None
         :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) where the anchor plate is optional (defaults to default anchor plate of rotation model) - if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using those parameters and this feature's existing properties (eg, reconstruction plate id) - this is only required if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`
@@ -8418,7 +8418,7 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], local_coordinate: Iterable[float]) -> Vector3D: ...
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], local_coordinate: Sequence[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
@@ -8548,7 +8548,7 @@ class LocalCartesian:
         """
 
     @overload
-    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Iterable[float]) -> Vector3D:
+    def from_magnitude_azimuth_inclination_to_geocentric(self, local_coordinate: Sequence[float]) -> Vector3D:
         """Converts local spherical coordinates to a geocentric vector.
 
         This method can be called in more than one way...
@@ -8556,7 +8556,7 @@ class LocalCartesian:
         Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.
 
         :param local_coordinate: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinate: iterable of float
+        :type local_coordinate: sequence (magnitude, azimuth, inclination)
         :returns: geocentric vector
         :rtype: Vector3D
 
@@ -10843,7 +10843,7 @@ class PolygonOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, exterior_ring: Iterable[PointOnSphere | LatLonPoint | Sequence[float]], interior_rings: Sequence[Iterable[PointOnSphere | LatLonPoint | Sequence[float]]] | None = ...) -> None:
+    def __init__(self, exterior_ring: Iterable[PointOnSphere | LatLonPoint | Sequence[float]], interior_rings: Iterable[Iterable[PointOnSphere | LatLonPoint | Sequence[float]]] | None = ...) -> None:
         """A *PolygonOnSphere* object can be constructed in more than one way...
 
         Create a polygon from an exterior ring and optional interior rings, where each ring is a sequence of (x,y,z) or (latitude,longitude) points.
@@ -10851,7 +10851,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :param exterior_ring: Exterior ring sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
         :type exterior_ring: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z).
         :param interior_rings: Optional sequence of interior rings where each ring is a sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type interior_rings: sequence of rings (where ring is iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)), or None
+        :type interior_rings: iterable of rings (where ring is iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)), or None
         :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
         :raises InvalidPointsForPolygonConstructionError: if any ring has less than three points or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)
@@ -18537,7 +18537,7 @@ def find_crossovers(rotation_features: FeatureCollection | str | os.PathLike | F
     :type crossover_filter: callable (accepting single Crossover argument), or None
 
     :param crossover_type_function: A function that determines a crossover's type, or one of the         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: callable, or int
+    :type crossover_type_function: callable, or int (a CrossoverType value)
 
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
     :rtype: list[Crossover]
@@ -19336,7 +19336,7 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
     :type crossover_threshold_degrees: float or None
 
     :param crossover_type_function: A function that determines a crossover's type, or one of the         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* -         can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
-    :type crossover_type_function: callable, or int, or None
+    :type crossover_type_function: callable, or int (a CrossoverType value), or None
 
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or         *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or         *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or         *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of         *CrossoverType.unknown*, or no plate circuit from the moving plate to the synchronised crossover's fixed plate         at the crossover time) - the list is sorted by crossover time - default is None
     :type crossover_results: list[tuple[Crossover, int]], or None

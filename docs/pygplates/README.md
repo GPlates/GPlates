@@ -155,7 +155,10 @@ protects a `.. versionadded::` / `.. versionchanged::` written flush at column z
 10. **A point given by its coordinates** is `sequence (latitude,longitude) in degrees or (x,y,z)`,
     which the generator makes `Sequence[float]`: the converters take any non-iterator sequence
     (a list, a tuple) of the right length, which the stub can't express. A vector is `sequence
-    (such as list or tuple) of float`. A value the binding *returns* as a tuple stays a tuple
+    (such as list or tuple) of float`, or `sequence (x,y,z)` as the element of a sequence (where
+    `or sequence of float` would trip the generator's bare-`or` lint). Any group of coordinates
+    (`sequence (magnitude, azimuth, inclination)`) is a sequence, even where the binding would
+    also take an iterator. A value the binding *returns* as a tuple stays a tuple
     (`tuple (float, float)`).
 
 `intersphinx` is enabled for the Python and numpy documentation, so `str`, `int`, `os.PathLike`

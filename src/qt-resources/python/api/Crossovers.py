@@ -187,7 +187,7 @@ def find_crossovers(
     :param crossover_type_function: A function that determines a crossover's type, or one of the \
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment*
-    :type crossover_type_function: callable, or int
+    :type crossover_type_function: callable, or int (a CrossoverType value)
     
     :returns: A time-sorted list, from most recent (youngest) to least recent (oldest), of crossover named-tuple 'Crossover' (see table below)
     :rtype: list[Crossover]
@@ -512,7 +512,7 @@ def synchronise_crossovers(
         *CrossoverType* enumerated values, or *CrossoverTypeFunction.type_from_xo_tags_in_comment* if using default \
         scheme for determining crossover type (see below) - default is *CrossoverTypeFunction.type_from_xo_tags_in_comment* - \
         can also be ``None`` if *crossover_filter* is a sequence (since it then gets ignored)
-    :type crossover_type_function: callable, or int, or None
+    :type crossover_type_function: callable, or int (a CrossoverType value), or None
     
     :param crossover_results: If specified then a tuple of (Crossover, int) is appended for each filtered \
         crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \

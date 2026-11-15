@@ -2925,7 +2925,8 @@ namespace GPlatesApi
 				exterior_ring_points, exterior_ring, "Expected a sequence of exterior ring points");
 
 		// Read the interior rings (if any).
-		if (interior_rings != bp::object()/*Py_None*/)
+		// Compare the pointer: '!=' would call Python, which a numpy array answers element-wise.
+		if (interior_rings.ptr() != Py_None)
 		{
 			// Extract the interior rings.
 			std::vector<bp::object/*ring*/> interior_rings_seq;
@@ -4102,7 +4103,7 @@ export_polygon_on_sphere()
 				"  :type exterior_ring: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z).\n"
 				"  :param interior_rings: Optional sequence of interior rings where each ring is a sequence of "
 				"(x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type interior_rings: sequence of rings (where ring is iterable of PointOnSphere or "
+				"  :type interior_rings: iterable of rings (where ring is iterable of PointOnSphere or "
 				"LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)), or None\n"
 				"  :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid\n"
 				"  :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude\n"
