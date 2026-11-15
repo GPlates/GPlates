@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <set>
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
@@ -32,6 +33,8 @@
 // This tells 'global/python.h' not to define NO_IMPORT_ARRAY.
 #define PYGPLATES_IMPORT_NUMPY_ARRAY_API
 #include "global/python.h"
+// For 'UnnamedArgumentPatcher', which reaches into Boost.Python's 'function'.
+#include <boost/python/object/function.hpp>
 
 #include "file-io/StandaloneBundle.h"
 
@@ -268,6 +271,228 @@ namespace
 	}
 }
 
+namespace
+{
+	namespace bp = boost::python;
+
+	//
+	// Access to two private data members of Boost.Python's 'objects::function'.
+	//
+	// The usual access checking does not apply to the names in an explicit instantiation (C++17
+	// [temp.explicit]/14), so instantiating 'PrivateMember' below with a pointer to a private
+	// member is allowed. Its friend function, 'private_member_pointer(Tag)', then returns that
+	// pointer to the rest of this file.
+	// If Boost renamed either member this would fail to compile, rather than misbehave.
+	//
+	template <class Tag, typename Tag::type Member>
+	struct PrivateMember
+	{
+		friend
+		typename Tag::type
+		private_member_pointer(
+				Tag)
+		{
+			return Member;
+		}
+	};
+
+	struct FunctionArgNames
+	{
+		typedef bp::object bp::objects::function::*type;
+
+		friend
+		type
+		private_member_pointer(
+				FunctionArgNames);
+	};
+
+	struct FunctionOverloads
+	{
+		typedef bp::handle<bp::objects::function> bp::objects::function::*type;
+
+		friend
+		type
+		private_member_pointer(
+				FunctionOverloads);
+	};
+
+	template struct PrivateMember<FunctionArgNames, &bp::objects::function::m_arg_names>;
+	template struct PrivateMember<FunctionOverloads, &bp::objects::function::m_overloads>;
+
+
+	void
+	do_nothing()
+	{
+	}
+
+
+	/**
+	 * Works around a Boost.Python bug that crashes a call with keyword arguments
+	 * (https://trac.cpp.al/trac10/ticket/8978, unfixed in Boost 1.90).
+	 *
+	 * A function whose 'bp::arg' list names some but not all of its arguments (most methods, which
+	 * leave the receiver unnamed) has a 'None' in each unnamed slot of its 'm_arg_names', where a
+	 * named slot has a '(name,)' or '(name, default)' tuple. When keywords are passed,
+	 * 'function::call()' fills each slot not covered by positional arguments from that tuple, and
+	 * for a 'None' slot it reads past the end of the 'None' object as if it were one. On conda's
+	 * Python 3.14 that crashed, eg, 'pygplates.LocalCartesian.from_geocentric_to_north_east_down(
+	 * self=local_cartesian, x=1, y=2, z=3)': a method called through its class with its receiver
+	 * passed by keyword, or with no receiver at all. pyGPlates leaves only receivers unnamed, so a
+	 * call that passes the receiver positionally never reaches an unnamed slot.
+	 *
+	 * This replaces each 'None' slot, in every overload of every Boost.Python function it visits,
+	 * with '(None,)': a name that no keyword can match (they are strings), with no default. So the
+	 * overload is rejected, as the ticket's patch does, and the call raises 'ArgumentError' if no
+	 * other overload matches. The 'ArgumentError' message then shows such a slot as
+	 * '<C++ type> None' in its list of C++ signatures.
+	 *
+	 * Boost also reads 'm_arg_names' to join the docstrings of overloads whose arity differs by
+	 * one, and treats an unnamed slot differently from a '(None,)' one there: this could only split
+	 * a pair of overloads with identical docstrings. It changed no pyGPlates docstring
+	 * (2026-11-15).
+	 */
+	class UnnamedArgumentPatcher
+	{
+	public:
+
+		UnnamedArgumentPatcher() :
+			// The type Boost.Python gives its functions (it doesn't export it).
+			d_function_type(Py_TYPE(bp::make_function(&do_nothing).ptr())),
+			d_unnamed_argument(bp::make_tuple(bp::object()))
+		{  }
+
+		/**
+		 * Patches every Boost.Python function reachable from @a attribute: itself if it is one, and
+		 * through a static or class method, a property, or one of our classes (and its attributes).
+		 *
+		 * An attribute that can't be inspected (a Python error) is skipped, so that this can never
+		 * stop pygplates importing.
+		 */
+		void
+		visit(
+				const bp::object &attribute)
+		{
+			try
+			{
+				visit_unchecked(attribute);
+			}
+			catch (const bp::error_already_set &)
+			{
+				PyErr_Clear();
+			}
+		}
+
+	private:
+
+		void
+		visit_unchecked(
+				const bp::object &attribute)
+		{
+			PyObject *const attribute_object = attribute.ptr();
+
+			if (Py_TYPE(attribute_object) == d_function_type)
+			{
+				patch(static_cast<bp::objects::function *>(attribute_object));
+			}
+			else if (PyObject_TypeCheck(attribute_object, &PyStaticMethod_Type) ||
+				PyObject_TypeCheck(attribute_object, &PyClassMethod_Type))
+			{
+				visit(attribute.attr("__func__"));
+			}
+			else if (PyObject_TypeCheck(attribute_object, &PyProperty_Type))
+			{
+				for (const char *accessor : { "fget", "fset", "fdel" })
+				{
+					visit(attribute.attr(accessor));
+				}
+			}
+			else if (PyType_Check(attribute_object) &&
+				d_visited_classes.insert(attribute_object).second)
+			{
+				// Only our own classes (C++ and pure Python), and the classes nested in them.
+				const bp::object module_name = attribute.attr("__module__");
+				if (PyUnicode_Check(module_name.ptr()) &&
+					bp::extract<bool>(module_name.attr("startswith")("pygplates")))
+				{
+					const bp::list items = bp::dict(attribute.attr("__dict__")).items();
+					const bp::ssize_t num_items = bp::len(items);
+					for (bp::ssize_t item_index = 0; item_index < num_items; ++item_index)
+					{
+						visit(items[item_index][1]);
+					}
+				}
+			}
+		}
+
+		/**
+		 * Replaces each 'None' slot of @a function, and of each of its overloads.
+		 */
+		void
+		patch(
+				bp::objects::function *function) const
+		{
+			// Each overload is a function too, chained from the one last defined.
+			for ( ;
+				function != nullptr;
+				function = (function->*private_member_pointer(FunctionOverloads())).get())
+			{
+				bp::object &arg_names = function->*private_member_pointer(FunctionArgNames());
+
+				// 'None' if the overload accepts no keywords at all. (A 'bp::raw_function', which
+				// accepts any, has an empty tuple: no slots.)
+				if (!PyTuple_Check(arg_names.ptr()))
+				{
+					continue;
+				}
+
+				bp::list slots;
+				bool has_unnamed_slot = false;
+				const bp::ssize_t num_slots = bp::len(arg_names);
+				for (bp::ssize_t slot_index = 0; slot_index < num_slots; ++slot_index)
+				{
+					const bp::object slot = arg_names[slot_index];
+					if (slot.is_none())
+					{
+						slots.append(d_unnamed_argument);
+						has_unnamed_slot = true;
+					}
+					else
+					{
+						slots.append(slot);
+					}
+				}
+
+				if (has_unnamed_slot)
+				{
+					arg_names = bp::tuple(slots);
+				}
+			}
+		}
+
+		PyTypeObject *d_function_type;
+		bp::object d_unnamed_argument;
+		std::set<PyObject *> d_visited_classes;
+	};
+
+
+	/**
+	 * Patches every Boost.Python function in @a module (see 'UnnamedArgumentPatcher').
+	 */
+	void
+	reject_keywords_for_unnamed_arguments(
+			const bp::object &module)
+	{
+		UnnamedArgumentPatcher patcher;
+
+		const bp::list items = bp::dict(module.attr("__dict__")).items();
+		const bp::ssize_t num_items = bp::len(items);
+		for (bp::ssize_t item_index = 0; item_index < num_items; ++item_index)
+		{
+			patcher.visit(items[item_index][1]);
+		}
+	}
+}
+
 #if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
 	namespace
 	{
@@ -418,4 +643,7 @@ BOOST_PYTHON_MODULE(pygplates)
 			&pygplates_post_import,
 			(bp::arg("pygplates_import_directory")));
 #endif
+
+	// Must come last: it fixes only the functions that exist when it runs.
+	reject_keywords_for_unnamed_arguments(bp::scope());
 }

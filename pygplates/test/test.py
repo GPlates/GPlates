@@ -8,6 +8,7 @@ import os
 import sys
 import pickle
 import platform
+import subprocess
 import types
 import unittest
 
@@ -188,7 +189,8 @@ class VersionCase(unittest.TestCase):
 
 class KeywordArgumentCase(unittest.TestCase):
     """
-    Documented argument names work as keyword arguments (they once raised 'ArgumentError').
+    Documented argument names work as keyword arguments (they once raised 'ArgumentError'), and
+    keywords that no overload accepts raise 'ArgumentError' (they could crash).
     """
 
     def test_geometry(self):
@@ -226,6 +228,25 @@ class KeywordArgumentCase(unittest.TestCase):
         visitor.visit_gpml_finite_rotation(gpml_finite_rotation=pygplates.GpmlFiniteRotation(pygplates.FiniteRotation()))
         pygplates.PropertyValueVisitor().visit_xs_double(xs_double=pygplates.XsDouble(1))
         self.assertEqual(len(visitor.visited), 1)
+
+    def test_no_crash_without_positional_receiver(self):
+        # Every Boost.Python function, called with keywords that no overload accepts, raises
+        # 'ArgumentError'. A method called through its class without its receiver passed
+        # positionally used to crash instead (see "keyword_argument_probe.py").
+        probe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keyword_argument_probe.py')
+        environment = dict(os.environ, PYTHONPATH=os.pathsep.join(path for path in sys.path if path))
+        result = subprocess.run(
+                [sys.executable, '-X', 'faulthandler', probe], capture_output=True, text=True, env=environment)
+        lines = result.stdout.splitlines()
+        self.assertEqual(
+                result.returncode, 0,
+                'Exit code %d, after "%s":\n%s' % (result.returncode, lines[-1] if lines else '', result.stderr))
+        self.assertEqual([line for line in lines if line.startswith('UNEXPECTED')], [])
+        # The probe must have found the functions (1739 when this was written).
+        num_probed = int(next(line for line in lines if line.startswith('PROBED')).split()[1])
+        self.assertGreater(num_probed, 1000)
+        # One of the methods that crashed (before the fix) on Python 3.14, Windows.
+        self.assertIn('CALL LocalCartesian.from_geocentric_to_north_east_down', lines)
 
 
 class PickleCase(unittest.TestCase):

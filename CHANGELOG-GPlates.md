@@ -23,6 +23,7 @@ Changes since 2.5:
   * Fixed `help()` opening an empty "Python Readline" window that could not be closed.
     * The dialog now shows its prompt and has Cancel and close buttons, and `q`/`quit` exits help.
   * Fixed the cancel button of the "Running Python code..." dialog not interrupting the running code.
+  * Fixed a crash when a pyGPlates method is called on its class with keyword arguments but without the object it applies to as the first positional argument: it raises `ArgumentError`.
   * Script filenames now appear correctly in tracebacks (instead of as `b'...'`).
 * A flowline now spreads from the time it was digitised (its geometry import time, as for a mid-ocean ridge with the "HalfStageRotationVersion3" reconstruction method), not from its first time. So changing its times doesn't shift it (at any reconstruction time it stays where it was, only gaining or losing points), the pieces of a flowline join up (as for motion paths), and rotations younger than when it was digitised don't change it at that time. It keeps spreading at times younger than its first time and older than its last, which needs rotations of both plates there, so a flowline's valid time can hide it where they aren't spreading.
   * This is exact unless a plate's rotation changes pole between two of the flowline's times, or outside them. There the flowline depends on which times it has (slightly between them, more so far outside them), since each step of its spreading uses only the rotations at its two ends.
