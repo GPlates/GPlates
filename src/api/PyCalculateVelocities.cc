@@ -165,7 +165,7 @@ export_calculate_velocities()
 			"over a time interval.\n"
 			"\n"
 			"  :param domain_points: sequence of points at which to calculate velocities\n"
-			"  :type domain_points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+			"  :type domain_points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere\n"
 			"  :param finite_rotation: the rotation pole and angle\n"
 			"  :type finite_rotation: FiniteRotation\n"
 			"  :param time_interval_in_my: the time interval (in millions of years) that the rotation angle encompasses\n"

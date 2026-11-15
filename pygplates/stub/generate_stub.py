@@ -170,7 +170,7 @@ _DUNDER_FALLBACK_SIGNATURES = {
 MANUAL_OVERRIDES = {
     # An alias of 'create_normalised' - its docstring is just 'See create_normalised'.
     'Vector3D.create_normalized': {
-        0: 'def create_normalized(xyz: Sequence[tuple[float, float, float]] | Vector3D)'
+        0: 'def create_normalized(xyz: Sequence[float] | Vector3D)'
            ' -> Vector3D',
         1: 'def create_normalized(x: float, y: float, z: float) -> Vector3D',
     },
@@ -194,7 +194,7 @@ MANUAL_OVERRIDES = {
 #
 # Key: fully qualified name. Value: list of ('def name(...) -> T' line, as for MANUAL_OVERRIDES,
 # deprecation message).
-_POINT = 'PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]'
+_POINT = 'PointOnSphere | LatLonPoint | Sequence[float]'
 _VECTOR = 'Vector3D | Sequence[float]'
 _FEATURES = ('FeatureCollection | str | os.PathLike | Feature | Sequence[Feature] | '
              'Sequence[FeatureCollection | str | os.PathLike | Feature | Sequence[Feature]]')
@@ -247,7 +247,7 @@ DEPRECATED_OVERLOADS = {
     'LocalCartesian.convert_from_north_east_down_to_geocentric': _single_origin_forms(
         'from_north_east_down_to_geocentric', 'vector', _VECTOR, ('x', 'y', 'z'), 'Vector3D'),
     'PolygonOnSphere.__init__': [
-        ('def __init__(self, *, points: Sequence[%s]) -> None' % _POINT,
+        ('def __init__(self, *, points: Iterable[%s]) -> None' % _POINT,
          'The points argument is renamed exterior_ring'),
     ],
     'RotationModel.__init__': [
@@ -297,6 +297,10 @@ _WORD_TYPES = {
     # '(key, value) tuples' - untyped in that spelling.
     'key': 'Any', 'value': 'Any',
 }
+
+# Coordinate names, which make 'sequence (latitude,longitude)' a sequence of float.
+_COORDINATE_WORDS = {'latitude', 'longitude', 'x', 'y', 'z', 'magnitude', 'azimuth',
+                     'inclination'}
 
 # Words that spell out a tuple arity ('tuple of three Property').
 _COUNT_WORDS = {'two': 2, 'three': 3, 'four': 4, 'five': 5}
@@ -707,6 +711,17 @@ class TypeExpressionParser(object):
 
     def _parse_sequence(self, stream, prior):
         stream.next()  # 'sequence'
+        if self._is_coordinate_group(stream):
+            # 'sequence (latitude,longitude) in degrees or (x,y,z)': a point (or vector) given
+            # by its coordinates in any sequence, such as a list or a tuple (the converters
+            # take any non-iterator sequence of the right length, which the stub can't say).
+            # ('in degrees' was dropped with the other unit words before tokenizing.)
+            self._collect_paren_group(stream)
+            while stream.peek_word() == 'or' and self._is_coordinate_group(stream, 1):
+                stream.next()
+                self._collect_paren_group(stream)
+            self.generator.uses_sequence = True
+            return 'Sequence[float]'
         # Skip qualifiers: '(eg, ``list`` or ``tuple``)', 'such as a ``list`` or a
         # ``tuple``'.
         while True:
@@ -850,6 +865,9 @@ class TypeExpressionParser(object):
         while stream.peek_word(offset) in ('a', 'an', 'the'):
             offset += 1
         follower = stream.peek_word(offset)
+        if follower in ('sequence', 'sequences') and \
+                self._is_coordinate_group(stream, offset + 1):
+            return  # 'or sequence (x,y,z)' is a coordinate form, not a container
         if follower in ('list', 'lists', 'sequence', 'sequences') or \
                 (follower in ('tuple', 'tuples', 'dict') and
                  stream.peek_word(offset + 1) in ('of', 'mapping')):
@@ -1041,6 +1059,26 @@ class TypeExpressionParser(object):
         if text in ('int', 'float', 'str', 'bool', 'bytes', 'list', 'tuple', 'dict'):
             return text
         raise TypeParseError('unresolvable class reference %r' % role_text)
+
+    def _is_coordinate_group(self, stream, offset=0):
+        # Whether the stream (at 'offset') is at a '(...)' group of coordinate names only:
+        # '(latitude,longitude)', '(x,y,z)', '(magnitude, azimuth, inclination)'.
+        if not self._peek_punct(stream, '(', offset):
+            return False
+        names = 0
+        offset += 1
+        while True:
+            token = stream.peek(offset)
+            if token is None:
+                return False
+            kind, value = token
+            if kind == 'punct' and value == ')':
+                return names > 0
+            if kind == 'word' and value.lower() in _COORDINATE_WORDS:
+                names += 1
+            elif not (kind == 'punct' and value == ','):
+                return False
+            offset += 1
 
     def _peek_punct(self, stream, value, offset=0):
         token = stream.peek(offset)

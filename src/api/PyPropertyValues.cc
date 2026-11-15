@@ -1238,8 +1238,7 @@ export_gml_point()
 				"  Create a property value representing a point geometry.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1264,8 +1263,7 @@ export_gml_point()
 				"  Sets the point geometry of this property value.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude)"
-				", in degrees, or tuple (x,y,z)\n")
+				"  :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)\n")
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

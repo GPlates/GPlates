@@ -3998,13 +3998,13 @@ class FiniteRotation:
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, pole: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], angle_radians: float) -> None:
+    def __init__(self, pole: PointOnSphere | LatLonPoint | Sequence[float], angle_radians: float) -> None:
         """A *FiniteRotation* object can be constructed in more than one way...
 
         Create a finite rotation from an Euler pole and a rotation angle (in *radians*).
 
         :param pole: the Euler pole.
-        :type pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type pole: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param angle_radians: the rotation angle (in *radians*).
         :type angle_radians: float
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
@@ -4024,13 +4024,13 @@ class FiniteRotation:
         """
 
     @overload
-    def __init__(self, from_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, from_point: PointOnSphere | LatLonPoint | Sequence[float], to_point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a finite rotation that rotates one point to another along the great circle arc connecting them.
 
         :param from_point: the point to rotate *from*
-        :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_point: the point to rotate *to*
-        :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
@@ -4141,13 +4141,13 @@ class FiniteRotation:
         """
 
     @staticmethod
-    def create_great_circle_point_rotation(from_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> FiniteRotation:
+    def create_great_circle_point_rotation(from_point: PointOnSphere | LatLonPoint | Sequence[float], to_point: PointOnSphere | LatLonPoint | Sequence[float]) -> FiniteRotation:
         """Create a finite rotation that rotates one point to another along the great circle arc connecting them.
 
         :param from_point: the point to rotate *from*
-        :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_point: the point to rotate *to*
-        :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: FiniteRotation
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
@@ -4185,17 +4185,17 @@ class FiniteRotation:
         """
 
     @staticmethod
-    def create_segment_rotation(from_segment_start: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], from_segment_end: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_segment_start: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_segment_end: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> FiniteRotation:
+    def create_segment_rotation(from_segment_start: PointOnSphere | LatLonPoint | Sequence[float], from_segment_end: PointOnSphere | LatLonPoint | Sequence[float], to_segment_start: PointOnSphere | LatLonPoint | Sequence[float], to_segment_end: PointOnSphere | LatLonPoint | Sequence[float]) -> FiniteRotation:
         """Create a finite rotation that rotates the *from* line segment to the *to* line segment.
 
         :param from_segment_start: the start point of the segment to rotate *from*
-        :type from_segment_start: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_segment_start: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param from_segment_end: the end point of the segment to rotate *from*
-        :type from_segment_end: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_segment_end: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_segment_start: the start point of the segment to rotate *to*
-        :type to_segment_start: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_segment_start: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_segment_end: the end point of the segment to rotate *to*
-        :type to_segment_end: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_segment_end: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: FiniteRotation
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
@@ -4218,15 +4218,15 @@ class FiniteRotation:
         """
 
     @staticmethod
-    def create_small_circle_point_rotation(rotation_pole: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], from_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], to_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> FiniteRotation:
+    def create_small_circle_point_rotation(rotation_pole: PointOnSphere | LatLonPoint | Sequence[float], from_point: PointOnSphere | LatLonPoint | Sequence[float], to_point: PointOnSphere | LatLonPoint | Sequence[float]) -> FiniteRotation:
         """Create a finite rotation, using the specified rotation pole, that rotates *from_point* to *to_point*.
 
         :param rotation_pole: the rotation pole to rotate around
-        :type rotation_pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type rotation_pole: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param from_point: the point to rotate *from*
-        :type from_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type from_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param to_point: the point to rotate *to*
-        :type to_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type to_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: FiniteRotation
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
@@ -4298,11 +4298,11 @@ class FiniteRotation:
           pole_latitude, pole_longitude, angle_degrees = finite_rotation.get_lat_lon_euler_pole_and_angle_degrees()
         """
 
-    def get_rotation_distance(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> float:
+    def get_rotation_distance(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> float:
         """Return the distance that a point rotates along its small circle rotation arc (in radians).
 
         :param point: the point being rotated (the start point of the rotation arc)
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: float
 
         Returns the distance along the (small circle) rotation arc from the start point *point* to the end point ``finite_rotation * point``. Note that the returned distance is not the angle of rotation - it is the actual distance on the unit radius sphere (hence radians). To convert to distance on the Earth's surface multiply by the Earth radius (see :class:`Earth`).
@@ -5050,11 +5050,11 @@ class GmlPoint(PropertyValue):
 
     __getstate_manages_dict__: ClassVar[bool]
 
-    def __init__(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a property value representing a point geometry.
 
         :param point: the point geometry
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
 
         ::
 
@@ -5069,11 +5069,11 @@ class GmlPoint(PropertyValue):
         :rtype: PointOnSphere
         """
 
-    def set_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def set_point(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Sets the point geometry of this property value.
 
         :param point: the point geometry
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         """
 
 class GmlPolygon(PropertyValue):
@@ -7842,13 +7842,13 @@ class GreatCircleArc:
 
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
-    def __init__(self, start_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], end_point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, start_point: PointOnSphere | LatLonPoint | Sequence[float], end_point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a great circle arc from two points.
 
         :param start_point: the start point of the arc.
-        :type start_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type start_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param end_point: the end point of the arc.
-        :type end_point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type end_point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises IndeterminateResultError: if points are antipodal (opposite each other)
 
         | An arc is specified by a start-point and an end-point:
@@ -8282,11 +8282,11 @@ class LocalCartesian:
 
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
-    def __init__(self, local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> None:
+    def __init__(self, local_origin: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """Create a local cartesian coordinate system at a point on the sphere.
 
         :param local_origin: the origin of the local coordinate system
-        :type local_origin: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origin: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
 
         ::
 
@@ -8301,13 +8301,13 @@ class LocalCartesian:
 
     @overload
     @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[tuple[float, float, float]]:
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, vectors: Iterable[Vector3D | Sequence[float]]) -> list[tuple[float, float, float]]:
         """Converts geocentric vectors to spherical coordinates in local North/East/Down coordinate systems, each at its own origin.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each vector
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param vectors: the geocentric vectors
-        :type vectors: any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: iterable of Vector3D or sequence (x,y,z)
         :returns: list of (magnitude, azimuth, inclination)
         :rtype: list[tuple[float, float, float]]
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
@@ -8334,22 +8334,22 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)')
     @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> tuple[float, float, float]: ...
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | Sequence[float], vector: Vector3D | Sequence[float]) -> tuple[float, float, float]: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_magnitude_azimuth_inclination(vector)')
     @staticmethod
-    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> tuple[float, float, float]: ...
+    def convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin: PointOnSphere | LatLonPoint | Sequence[float], x: float, y: float, z: float) -> tuple[float, float, float]: ...
 
     @overload
     @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
+    def convert_from_geocentric_to_north_east_down(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, vectors: Iterable[Vector3D | Sequence[float]]) -> list[Vector3D]:
         """Converts geocentric vectors to cartesian vectors in local North/East/Down coordinate systems, each at its own origin.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each vector
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param vectors: the geocentric vectors
-        :type vectors: any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: iterable of Vector3D or sequence (x,y,z)
         :returns: list of local cartesian North/East/Down vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
@@ -8376,22 +8376,22 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)')
     @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
+    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | Sequence[float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)')
     @staticmethod
-    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D: ...
+    def convert_from_geocentric_to_north_east_down(local_origin: PointOnSphere | LatLonPoint | Sequence[float], x: float, y: float, z: float) -> Vector3D: ...
 
     @overload
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], local_coordinates: Sequence[tuple[float, float, float]]) -> list[Vector3D]:
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | MultiPointOnSphere | PolylineOnSphere | PolygonOnSphere, local_coordinates: Iterable[Sequence[float]]) -> list[Vector3D]:
         """Converts spherical coordinates in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each local coordinate
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or MultiPointOnSphere, or PolylineOnSphere, or PolygonOnSphere
         :param local_coordinates: the local spherical coordinates (magnitude, azimuth, inclination)
-        :type local_coordinates: any sequence of (float, float, float) tuples
+        :type local_coordinates: iterable of sequence (magnitude, azimuth, inclination)
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *local_coordinates* have different lengths
@@ -8418,22 +8418,22 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], local_coordinate: Sequence[float]) -> Vector3D: ...
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], local_coordinate: Sequence[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)')
     @staticmethod
-    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], magnitude: float, azimuth: float, inclination: float) -> Vector3D: ...
+    def convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], magnitude: float, azimuth: float, inclination: float) -> Vector3D: ...
 
     @overload
     @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], vectors: Sequence[Vector3D | tuple[float, float, float]]) -> list[Vector3D]:
+    def convert_from_north_east_down_to_geocentric(local_origins: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, vectors: Iterable[Vector3D | Sequence[float]]) -> list[Vector3D]:
         """Converts cartesian vectors in local North/East/Down coordinate systems, each at its own origin, to geocentric vectors.
 
         :param local_origins: the origins (points) of the local cartesian systems, one for each vector
-        :type local_origins: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type local_origins: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param vectors: the local cartesian North/East/Down vectors
-        :type vectors: any sequence of Vector3D or tuple (x,y,z)
+        :type vectors: iterable of Vector3D or sequence (x,y,z)
         :returns: list of geocentric vectors
         :rtype: list of Vector3D
         :raises ValueError: if the sequences *local_origins* and *vectors* have different lengths
@@ -8460,12 +8460,12 @@ class LocalCartesian:
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)')
     @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
+    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], vector: Vector3D | Sequence[float]) -> Vector3D: ...
 
     @overload
     @deprecated('Converting at a single origin is deprecated: use the matching method of a LocalCartesian at that origin, eg LocalCartesian(local_origin).from_north_east_down_to_geocentric(vector)')
     @staticmethod
-    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], x: float, y: float, z: float) -> Vector3D: ...
+    def convert_from_north_east_down_to_geocentric(local_origin: PointOnSphere | LatLonPoint | Sequence[float], x: float, y: float, z: float) -> Vector3D: ...
 
     @overload
     def from_geocentric_to_magnitude_azimuth_inclination(self, vector: Vector3D | Sequence[float]) -> tuple[float, float, float]:
@@ -8726,13 +8726,13 @@ class MultiPointOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]]) -> None:
+    def __init__(self, points: Iterable[PointOnSphere | LatLonPoint | Sequence[float]]) -> None:
         """A *MultiPointOnSphere* object can be constructed in more than one way...
 
         Create a multi-point from a sequence of (x,y,z) or (latitude,longitude) points.
 
         :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
+        :type points: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
         :raises InsufficientPointsForMultiPointConstructionError: if point sequence is empty
@@ -8889,11 +8889,11 @@ class NetRotation:
         """
 
     @staticmethod
-    def create_sample_from_finite_rotation(point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], sample_area: float, finite_rotation: FiniteRotation, time_interval: float = 1.0) -> NetRotation:
+    def create_sample_from_finite_rotation(point: PointOnSphere | LatLonPoint | Sequence[float], sample_area: float, finite_rotation: FiniteRotation, time_interval: float = 1.0) -> NetRotation:
         """Creates a net rotation contribution from a finite rotation at a point sample.
 
         :param point: The point that contributes to net rotation.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param sample_area: The surface area around the point in steradians (square radians).
         :type sample_area: float
         :param finite_rotation: The finite rotation over the specified time interval.
@@ -8927,11 +8927,11 @@ class NetRotation:
         """
 
     @staticmethod
-    def create_sample_from_rotation_rate(point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], sample_area: float, rotation_rate_vector: Vector3D) -> NetRotation:
+    def create_sample_from_rotation_rate(point: PointOnSphere | LatLonPoint | Sequence[float], sample_area: float, rotation_rate_vector: Vector3D) -> NetRotation:
         """Creates a net rotation contribution from a rotation rate vector at a point sample.
 
         :param point: The point that contributes to net rotation.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param sample_area: The surface area around the point in steradians (square radians).
         :type sample_area: float
         :param rotation_rate_vector: The rotation rate vector (with magnitude in radians per Myr).
@@ -8992,7 +8992,7 @@ class NetRotationModel:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, topological_model: TopologicalModel, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Sequence[tuple[PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], float]] = ...) -> None:
+    def __init__(self, topological_model: TopologicalModel, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Iterable[tuple[PointOnSphere | LatLonPoint | Sequence[float], float]] = ...) -> None:
         r"""Net rotation snapshots will be calculated from the specified topological model, and using the requested parameters.
 
         :param topological_model: The topological model to calculate net rotations with.
@@ -9002,7 +9002,7 @@ class NetRotationModel:
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
-        :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point_distribution: int, or iterable of tuple (point, float) where point is a PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a snapshot (:meth:`NetRotationModel.net_rotation_snapshot`) is:
@@ -9094,7 +9094,7 @@ class NetRotationSnapshot:
 
     def __hash__(self) -> int: ...
 
-    def __init__(self, topological_snapshot: TopologicalSnapshot, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Sequence[tuple[PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], float]] = ...) -> None:
+    def __init__(self, topological_snapshot: TopologicalSnapshot, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution: int | Iterable[tuple[PointOnSphere | LatLonPoint | Sequence[float], float]] = ...) -> None:
         r"""Create a net rotation snapshot from the specified topological snapshot, and using the requested parameters.
 
         :param topological_snapshot: The topological snapshot to calculate net rotation with.
@@ -9104,7 +9104,7 @@ class NetRotationSnapshot:
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
         :type velocity_delta_time_type: VelocityDeltaTimeType
         :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points sampled along each *meridian* (ie, an `N x 2N` grid). Or can be a sequence of (point, sample_area) tuples where *point* is a point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). If nothing specified then defaults to a `180 x 360` uniformly spaced latitude-longitude points.
-        :type point_distribution: int, or sequence of tuple (point, float) where point is a PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point_distribution: int, or iterable of tuple (point, float) where point is a PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises ValueError: if *velocity_delta_time* is negative or zero, or if *point_distribution* is zero or negative, or an empty sequence.
 
         The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:
@@ -10528,11 +10528,11 @@ class PlatePartitioner:
         .. seealso:: :meth:`PolygonOnSphere.partition`
         """
 
-    def partition_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> ReconstructionGeometry | None:
+    def partition_point(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> ReconstructionGeometry | None:
         """A convenient alternative to :meth:`partition_geometry`, for a point, that finds the first partitioning plate (if any) containing the point.
 
         :param point: the point to partition
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: ReconstructionGeometry or None
 
         .. note:: ``None`` is returned if *point* is not contained by any partitioning plates.
@@ -10581,13 +10581,13 @@ class PointOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, point: PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]) -> None:
+    def __init__(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> None:
         """A *PointOnSphere* object can be constructed in more than one way...
 
         Create a *PointOnSphere* instance from a (x,y,z) or (latitude,longitude) point.
 
         :param point: (x,y,z) point, or (latitude,longitude) point (in degrees)
-        :type point: PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if (x,y,z) is not unit magnitude
 
@@ -10843,15 +10843,15 @@ class PolygonOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, exterior_ring: Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]], interior_rings: Sequence[Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]]] | None = ...) -> None:
+    def __init__(self, exterior_ring: Iterable[PointOnSphere | LatLonPoint | Sequence[float]], interior_rings: Sequence[Iterable[PointOnSphere | LatLonPoint | Sequence[float]]] | None = ...) -> None:
         """A *PolygonOnSphere* object can be constructed in more than one way...
 
         Create a polygon from an exterior ring and optional interior rings, where each ring is a sequence of (x,y,z) or (latitude,longitude) points.
 
         :param exterior_ring: Exterior ring sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type exterior_ring: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float).
+        :type exterior_ring: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z).
         :param interior_rings: Optional sequence of interior rings where each ring is a sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type interior_rings: Any sequence of rings (where ring is any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)), or None.
+        :type interior_rings: sequence of rings (where ring is iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)), or None
         :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
         :raises InvalidPointsForPolygonConstructionError: if any ring has less than three points or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)
@@ -10959,7 +10959,7 @@ class PolygonOnSphere(GeometryOnSphere):
 
     @overload
     @deprecated('The points argument is renamed exterior_ring')
-    def __init__(self, *, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]]) -> None: ...
+    def __init__(self, *, points: Iterable[PointOnSphere | LatLonPoint | Sequence[float]]) -> None: ...
 
     def __iter__(self) -> Any: ...
 
@@ -11320,11 +11320,11 @@ class PolygonOnSphere(GeometryOnSphere):
         .. versionadded:: 1.1
         """
 
-    def is_point_in_polygon(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> bool:
+    def is_point_in_polygon(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> bool:
         """Determines whether the specified point lies within the interior of this polygon.
 
         :param point: the point to be tested
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: bool
 
         Test if a (latitude, longitude) point is inside a polygon:
@@ -11647,13 +11647,13 @@ class PolylineOnSphere(GeometryOnSphere):
     __hash__: ClassVar[None]  # type: ignore[assignment]
 
     @overload
-    def __init__(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float, float] | tuple[float, float]]) -> None:
+    def __init__(self, points: Iterable[PointOnSphere | LatLonPoint | Sequence[float]]) -> None:
         """A *PolylineOnSphere* object can be constructed in more than one way...
 
         Create a polyline from a sequence of (x,y,z) or (latitude,longitude) points.
 
         :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (float,float,float) or tuple (float,float)
+        :type points: iterable of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z)
         :raises InvalidLatLonError: if any *latitude* or *longitude* is invalid
         :raises ViolatedUnitVectorInvariantError: if any (x,y,z) is not unit magnitude
         :raises InvalidPointsForPolylineConstructionError: if sequence has less than two points or if any two points (adjacent in the *points* sequence) are antipodal to each other (on opposite sides of the globe)
@@ -11860,7 +11860,7 @@ class PolylineOnSphere(GeometryOnSphere):
         """
 
     @staticmethod
-    def rotation_interpolate(from_polyline: GeometryOnSphere, to_polyline: GeometryOnSphere, rotation_pole: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], interpolate: float | list[float], minimum_latitude_overlap_radians: float = 0, maximum_latitude_non_overlap_radians: float = 0, maximum_distance_threshold_radians: float = ..., flatten_longitude_overlaps: FlattenLongitudeOverlaps = FlattenLongitudeOverlaps.no, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere | None]:
+    def rotation_interpolate(from_polyline: GeometryOnSphere, to_polyline: GeometryOnSphere, rotation_pole: PointOnSphere | LatLonPoint | Sequence[float], interpolate: float | list[float], minimum_latitude_overlap_radians: float = 0, maximum_latitude_non_overlap_radians: float = 0, maximum_distance_threshold_radians: float = ..., flatten_longitude_overlaps: FlattenLongitudeOverlaps = FlattenLongitudeOverlaps.no, polyline_conversion: PolylineConversion = PolylineConversion.ignore_non_polyline) -> list[PolylineOnSphere | None]:
         r"""Interpolates between two polylines about a rotation pole.
 
         :param from_polyline: the polyline to interpolate *from*
@@ -11868,7 +11868,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :param to_polyline: the polyline to interpolate *to*
         :type to_polyline: GeometryOnSphere
         :param rotation_pole: the rotation axis to interpolate around
-        :type rotation_pole: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type rotation_pole: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param interpolate: if a single number then *interpolate* is the interval spacing, in radians, between *from_polyline* and *to_polyline* at which to generate interpolated polylines - otherwise if a sequence of numbers (eg, list or tuple) then *interpolate* is the sequence of interpolate ratios, in the range [0,1], at which to generate interpolated polylines (with 0 meaning *from_polyline* and 1 meaning *to_polyline*)
         :type interpolate: float, or list of float
         :param minimum_latitude_overlap_radians: required amount of latitude overlap of polylines
@@ -13109,11 +13109,11 @@ class ReconstructSnapshot:
         .. note:: This is the same as the :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of :meth:`get_rotation_model`.
         """
 
-    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id) -> list[ReconstructedFeatureGeometry | None]:
+    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id) -> list[ReconstructedFeatureGeometry | None]:
         """Returns the reconstructed static polygons that contain the specified points.
 
         :param points: sequence of points at which to find containing reconstructed static polygons
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param sort_reconstructed_static_polygons: optional sort order of reconstructed static polygons (defaults to ``pygplates.SortReconstructedStaticPolygons.by_plate_id``)
         :type sort_reconstructed_static_polygons: SortReconstructedStaticPolygons, or None
         :returns: the reconstructed static polygon containing each point (``None`` for each point *outside* all reconstructed static polygons)
@@ -13140,11 +13140,11 @@ class ReconstructSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[ReconstructedFeatureGeometry | None]]:
+    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, sort_reconstructed_static_polygons: SortReconstructedStaticPolygons | None = SortReconstructedStaticPolygons.by_plate_id, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[ReconstructedFeatureGeometry | None]]:
         """Returns the velocities of the specified points (as determined by the reconstructed static polygons that contain them).
 
         :param points: sequence of points at which to calculate velocities
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
@@ -14588,11 +14588,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         """Same as :meth:`get_boundary_sub_segments`.
         """
 
-    def get_point_location(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> TopologyPointLocation:
+    def get_point_location(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> TopologyPointLocation:
         """Determines whether the specified point lies within this resolved topological boundary.
 
         :param point: the point to be tested
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: TopologyPointLocation
 
         If the point lies within this resolved topological boundary then :meth:`TopologyPointLocation.located_in_resolved_boundary` will return this resolved topological boundary, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``).
@@ -14619,11 +14619,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> StrainRate | None:
+    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> StrainRate | None:
         """Returns zero strain rate (if the specified point lies within this resolved topological boundary).
 
         :param point: the point to calculate strain rate at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: StrainRate or None
 
         If the point lies within this resolved topological boundary then ``pygplates.StrainRate.zero`` will be returned (since this is a *rigid* plate), otherwise ``None`` will be returned (to indicate the *point* is outside this resolved topological boundary).
@@ -14644,11 +14644,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
+    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | Sequence[float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
         """Returns the velocity of the specified point (if it lies within this resolved topological boundary).
 
         :param point: the point to calculate velocity at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
@@ -14789,11 +14789,11 @@ class ResolvedTopologicalBoundary(ReconstructionGeometry):
         .. versionadded:: 0.50
         """
 
-    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant) -> PointOnSphere | None:
+    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | Sequence[float], reconstruction_time: float | GeoTimeInstant) -> PointOnSphere | None:
         """Incrementally reconstruct the specified point (if it lies within this resolved topological boundary) to the specified reconstruction time.
 
         :param point: The point to reconstruct. It is the position at the :meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :rtype: PointOnSphere or None
@@ -15103,11 +15103,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.50
         """
 
-    def get_point_location(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> TopologyPointLocation:
+    def get_point_location(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> TopologyPointLocation:
         """Determines whether the specified point lies within this resolved topological network.
 
         :param point: the point to be tested
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: TopologyPointLocation
 
         If the point lies within this resolved topological network then :meth:`TopologyPointLocation.located_in_resolved_network` will return this resolved topological network, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` returning ``True``).
@@ -15153,11 +15153,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float]) -> StrainRate | None:
+    def get_point_strain_rate(self, point: PointOnSphere | LatLonPoint | Sequence[float]) -> StrainRate | None:
         """Returns the strain rate of the specified point (if it lies within this resolved topological network).
 
         :param point: the point to calculate strain rate at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :rtype: StrainRate or None
 
         If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) then a strain rate will be returned, otherwise ``None`` will be returned.
@@ -15193,11 +15193,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
+    def get_point_velocity(self, point: PointOnSphere | LatLonPoint | Sequence[float], velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> Vector3D | None:
         """Returns the velocity of the specified point (if it lies within this resolved topological network).
 
         :param point: the point to calculate velocity at
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param velocity_delta_time: The time delta used to calculate velocity (defaults to 1 Myr).
         :type velocity_delta_time: float
         :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].
@@ -15377,11 +15377,11 @@ class ResolvedTopologicalNetwork(ReconstructionGeometry):
         .. versionadded:: 0.49
         """
 
-    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | tuple[float, float] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant, use_natural_neighbour_interpolation: bool = True) -> PointOnSphere | None:
+    def reconstruct_point(self, point: PointOnSphere | LatLonPoint | Sequence[float], reconstruction_time: float | GeoTimeInstant, use_natural_neighbour_interpolation: bool = True) -> PointOnSphere | None:
         """Incrementally reconstruct the specified point (if it lies within this resolved topological network) to the specified reconstruction time.
 
         :param point: The point to reconstruct. It is the position at the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.
-        :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :param use_natural_neighbour_interpolation: If ``True`` and *point* lies within the deforming region, then the reconstructed point is the interpolation of the natural neighbour deformed triangulation vertex positions (otherwise barycentric interpolation is used). Defaults to ``True``.
@@ -17178,11 +17178,11 @@ class TopologicalModel:
         .. note:: The reconstruction tree cache size of the returned rotation model is equal to the *topological_snapshot_cache_size* argument specified in the :meth:`constructor<__init__>` plus one (or unlimited if not specified).
         """
 
-    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Sequence[PointOnSphere | tuple[float, float, float] | tuple[float, float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
+    def reconstruct_geometry(self, geometry: MultiPointOnSphere | PointOnSphere | PolylineOnSphere | PolygonOnSphere | Iterable[PointOnSphere | LatLonPoint | Sequence[float]], initial_time: float | GeoTimeInstant, oldest_time: float | GeoTimeInstant = ..., youngest_time: float | GeoTimeInstant = 0, time_increment: float = 1, reconstruction_plate_id: int = ..., initial_scalars: dict[ScalarType, Sequence[float]] | Sequence[tuple[ScalarType, Sequence[float]]] = ..., deactivate_points: ReconstructedGeometryTimeSpan.DeactivatePoints | None = ..., deformation_uses_natural_neighbour_interpolation: bool = True) -> ReconstructedGeometryTimeSpan:
         """Reconstruct a geometry (and optional scalars) over a time span.
 
         :param geometry: The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points (all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. Reconstructing polylines and polygons as such is to be introduced in future.
-        :type geometry: MultiPointOnSphere, or PointOnSphere, or PolylineOnSphere, or PolygonOnSphere, or sequence of points (where a point can be PointOnSphere or (x,y,z) tuple or (latitude,longitude) tuple in degrees)
+        :type geometry: MultiPointOnSphere, or PointOnSphere, or PolylineOnSphere, or PolygonOnSphere, or iterable of points (where a point can be PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z))
         :param initial_time: The time that reconstruction by topologies starts at. If it's not one of the time slots (from *oldest_time* to *youngest_time* in steps of *time_increment*) then it's snapped to the nearest one, at a cost in accuracy: if *reconstruction_plate_id* is specified then the present-day *geometry* is rigidly rotated to that time slot's time (so it's correct for that time slot), otherwise *geometry* is treated as being at that time slot's time.
         :type initial_time: float or GeoTimeInstant
         :param oldest_time: Oldest time in the history of topologies. Defaults to *initial_time*.
@@ -17406,11 +17406,11 @@ class TopologicalSnapshot:
         .. note:: This is the same as the :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of :meth:`get_rotation_model`.
         """
 
-    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ...) -> list[TopologyPointLocation]:
+    def get_point_locations(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, resolve_topology_types: ResolveTopologyType | int = ...) -> list[TopologyPointLocation]:
         """Returns the resolved topological boundaries/networks that contain the specified points.
 
         :param points: sequence of points at which to find containing topologies
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param resolve_topology_types: specifies the resolved topology types to search - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
         :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :rtype: list of TopologyPointLocation
@@ -17439,11 +17439,11 @@ class TopologicalSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_strain_rates(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., return_point_locations: bool = False) -> list[StrainRate | None] | tuple[list[StrainRate | None], list[TopologyPointLocation]]:
+    def get_point_strain_rates(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, resolve_topology_types: ResolveTopologyType | int = ..., return_point_locations: bool = False) -> list[StrainRate | None] | tuple[list[StrainRate | None], list[TopologyPointLocation]]:
         """Returns the strain rates of the specified points (as determined by the resolved topological boundaries/networks that contain them).
 
         :param points: sequence of points at which to calculate strain rates
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param resolve_topology_types: specifies the resolved topology types to use for strain rates - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
         :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param return_point_locations: whether to also return the resolved topological boundary/network that contains each point - defaults to ``False``
@@ -17478,11 +17478,11 @@ class TopologicalSnapshot:
         .. versionadded:: 0.50
         """
 
-    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], resolve_topology_types: ResolveTopologyType | int = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[TopologyPointLocation]]:
+    def get_point_velocities(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, resolve_topology_types: ResolveTopologyType | int = ..., velocity_delta_time: float = 1.0, velocity_delta_time_type: VelocityDeltaTimeType = VelocityDeltaTimeType.t_plus_delta_t_to_t, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms, return_point_locations: bool = False) -> list[Vector3D | None] | tuple[list[Vector3D | None], list[TopologyPointLocation]]:
         """Returns the velocities of the specified points (as determined by the resolved topological boundaries/networks that contain them).
 
         :param points: sequence of points at which to calculate velocities
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param resolve_topology_types: specifies the resolved topology types to use for calculating velocities - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
         :type resolve_topology_types: a bitwise combination of ResolveTopologyType enumeration values
         :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).
@@ -17570,11 +17570,11 @@ class TopologicalSnapshot:
         .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model may be different to that of the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified in the :meth:`constructor<__init__>`.
         """
 
-    def reconstruct_points(self, points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], reconstruction_time: float | GeoTimeInstant, resolve_topology_types: ResolveTopologyType | int = ..., use_natural_neighbour_interpolation: bool = True, return_input_if_not_intersect: bool = False) -> list[PointOnSphere | None]:
+    def reconstruct_points(self, points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, reconstruction_time: float | GeoTimeInstant, resolve_topology_types: ResolveTopologyType | int = ..., use_natural_neighbour_interpolation: bool = True, return_input_if_not_intersect: bool = False) -> list[PointOnSphere | None]:
         """Incrementally reconstruct the specified points (that lie within resolved topological boundaries/networks searched in this snapshot) to the specified reconstruction time.
 
         :param points: sequence of points to reconstruct
-        :type points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+        :type points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
         :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the :meth:`reconstruction time of this snapshot <get_reconstruction_time>`.
         :type reconstruction_time: float or GeoTimeInstant
         :param resolve_topology_types: specifies the resolved topology types to search - defaults to :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and :class:`resolved topological networks<ResolvedTopologicalNetwork>` (excludes :class:`resolved topological lines<ResolvedTopologicalLine>` since lines cannot contain points)
@@ -17910,7 +17910,7 @@ class Vector3D:
 
     @overload
     @staticmethod
-    def create_normalized(xyz: Sequence[tuple[float, float, float]] | Vector3D) -> Vector3D:
+    def create_normalized(xyz: Sequence[float] | Vector3D) -> Vector3D:
         """See :meth:`create_normalised`.
         """
 
@@ -18484,11 +18484,11 @@ class XsString(PropertyValue):
         :type string: str
         """
 
-def calculate_velocities(domain_points: Sequence[PointOnSphere | LatLonPoint | tuple[float, float]] | tuple[float, float, float], finite_rotation: FiniteRotation, time_interval_in_my: float, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> list[Vector3D]:
+def calculate_velocities(domain_points: Sequence[PointOnSphere | LatLonPoint | Sequence[float]] | GeometryOnSphere, finite_rotation: FiniteRotation, time_interval_in_my: float, velocity_units: VelocityUnits = VelocityUnits.kms_per_my, earth_radius_in_kms: float = Earth.mean_radius_in_kms) -> list[Vector3D]:
     """Calculate velocities at a sequence of points assuming movement due to a finite rotation over a time interval.
 
     :param domain_points: sequence of points at which to calculate velocities
-    :type domain_points: any sequence of PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)
+    :type domain_points: sequence of PointOnSphere or LatLonPoint or sequence (latitude,longitude) in degrees or (x,y,z), or GeometryOnSphere
     :param finite_rotation: the rotation pole and angle
     :type finite_rotation: FiniteRotation
     :param time_interval_in_my: the time interval (in millions of years) that the rotation angle encompasses

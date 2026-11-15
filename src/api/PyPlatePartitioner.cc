@@ -917,7 +917,7 @@ export_plate_partitioner()
 				"partitioning plate (if any) containing the point.\n"
 				"\n"
 				"  :param point: the point to partition\n"
-				"  :type point: PointOnSphere or LatLonPoint or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :type point: PointOnSphere, or LatLonPoint, or sequence (latitude,longitude) in degrees or (x,y,z)\n"
 				"  :rtype: ReconstructionGeometry or None\n"
 				"\n"
 				"  .. note:: ``None`` is returned if *point* is not contained by any partitioning plates.\n"
