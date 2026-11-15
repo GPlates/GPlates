@@ -441,10 +441,10 @@ export_geometry_on_sphere()
 		// ('geometry.distance(other_geometry)') and also, as before, on the class
 		// ('GeometryOnSphere.distance(geometry, other_geometry)').
 		//
-		// The geometry it's called on must be named ('geometry'), although that name is
-		// undocumented. A call with the old keyword names reaches this overload first, and with
-		// keywords Boost.Python fills each argument not passed positionally by looking up its name:
-		// an unnamed one crashes it (instead of rejecting this overload).
+		// The geometry it's called on is named ('geometry'), although that name is undocumented.
+		// That once also kept a call with the old keyword names, which reaches this overload first,
+		// from crashing Boost.Python; 'UnnamedArgumentPatcher' (PyGPlatesModule.cc) now prevents
+		// that crash for every function.
 		.def("distance",
 				&GPlatesApi::geometry_on_sphere_distance,
 				(bp::arg("geometry"), bp::arg("other_geometry"),
