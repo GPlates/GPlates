@@ -52,7 +52,7 @@ PyGPlates installed using ``conda`` supports:
 
   - Windows (x86-64),
   - macOS (x86-64) and macOS (ARM64),
-  - Linux (x86-64), Linux (ARM64) and Linux (PPC64LE).
+  - Linux (x86-64) and Linux (ARM64).
 
 - Python:
 
