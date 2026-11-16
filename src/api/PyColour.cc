@@ -116,6 +116,38 @@ namespace GPlatesApi
 		return GPlatesGui::Colour::get_navy();
 	}
 
+	inline
+	float
+	red_component(
+			const GPlatesGui::Colour& colour)
+	{
+		return colour.red();
+	}
+
+	inline
+	float
+	green_component(
+			const GPlatesGui::Colour& colour)
+	{
+		return colour.green();
+	}
+
+	inline
+	float
+	blue_component(
+			const GPlatesGui::Colour& colour)
+	{
+		return colour.blue();
+	}
+
+	inline
+	float
+	alpha_component(
+			const GPlatesGui::Colour& colour)
+	{
+		return colour.alpha();
+	}
+
 	//TODO
 	// 	static const Colour &get_maroon();
 	// 
@@ -133,6 +165,10 @@ export_colour()
 {
 	class_<GPlatesGui::Colour>("Colour")
 		.def(init<const float,const float,const float,const float>())
+		.def("get_red", &GPlatesApi::red_component)
+		.def("get_green", &GPlatesApi::green_component)
+		.def("get_blue", &GPlatesApi::blue_component)
+		.def("get_alpha", &GPlatesApi::alpha_component)
 		.add_static_property("blue", &GPlatesApi::blue)
 		.add_static_property("red", &GPlatesApi::red)
 		.add_static_property("white", &GPlatesApi::white)
