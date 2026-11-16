@@ -67,8 +67,9 @@
 # 'VersionFromGitTest.cmake' has them as tests.
 #
 
-# The GPlates release target - a restricted Semantic Version 'X.Y.Z' or 'X.Y.Z-{alpha|beta|rc}.N'.
-set(GPLATES_RELEASE_VERSION 2.6.0)
+# GPlates is frozen on this pyGPlates series branch (see 2 above): the version it resolved to on
+# the development branch at the commit this branch was cut from. Set once, never edited again.
+set(GPLATES_FROZEN_VERSION 2.6.0-112)
 
 # The pyGPlates release target - a restricted PEP 440 version 'X.Y.Z[{a|b|rc}N][.postN]'.
-set(PYGPLATES_RELEASE_VERSION 1.1.0)
+set(PYGPLATES_RELEASE_VERSION 1.1.0rc1)
