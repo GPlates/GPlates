@@ -3,6 +3,11 @@ pyGPlates Changelog
 
 Changes in each pyGPlates release, newest first. Changes to GPlates (the desktop application) are listed in `CHANGELOG-GPlates.md`.
 
+pyGPlates 1.2 (unreleased)
+==========================
+
+Changes since 1.1.0:
+
 pyGPlates 1.1 (unreleased)
 ==========================
 

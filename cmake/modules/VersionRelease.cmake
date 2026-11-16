@@ -71,4 +71,4 @@
 set(GPLATES_RELEASE_VERSION 2.6.0)
 
 # The pyGPlates release target - a restricted PEP 440 version 'X.Y.Z[{a|b|rc}N][.postN]'.
-set(PYGPLATES_RELEASE_VERSION 1.1.0)
+set(PYGPLATES_RELEASE_VERSION 1.2.0)
