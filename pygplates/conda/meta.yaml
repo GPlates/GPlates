@@ -42,7 +42,7 @@ build:
 
 requirements:
   build:
-    # Cross builds (conda-forge cross-compiles linux-aarch64, linux-ppc64le and osx-arm64).
+    # Cross builds (conda-forge cross-compiles linux-ppc64le, on linux-64).
     - python                                 # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
     - numpy                                  # [build_platform != target_platform]
@@ -62,8 +62,8 @@ requirements:
     - scikit-build-core >=0.11.1,<2
     # Must be NumPy 2.x at build time (pyproject's 'numpy>=2.0' build requirement is not enforced
     # here): a module built against 1.x refuses to import under NumPy 2. conda-forge pins numpy 2;
-    # conda_build_config.yaml does the same locally. Without NumPy, configure only warns and the
-    # module silently loses NumPy scalar support (src/CMakeLists.txt).
+    # conda_build_config.yaml does the same locally. Without NumPy, configure fails
+    # (src/CMakeLists.txt).
     - numpy
     # CGAL is header-only (no run_exports), so host-only. GMP/MPFR reach the link line only through
     # the CGAL::CGAL target; their run_exports cover run time.

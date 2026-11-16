@@ -141,8 +141,9 @@ What the feedstock does for itself:
 - **Variants.** Python, NumPy, compilers, `c_stdlib` and the rest, re-rendered from
   conda-forge-pinning.
 - **Patches.** `source:` may carry patches against the released sdist for problems fixed upstream
-  after the release. The current two (a GDAL 3.13 compile error and a Boost 1.89 CMake error) are
-  fixes already in this tree, and are dropped at the next release.
+  after the release. The three that 1.0.0 carries (a GDAL 3.13 compile error, a Boost 1.89 CMake
+  error and a Clang 21 compile error) are fixes already in this tree, and are dropped at the next
+  release.
 
 What is worth knowing about its configuration (`conda-forge.yml`), because it constrains this
 recipe:
@@ -154,16 +155,31 @@ recipe:
   and is left out: the module links libz/zlib1, which ships in `libzlib`, so host `zlib`'s
   run_export already pins the right package and naming `zlib` in `run` would only add a second,
   unpinned dependency on the development package.
-- **Cross builds.** `linux-aarch64`, `linux-ppc64le` and `osx-arm64` are each built on a different
-  architecture from the one they target - `conda-forge.yml` maps `osx_arm64` to `osx_64` and the two
-  Linux targets to `linux_64` - and tested `native_and_emulated`. That is what the `python` /
-  `cross-python_{{ target_platform }}` / `numpy` entries in `build:` are for; see
-  [Cross builds run the host interpreter](#cross-builds-run-the-host-interpreter), which is where
-  those entries turn out to be load-bearing.
+- **Cross builds.** `linux-ppc64le` is built on a different architecture from the one it targets -
+  `conda-forge.yml` maps `linux_ppc64le` to `linux_64` - and tested `native_and_emulated`. That is
+  what the `python` / `cross-python_{{ target_platform }}` / `numpy` entries in `build:` are for;
+  see [Cross builds run the host interpreter](#cross-builds-run-the-host-interpreter), which is
+  where those entries turn out to be load-bearing. `linux-aarch64` and `osx-arm64` were cross
+  builds too, until the feedstock's September 2026 re-render; they now build natively.
 
 Pre-releases go to the feedstock's `rc` branch, not `main`, and are published under the
 `pygplates_rc` label so that `conda install pygplates` does not pick them up. Use it for anything
-where the feedstock build is the first real test of a change.
+where the feedstock build is the first real test of a change. Two things about `rc`:
+
+- **The label** comes from a `recipe/conda_build_config.yaml` that only `rc` has:
+
+  ```
+  channel_targets:
+    - conda-forge pygplates_rc
+  ```
+
+  That is the feedstock's own file, not the `conda_build_config.yaml` in this directory, which is
+  never copied. Keep it to that one key. A recipe's variant file takes precedence over
+  conda-forge's pinning, so anything else in it builds the pre-release differently from the
+  release, which `main` builds without the file.
+- **Nothing updates `rc` between pre-releases**, so bring it up to date with `main` before opening
+  the pull request. Otherwise the pre-release is built with whatever `conda-forge.yml` and CI
+  scripts `rc` last had, not the ones the release will be built with.
 
 ## Why the recipe is the way it is
 
@@ -171,11 +187,11 @@ These are the reasons behind the non-obvious parts of the recipe, each learned f
 
 ### Cross builds run the host interpreter
 
-Half the platforms conda-forge publishes are cross builds, and on those the build still has to
-*run* "the host Python": `build.sh` invokes `$PYTHON -m pip install`, and `src/CMakeLists.txt` asks
-that same interpreter for the standard library location, for `sys.prefix`, and for the NumPy include
-directory. Each of the three is a `FATAL_ERROR` if it fails - the NumPy one only when building
-pyGPlates, which is all this recipe ever does.
+One platform conda-forge publishes, `linux-ppc64le`, is a cross build, and there the build still
+has to *run* "the host Python": `build.sh` invokes `$PYTHON -m pip install`, and
+`src/CMakeLists.txt` asks that same interpreter for the standard library location, for
+`sys.prefix`, and for the NumPy include directory. Each of the three is a `FATAL_ERROR` if it
+fails - the NumPy one only when building pyGPlates, which is all this recipe ever does.
 
 It has to be the host interpreter rather than the one `find_package(Python3)` turns up, because the
 paths taken from it decide where the module is installed. Picking up the build environment's Python
@@ -197,9 +213,9 @@ Emulation does appear, but in the test phase rather than the build: that activat
 itself when `CONDA_BUILD_STATE` is `TEST`, which is where conda-forge's `native_and_emulated`
 setting takes over.
 
-One CMake detail belongs here rather than in `src/CMakeLists.txt` alone, because these three
-platforms are the only place it applies: on them, and only on them, the `Interpreter` and
-`Development` components of Python are searched in two *separate* `find_package()` calls. Policy
+One CMake detail belongs here rather than in `src/CMakeLists.txt` alone, because the cross build
+is the only place it applies: there, and only there, the `Interpreter` and `Development`
+components of Python are searched in two *separate* `find_package()` calls. Policy
 CMP0190 (CMake 4.1) makes asking for both in one call a hard error whenever `CMAKE_CROSSCOMPILING`
 is true and `CMAKE_CROSSCOMPILING_EMULATOR` is not set - which is exactly what conda-forge's
 compiler activation arranges - so a combined call fails to *configure* on every cross build.
@@ -250,9 +266,9 @@ someone else's script.
 
 `numpy` therefore stays in `host`: it is the copy a native build compiles against, and the one whose
 run export pins the runtime bound. Be clear about how far the new error reaches, though - on the
-cross builds the probe is answered by the *build* prefix's numpy (see [Cross builds run the host
+cross build the probe is answered by the *build* prefix's numpy (see [Cross builds run the host
 interpreter](#cross-builds-run-the-host-interpreter)), so dropping `numpy` from `host` would still
-configure and build there. On those three platforms `host` is about the pin, not the probe.
+configure and build there. On that platform `host` is about the pin, not the probe.
 
 The version matters as much as the presence: see `numpy: 2` above. Building against NumPy 2 gives a
 `>=1.2x,<3` run export, so no `pin_compatible` is needed - but `numpy` is still named explicitly in
@@ -334,8 +350,8 @@ The conda-forge package is built from the PyPI sdist, so **release to PyPI first
 1. Copy `meta.yaml`, `build.sh` and `bld.bat` from this directory into `recipe/`. Do **not** copy
    `conda_build_config.yaml` or this README.
 2. In `meta.yaml`, swap both halves of the local form for the feedstock form; the file marks them
-   "FEEDSTOCK form, half one" and "half two". Half one replaces the `load_file_regex` block with a
-   literal `set version` line and **must stay above `package:`** - Jinja runs `set` statements in
+   "FEEDSTOCK form, half one" and "half two". Half one replaces the `set version` line that reads
+   `environ` with a literal one, and **must stay above `package:`** - Jinja runs `set` statements in
    document order, so a version set below its use renders blank and the recipe reaches conda-forge
    with no version, while the `url:` below it still interpolates and hides the mistake. Half two
    replaces `source: git_url:` with the PyPI `url` and `sha256`. Uncomment by removing the leading
@@ -347,7 +363,9 @@ The conda-forge package is built from the PyPI sdist, so **release to PyPI first
    entries. They were made against the *previous* sdist, and a patch that no longer applies fails
    the build.
 6. `conda smithy rerender` (or let the bot do it in the pull request).
-7. Open the pull request against `main`, or against the `rc` branch for a pre-release.
+7. Open the pull request against `main`, or against the `rc` branch for a pre-release - after
+   bringing `rc` up to date with `main`, and with the label file described under
+   [The conda-forge feedstock](#the-conda-forge-feedstock).
 
 The feedstock build is the first time the recipe runs across every platform, Python version and
 cross target at once. Build the recipe locally on at least
@@ -360,7 +378,7 @@ other coverage.
   `run_exports`, `stdlib("c")`, cross-compiling, overlinking and pre-release labels.
 - conda-build's [variant configuration](https://docs.conda.io/projects/conda-build/en/stable/resources/variants.html)
   and [defining metadata](https://docs.conda.io/projects/conda-build/en/stable/resources/define-metadata.html)
-  (`load_file_regex` and the Jinja context).
+  (the Jinja context the recipe is rendered with).
 - [scikit-build-core configuration](https://scikit-build-core.readthedocs.io/en/latest/configuration/index.html) -
   the `config-settings` the build scripts pass.
 - The feedstock: [conda-forge/pygplates-feedstock](https://github.com/conda-forge/pygplates-feedstock).

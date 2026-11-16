@@ -83,7 +83,7 @@ endif()
 #       (CMake 4.1) makes requesting 'Interpreter' (or 'Compiler') together with any 'Development' component
 #       a hard error while cross-compiling, unless CMAKE_CROSSCOMPILING_EMULATOR is set:
 #         https://github.com/Kitware/CMake/blob/bda0b36155a63134811c8ec754fba4fa85dfcd65/Modules/FindPython/Support.cmake#L1601
-#       And conda-forge's cross builds ('linux-aarch64', 'linux-ppc64le' and 'osx-arm64') are exactly that
+#       And conda-forge's cross build ('linux-ppc64le', built on 'linux-64') is exactly that
 #       situation: the compiler activation passes '-DCMAKE_SYSTEM_NAME' (so CMAKE_CROSSCOMPILING is TRUE) and
 #       sets no emulator anywhere, while the policy range in the top-level
 #       'cmake_minimum_required(VERSION 3.22...4.4)' opts us into CMP0190. So a combined call fails to
