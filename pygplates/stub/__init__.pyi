@@ -4345,7 +4345,7 @@ class GeoTimeInstant:
 
     So far this is the same as the native ``float`` type which can represent *distant past* as ``float('inf')`` and *distant future* as ``float('-inf')`` (and support all comparisons with +/- infinity). The advantage with :class:`GeoTimeInstant` is comparisons use a numerical tolerance such that they compare equal when close enough to each other, and there are explicit methods to create and test *distant past* and *distant future*. Note that due to the numerical tolerance in comparisons, a GeoTimeInstant is not hashable and hence cannot be used as a key in a ``dict`` - however the ``float`` returned by :meth:`get_value` can be.
 
-    Comparisons can also be made between a GeoTimeInstant and a ``float`` (or ``int``, etc).
+    Comparisons can also be made between a GeoTimeInstant and a ``float`` (or ``int``, etc). As between two ``float`` values, a comparison with ``float('nan')`` is ``False``, except ``!=``, which is ``True``.
     ::
 
       print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()
@@ -4367,6 +4367,9 @@ class GeoTimeInstant:
 
     .. versionchanged:: 0.42
        Added pickle support.
+
+    .. versionchanged:: 1.1
+       A comparison with ``float('nan')`` no longer raises an error.
     """
 
     def __eq__(self, other: object) -> bool: ...

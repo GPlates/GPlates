@@ -1615,7 +1615,6 @@ class GeoTimeInstantCase(unittest.TestCase):
                 pygplates.FeatureType.gpml_coastline, pygplates.PointOnSphere(0, 0), reconstruction_plate_id=801)
         for function in (
                 lambda: pygplates.GeoTimeInstant(nan),
-                lambda: pygplates.GeoTimeInstant(1) == nan,
                 lambda: pygplates.GmlTimePeriod(nan, 0),
                 lambda: pygplates.GpmlTimeSample(pygplates.XsDouble(1), nan),
                 lambda: feature.set_valid_time(nan, 0),
@@ -1631,6 +1630,32 @@ class GeoTimeInstantCase(unittest.TestCase):
         # But infinities are distant past and future.
         self.assertTrue(pygplates.GeoTimeInstant(float('inf')).is_distant_past())
         self.assertTrue(pygplates.GeoTimeInstant(float('-inf')).is_distant_future())
+
+    def test_compare_with_nan(self):
+        # As between two floats, a comparison with NaN is False, except '!=' (previously raised).
+        nan = float('nan')
+        for time in (pygplates.GeoTimeInstant(10), pygplates.GeoTimeInstant.create_distant_past(),
+                     pygplates.GeoTimeInstant.create_distant_future()):
+            self.assertFalse(time == nan)
+            self.assertTrue(time != nan)
+            self.assertFalse(time < nan)
+            self.assertFalse(time <= nan)
+            self.assertFalse(time > nan)
+            self.assertFalse(time >= nan)
+            # Reflected (float's own comparisons give way to GeoTimeInstant's).
+            self.assertFalse(nan == time)
+            self.assertTrue(nan != time)
+            self.assertFalse(nan < time)
+            self.assertFalse(nan <= time)
+            self.assertFalse(nan > time)
+            self.assertFalse(nan >= time)
+            self.assertFalse(nan in [time])
+            self.assertFalse(time in [nan])
+        # Other floats still compare as before.
+        self.assertTrue(pygplates.GeoTimeInstant(10) == 10)
+        self.assertTrue(pygplates.GeoTimeInstant(10) > 5)
+        self.assertTrue(pygplates.GeoTimeInstant(10) >= 10)
+        self.assertFalse(pygplates.GeoTimeInstant(10) > 10)
 
     def test_create(self):
         age = 10.0
