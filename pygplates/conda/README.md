@@ -155,12 +155,22 @@ recipe:
   and is left out: the module links libz/zlib1, which ships in `libzlib`, so host `zlib`'s
   run_export already pins the right package and naming `zlib` in `run` would only add a second,
   unpinned dependency on the development package.
-- **Cross builds.** `linux-ppc64le` is built on a different architecture from the one it targets -
-  `conda-forge.yml` maps `linux_ppc64le` to `linux_64` - and tested `native_and_emulated`. That is
-  what the `python` / `cross-python_{{ target_platform }}` / `numpy` entries in `build:` are for;
-  see [Cross builds run the host interpreter](#cross-builds-run-the-host-interpreter), which is
-  where those entries turn out to be load-bearing. `linux-aarch64` and `osx-arm64` were cross
-  builds too, until the feedstock's September 2026 re-render; they now build natively.
+- **No `linux-ppc64le`.** conda-forge builds `qt6-main` for `linux-64`, `linux-aarch64`,
+  `osx-64`, `osx-arm64` and `win-64` only, so from 1.1 the feedstock does not build
+  `linux-ppc64le`: its `conda-forge.yml` drops the `linux_ppc64le` entry that 1.0 had (the
+  platform is opt-in).
+  Other packages built on Qt 6, such as `pyside6` and `qgis`, leave it out too. pyGPlates 1.0.0,
+  on Qt 5, is the last release there: its rebuilds after build 7 failed there, since conda-forge's
+  Qt 5 for that platform no longer solves against the current pins. `build.sh` keeps the flags
+  that platform needs, in case Qt 6 reaches it.
+- **Cross builds.** None at present. pyGPlates 1.0 cross-built `linux-aarch64`, `osx-arm64` and
+  `linux-ppc64le`; the feedstock's September 2026 re-render moved the first two to native runners,
+  and the third is no longer built. A cross build is one that `conda-forge.yml` maps to a different
+  `build_platform`. The `python` / `cross-python_{{ target_platform }}` / `numpy` entries in
+  `build:` are for such a build, and they stay, so that one can come back without rediscovering
+  them (some feedstocks already build `osx-64` on `osx-arm64`): see
+  [Cross builds run the host interpreter](#cross-builds-run-the-host-interpreter), which is where
+  those entries turn out to be load-bearing.
 
 Pre-releases go to the feedstock's `rc` branch, not `main`, and are published under the
 `pygplates_rc` label so that `conda install pygplates` does not pick them up. Use it for anything
@@ -187,8 +197,9 @@ These are the reasons behind the non-obvious parts of the recipe, each learned f
 
 ### Cross builds run the host interpreter
 
-One platform conda-forge publishes, `linux-ppc64le`, is a cross build, and there the build still
-has to *run* "the host Python": `build.sh` invokes `$PYTHON -m pip install`, and
+No platform is cross-built at present (see [The conda-forge feedstock](#the-conda-forge-feedstock)),
+but pyGPlates 1.0 cross-built three, and the recipe keeps what that took. On a cross build, the
+build still has to *run* "the host Python": `build.sh` invokes `$PYTHON -m pip install`, and
 `src/CMakeLists.txt` asks that same interpreter for the standard library location, for
 `sys.prefix`, and for the NumPy include directory. Each of the three is a `FATAL_ERROR` if it
 fails - the NumPy one only when building pyGPlates, which is all this recipe ever does.
@@ -213,7 +224,7 @@ Emulation does appear, but in the test phase rather than the build: that activat
 itself when `CONDA_BUILD_STATE` is `TEST`, which is where conda-forge's `native_and_emulated`
 setting takes over.
 
-One CMake detail belongs here rather than in `src/CMakeLists.txt` alone, because the cross build
+One CMake detail belongs here rather than in `src/CMakeLists.txt` alone, because a cross build
 is the only place it applies: there, and only there, the `Interpreter` and `Development`
 components of Python are searched in two *separate* `find_package()` calls. Policy
 CMP0190 (CMake 4.1) makes asking for both in one call a hard error whenever `CMAKE_CROSSCOMPILING`
@@ -265,10 +276,10 @@ module built, imported and passed its tests, and only rejected a `numpy.float64`
 someone else's script.
 
 `numpy` therefore stays in `host`: it is the copy a native build compiles against, and the one whose
-run export pins the runtime bound. Be clear about how far the new error reaches, though - on the
+run export pins the runtime bound. Be clear about how far the new error reaches, though - on a
 cross build the probe is answered by the *build* prefix's numpy (see [Cross builds run the host
 interpreter](#cross-builds-run-the-host-interpreter)), so dropping `numpy` from `host` would still
-configure and build there. On that platform `host` is about the pin, not the probe.
+configure and build there. On a cross build `host` is about the pin, not the probe.
 
 The version matters as much as the presence: see `numpy: 2` above. Building against NumPy 2 gives a
 `>=1.2x,<3` run export, so no `pin_compatible` is needed - but `numpy` is still named explicitly in
@@ -367,10 +378,9 @@ The conda-forge package is built from the PyPI sdist, so **release to PyPI first
    bringing `rc` up to date with `main`, and with the label file described under
    [The conda-forge feedstock](#the-conda-forge-feedstock).
 
-The feedstock build is the first time the recipe runs across every platform, Python version and
-cross target at once. Build the recipe locally on at least
-Windows and Linux before opening that pull request; the Windows build script in particular has no
-other coverage.
+The feedstock build is the first time the recipe runs across every platform and Python version at
+once. Build the recipe locally on at least Windows and Linux before opening that pull request; the
+Windows build script in particular has no other coverage.
 
 ## References
 

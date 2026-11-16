@@ -9,6 +9,7 @@ pyGPlates 1.1 (unreleased)
 Changes since 1.0.0:
 
 * Supports Python 3.9 to 3.15 (Python 3.8 is no longer supported).
+* The conda-forge package is no longer built for Linux (PPC64LE): it now uses Qt 6, which conda-forge doesn't build for that platform. pyGPlates 1.0.0 is still available there.
 * Type stub included in the package (PEP 561), so editors and type checkers get completion, signature help and type checking for the whole API.
   * Forms that still work, for compatibility, are marked deprecated in it, so type checkers report a deprecation rather than an error (eg, the old argument names of `Vector3D.dot()`, and converting at a single origin with `LocalCartesian.convert_...()`).
 * The API reference documents every enumeration (eg, `PartitionMethod`) and exception (eg, `InvalidLatLonError`) on its own page, and parameter types and raised exceptions now link to those pages.
