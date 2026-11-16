@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <sstream>
 #include <utility>
@@ -2016,9 +2017,18 @@ namespace GPlatesApi
 			const double &first_point_spacing_radians,
 			bool return_segment_informations)
 	{
-		if (point_spacing_radians <= 0)
+		// Written '!(x > 0)' so that NaN is rejected too.
+		if (!(point_spacing_radians > 0))
 		{
 			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+		// Minus infinity would never advance to the first point (plus infinity just gives no points).
+		if (std::isnan(first_point_spacing_radians) ||
+			(std::isinf(first_point_spacing_radians) && first_point_spacing_radians < 0))
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"'first_point_spacing_radians' cannot be NaN or negative infinity");
 			bp::throw_error_already_set();
 		}
 
@@ -2851,7 +2861,7 @@ export_polyline_on_sphere()
 				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
 				"and where the point is located *on* that segment in the range [0,1])\n"
 				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]\n"
-				"  :raises ValueError: if *point_spacing_radians* is negative or zero\n"
+				"  :raises ValueError: if *point_spacing_radians* is not positive (including NaN), or *first_point_spacing_radians* is NaN or negative infinity\n"
 				"\n"
 				"  .. note:: The distance (along the polyline) between the last uniform point and the last vertex "
 				"of the polyline can be less than *point_spacing_radians* (since the length of the polyline "
@@ -3608,9 +3618,18 @@ namespace GPlatesApi
 			const double &first_point_spacing_radians,
 			bool return_segment_informations)
 	{
-		if (point_spacing_radians <= 0)
+		// Written '!(x > 0)' so that NaN is rejected too.
+		if (!(point_spacing_radians > 0))
 		{
 			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+		// Minus infinity would never advance to the first point (plus infinity just gives no points).
+		if (std::isnan(first_point_spacing_radians) ||
+			(std::isinf(first_point_spacing_radians) && first_point_spacing_radians < 0))
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"'first_point_spacing_radians' cannot be NaN or negative infinity");
 			bp::throw_error_already_set();
 		}
 
@@ -4944,7 +4963,7 @@ export_polygon_on_sphere()
 				"a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, "
 				"and where the point is located *on* that segment in the range [0,1])\n"
 				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]\n"
-				"  :raises ValueError: if *point_spacing_radians* is negative or zero\n"
+				"  :raises ValueError: if *point_spacing_radians* is not positive (including NaN), or *first_point_spacing_radians* is NaN or negative infinity\n"
 				"\n"
 				"  .. note:: | The distance (along a polygon ring) between the last uniform point of a ring and the last vertex "
 				"of the ring (also its first vertex) can be less than *point_spacing_radians* (since the length of the ring "

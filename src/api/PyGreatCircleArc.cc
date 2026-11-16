@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <limits>
 #include <sstream>
 #include <boost/foreach.hpp>
@@ -189,9 +190,18 @@ namespace GPlatesApi
 			const double &first_point_spacing_radians,
 			bool return_segment_interpolations)
 	{
-		if (point_spacing_radians <= 0)
+		// Written '!(x > 0)' so that NaN is rejected too.
+		if (!(point_spacing_radians > 0))
 		{
 			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+		// Minus infinity would never advance to the first point (plus infinity just gives no points).
+		if (std::isnan(first_point_spacing_radians) ||
+			(std::isinf(first_point_spacing_radians) && first_point_spacing_radians < 0))
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"'first_point_spacing_radians' cannot be NaN or negative infinity");
 			bp::throw_error_already_set();
 		}
 
@@ -509,7 +519,7 @@ export_great_circle_arc()
 				"  :returns: list of points, or (if *return_segment_interpolations* is ``True``) a 2-tuple containing a list of points and "
 				"a list of segment interpolations (where each uniform point is located, *on* this great circle arc, in the range [0,1])\n"
 				"  :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[float]]\n"
-				"  :raises ValueError: if *point_spacing_radians* is negative or zero\n"
+				"  :raises ValueError: if *point_spacing_radians* is not positive (including NaN), or *first_point_spacing_radians* is NaN or negative infinity\n"
 				"\n"
 				"  .. note:: The distance (along the arc) between the last uniform point and the arc's end point "
 				"can be less than *point_spacing_radians* (since the length of the arc minus *first_point_spacing_radians* "

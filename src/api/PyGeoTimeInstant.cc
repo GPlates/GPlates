@@ -235,11 +235,33 @@ namespace GPlatesApi
 		return boost::shared_ptr<GeoTimeInstant>(new GeoTimeInstant(time_value));
 	}
 
+	/**
+	 * Whether @a other is a NaN 'float'.
+	 *
+	 * As between two floats, every comparison with NaN is False, except '!=' (the inverse of '==').
+	 * So '==', '<', '<=', '>' and '>=' each test for it first: '>' and '>=' are otherwise the
+	 * inverses of '<=' and '<', and NaN can't be converted to a GeoTimeInstant anyway.
+	 */
+	static
+	bool
+	is_nan_float(
+			bp::object other)
+	{
+		bp::extract<double> extract_other_float(other);
+		return extract_other_float.check() && std::isnan(extract_other_float());
+	}
+
 	bp::object
 	geo_time_instant_eq(
 			const GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
+		// Every comparison with NaN is False (see 'is_nan_float()').
+		if (is_nan_float(other))
+		{
+			return bp::object(false);
+		}
+
 		bp::extract<GeoTimeInstant> extract_other_geo_time_instant(other);
 		if (extract_other_geo_time_instant.check())
 		{
@@ -293,6 +315,12 @@ namespace GPlatesApi
 			const GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
+		// Every comparison with NaN is False (see 'is_nan_float()').
+		if (is_nan_float(other))
+		{
+			return bp::object(false);
+		}
+
 		//
 		// NOTE: We invert the comparison because we want python's GeoTimeInstant to have larger
 		// time values further back in time (which is the opposite of C++'s GeoTimeInstant).
@@ -337,6 +365,12 @@ namespace GPlatesApi
 			const GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
+		// Every comparison with NaN is False (see 'is_nan_float()').
+		if (is_nan_float(other))
+		{
+			return bp::object(false);
+		}
+
 		//
 		// NOTE: We invert the comparison because we want python's GeoTimeInstant to have larger
 		// time values further back in time (which is the opposite of C++'s GeoTimeInstant).
@@ -381,6 +415,12 @@ namespace GPlatesApi
 			const GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
+		// Every comparison with NaN is False (see 'is_nan_float()').
+		if (is_nan_float(other))
+		{
+			return bp::object(false);
+		}
+
 		bp::object le_result = geo_time_instant_le(geo_time_instant, other);
 		if (le_result.ptr() == Py_NotImplemented)
 		{
@@ -397,6 +437,12 @@ namespace GPlatesApi
 			const GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
+		// Every comparison with NaN is False (see 'is_nan_float()').
+		if (is_nan_float(other))
+		{
+			return bp::object(false);
+		}
+
 		bp::object lt_result = geo_time_instant_lt(geo_time_instant, other);
 		if (lt_result.ptr() == Py_NotImplemented)
 		{
@@ -627,7 +673,9 @@ export_geo_time_instant()
 					"tolerance in comparisons, a GeoTimeInstant is not hashable and hence cannot be used "
 					"as a key in a ``dict`` - however the ``float`` returned by :meth:`get_value` can be.\n"
 					"\n"
-					"Comparisons can also be made between a GeoTimeInstant and a ``float`` (or ``int``, etc).\n"
+					"Comparisons can also be made between a GeoTimeInstant and a ``float`` (or ``int``, etc). "
+					"As between two ``float`` values, a comparison with ``float('nan')`` is ``False``, "
+					"except ``!=``, which is ``True``.\n"
 					"::\n"
 					"\n"
 					"  print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()\n"
@@ -648,7 +696,10 @@ export_geo_time_instant()
 					"A *GeoTimeInstant* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
 					".. versionchanged:: 0.42\n"
-					"   Added pickle support.\n",
+					"   Added pickle support.\n"
+					"\n"
+					".. versionchanged:: 1.1\n"
+					"   A comparison with ``float('nan')`` no longer raises an error.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

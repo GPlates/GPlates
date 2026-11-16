@@ -481,7 +481,18 @@ GPlatesMaths::uniformly_spaced_points(
 		//       This can happen if that uniform point just missed the end of the previous arc (due to numerical tolerance).
 		//       In this case the next arc will not generate a uniform point at its start point
 		//       (because its 'first_uniform_point_spacing_in_arc' will be 'point_spacing', not zero).
-		first_uniform_point_spacing_in_arc += num_uniform_points_in_arc * uniform_point_spacing - gca.arc_length().dval();
+		//
+		// An arc with no uniform points only subtracts its length: multiplying zero points by an
+		// infinite spacing would give NaN, and then no later arc would generate a point.
+		if (num_uniform_points_in_arc > 0)
+		{
+			first_uniform_point_spacing_in_arc +=
+					num_uniform_points_in_arc * uniform_point_spacing - gca.arc_length().dval();
+		}
+		else
+		{
+			first_uniform_point_spacing_in_arc -= gca.arc_length().dval();
+		}
 
 		// If segment information was requested (one for each uniform point on the current segment).
 		if (segment_informations)
