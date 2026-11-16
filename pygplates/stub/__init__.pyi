@@ -7973,7 +7973,7 @@ class GreatCircleArc:
         :type return_segment_interpolations: bool
         :returns: list of points, or (if *return_segment_interpolations* is ``True``) a 2-tuple containing a list of points and a list of segment interpolations (where each uniform point is located, *on* this great circle arc, in the range [0,1])
         :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[float]]
-        :raises ValueError: if *point_spacing_radians* is negative or zero
+        :raises ValueError: if *point_spacing_radians* is not positive (including NaN), or *first_point_spacing_radians* is NaN or negative infinity
 
         .. note:: The distance (along the arc) between the last uniform point and the arc's end point can be less than *point_spacing_radians* (since the length of the arc minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).
 
@@ -11405,7 +11405,7 @@ class PolygonOnSphere(GeometryOnSphere):
         :type return_segment_informations: bool
         :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, and where the point is located *on* that segment in the range [0,1])
         :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]
-        :raises ValueError: if *point_spacing_radians* is negative or zero
+        :raises ValueError: if *point_spacing_radians* is not positive (including NaN), or *first_point_spacing_radians* is NaN or negative infinity
 
         .. note:: | The distance (along a polygon ring) between the last uniform point of a ring and the last vertex of the ring (also its first vertex) can be less than *point_spacing_radians* (since the length of the ring minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).
                   | And if the first uniform point of a ring was added at the ring's first vertex location (ie, *first_point_spacing_radians* is zero) and the last uniform point of the ring is at the same location (ie, the ring's first/last vertex location), due to the ring's length being an integer multiple of *point_spacing_radians*, then the last uniform point is not added.
@@ -11990,7 +11990,7 @@ class PolylineOnSphere(GeometryOnSphere):
         :type return_segment_informations: bool
         :returns: list of points, or (if *return_segment_informations* is ``True``) a 2-tuple containing a list of points and a list of segment informations (which are 2-tuples identifying the index of the :class:`segment <GreatCircleArc>` containing the point, and where the point is located *on* that segment in the range [0,1])
         :rtype: list[PointOnSphere], or tuple[list[PointOnSphere], list[tuple[int, float]]]
-        :raises ValueError: if *point_spacing_radians* is negative or zero
+        :raises ValueError: if *point_spacing_radians* is not positive (including NaN), or *first_point_spacing_radians* is NaN or negative infinity
 
         .. note:: The distance (along the polyline) between the last uniform point and the last vertex of the polyline can be less than *point_spacing_radians* (since the length of the polyline minus *first_point_spacing_radians* might not be an integer multiple of *point_spacing_radians*).
 

@@ -1257,6 +1257,19 @@ class PolylineOnSphereCase(unittest.TestCase):
     def test_centroid(self):
         self.assertTrue(isinstance(self.polyline.get_centroid(), pygplates.PointOnSphere))
     
+    def test_uniform_points_invalid_spacing(self):
+        # A spacing that is not positive (or NaN), or a NaN first spacing, raises ValueError.
+        for point_spacing_radians in (0, -1, float('nan')):
+            self.assertRaises(ValueError, self.polyline.to_uniform_points, point_spacing_radians)
+        self.assertRaises(ValueError, self.polyline.to_uniform_points, 0.1, float('nan'))
+        self.assertRaises(ValueError, self.polyline.to_uniform_points, 0.1, float('-inf'))
+        # An infinite spacing gives just the first point, even where an earlier arc has none.
+        polyline = pygplates.PolylineOnSphere([(0, 0), (0, 10), (0, 60)])
+        uniform_points = polyline.to_uniform_points(float('inf'), math.radians(30))
+        self.assertEqual(len(uniform_points), 1)
+        self.assertTrue(uniform_points[0] == pygplates.PointOnSphere(0, 30))
+        self.assertEqual(len(polyline.to_uniform_points(float('inf'), float('inf'))), 0)
+
     def test_tessellate(self):
         # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
         for tessellate_radians in (0, -1, float('nan'), 1e-12):
@@ -2190,6 +2203,18 @@ class PolygonOnSphereCase(unittest.TestCase):
                 total = tuple(-x for x in total)
             self.assertLess(_angle(polygon.get_interior_centroid().to_xyz(), _normalise(total)), 2e-5)
     
+    def test_uniform_points_invalid_spacing(self):
+        # A spacing that is not positive (or NaN), or a NaN first spacing, raises ValueError.
+        for point_spacing_radians in (0, -1, float('nan')):
+            self.assertRaises(ValueError, self.polygon.to_uniform_points, point_spacing_radians)
+        self.assertRaises(ValueError, self.polygon.to_uniform_points, 0.1, float('nan'))
+        self.assertRaises(ValueError, self.polygon.to_uniform_points, 0.1, float('-inf'))
+        # An infinite spacing gives just the first point, even where an earlier arc has none.
+        polygon = pygplates.PolygonOnSphere([(0, 0), (0, 10), (0, 60), (10, 30)])
+        uniform_points = polygon.to_uniform_points(float('inf'), math.radians(30))
+        self.assertEqual(len(uniform_points), 1)
+        self.assertTrue(uniform_points[0] == pygplates.PointOnSphere(0, 30))
+
     def test_tessellate(self):
         # A threshold that is not positive (or NaN), or too small for the number of points to fit an integer, raises ValueError.
         for tessellate_radians in (0, -1, float('nan'), 1e-12):

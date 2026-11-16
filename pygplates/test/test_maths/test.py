@@ -495,6 +495,12 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertTrue(tessellation_points[3] == self.gca.get_end_point())
     
     def test_uniform_points(self):
+        # A spacing that is not positive (or NaN), or a NaN first spacing, raises ValueError.
+        for point_spacing_radians in (0, -1, float('nan')):
+            self.assertRaises(ValueError, self.gca.to_uniform_points, point_spacing_radians)
+        self.assertRaises(ValueError, self.gca.to_uniform_points, 0.1, float('nan'))
+        self.assertRaises(ValueError, self.gca.to_uniform_points, 0.1, float('-inf'))
+
         uniform_points = self.gca.to_uniform_points(math.radians(10), first_point_spacing_radians=math.radians(5))
         self.assertTrue(len(uniform_points) == 9)
         for i in range(len(uniform_points)):
