@@ -159,6 +159,7 @@ Changes since 1.0.0:
     * `index(x, i, j)` interprets *i* and *j* like slice indices, and raises only `ValueError` (eg, `index(x, 2)` searched the whole list after an index of 0 was treated as the end, an index out of range raised `IndexError`, and so did an empty list).
     * `remove(x)` on an empty list raises `ValueError` (previously `IndexError`).
     * Assigning an empty sequence to an empty extended slice (eg, `a[2:2:2] = []`) does nothing (previously raised `ValueError`), and a slice step of zero raises `ValueError` (previously `IndexError`).
+    * `count(x)` with an *x* of another type returns 0 (previously raised `ArgumentError`).
   * `sort()` on the list-like classes (eg, `GpmlIrregularSampling`) now sorts exactly like `list.sort()`: it is stable with `reverse=True` (equal keys keep their order), keys of mixed types (eg, `int` and `float`, or NumPy numbers) compare as in Python (previously raised `TypeError`), and a key function that raises leaves the list unchanged.
   * Fixed `GpmlTimeSample.set_enabled(is_enabled=...)` raising `ArgumentError`: the documented keyword `is_enabled` now works (the keyword that worked, `set_enabled`, no longer does).
   * `GpmlIrregularSampling.set_value(..., is_enabled=None)` gives an enabled time sample, the default, as documented (previously disabled, so a rotation sample set that way was ignored).

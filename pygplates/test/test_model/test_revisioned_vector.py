@@ -269,6 +269,9 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_sample_list.count(self.original_time_samples[3]) == 2)
         self.gpml_time_sample_list += (self.original_time_samples[0], self.original_time_samples[0])
         self.assertTrue(self.gpml_time_sample_list.count(x=self.original_time_samples[0]) == 3)
+        # As for a Python list, an element of another type is not found (previously raised ArgumentError).
+        self.assertEqual(self.gpml_time_sample_list.count(None), 0)
+        self.assertEqual(self.gpml_time_sample_list.count('not a time sample'), 0)
 
     def test_reverse(self):
         self.gpml_time_sample_list.reverse()

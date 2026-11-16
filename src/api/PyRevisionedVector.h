@@ -497,7 +497,8 @@ namespace GPlatesApi
 			int
 			count(
 					revisioned_vector_non_null_ptr_type revisioned_vector,
-					const element_type &element);
+					// Using bp::object instead of 'element_type' since an element of the wrong type counts 0...
+					boost::python::object element_object);
 
 			static
 			void
@@ -1161,8 +1162,18 @@ namespace GPlatesApi
 		int
 		RevisionedVectorWrapper<RevisionableType, TypeTag>::count(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				const element_type &element)
+				boost::python::object element_object)
 		{
+			namespace bp = boost::python;
+
+			// As for Python's 'list.count()', an element of the wrong type is just not found.
+			bp::extract<element_type> extract_element(element_object);
+			if (!extract_element.check())
+			{
+				return 0;
+			}
+			element_type element = extract_element();
+
 			int num_matches = 0;
 
 			// Search the revisioned vector for the element.
@@ -1616,10 +1627,11 @@ namespace GPlatesApi
 			int
 			count(
 					class_type &class_instance,
-					const element_type &element)
+					// Using bp::object instead of 'element_type' since an element of the wrong type counts 0...
+					boost::python::object element_object)
 			{
 				return revisioned_vector_wrapper_type::count(
-						GetRevisionedVectorFunction(class_instance), element);
+						GetRevisionedVectorFunction(class_instance), element_object);
 			}
 
 			static
