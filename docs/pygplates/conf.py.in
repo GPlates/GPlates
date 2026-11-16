@@ -645,6 +645,10 @@ _CLASS_ATTRIBUTE_DOCSTRINGS = {
     'LatLonPoint.south_pole': 'The South pole (latitude -90, longitude 0).',
     'PointOnSphere.north_pole': 'The North pole, (x,y,z) = (0,0,1).',
     'PointOnSphere.south_pole': 'The South pole, (x,y,z) = (0,0,-1).',
+    # The old name, which breaks the naming rule (deprecated, but still works).
+    'PropertyName.gpml_rift_edgeLength_threshold_degrees':
+        'Deprecated: the old name of :attr:`gpml_rift_edge_length_threshold_degrees`, the name of the '
+        '``gpml:riftEdgeLengthThresholdDegrees`` property.',
     # Scalar types are not in the GPGIM (its 'gpml:CrustalThickness' is a feature type).
     'ScalarType.gpml_crustal_stretching_factor':
         'The ``gpml:CrustalStretchingFactor`` scalar type: the crustal stretching factor (see '

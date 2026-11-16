@@ -12182,6 +12182,9 @@ class PropertyName:
 
     .. versionchanged:: 0.49
        Added attributes *gpml_rift_edgeLength_threshold_degrees*, *gpml_rift_exponential_stretching_constant*, *gpml_rift_left_plate*, *gpml_rift_right_plate* and *gpml_rift_strain_rate_resolution_log10*.
+
+    .. versionchanged:: 1.1
+       Added attribute *gpml_rift_edge_length_threshold_degrees*. The old name *gpml_rift_edgeLength_threshold_degrees* still works, but is deprecated.
     """
 
     def __eq__(self, other: object) -> bool: ...
@@ -12373,6 +12376,8 @@ class PropertyName:
     gpml_relative_plate: ClassVar[PropertyName]
 
     gpml_rift_edgeLength_threshold_degrees: ClassVar[PropertyName]
+
+    gpml_rift_edge_length_threshold_degrees: ClassVar[PropertyName]
 
     gpml_rift_exponential_stretching_constant: ClassVar[PropertyName]
 

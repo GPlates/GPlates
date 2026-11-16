@@ -201,7 +201,7 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
         self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_exponential_stretching_constant).get_double(), 1.2)
         self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_strain_rate_resolution_log10).get_double(), math.log10(1e-16))  # property stored as log10
-        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees).get_double(), 0.2)
+        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_edge_length_threshold_degrees).get_double(), 0.2)
         
         network_feature = pygplates.Feature.create_topological_network_feature(
                 topological_network,
@@ -224,7 +224,7 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(len(network_feature) == 4)
         self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_left_plate).get_plate_id() == 201)
         self.assertTrue(network_feature.get_value(pygplates.PropertyName.gpml_rift_right_plate).get_plate_id() == 701)
-        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees).get_double(), 0.3)
+        self.assertAlmostEqual(network_feature.get_value(pygplates.PropertyName.gpml_rift_edge_length_threshold_degrees).get_double(), 0.3)
  
     def test_create_tectonic_section(self):
         geometry = pygplates.PolylineOnSphere([
@@ -1714,6 +1714,13 @@ class PropertyCase(unittest.TestCase):
 
 
 class PropertyNameCase(unittest.TestCase):
+
+    def test_rift_edge_length_threshold_degrees_old_name(self):
+        # The old name, which breaks the naming rule, still works (deprecated).
+        self.assertEqual(pygplates.PropertyName.gpml_rift_edge_length_threshold_degrees,
+                         pygplates.PropertyName.create_gpml('riftEdgeLengthThresholdDegrees'))
+        self.assertEqual(pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees,
+                         pygplates.PropertyName.gpml_rift_edge_length_threshold_degrees)
 
     def test_hash_with_another_prefix(self):
         # A GPML file can bind the GPML namespace to another prefix, which feature types keep when read.

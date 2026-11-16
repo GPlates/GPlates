@@ -531,7 +531,7 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_pole_dp = GPlatesModel::PropertyName::create_gpml("poleDp");
 	const GPlatesModel::PropertyName gpml_reconstruction_plate_id = GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 	const GPlatesModel::PropertyName gpml_relative_plate = GPlatesModel::PropertyName::create_gpml("relativePlate");
-	const GPlatesModel::PropertyName gpml_rift_edgeLength_threshold_degrees = GPlatesModel::PropertyName::create_gpml("riftEdgeLengthThresholdDegrees");
+	const GPlatesModel::PropertyName gpml_rift_edge_length_threshold_degrees = GPlatesModel::PropertyName::create_gpml("riftEdgeLengthThresholdDegrees");
 	const GPlatesModel::PropertyName gpml_rift_exponential_stretching_constant = GPlatesModel::PropertyName::create_gpml("riftExponentialStretchingConstant");
 	const GPlatesModel::PropertyName gpml_rift_left_plate = GPlatesModel::PropertyName::create_gpml("riftLeftPlate");
 	const GPlatesModel::PropertyName gpml_rift_right_plate = GPlatesModel::PropertyName::create_gpml("riftRightPlate");
@@ -598,7 +598,10 @@ export_property_name()
 			"\n"
 			".. versionchanged:: 0.49\n"
 			"   Added attributes *gpml_rift_edgeLength_threshold_degrees*, *gpml_rift_exponential_stretching_constant*, "
-			"*gpml_rift_left_plate*, *gpml_rift_right_plate* and *gpml_rift_strain_rate_resolution_log10*.\n",
+			"*gpml_rift_left_plate*, *gpml_rift_right_plate* and *gpml_rift_strain_rate_resolution_log10*.\n"
+			"\n"
+			".. versionchanged:: 1.1\n"
+			"   Added attribute *gpml_rift_edge_length_threshold_degrees*. The old name *gpml_rift_edgeLength_threshold_degrees* still works, but is deprecated.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common property names...
@@ -623,7 +626,9 @@ export_property_name()
 	property_name_class.def_readonly("gpml_reconstruction_plate_id", GPlatesApi::gpml_reconstruction_plate_id);
 	property_name_class.def_readonly("gpml_right_plate", GPlatesApi::gpml_right_plate);
 	property_name_class.def_readonly("gpml_relative_plate", GPlatesApi::gpml_relative_plate);
-	property_name_class.def_readonly("gpml_rift_edgeLength_threshold_degrees", GPlatesApi::gpml_rift_edgeLength_threshold_degrees);
+	property_name_class.def_readonly("gpml_rift_edge_length_threshold_degrees", GPlatesApi::gpml_rift_edge_length_threshold_degrees);
+	// The old name, which breaks the naming rule (deprecated, but still works).
+	property_name_class.def_readonly("gpml_rift_edgeLength_threshold_degrees", GPlatesApi::gpml_rift_edge_length_threshold_degrees);
 	property_name_class.def_readonly("gpml_rift_exponential_stretching_constant", GPlatesApi::gpml_rift_exponential_stretching_constant);
 	property_name_class.def_readonly("gpml_rift_left_plate", GPlatesApi::gpml_rift_left_plate);
 	property_name_class.def_readonly("gpml_rift_right_plate", GPlatesApi::gpml_rift_right_plate);

@@ -24,6 +24,7 @@ Changes since 1.0.0:
   * Their argument `vector2` is renamed `other_vector`. The old names (`vector1` and `vector2`) still work, but not mixed with the new one in the same call.
   * Calling them on a vector with two other vectors (eg, `vec.dot(vec1, vec2)`, which ignored `vec`) no longer works.
 * Deprecated converting at a single origin with the `LocalCartesian.convert_...()` functions (eg, `convert_from_geocentric_to_north_east_down(local_origin, vector)`). They still work, but use the matching method of a `LocalCartesian` at that origin instead (eg, `LocalCartesian(local_origin).from_geocentric_to_north_east_down(vector)`). The `convert_...()` functions that convert a sequence of vectors, each at its own origin, are unchanged.
+* Added `PropertyName.gpml_rift_edge_length_threshold_degrees`, named like the other property names. The old name `gpml_rift_edgeLength_threshold_degrees` still works, but is deprecated.
 * `GpmlTopologicalSection.create()` accepts a feature whose geometry is a polygon (returning a line section), as the topology building tools in GPlates do.
 * `GpmlTopologicalSection.create()` and `create_network_interior()` take a `property_return` argument: with `PropertyReturn.first` they reference a feature that has more than one geometry with the same property name, instead of returning `None`.
 * Added an `anchor_plate_id` argument to `PlatePartitioner` and `partition_into_plates()` (it defaults to the rotation model's default anchor plate, which was previously always used):
