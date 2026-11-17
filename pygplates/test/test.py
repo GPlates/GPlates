@@ -204,7 +204,7 @@ class ArgumentErrorCase(unittest.TestCase):
         polyline = pygplates.PolylineOnSphere([(0, 0), (0, 10)])
         self.assertEqual(
                 self._message(polyline.get_arc_length, 'x'),
-                'Positional argument types in\n'
+                'Python argument types in\n'
                 '    PolylineOnSphere.get_arc_length(PolylineOnSphere, str)\n'
                 'did not match this signature:\n'
                 '    PolylineOnSphere.get_arc_length()')
@@ -212,7 +212,7 @@ class ArgumentErrorCase(unittest.TestCase):
     def test_overloaded_constructor(self):
         message = self._message(pygplates.FiniteRotation, (0, 0), 'x')
         self.assertTrue(message.startswith(
-                'Positional argument types in\n'
+                'Python argument types in\n'
                 '    FiniteRotation.__init__(FiniteRotation, tuple, str)\n'
                 'did not match any of these signatures:\n'
                 '    FiniteRotation(pole, angle_radians)\n'
@@ -227,7 +227,7 @@ class ArgumentErrorCase(unittest.TestCase):
         # A module function (which Boost.Python names 'None.calculate_velocities').
         message = self._message(pygplates.calculate_velocities, 'x', 1, 2)
         self.assertTrue(message.startswith(
-                'Positional argument types in\n'
+                'Python argument types in\n'
                 '    pygplates.calculate_velocities(str, int, int)\n'
                 'did not match this signature:\n'
                 '    pygplates.calculate_velocities(domain_points, finite_rotation, '), message)
@@ -257,6 +257,21 @@ class ArgumentErrorCase(unittest.TestCase):
         self.assertIn('\ndid not match C++ signature:\n', str(context.exception))
         self.assertNotIn(' None,', str(context.exception))
         self.assertIn(' None,', context.exception.args[0])
+
+    def test_pickle(self):
+        # As 'multiprocessing' does to return one from a worker process. (The class is
+        # Boost.Python's, whose module pickle can't import.)
+        with self.assertRaises(TypeError) as context:
+            pygplates.FeaturesFunctionArgument([pygplates.PointOnSphere(0, 0)])
+        error = context.exception
+        if hasattr(error, 'add_note'):  # Python 3.11
+            error.add_note('a note')
+        for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
+            unpickled = pickle.loads(pickle.dumps(error, protocol))
+            self.assertIs(type(unpickled), type(error))
+            self.assertEqual(unpickled.args, error.args)
+            self.assertEqual(str(unpickled), str(error))
+            self.assertEqual(getattr(unpickled, '__notes__', None), getattr(error, '__notes__', None))
 
     def test_other_messages_unchanged(self):
         # Other Boost.Python modules can share the class (in a conda environment).
