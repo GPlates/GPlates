@@ -30,14 +30,20 @@
 # This replaces them with the signatures in the function's docstring, each followed by the types
 # its ':type:' fields give the parameters:
 #
-#   Positional argument types in
+#   Python argument types in
 #       PolylineOnSphere.get_arc_length(PolylineOnSphere, str)
 #   did not match this signature:
 #       PolylineOnSphere.get_arc_length()
 #
-# ('Positional', since Boost.Python lists no keyword arguments.) A function whose docstring has no
-# signature (a pickle-only constructor, say) gets the docstring's first paragraph instead, and one
-# with no docstring (most special methods) keeps its C++ signatures.
+# A function whose docstring has no signature (a pickle-only constructor, say) gets the docstring's
+# first paragraph instead, and one with no docstring (most special methods) keeps its C++
+# signatures.
+#
+# The first line stays Boost.Python's, since code recognises the error by it: GPlately's
+# 'rasterise()' passes its argument to 'FeaturesFunctionArgument' and, if the message starts with
+# "Python argument types in", treats it as geometries instead. 1.1.0rc1 started it "Positional
+# argument types in" (Boost.Python lists no keyword arguments), and that broke GPlately's
+# seafloor gridding.
 #
 # It replaces the '__str__' of the exception class, so it costs nothing until a message is shown
 # ('args[0]' keeps Boost.Python's message). The class belongs to the Boost.Python library, which
@@ -200,7 +206,7 @@ def _install_argument_error_messages():
         else:
             display_name = qualified_name
         lines = [
-            'Positional argument types in',
+            'Python argument types in',
             '    %s(%s)' % (qualified_name, match.group('argument_types'))]
 
         if signatures:
@@ -230,6 +236,27 @@ def _install_argument_error_messages():
             return message
 
     argument_error_class.__str__ = __str__
+
+    def __reduce__(self):
+        return _restore_argument_error, self.args, self.__dict__ or None
+
+    argument_error_class.__reduce__ = __reduce__
+
+
+#
+# Pickling an 'ArgumentError' (as 'multiprocessing' does to return one from a worker process).
+#
+# By default pickle refers to the class by its module, 'Boost.Python', which can't be imported, so
+# the worker reported only "Can't pickle <class 'Boost.Python.ArgumentError'>", and not the error.
+# Instead '__reduce__' (above) refers to this function, which pickle finds as a module attribute
+# (hence not nested in '_install_argument_error_messages').
+#
+def _restore_argument_error(*args):
+    # The class is Boost.Python's, so there is no other way to it than raising one.
+    try:
+        Vector3D.get_magnitude(None)
+    except TypeError as error:
+        return type(error)(*args)
 
 _install_argument_error_messages()
 del _install_argument_error_messages
