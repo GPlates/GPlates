@@ -281,10 +281,11 @@ export_exceptions()
 	GPlatesApi::GPlatesError =
 			export_exception<GPlatesGlobal::Exception>(
 					"GPlatesError",
-					"The base class of all pyGPlates exceptions.\n"
+					"The base class of all pyGPlates exceptions, except :class:`ArgumentError`.\n"
 					"\n"
 					"  Catch this to handle any error raised by pyGPlates itself. It inherits from Python's ``Exception``,\n"
-					"  so an ``except Exception`` handler also catches it.\n"
+					"  so an ``except Exception`` handler also catches it. :class:`ArgumentError` (no form of a function\n"
+					"  accepts the arguments of a call) inherits from Python's ``TypeError`` instead.\n"
 					"\n"
 					"  ::\n"
 					"\n"

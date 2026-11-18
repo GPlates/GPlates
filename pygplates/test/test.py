@@ -195,9 +195,8 @@ class ArgumentErrorCase(unittest.TestCase):
     """
 
     def _message(self, function, *arguments):
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(pygplates.ArgumentError) as context:
             function(*arguments)
-        self.assertEqual(type(context.exception).__name__, 'ArgumentError')
         return str(context.exception)
 
     def test_method(self):
@@ -257,6 +256,15 @@ class ArgumentErrorCase(unittest.TestCase):
         self.assertIn('\ndid not match C++ signature:\n', str(context.exception))
         self.assertNotIn(' None,', str(context.exception))
         self.assertIn(' None,', context.exception.args[0])
+
+    def test_name(self):
+        # 'pygplates.ArgumentError' is Boost.Python's class itself (Boost.Python raises its own).
+        with self.assertRaises(pygplates.ArgumentError) as context:
+            pygplates.Vector3D.get_magnitude(None)
+        self.assertIs(type(context.exception), pygplates.ArgumentError)
+        self.assertTrue(issubclass(pygplates.ArgumentError, TypeError))
+        self.assertFalse(issubclass(pygplates.ArgumentError, pygplates.GPlatesError))
+        self.assertTrue(pygplates.ArgumentError.__doc__.startswith('No form of a pyGPlates function'))
 
     def test_pickle(self):
         # As 'multiprocessing' does to return one from a worker process. (The class is

@@ -41,6 +41,39 @@ class AmbiguousGeometryCoverageError(PreconditionViolationError):
       so pyGPlates could not tell which range belongs to which geometry.
     """
 
+class ArgumentError(TypeError):
+    """No form of a pyGPlates function or method accepts the arguments of a call (for example, an argument
+      of the wrong type, or too many arguments).
+
+      Its message lists the documented signatures of the function, each with the types of its parameters
+      (or, for a function that documents none, the first paragraph of its documentation).
+
+      It inherits from Python's ``TypeError`` (so an ``except TypeError`` handler also catches it), not from
+      :class:`GPlatesError`.
+
+      ::
+
+        try:
+            arc_length = polyline.get_arc_length('degrees')
+        except pygplates.ArgumentError as error:
+            print(error)
+
+      .. note:: Write ``pygplates.ArgumentError``, rather than ``from pygplates import ArgumentError``.
+         The class itself can't be pickled (its instances can), since its module, ``Boost.Python``, can't
+         be imported. So it can't be passed to another process (eg, with ``multiprocessing``), and joblib or
+         dask (which use cloudpickle) can't send a function defined in a script or notebook that refers to
+         ``ArgumentError`` by itself. A function that refers to ``pygplates.ArgumentError`` can be sent,
+         since only the ``pygplates`` module is sent then (by name).
+
+      .. note:: The class belongs to Boost.Python (the library that exposes pyGPlates' C++ code to Python),
+         so its type is shown as ``Boost.Python.ArgumentError``. Another extension module built with
+         Boost.Python raises the same class if it uses the same copy of the Boost.Python library as
+         pyGPlates (as can happen in a conda environment), so ``except pygplates.ArgumentError`` also
+         catches its argument errors.
+
+      .. versionadded:: 1.1
+    """
+
 class AssertionFailureError(GPlatesError):
     """An internal assertion failed inside pyGPlates.
 
@@ -4319,10 +4352,11 @@ class FlattenLongitudeOverlaps(int):
     values: ClassVar[dict[int, FlattenLongitudeOverlaps]]
 
 class GPlatesError(Exception):
-    """The base class of all pyGPlates exceptions.
+    """The base class of all pyGPlates exceptions, except :class:`ArgumentError`.
 
       Catch this to handle any error raised by pyGPlates itself. It inherits from Python's ``Exception``,
-      so an ``except Exception`` handler also catches it.
+      so an ``except Exception`` handler also catches it. :class:`ArgumentError` (no form of a function
+      accepts the arguments of a call) inherits from Python's ``TypeError`` instead.
 
       ::
 

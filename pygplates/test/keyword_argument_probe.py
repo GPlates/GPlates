@@ -67,7 +67,7 @@ def probe(function):
             try:
                 function(*positional_arguments, **keyword_arguments)
             except Exception as exc:
-                if type(exc).__name__ != 'ArgumentError':
+                if not isinstance(exc, pygplates.ArgumentError):
                     return 'raised %s: %s' % (type(exc).__name__, exc)
             else:
                 return 'returned'

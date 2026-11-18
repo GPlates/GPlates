@@ -88,7 +88,7 @@ __init__()
 Without it, autosummary reports `error while formatting arguments for ...: <Boost.Python.function
 object> is not a Python function`.
 
-The signature lines also make the message of a `Boost.Python.ArgumentError`, raised when no
+The signature lines also make the message of a `pygplates.ArgumentError`, raised when no
 overload accepts the arguments of a call: `src/qt-resources/python/api/ArgumentErrors.py` lists the
 function's documented signatures, each followed by its parameters' `:type:` fields, in place of
 Boost.Python's C++ signatures. It does so only if each documented parameter has the same name in
@@ -239,8 +239,9 @@ docstring is the only place their values are described (a table of `Value` / `De
 a parameter that accepts an enumeration names it in its `:type:` field (which links to the
 enumeration's page), and its `:param:` text mentions only the values that particular function
 restricts or defaults to. Exceptions take their docstring from
-`export_exception()` in `PyExceptions.cc`. Both are listed in the *Enumerations* and *Exceptions*
-sections of `pygplates_reference.rst`; the enumerations use the custom autosummary template
+`export_exception()` in `PyExceptions.cc`, except `ArgumentError` (Boost.Python's class, which
+`src/qt-resources/python/api/ArgumentErrors.py` names and documents). Both are listed in the
+*Enumerations* and *Exceptions* sections of `pygplates_reference.rst`; the enumerations use the custom autosummary template
 `_templates/autosummary/enum.rst`, because the default class template would list every method
 that a Boost.Python enum inherits from `int`.
 

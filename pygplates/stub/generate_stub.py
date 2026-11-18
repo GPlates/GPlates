@@ -77,6 +77,16 @@ import sys
 # interpreter (which registers 'pygplates' via 'PyImport_AppendInittab').
 _PYGPLATES_MODULES = ('pygplates', 'pygplates.pygplates')
 
+# The one public pygplates class from another module: Boost.Python's argument error class, which
+# 'src/qt-resources/python/api/ArgumentErrors.py' names 'pygplates.ArgumentError' (its module is
+# 'Boost.Python', which is not a module that can be imported).
+_FOREIGN_CLASSES = {('Boost.Python', 'ArgumentError')}
+
+
+def _is_foreign_class(obj):
+    """Whether 'obj' is one of '_FOREIGN_CLASSES' (whatever name it has in pygplates)."""
+    return isinstance(obj, type) and (obj.__module__, obj.__name__) in _FOREIGN_CLASSES
+
 # Class attributes that are implementation machinery, not API.
 #
 # '__firstlineno__' and '__static_attributes__' are set on every class defined in Python
@@ -1558,7 +1568,8 @@ class StubGenerator(object):
             if inspect.ismodule(obj):
                 continue
             module_name = getattr(obj, '__module__', None)
-            if module_name is not None and not self._is_pygplates_module(module_name):
+            if module_name is not None and not self._is_pygplates_module(module_name) and \
+                    not _is_foreign_class(obj):
                 continue  # leaked import (eg, 'namedtuple', 'partial')
             body.append('')
             body.extend(self._emit_module_member(name, obj))
@@ -1644,7 +1655,9 @@ class StubGenerator(object):
         body = _format_docstring(doc_text, member_indent)
 
         qualified_prefix = self.qualified_name(cls)
-        for member_name in sorted(vars(cls)):
+        # A foreign class's members are its own module's (pygplates' '__str__' and '__reduce__' on
+        # 'ArgumentError' only patch it), so only its docstring is pygplates'.
+        for member_name in ([] if _is_foreign_class(cls) else sorted(vars(cls))):
             if member_name in _SKIP_CLASS_ATTRS:
                 continue
             if member_name.startswith('_') and not member_name.startswith('__'):
