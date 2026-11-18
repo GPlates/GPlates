@@ -66,13 +66,59 @@ def _install_argument_error_messages():
     except TypeError as error:
         argument_error_class = type(error)
     else:
-        return
+        argument_error_class = TypeError
+
+    # Name the class 'pygplates.ArgumentError', so that it can be caught by name ('Boost.Python' is
+    # not a module, so it can't be imported from there). It is the same class, not a subclass, since
+    # Boost.Python raises its own class. Its '__module__' stays 'Boost.Python': other modules can
+    # share the class (see above), and the name would be wrong for theirs. It is named before the
+    # checks below, so that the documented name exists whatever Boost.Python raised.
+    pygplates_dict = globals()
+    pygplates_dict['ArgumentError'] = argument_error_class
+
+    # Change the class only if it is Boost.Python's. Anything else could be Python's own 'TypeError'
+    # (a built-in type, which can't be changed, and changing it would change every 'TypeError'), or
+    # another library's class, whose messages the rewriting below doesn't know. (The tests would
+    # notice this happening: they check the docstring and the rewritten messages.)
     if (argument_error_class.__module__ != 'Boost.Python' or
             argument_error_class.__name__ != 'ArgumentError'):
         return
 
+    # Like '__str__' and '__reduce__' below, the docstring is set on the shared class, so another
+    # module sharing it could replace any of them with its own (and we would replace its).
+    argument_error_class.__doc__ = (
+        "No form of a pyGPlates function or method accepts the arguments of a call (for example, an argument\n"
+        "  of the wrong type, or too many arguments).\n"
+        "\n"
+        "  Its message lists the documented signatures of the function, each with the types of its parameters\n"
+        "  (or, for a function that documents none, the first paragraph of its documentation).\n"
+        "\n"
+        "  It inherits from Python's ``TypeError`` (so an ``except TypeError`` handler also catches it), not from\n"
+        "  :class:`GPlatesError`.\n"
+        "\n"
+        "  ::\n"
+        "\n"
+        "    try:\n"
+        "        arc_length = polyline.get_arc_length('degrees')\n"
+        "    except pygplates.ArgumentError as error:\n"
+        "        print(error)\n"
+        "\n"
+        "  .. note:: Write ``pygplates.ArgumentError``, rather than ``from pygplates import ArgumentError``.\n"
+        "     The class itself can't be pickled (its instances can), since its module, ``Boost.Python``, can't\n"
+        "     be imported. So it can't be passed to another process (eg, with ``multiprocessing``), and joblib or\n"
+        "     dask (which use cloudpickle) can't send a function defined in a script or notebook that refers to\n"
+        "     ``ArgumentError`` by itself. A function that refers to ``pygplates.ArgumentError`` can be sent,\n"
+        "     since only the ``pygplates`` module is sent then (by name).\n"
+        "\n"
+        "  .. note:: The class belongs to Boost.Python (the library that exposes pyGPlates' C++ code to Python),\n"
+        "     so its type is shown as ``Boost.Python.ArgumentError``. Another extension module built with\n"
+        "     Boost.Python raises the same class if it uses the same copy of the Boost.Python library as\n"
+        "     pyGPlates (as can happen in a conda environment), so ``except pygplates.ArgumentError`` also\n"
+        "     catches its argument errors.\n"
+        "\n"
+        "  .. versionadded:: 1.1\n")
+
     boost_python_function_type = type(Vector3D.get_magnitude)
-    pygplates_dict = globals()
     original_str = argument_error_class.__str__
 
     message_re = re.compile(
@@ -252,11 +298,7 @@ def _install_argument_error_messages():
 # (hence not nested in '_install_argument_error_messages').
 #
 def _restore_argument_error(*args):
-    # The class is Boost.Python's, so there is no other way to it than raising one.
-    try:
-        Vector3D.get_magnitude(None)
-    except TypeError as error:
-        return type(error)(*args)
+    return ArgumentError(*args)
 
 _install_argument_error_messages()
 del _install_argument_error_messages

@@ -479,7 +479,8 @@ Enumerated values accepted by (or returned from) the functions and methods above
 Exceptions
 ----------
 
-All pyGPlates exceptions inherit from :class:`pygplates.GPlatesError`, which in turn inherits from Python's ``Exception``.
+All pyGPlates exceptions inherit from :class:`pygplates.GPlatesError`, which in turn inherits from Python's ``Exception``,
+except :class:`pygplates.ArgumentError` (below).
 
 .. autosummary::
    :nosignatures:
@@ -532,3 +533,12 @@ Errors from mathematical operations (all inherit from ``MathematicalError``):
    pygplates.PartitionError
    pygplates.UnableToNormaliseZeroVectorError
    pygplates.ViolatedUnitVectorInvariantError
+
+Raised when no form of a function or method accepts the arguments of a call (inherits from Python's ``TypeError``,
+not from ``GPlatesError``):
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ArgumentError
