@@ -1,0 +1,40 @@
+﻿pygplates.GpmlIrregularSampling
+===============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlIrregularSampling
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlIrregularSampling.__init__
+      ~GpmlIrregularSampling.accept_visitor
+      ~GpmlIrregularSampling.append
+      ~GpmlIrregularSampling.clone
+      ~GpmlIrregularSampling.count
+      ~GpmlIrregularSampling.extend
+      ~GpmlIrregularSampling.get_enabled_time_samples
+      ~GpmlIrregularSampling.get_geometry
+      ~GpmlIrregularSampling.get_time_samples
+      ~GpmlIrregularSampling.get_time_samples_bounding_time
+      ~GpmlIrregularSampling.get_value
+      ~GpmlIrregularSampling.get_value_type
+      ~GpmlIrregularSampling.index
+      ~GpmlIrregularSampling.insert
+      ~GpmlIrregularSampling.pop
+      ~GpmlIrregularSampling.remove
+      ~GpmlIrregularSampling.reverse
+      ~GpmlIrregularSampling.set_value
+      ~GpmlIrregularSampling.sort
+   
+   
+
+   
+   
+   

@@ -1,0 +1,29 @@
+﻿pygplates.NetRotation
+=====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: NetRotation
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NetRotation.__init__
+      ~NetRotation.convert_finite_rotation_to_rotation_rate_vector
+      ~NetRotation.convert_rotation_rate_vector_to_finite_rotation
+      ~NetRotation.create_sample_from_finite_rotation
+      ~NetRotation.create_sample_from_rotation_rate
+      ~NetRotation.get_area
+      ~NetRotation.get_finite_rotation
+      ~NetRotation.get_rotation_rate_vector
+   
+   
+
+   
+   
+   

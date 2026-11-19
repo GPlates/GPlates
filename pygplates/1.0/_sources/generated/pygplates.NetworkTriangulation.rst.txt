@@ -1,0 +1,24 @@
+﻿pygplates.NetworkTriangulation
+==============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: NetworkTriangulation
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NetworkTriangulation.__init__
+      ~NetworkTriangulation.get_triangles
+      ~NetworkTriangulation.get_vertices
+   
+   
+
+   
+   
+   

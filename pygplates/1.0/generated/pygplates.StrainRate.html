@@ -1,0 +1,405 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.StrainRate &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.PlateBoundaryStatistic" href="pygplates.PlateBoundaryStatistic.html" />
+    <link rel="prev" title="pygplates.Strain" href="pygplates.Strain.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.calculate_velocities.html">pygplates.calculate_velocities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Strain.html">pygplates.Strain</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.StrainRate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.StrainRate"><code class="docutils literal notranslate"><span class="pre">StrainRate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PlateBoundaryStatistic.html">pygplates.PlateBoundaryStatistic</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.StrainRate</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.StrainRate.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-strainrate">
+<h1>pygplates.StrainRate<a class="headerlink" href="#pygplates-strainrate" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.StrainRate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">StrainRate</span></span><a class="headerlink" href="#pygplates.StrainRate" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>The strain rate at a particular location (parcel of crust) represents the rate at which deformation occurs at that parcel of crust.</p>
+<p>The strain rate is represented internally by the spatial gradients of velocity <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>) calculated in <a class="reference external" href="https://www.brown.edu/Departments/Engineering/Courses/En221/Notes/Polar_Coords/Polar_Coords.htm">spherical polar coordinates</a> (ignoring radial dimension):</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\boldsymbol L &amp;= \boldsymbol v \boldsymbol \nabla\\
+\begin{bmatrix} L_{\theta\theta} &amp; L_{\theta\phi} \\ L_{\phi\theta} &amp; L_{\phi\phi} \end{bmatrix} &amp;= \begin{bmatrix} \frac{1}{R} \frac{\partial v_\theta}{\partial \theta} &amp; \frac{1}{R \, \sin{\theta}} \frac{\partial v_\theta}{\partial \phi} - \cot{\theta} \frac{v_\phi}{R}\\ \frac{1}{R} \frac{\partial v_\phi}{\partial \theta} &amp; \frac{1}{R \, \sin{\theta}} \frac{\partial v_\phi}{\partial \phi} + \cot{\theta} \frac{v_\theta}{R}\end{bmatrix}\end{split}\]</div>
+<p>…where <span class="math notranslate nohighlight">\(\boldsymbol v = (v_\theta, v_\phi)\)</span> is the velocity (in <span class="math notranslate nohighlight">\(m / s\)</span>) in the local South-East coordinate system at a location (<span class="math notranslate nohighlight">\(\theta, \phi\)</span>), and <span class="math notranslate nohighlight">\(R\)</span> is the <a class="reference internal" href="pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">Earth</span> <span class="pre">mean</span> <span class="pre">radius</span></code></a> (in <span class="math notranslate nohighlight">\(m\)</span>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">The velocity spatial gradient <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> is calculated at an arbitrary location in a deforming network using the following procedure:</div>
+</div>
+<div class="line-block">
+<div class="line">For each triangle in a deforming network’s triangulation, an <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> is calculated using velocities at the triangle’s three vertices (and, in the above gradient calculation, <span class="math notranslate nohighlight">\(\cot{\theta}\)</span>, <span class="math notranslate nohighlight">\(v_\theta\)</span> and <span class="math notranslate nohighlight">\(v_\phi\)</span> are calculated at the triangle’s centroid location). Then each vertex in the entire triangulation is assigned an <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> that is an area-weighted average of <span class="math notranslate nohighlight">\(\boldsymbol L\)</span>’s from faces incident to the vertex. Finally, <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> at the arbitrary location is either assigned the <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> of the triangle containing the location, or calculated using barycentric or natural neighbour interpolation of the <span class="math notranslate nohighlight">\(\boldsymbol L\)</span>’s from nearby vertices (depending on the <a class="reference internal" href="pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.strain_rate_smoothing" title="pygplates.ResolveTopologyParameters.strain_rate_smoothing"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span> <span class="pre">smoothing</span> <span class="pre">parameter</span></code></a> used to resolve the <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">deforming</span> <span class="pre">network</span></code></a>).</div>
+</div>
+</div>
+<p>The spatial gradients of velocity tensor (<span class="math notranslate nohighlight">\(\boldsymbol L\)</span>) can be decomposed into the rate-of-deformation tensor (<span class="math notranslate nohighlight">\(\boldsymbol D\)</span>) and the vorticity (or spin) tensor (<span class="math notranslate nohighlight">\(\boldsymbol W\)</span>):</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\boldsymbol L &amp;= \boldsymbol D + \boldsymbol W\\
+\boldsymbol D &amp;= \frac{\boldsymbol L + \boldsymbol{L}^T}{2}\\
+\boldsymbol W &amp;= \frac{\boldsymbol L - \boldsymbol{L}^T}{2}\end{split}\]</div>
+<p>…where <span class="math notranslate nohighlight">\(D_{\theta\phi} = D_{\phi\theta}\)</span> (since the rate-of-deformation tensor <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> is symmetric).</p>
+<p>If <span class="math notranslate nohighlight">\(\Lambda\)</span> is the stretch factor along current direction <span class="math notranslate nohighlight">\(\hat{\boldsymbol n}\)</span> then the <em>rate of stretching per unit stretch</em> is given by:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\dot{\Lambda}}{\Lambda} = \hat{\boldsymbol n} \cdot \boldsymbol D \cdot \hat{\boldsymbol n}\]</div>
+<p>…where <span class="math notranslate nohighlight">\(\hat{\boldsymbol n}\)</span> is a 2D unit vector in the local South-East coordinate system at a location (<span class="math notranslate nohighlight">\(\theta, \phi\)</span>).</p>
+<p>So that means, in the local South direction (ie, <span class="math notranslate nohighlight">\(\hat{\boldsymbol n} = (1,0)\)</span>) the <em>rate of stretching per unit stretch</em> is <span class="math notranslate nohighlight">\(D_{\theta\theta}\)</span>, and  in the local East direction (ie, <span class="math notranslate nohighlight">\(\hat{\boldsymbol n} = (0,1)\)</span>) it is <span class="math notranslate nohighlight">\(D_{\phi\phi}\)</span>. These are the <em>diagonal</em> elements of <span class="math notranslate nohighlight">\(\boldsymbol D\)</span>.</p>
+<p>The <em>rate of change of angle</em> <span class="math notranslate nohighlight">\(\alpha\)</span> between two current directions <span class="math notranslate nohighlight">\(\hat{\boldsymbol n}_1\)</span> and <span class="math notranslate nohighlight">\(\hat{\boldsymbol n}_2\)</span> is given by:</p>
+<div class="math notranslate nohighlight">
+\[-\dot{\alpha} = \hat{\boldsymbol n}_1 \cdot 2 \boldsymbol D \cdot \hat{\boldsymbol n}_2\]</div>
+<p>The <em>shear rate</em> is commonly defined as half the <em>rate of change of angle</em> between two directions that are currently <em>perpendicular</em>. And if those directions are aligned with the local coordinate system (ie, <span class="math notranslate nohighlight">\(\hat{\boldsymbol n}_1 = (1,0)\)</span> and <span class="math notranslate nohighlight">\(\hat{\boldsymbol n}_2 = (0,1)\)</span>) then the <em>shear rate</em> is <span class="math notranslate nohighlight">\(D_{\phi\theta}\)</span> (which is the same as <span class="math notranslate nohighlight">\(D_{\theta\phi}\)</span> since <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> is symmetric). So the symmetric <em>off-diagonal</em> elements represent the shear rate between the local coordinate axes (between South and East).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The derivative of the Lagrangian finite strain tensor <span class="math notranslate nohighlight">\(\boldsymbol E\)</span> (see <a class="reference internal" href="pygplates.Strain.html#pygplates.Strain" title="pygplates.Strain"><code class="xref py py-class docutils literal notranslate"><span class="pre">Strain</span></code></a>) is related to the rate-of-deformation tensor <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> (and the deformation gradient tensor <span class="math notranslate nohighlight">\(\boldsymbol F\)</span> - see <a class="reference internal" href="pygplates.Strain.html#pygplates.Strain" title="pygplates.Strain"><code class="xref py py-class docutils literal notranslate"><span class="pre">Strain</span></code></a>):</p>
+<div class="math notranslate nohighlight">
+\[\dot{\boldsymbol E} = \boldsymbol{F}^T \cdot \boldsymbol D \cdot \boldsymbol F\]</div>
+<p>And so the <em>rate of stretching per unit stretch</em> <span class="math notranslate nohighlight">\(\frac{\dot{\Lambda}_{(\hat{\boldsymbol N})}}{\Lambda_{(\hat{\boldsymbol N})}}\)</span> can be specified using a direction <span class="math notranslate nohighlight">\(\hat{\boldsymbol N}\)</span> in the <em>initial</em> configuration (eg, at a time before deformation began):.</p>
+<div class="math notranslate nohighlight">
+\[\frac{\dot{\Lambda}_{(\hat{\boldsymbol N})}}{\Lambda_{(\hat{\boldsymbol N})}} = \frac{\hat{\boldsymbol N} \cdot \dot{\boldsymbol E} \cdot \hat{\boldsymbol N}}{\hat{\boldsymbol N} \cdot \boldsymbol C \cdot \hat{\boldsymbol N}}\]</div>
+<p>…rather than using a direction <span class="math notranslate nohighlight">\(\hat{\boldsymbol n}\)</span> in the <em>current</em> configuration with <span class="math notranslate nohighlight">\(\frac{\dot{\Lambda}_{(\hat{\boldsymbol n})}}{\Lambda_{(\hat{\boldsymbol n})}} = \hat{\boldsymbol n} \cdot \boldsymbol D \cdot \hat{\boldsymbol n}\)</span>. Note that <span class="math notranslate nohighlight">\(\boldsymbol C\)</span> is the Lagrangian deformation tensor (see <a class="reference internal" href="pygplates.Strain.html#pygplates.Strain" title="pygplates.Strain"><code class="xref py py-class docutils literal notranslate"><span class="pre">Strain</span></code></a>).</p>
+</div>
+<p>References:</p>
+<ul class="simple">
+<li><p>Malvern, L. E. (1969). <a class="reference external" href="http://books.google.com/books?id=IIMpAQAAMAAJ">Introduction to the mechanics of a continuous medium.</a> Prentice-Hall.</p></li>
+<li><p>Mase, G.T., Smelser, R.E., &amp; Mase, G.E. (2010). <a class="reference external" href="https://doi.org/10.1201/9781420085396">Continuum Mechanics for Engineers</a> (3rd ed.). CRC Press.</p></li>
+</ul>
+<p>Strain rates are equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>) comparable (but not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>).</p>
+<p>Convenience class static data is available for the zero strain rate:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pygplates.StrainRate.zero</span></code></p></li>
+</ul>
+<p>A <em>StrainRate</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.46.</span></p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.StrainRate.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.StrainRate.__init__" title="Link to this definition"></a></dt>
+<dd><p>A <em>StrainRate</em> object can be constructed in more than one way…</p>
+<dl>
+<dt>__init__()</dt><dd><p>Construct a zero strain rate (non-deforming).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">zero_strain_rate</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">StrainRate</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Alternatively you can use <code class="docutils literal notranslate"><span class="pre">zero_strain_rate</span> <span class="pre">=</span> <span class="pre">pygplates.StrainRate.zero</span></code>.</p>
+</div>
+</dd>
+<dt>__init__(velocity_gradient_theta_theta,, velocity_gradient_theta_phi, velocity_gradient_phi_theta, velocity_gradient_phi_phi)</dt><dd><p>Create from the spatial gradients of velocity <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>) in spherical polar coordinates (ignoring radial dimension).</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\boldsymbol L = \begin{bmatrix} L_{\theta\theta} &amp; L_{\theta\phi} \\ L_{\phi\theta} &amp; L_{\phi\phi} \end{bmatrix}\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">param velocity_gradient_theta_theta<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="math notranslate nohighlight">\(L_{\theta\theta}\)</span></p>
+</dd>
+<dt class="field-even">type velocity_gradient_theta_theta<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param velocity_gradient_theta_phi<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="math notranslate nohighlight">\(L_{\theta\phi}\)</span></p>
+</dd>
+<dt class="field-even">type velocity_gradient_theta_phi<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param velocity_gradient_phi_theta<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="math notranslate nohighlight">\(L_{\phi\theta}\)</span></p>
+</dd>
+<dt class="field-even">type velocity_gradient_phi_theta<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param velocity_gradient_phi_phi<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="math notranslate nohighlight">\(L_{\phi\phi}\)</span></p>
+</dd>
+<dt class="field-even">type velocity_gradient_phi_phi<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.StrainRate.get_velocity_spatial_gradient" title="pygplates.StrainRate.get_velocity_spatial_gradient"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_velocity_spatial_gradient()</span></code></a> for the spatial gradients of velocity in spherical polar coordinates</p>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.StrainRate.__init__" title="pygplates.StrainRate.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(...)</p></td>
+<td><p>A <em>StrainRate</em> object can be constructed in more than one way...</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.StrainRate.get_dilatation_rate" title="pygplates.StrainRate.get_dilatation_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dilatation_rate</span></code></a>()</p></td>
+<td><p>Return the rate of change of crustal area per unit area (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.StrainRate.get_rate_of_deformation" title="pygplates.StrainRate.get_rate_of_deformation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rate_of_deformation</span></code></a>()</p></td>
+<td><p>Return the rate-of-deformation symmetric tensor <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>) in spherical polar coordinates (ignoring radial dimension).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.StrainRate.get_strain_rate_style" title="pygplates.StrainRate.get_strain_rate_style"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_strain_rate_style</span></code></a>()</p></td>
+<td><p>Return a measure categorising the type of deformation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.StrainRate.get_total_strain_rate" title="pygplates.StrainRate.get_total_strain_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_total_strain_rate</span></code></a>()</p></td>
+<td><p>Return the total strain rate (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.StrainRate.get_velocity_spatial_gradient" title="pygplates.StrainRate.get_velocity_spatial_gradient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_velocity_spatial_gradient</span></code></a>()</p></td>
+<td><p>Return the spatial gradients of velocity tensor <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>) in spherical polar coordinates (ignoring radial dimension).</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.StrainRate.get_dilatation_rate">
+<span class="sig-name descname"><span class="pre">get_dilatation_rate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.StrainRate.get_dilatation_rate" title="Link to this definition"></a></dt>
+<dd><p>Return the rate of change of crustal area per unit area (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p>The dilatation rate is the rate of increase (if positive) or decrease (if negative) of crustal area per unit area at the current location (at which this strain rate was calculated).</p>
+<p>The dilatation rate is defined as the <cite>trace</cite> of the <a class="reference internal" href="#pygplates.StrainRate.get_rate_of_deformation" title="pygplates.StrainRate.get_rate_of_deformation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rate-of-deformation</span> <span class="pre">tensor</span></code></a> <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> (sum of its diagonal elements). So if we define <span class="math notranslate nohighlight">\(A\)</span> as the area of a parcel of crust at the current location, then the dilatation rate is the <em>rate of change of area per unit area</em>, and is given by:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\dot{A}}{A} = trace(\boldsymbol D)\]</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Chapter 4.11 in <a class="reference external" href="https://doi.org/10.1201/9781420085396">Continuum Mechanics for Engineers</a> for a derivation of the material derivative of volume. We ignore the radial dimension, hence volume becomes area.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The dilatation rate is <em>invariant</em> with respect to the local coordinate axes (South and East) since <span class="math notranslate nohighlight">\(trace(\boldsymbol D)\)</span> is the <em>first invariant</em> of <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> (see Chapter 3.6 in <a class="reference external" href="https://doi.org/10.1201/9781420085396">Continuum Mechanics for Engineers</a>).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As <a class="reference internal" href="#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">shown</span> <span class="pre">for</span> <span class="pre">the</span> <span class="pre">rate-of-deformation</span> <span class="pre">tensor</span></code></a> <span class="math notranslate nohighlight">\(\boldsymbol D\)</span>, the <em>rate of stretching per unit stretch</em> along the local coordinate South and East axes are the <em>diagonal</em> elements <span class="math notranslate nohighlight">\(D_{\theta\theta}\)</span> and <span class="math notranslate nohighlight">\(D_{\phi\phi}\)</span> (which are included in <span class="math notranslate nohighlight">\(trace(\boldsymbol D)\)</span>). And the <em>off-diagonal</em> elements determine the instantaneous shear rate which does not affect expansion/contraction (and is excluded from <span class="math notranslate nohighlight">\(trace(\boldsymbol D))\)</span>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.StrainRate.get_rate_of_deformation">
+<span class="sig-name descname"><span class="pre">get_rate_of_deformation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.StrainRate.get_rate_of_deformation" title="Link to this definition"></a></dt>
+<dd><p>Return the rate-of-deformation symmetric tensor <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>) in spherical polar coordinates (ignoring radial dimension).</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\boldsymbol D = \begin{bmatrix} D_{\theta\theta} &amp; D_{\theta\phi} \\ D_{\phi\theta} &amp; D_{\phi\phi} \end{bmatrix}\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the tuple of <span class="math notranslate nohighlight">\((D_{\theta\theta}, D_{\theta\phi}, D_{\phi\theta}, D_{\phi\phi})\)</span></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple (float, float, float, float)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><span class="math notranslate nohighlight">\(\theta\)</span> is <strong>co</strong>-latitude and hence increases from North to South (and <span class="math notranslate nohighlight">\(\phi\)</span> increases from West to East, as expected).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.StrainRate.get_strain_rate_style">
+<span class="sig-name descname"><span class="pre">get_strain_rate_style</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.StrainRate.get_strain_rate_style" title="Link to this definition"></a></dt>
+<dd><p>Return a measure categorising the type of deformation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p>The strain rate <em>style</em> is a way to represent the type of deformation. The approach used here is from <em>Kreemer, C., G. Blewitt, and E. C. Klein (2014),</em> <a class="reference external" href="https://10.1002/2014GC005407">A geodetic plate motion and Global Strain Rate Model</a>, which defines <em>strain rate style</em> as:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\dot{\varepsilon}_{(1)} + \dot{\varepsilon}_{(2)}}{max(\lvert \dot{\varepsilon}_{(1)} \rvert, \lvert \dot{\varepsilon}_{(2)} \rvert)}\]</div>
+<p>…and is equivalent to:</p>
+<div class="math notranslate nohighlight">
+\[\frac{D_{(1)} + D_{(2)}}{max(\lvert D_{(1)} \rvert, \lvert D_{(2)} \rvert)}\]</div>
+<p>..where <span class="math notranslate nohighlight">\(D_{(1)}\)</span> and <span class="math notranslate nohighlight">\(D_{(2)}\)</span> are the principal values of the <a class="reference internal" href="#pygplates.StrainRate.get_rate_of_deformation" title="pygplates.StrainRate.get_rate_of_deformation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rate-of-deformation</span> <span class="pre">tensor</span></code></a> <span class="math notranslate nohighlight">\(\boldsymbol D\)</span>.</p>
+<p>A value of <cite>-1</cite> represents contraction (eg, pure reverse faulting), <cite>0</cite> represents pure strike-slip faulting and <cite>1</cite> represents extension (eg, pure normal faulting).</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<div class="line-block">
+<div class="line">If the <a class="reference internal" href="#pygplates.StrainRate.get_rate_of_deformation" title="pygplates.StrainRate.get_rate_of_deformation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rate-of-deformation</span> <span class="pre">tensor</span></code></a> is zero (ie, no deformation) then <cite>NaN</cite> (zero divided by zero) will be returned.</div>
+<div class="line">Also, the returned value is <strong>not</strong> clamped to the range <cite>[-1, 1]</cite> when <em>both</em> principal values are non-zero and have the same sign.</div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The strain rate <em>style</em> is <em>invariant</em> with respect to the local coordinate axes (South and East) since it uses the principal values of <span class="math notranslate nohighlight">\(\boldsymbol D\)</span>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A similar measure for <em>style</em> is to divide <a class="reference internal" href="#pygplates.StrainRate.get_dilatation_rate" title="pygplates.StrainRate.get_dilatation_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dilatation</span> <span class="pre">rate</span></code></a> by <a class="reference internal" href="#pygplates.StrainRate.get_total_strain_rate" title="pygplates.StrainRate.get_total_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">total</span> <span class="pre">strain</span> <span class="pre">rate</span></code></a>. This is equivalent to <span class="math notranslate nohighlight">\(\frac{trace(\boldsymbol D)}{\sqrt{trace(\boldsymbol{D}^2)}}\)</span> which is also <em>invariant</em> with respect to the local coordinate axes (South and East).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.StrainRate.get_total_strain_rate">
+<span class="sig-name descname"><span class="pre">get_total_strain_rate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.StrainRate.get_total_strain_rate" title="Link to this definition"></a></dt>
+<dd><p>Return the total strain rate (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p>The total strain rate represents the magnitude, including both the normal (extension/compression) and shear components, of strain rate.</p>
+<p>The total strain rate is defined in terms of the <a class="reference internal" href="#pygplates.StrainRate.get_rate_of_deformation" title="pygplates.StrainRate.get_rate_of_deformation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rate-of-deformation</span> <span class="pre">symmetric</span> <span class="pre">tensor</span></code></a> <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> as:</p>
+<div class="math notranslate nohighlight">
+\[\sqrt{trace(\boldsymbol{D}^2)} = \sqrt{D_{\theta\theta}^2 + D_{\phi\phi}^2 + 2 D_{\phi\theta}^2}\]</div>
+<p>…where <span class="math notranslate nohighlight">\(D_{\phi\theta} = D_{\theta\phi}\)</span> since <span class="math notranslate nohighlight">\(\boldsymbol D\)</span> is symmetric</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The total strain rate is <em>invariant</em> with respect to the local coordinate axes (South and East) since <span class="math notranslate nohighlight">\(\sqrt{trace(\boldsymbol{D}^2)}\)</span> is invariant. This is because it is a function of the <em>second invariant</em>: <span class="math notranslate nohighlight">\(\frac{1}{2} \left[trace(\boldsymbol{D})^2 - trace(\boldsymbol{D}^2)\right]\)</span> and the <em>first invariant</em>: <span class="math notranslate nohighlight">\(trace(\boldsymbol D)\)</span> (see Chapter 3.6 in <a class="reference external" href="https://doi.org/10.1201/9781420085396">Continuum Mechanics for Engineers</a>).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.StrainRate.get_velocity_spatial_gradient">
+<span class="sig-name descname"><span class="pre">get_velocity_spatial_gradient</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.StrainRate.get_velocity_spatial_gradient" title="Link to this definition"></a></dt>
+<dd><p>Return the spatial gradients of velocity tensor <span class="math notranslate nohighlight">\(\boldsymbol L\)</span> (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>) in spherical polar coordinates (ignoring radial dimension).</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\boldsymbol L = \begin{bmatrix} L_{\theta\theta} &amp; L_{\theta\phi} \\ L_{\phi\theta} &amp; L_{\phi\phi} \end{bmatrix}\end{split}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the tuple of <span class="math notranslate nohighlight">\((L_{\theta\theta}, L_{\theta\phi}, L_{\phi\theta}, L_{\phi\phi})\)</span></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple (float, float, float, float)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><span class="math notranslate nohighlight">\(\theta\)</span> is <strong>co</strong>-latitude and hence increases from North to South (and <span class="math notranslate nohighlight">\(\phi\)</span> increases from West to East, as expected).</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.Strain.html" class="btn btn-neutral float-left" title="pygplates.Strain" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.PlateBoundaryStatistic.html" class="btn btn-neutral float-right" title="pygplates.PlateBoundaryStatistic" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

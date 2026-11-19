@@ -1,0 +1,39 @@
+﻿pygplates.ResolvedTopologicalSharedSubSegment
+=============================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ResolvedTopologicalSharedSubSegment
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ResolvedTopologicalSharedSubSegment.__init__
+      ~ResolvedTopologicalSharedSubSegment.get_feature
+      ~ResolvedTopologicalSharedSubSegment.get_geometry
+      ~ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates
+      ~ResolvedTopologicalSharedSubSegment.get_overriding_plate
+      ~ResolvedTopologicalSharedSubSegment.get_resolved_feature
+      ~ResolvedTopologicalSharedSubSegment.get_resolved_geometry
+      ~ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_features
+      ~ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_velocities
+      ~ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points
+      ~ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies
+      ~ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags
+      ~ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags
+      ~ResolvedTopologicalSharedSubSegment.get_sub_segments
+      ~ResolvedTopologicalSharedSubSegment.get_subducting_plate
+      ~ResolvedTopologicalSharedSubSegment.get_topological_section
+      ~ResolvedTopologicalSharedSubSegment.get_topological_section_feature
+      ~ResolvedTopologicalSharedSubSegment.get_topological_section_geometry
+   
+   
+
+   
+   
+   

@@ -1,0 +1,27 @@
+﻿pygplates.Property
+==================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Property
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Property.__init__
+      ~Property.clone
+      ~Property.get_name
+      ~Property.get_time_dependent_container
+      ~Property.get_time_dependent_value
+      ~Property.get_value
+   
+   
+
+   
+   
+   

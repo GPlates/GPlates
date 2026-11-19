@@ -1,0 +1,38 @@
+﻿pygplates.ResolvedTopologicalNetwork
+====================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ResolvedTopologicalNetwork
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ResolvedTopologicalNetwork.__init__
+      ~ResolvedTopologicalNetwork.get_boundary_sub_segments
+      ~ResolvedTopologicalNetwork.get_feature
+      ~ResolvedTopologicalNetwork.get_network_triangulation
+      ~ResolvedTopologicalNetwork.get_point_location
+      ~ResolvedTopologicalNetwork.get_point_strain_rate
+      ~ResolvedTopologicalNetwork.get_point_velocity
+      ~ResolvedTopologicalNetwork.get_property
+      ~ResolvedTopologicalNetwork.get_reconstruction_time
+      ~ResolvedTopologicalNetwork.get_resolved_boundary
+      ~ResolvedTopologicalNetwork.get_resolved_feature
+      ~ResolvedTopologicalNetwork.get_resolved_geometry
+      ~ResolvedTopologicalNetwork.get_resolved_geometry_point_features
+      ~ResolvedTopologicalNetwork.get_resolved_geometry_point_velocities
+      ~ResolvedTopologicalNetwork.get_resolved_geometry_points
+      ~ResolvedTopologicalNetwork.get_rigid_blocks
+      ~ResolvedTopologicalNetwork.reconstruct_point
+   
+   
+
+   
+   
+   

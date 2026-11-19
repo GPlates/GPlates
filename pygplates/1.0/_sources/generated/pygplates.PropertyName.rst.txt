@@ -1,0 +1,87 @@
+﻿pygplates.PropertyName
+======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PropertyName
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PropertyName.__init__
+      ~PropertyName.create_from_qualified_string
+      ~PropertyName.create_gml
+      ~PropertyName.create_gpml
+      ~PropertyName.create_xsi
+      ~PropertyName.get_name
+      ~PropertyName.get_namespace
+      ~PropertyName.get_namespace_alias
+      ~PropertyName.to_qualified_string
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PropertyName.gml_description
+      ~PropertyName.gml_name
+      ~PropertyName.gml_valid_time
+      ~PropertyName.gpml_absolute_reference_frame
+      ~PropertyName.gpml_average_age
+      ~PropertyName.gpml_average_declination
+      ~PropertyName.gpml_average_inclination
+      ~PropertyName.gpml_average_sample_site_position
+      ~PropertyName.gpml_boundary
+      ~PropertyName.gpml_center_line_of
+      ~PropertyName.gpml_conjugate_plate_id
+      ~PropertyName.gpml_crust
+      ~PropertyName.gpml_dip_side
+      ~PropertyName.gpml_dip_slip
+      ~PropertyName.gpml_edge
+      ~PropertyName.gpml_error_bounds
+      ~PropertyName.gpml_fixed_reference_frame
+      ~PropertyName.gpml_fold_annotation
+      ~PropertyName.gpml_geometry_import_time
+      ~PropertyName.gpml_left_plate
+      ~PropertyName.gpml_motion
+      ~PropertyName.gpml_moving_reference_frame
+      ~PropertyName.gpml_multi_position
+      ~PropertyName.gpml_network
+      ~PropertyName.gpml_outline_of
+      ~PropertyName.gpml_polarity_chron_id
+      ~PropertyName.gpml_polarity_chron_offset
+      ~PropertyName.gpml_polarity_chron_orientation
+      ~PropertyName.gpml_pole_a95
+      ~PropertyName.gpml_pole_dm
+      ~PropertyName.gpml_pole_dp
+      ~PropertyName.gpml_pole_position
+      ~PropertyName.gpml_position
+      ~PropertyName.gpml_primary_slip_component
+      ~PropertyName.gpml_quality
+      ~PropertyName.gpml_reconstruction_method
+      ~PropertyName.gpml_reconstruction_plate_id
+      ~PropertyName.gpml_relative_plate
+      ~PropertyName.gpml_rift_edgeLength_threshold_degrees
+      ~PropertyName.gpml_rift_exponential_stretching_constant
+      ~PropertyName.gpml_rift_left_plate
+      ~PropertyName.gpml_rift_right_plate
+      ~PropertyName.gpml_rift_strain_rate_resolution_log10
+      ~PropertyName.gpml_right_plate
+      ~PropertyName.gpml_seed_points
+      ~PropertyName.gpml_shapefile_attributes
+      ~PropertyName.gpml_side
+      ~PropertyName.gpml_strike_slip
+      ~PropertyName.gpml_subduction_polarity
+      ~PropertyName.gpml_times
+      ~PropertyName.gpml_total_reconstruction_pole
+      ~PropertyName.gpml_unclassified_geometry
+   
+   

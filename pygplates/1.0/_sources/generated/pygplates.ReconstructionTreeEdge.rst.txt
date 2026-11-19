@@ -1,0 +1,28 @@
+﻿pygplates.ReconstructionTreeEdge
+================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructionTreeEdge
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReconstructionTreeEdge.__init__
+      ~ReconstructionTreeEdge.get_child_edges
+      ~ReconstructionTreeEdge.get_equivalent_total_rotation
+      ~ReconstructionTreeEdge.get_fixed_plate_id
+      ~ReconstructionTreeEdge.get_moving_plate_id
+      ~ReconstructionTreeEdge.get_parent_edge
+      ~ReconstructionTreeEdge.get_relative_total_rotation
+   
+   
+
+   
+   
+   

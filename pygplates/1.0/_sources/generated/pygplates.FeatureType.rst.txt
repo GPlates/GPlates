@@ -1,0 +1,85 @@
+﻿pygplates.FeatureType
+=====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: FeatureType
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FeatureType.__init__
+      ~FeatureType.create_from_qualified_string
+      ~FeatureType.create_gpml
+      ~FeatureType.get_default_geometry_property_name
+      ~FeatureType.get_name
+      ~FeatureType.get_namespace
+      ~FeatureType.get_namespace_alias
+      ~FeatureType.to_qualified_string
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FeatureType.gpml_aseismic_ridge
+      ~FeatureType.gpml_basic_rock_unit
+      ~FeatureType.gpml_basin
+      ~FeatureType.gpml_closed_continental_boundary
+      ~FeatureType.gpml_closed_plate_boundary
+      ~FeatureType.gpml_coastline
+      ~FeatureType.gpml_continental_crust
+      ~FeatureType.gpml_continental_fragment
+      ~FeatureType.gpml_continental_rift
+      ~FeatureType.gpml_craton
+      ~FeatureType.gpml_extended_continental_crust
+      ~FeatureType.gpml_fault
+      ~FeatureType.gpml_flowline
+      ~FeatureType.gpml_fold_plane
+      ~FeatureType.gpml_fracture_zone
+      ~FeatureType.gpml_fracture_zone_identification
+      ~FeatureType.gpml_geological_lineation
+      ~FeatureType.gpml_geological_plane
+      ~FeatureType.gpml_hot_spot
+      ~FeatureType.gpml_hot_spot_trail
+      ~FeatureType.gpml_inferred_paleo_boundary
+      ~FeatureType.gpml_island_arc
+      ~FeatureType.gpml_isochron
+      ~FeatureType.gpml_large_igneous_province
+      ~FeatureType.gpml_magnetic_anomaly_identification
+      ~FeatureType.gpml_magnetic_anomaly_lineation
+      ~FeatureType.gpml_magnetic_anomaly_ship_track
+      ~FeatureType.gpml_mid_ocean_ridge
+      ~FeatureType.gpml_motion_path
+      ~FeatureType.gpml_oceanic_crust
+      ~FeatureType.gpml_ophiolite
+      ~FeatureType.gpml_orogenic_belt
+      ~FeatureType.gpml_passive_continental_boundary
+      ~FeatureType.gpml_pluton
+      ~FeatureType.gpml_pseudo_fault
+      ~FeatureType.gpml_seamount
+      ~FeatureType.gpml_slab_edge
+      ~FeatureType.gpml_subduction_zone
+      ~FeatureType.gpml_suture
+      ~FeatureType.gpml_terrane_boundary
+      ~FeatureType.gpml_topological_closed_plate_boundary
+      ~FeatureType.gpml_topological_network
+      ~FeatureType.gpml_topological_slab_boundary
+      ~FeatureType.gpml_total_reconstruction_sequence
+      ~FeatureType.gpml_transform
+      ~FeatureType.gpml_transitional_crust
+      ~FeatureType.gpml_unclassified_feature
+      ~FeatureType.gpml_unconformity
+      ~FeatureType.gpml_unknown_contact
+      ~FeatureType.gpml_virtual_geomagnetic_pole
+      ~FeatureType.gpml_volcano
+   
+   

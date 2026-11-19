@@ -1,0 +1,28 @@
+﻿pygplates.GmlLineString
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlLineString
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlLineString.__init__
+      ~GmlLineString.accept_visitor
+      ~GmlLineString.clone
+      ~GmlLineString.get_geometry
+      ~GmlLineString.get_polyline
+      ~GmlLineString.get_value
+      ~GmlLineString.set_polyline
+   
+   
+
+   
+   
+   

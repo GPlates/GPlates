@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.DateLineWrapper &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.Earth" href="pygplates.Earth.html" />
+    <link rel="prev" title="pygplates.ScalarType" href="pygplates.ScalarType.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.DateLineWrapper</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.DateLineWrapper"><code class="docutils literal notranslate"><span class="pre">DateLineWrapper</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Earth.html">pygplates.Earth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeaturesFunctionArgument.html">pygplates.FeaturesFunctionArgument</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GeoTimeInstant.html">pygplates.GeoTimeInstant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Version.html">pygplates.Version</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.DateLineWrapper</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.DateLineWrapper.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-datelinewrapper">
+<h1>pygplates.DateLineWrapper<a class="headerlink" href="#pygplates-datelinewrapper" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.DateLineWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">DateLineWrapper</span></span><a class="headerlink" href="#pygplates.DateLineWrapper" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>Wraps geometries to the dateline.</p>
+<p>The motivation for this class is to remove horizontal lines when polylines and polygons are displayed in 2D map projections. The horizontal lines occur when the longitude of two adjacent points change from approximately <code class="docutils literal notranslate"><span class="pre">-180</span></code> degrees to <code class="docutils literal notranslate"><span class="pre">180</span></code> degrees (or vice versa) causing the line segment between the adjacent points to take the long path right across the map display instead of the short path.</p>
+<p>Date line wrapping avoids this by splitting a polyline/polygon into multiple polylines/polygons at the dateline.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.DateLineWrapper.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">central_meridian=0</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.DateLineWrapper.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a dateline wrapper with a central meridian (longitude).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>central_meridian</strong> (<em>float</em>) – Longitude of the central meridian. Defaults to zero.</p>
+</dd>
+</dl>
+<p>If <em>central_meridian</em> is non-zero then the dateline is essentially shifted such that the longitudes of the wrapped points lie in the range <code class="docutils literal notranslate"><span class="pre">[central_meridian</span> <span class="pre">-</span> <span class="pre">180,</span> <span class="pre">central_meridian</span> <span class="pre">+</span> <span class="pre">180]</span></code>. If <em>central_meridian</em> is zero then the output range becomes <code class="docutils literal notranslate"><span class="pre">[-180,</span> <span class="pre">180]</span></code>.</p>
+<p>To enable wrapping to the ranges <code class="docutils literal notranslate"><span class="pre">[-180,</span> <span class="pre">180]</span></code> and <code class="docutils literal notranslate"><span class="pre">[-90,</span> <span class="pre">270]</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">date_line_wrapper</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">DateLineWrapper</span><span class="p">()</span>
+<span class="n">date_line_wrapper_90</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">DateLineWrapper</span><span class="p">(</span><span class="mi">90</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>central_meridian</em> is outside the range <code class="docutils literal notranslate"><span class="pre">[-180,</span> <span class="pre">180]</span></code> then it will be wrapped  to be within that range (eg, -200 becomes 160). This ensures that the range of longitudes of wrapped points, <code class="docutils literal notranslate"><span class="pre">[central_meridian</span> <span class="pre">-</span> <span class="pre">180,</span> <span class="pre">central_meridian</span> <span class="pre">+</span> <span class="pre">180]</span></code>, will always be within the range <code class="docutils literal notranslate"><span class="pre">[-360,</span> <span class="pre">360]</span></code> which is the valid range for <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.DateLineWrapper.__init__" title="pygplates.DateLineWrapper.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([central_meridian=0])</p></td>
+<td><p>Create a dateline wrapper with a central meridian (longitude).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.DateLineWrapper.wrap" title="pygplates.DateLineWrapper.wrap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wrap</span></code></a>(geometry, [tessellate_degrees])</p></td>
+<td><p>Wrap a geometry to the range <code class="docutils literal notranslate"><span class="pre">[central_meridian</span> <span class="pre">-</span> <span class="pre">180,</span> <span class="pre">central_meridian</span> <span class="pre">+</span> <span class="pre">180]</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.DateLineWrapper.wrap">
+<span class="sig-name descname"><span class="pre">wrap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geometry</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">tessellate_degrees</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.DateLineWrapper.wrap" title="Link to this definition"></a></dt>
+<dd><p>Wrap a geometry to the range <code class="docutils literal notranslate"><span class="pre">[central_meridian</span> <span class="pre">-</span> <span class="pre">180,</span> <span class="pre">central_meridian</span> <span class="pre">+</span> <span class="pre">180]</span></code>.</p>
+<blockquote>
+<div><dl class="field-list simple">
+<dt class="field-odd">param geometry<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the geometry to wrap</p>
+</dd>
+<dt class="field-even">type geometry<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a></p>
+</dd>
+<dt class="field-odd">param tessellate_degrees<span class="colon">:</span></dt>
+<dd class="field-odd"><p>optional tessellation threshold (in degrees) - threshold is clamped to the range [0, 180] if specified</p>
+</dd>
+<dt class="field-even">type tessellate_degrees<span class="colon">:</span></dt>
+<dd class="field-even"><p>float or None</p>
+</dd>
+</dl>
+<p>The following table maps the input geometry type to the return type:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Input Geometry</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p></td>
+<td><p><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a></p></td>
+<td><p>A single wrapped point.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DateLineWrapper.LatLonMultiPoint</span></code></p></td>
+<td><p>A single <code class="docutils literal notranslate"><span class="pre">LatLonMultiPoint</span></code> with the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_points()</span></code>: returns a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a>
+representing the wrapped points.</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolylineOnSphere</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">DateLineWrapper.LatLonPolyline</span></code></p></td>
+<td><div class="line-block">
+<div class="line">A list of wrapped polylines.</div>
+<div class="line">Each <code class="docutils literal notranslate"><span class="pre">LatLonPolyline</span></code> has the following methods:</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_points()</span></code>: returns a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a>
+representing the wrapped points of the <code class="docutils literal notranslate"><span class="pre">LatLonPolyline</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_is_original_point_flags()</span></code>: returns a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">bool</span></code>
+indicating whether each point in <code class="docutils literal notranslate"><span class="pre">get_points()</span></code> is an original point
+from the input polyline. Newly added points due to dateline wrapping and
+tessellation will be <code class="docutils literal notranslate"><span class="pre">False</span></code>. Note that both lists are the same length.</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">DateLineWrapper.LatLonPolygon</span></code></p></td>
+<td><div class="line-block">
+<div class="line">A list of wrapped polygons.</div>
+<div class="line">Each <code class="docutils literal notranslate"><span class="pre">LatLonPolygon</span></code> has the following methods:</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_points()</span></code>: returns a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> representing
+all wrapped points of the <code class="docutils literal notranslate"><span class="pre">LatLonPolygon</span></code> starting with its exterior
+ring and followed by all its interior rings if any (ordered by interior
+ring indices).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_is_original_point_flags()</span></code>: returns a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">bool</span></code>
+indicating whether each point in <code class="docutils literal notranslate"><span class="pre">get_points()</span></code> is an original point
+from the input polygon. Newly added points due to dateline wrapping and
+tessellation will be <code class="docutils literal notranslate"><span class="pre">False</span></code>. Note that both lists are the same length.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_exterior_points</span></code>: similar to <code class="docutils literal notranslate"><span class="pre">get_points()</span></code> but only returns
+points in the <em>exterior</em> ring.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_is_original_exterior_point_flags()</span></code>: similar to
+<code class="docutils literal notranslate"><span class="pre">get_is_original_point_flags()</span></code> but only for the <em>exterior</em> ring.
+Note that both <code class="docutils literal notranslate"><span class="pre">get_exterior_points</span></code> and
+<code class="docutils literal notranslate"><span class="pre">get_is_original_exterior_point_flags()</span></code> are the same length.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_number_of_interior_rings()</span></code>: returns the number of interior rings.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_interior_points(interior_ring_index)</span></code>: similar to <code class="docutils literal notranslate"><span class="pre">get_points()</span></code>
+but only returns points in the <em>interior</em> ring at the specified interior
+ring index (which must be less than <code class="docutils literal notranslate"><span class="pre">get_number_of_interior_rings()</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_is_original_interior_point_flags(interior_ring_index)</span></code>: similar to
+<code class="docutils literal notranslate"><span class="pre">get_is_original_point_flags()</span></code> but only for the <em>interior</em> ring at the
+specified interior ring index. Note that both
+<code class="docutils literal notranslate"><span class="pre">get_interior_points(interior_ring_index)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">get_is_original_interior_point_flags(interior_ring_index)</span></code> are the
+same length.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The start and end points in a particular ring (exterior or
+interior) are generally <em>not</em> the same. This is similar to
+<a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere</span></code></a>.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Note that, unlike points and multi-points, when wrapping an input polyline (or polygon) you can get more than one wrapped output polyline (or polygon) if it crosses the dateline.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">date_line_wrapper</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">DateLineWrapper</span><span class="p">(</span><span class="mf">90.0</span><span class="p">)</span>
+
+<span class="c1"># Wrap a point to the range [-90, 270].</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_point</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+<span class="n">wrapped_point_lat_lon</span> <span class="o">=</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_latitude</span><span class="p">(),</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_longitude</span><span class="p">()</span>
+
+<span class="c1"># Wrap a multi-point to the range [-90, 270].</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_multi_point</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">multi_point</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">wrapped_point</span> <span class="ow">in</span> <span class="n">wrapped_multi_point</span><span class="o">.</span><span class="n">get_points</span><span class="p">():</span>
+  <span class="n">wrapped_point_lat_lon</span> <span class="o">=</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_latitude</span><span class="p">(),</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_longitude</span><span class="p">()</span>
+
+<span class="c1"># Wrap a polyline to the range [-90, 270].</span>
+<span class="n">polyline</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_polylines</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">polyline</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">wrapped_polyline</span> <span class="ow">in</span> <span class="n">wrapped_polylines</span><span class="p">:</span>
+  <span class="k">for</span> <span class="n">wrapped_point</span> <span class="ow">in</span> <span class="n">wrapped_polyline</span><span class="o">.</span><span class="n">get_points</span><span class="p">():</span>
+    <span class="n">wrapped_point_lat_lon</span> <span class="o">=</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_latitude</span><span class="p">(),</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_longitude</span><span class="p">()</span>
+
+<span class="c1"># Wrap a polygon to the range [-90, 270].</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_polygons</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">wrapped_polygon</span> <span class="ow">in</span> <span class="n">wrapped_polygons</span><span class="p">:</span>
+  <span class="k">for</span> <span class="n">wrapped_point</span> <span class="ow">in</span> <span class="n">wrapped_polygon</span><span class="o">.</span><span class="n">get_points</span><span class="p">():</span>
+    <span class="n">wrapped_point_lat_lon</span> <span class="o">=</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_latitude</span><span class="p">(),</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_longitude</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>And for polygons an equivalent alternative (to the above example) extracts each wrapped polygon’s exterior and interior rings separately (rather than together):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Wrap a polygon to the range [-90, 270].</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_polygons</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">wrapped_polygon</span> <span class="ow">in</span> <span class="n">wrapped_polygons</span><span class="p">:</span>
+  <span class="k">for</span> <span class="n">wrapped_point</span> <span class="ow">in</span> <span class="n">wrapped_polygon</span><span class="o">.</span><span class="n">get_exterior_points</span><span class="p">():</span>
+    <span class="n">wrapped_point_lat_lon</span> <span class="o">=</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_latitude</span><span class="p">(),</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_longitude</span><span class="p">()</span>
+  <span class="k">for</span> <span class="n">interior_ring_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">wrapped_polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">()):</span>
+    <span class="k">for</span> <span class="n">wrapped_point</span> <span class="ow">in</span> <span class="n">wrapped_polygon</span><span class="o">.</span><span class="n">get_interior_points</span><span class="p">(</span><span class="n">interior_ring_index</span><span class="p">):</span>
+      <span class="n">wrapped_point_lat_lon</span> <span class="o">=</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_latitude</span><span class="p">(),</span> <span class="n">wrapped_point</span><span class="o">.</span><span class="n">get_longitude</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">If <em>tessellate_degrees</em> is specified then tessellation (of polylines and polygons) is also performed.</div>
+<div class="line">Each <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> is then tessellated such that adjacent points are separated by no more than <em>tessellate_degrees</em> on the globe.</div>
+<div class="line">This is useful both for geometries that cross the dateline and those that don’t. It helps ensure each polyline or polygon does not deviate too much from the true path where each <em>great circle arc</em> segment can be curved in 2D map projection space (rather than a straight line segment).</div>
+<div class="line">But it is <strong>especially</strong> useful for wrapped <em>polygons</em> in 2D map projections where the boundary of the projection is curved (such as <em>Mollweide</em>). Without tessellation the segment of the wrapped polygon along the boundary will be a straight line instead of curved to follow the map boundary.</div>
+</div>
+<p>Wrapping and tessellating a polyline and a polygon to a central meridian of 90 degrees:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">date_line_wrapper</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">DateLineWrapper</span><span class="p">(</span><span class="mf">90.0</span><span class="p">)</span>
+
+<span class="c1"># Wrap a polyline to the range [-90, 270] and tessellate to at least 2 degrees.</span>
+<span class="n">polyline</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_and_tessellated_polylines</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">polyline</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+<span class="o">...</span>
+
+<span class="c1"># Wrap a polygon to the range [-90, 270] and tessellate to at least 2 degrees.</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_and_tessellated_polygons</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>tessellate_degrees</em> is ignored for <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> and <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">multi-points</span></code></a>.</p>
+</div>
+<div class="line-block">
+<div class="line">Wrapping (and tessellating) can introduce new points into the original polyline or polygon.</div>
+<div class="line">In some cases it is desirable to know which points are original points and which are not.</div>
+<div class="line">For example, if the original points in a polyline are decorated with point symbols in a 2D map rendering. Any newly introduced points (from wrapping/tessellating) should not be decorated.</div>
+<div class="line">As such both <code class="docutils literal notranslate"><span class="pre">LatLonPolyline</span></code> and <code class="docutils literal notranslate"><span class="pre">LatLonPolygon</span></code> have methods to support this (see the above wrapped geometry table).</div>
+</div>
+<p>Determining whether points in a wrapped polyline are original polyline points:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">date_line_wrapper</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">DateLineWrapper</span><span class="p">()</span>
+
+<span class="c1"># Wrap a polyline (and tessellate to at least 2 degrees).</span>
+<span class="n">polyline</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">wrapped_polylines</span> <span class="o">=</span> <span class="n">date_line_wrapper</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">polyline</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">wrapped_polyline</span> <span class="ow">in</span> <span class="n">wrapped_polylines</span><span class="p">:</span>
+  <span class="n">wrapped_points</span> <span class="o">=</span> <span class="n">wrapped_polyline</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+  <span class="n">is_original_point_flags</span> <span class="o">=</span> <span class="n">wrapped_polyline</span><span class="o">.</span><span class="n">get_is_original_point_flags</span><span class="p">()</span>
+  <span class="k">for</span> <span class="n">wrapped_point_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">wrapped_points</span><span class="p">)):</span>
+    <span class="k">if</span> <span class="n">is_original_point_flags</span><span class="p">[</span><span class="n">wrapped_point_index</span><span class="p">]:</span>
+      <span class="n">wrapped_point_lat</span><span class="p">,</span> <span class="n">wrapped_point_lon</span> <span class="o">=</span> <span class="n">wrapped_points</span><span class="p">[</span><span class="n">wrapped_point_index</span><span class="p">]</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.36: </span>Added the following to <em>DateLineWrapper.LatLonPolygon</em>:</p>
+<ul class="simple">
+<li><p>get_points()</p></li>
+<li><p>get_is_original_point_flags()</p></li>
+<li><p>get_number_of_interior_rings()</p></li>
+<li><p>get_interior_points(interior_ring_index)</p></li>
+<li><p>get_is_original_interior_point_flags(interior_ring_index)</p></li>
+</ul>
+</div>
+</div></blockquote>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.41: </span>tessellation threshold is clamped to the range [0, 180] to avoid an exception.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ScalarType.html" class="btn btn-neutral float-left" title="pygplates.ScalarType" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.Earth.html" class="btn btn-neutral float-right" title="pygplates.Earth" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

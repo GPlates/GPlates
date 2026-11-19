@@ -1,0 +1,509 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.FeatureType &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.ScalarType" href="pygplates.ScalarType.html" />
+    <link rel="prev" title="pygplates.FeatureId" href="pygplates.FeatureId.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#string">String</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.EnumerationType.html">pygplates.EnumerationType</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeatureId.html">pygplates.FeatureId</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.FeatureType</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.FeatureType"><code class="docutils literal notranslate"><span class="pre">FeatureType</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PropertyName.html">pygplates.PropertyName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ScalarType.html">pygplates.ScalarType</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.FeatureType</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.FeatureType.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-featuretype">
+<h1>pygplates.FeatureType<a class="headerlink" href="#pygplates-featuretype" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.FeatureType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">FeatureType</span></span><a class="headerlink" href="#pygplates.FeatureType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>The namespace-qualified type of a feature.</p>
+<p>All comparison operators (==, !=, &lt;, &lt;=, &gt;, &gt;=) are supported. FeatureType is hashable (can be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>).</p>
+<p>The default feature type for <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature.__init__" title="pygplates.Feature.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Feature()</span></code></a> is <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_unclassified_feature</span></code> (which is the same as <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.create_gpml('UnclassifiedFeature')</span></code>).</p>
+<p>As a convenience the following common feature types are available as class attributes:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:AseismicRidge">pygplates.FeatureType.gpml_aseismic_ridge</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:BasicRockUnit">pygplates.FeatureType.gpml_basic_rock_unit</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Basin">pygplates.FeatureType.gpml_basin</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ClosedContinentalBoundary">pygplates.FeatureType.gpml_closed_continental_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ClosedPlateBoundary">pygplates.FeatureType.gpml_closed_plate_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">pygplates.FeatureType.gpml_coastline</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ContinentalCrust">pygplates.FeatureType.gpml_continental_crust</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ContinentalFragment">pygplates.FeatureType.gpml_continental_fragment</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ContinentalRift">pygplates.FeatureType.gpml_continental_rift</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Craton">pygplates.FeatureType.gpml_craton</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ExtendedContinentalCrust">pygplates.FeatureType.gpml_extended_continental_crust</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Fault">pygplates.FeatureType.gpml_fault</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">pygplates.FeatureType.gpml_flowline</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:FoldPlane">pygplates.FeatureType.gpml_fold_plane</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:FractureZone">pygplates.FeatureType.gpml_fracture_zone</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:FractureZoneIdentification">pygplates.FeatureType.gpml_fracture_zone_identification</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:GeologicalLineation">pygplates.FeatureType.gpml_geological_lineation</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:GeologicalPlane">pygplates.FeatureType.gpml_geological_plane</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:HotSpot">pygplates.FeatureType.gpml_hot_spot</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:HotSpotTrail">pygplates.FeatureType.gpml_hot_spot_trail</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:InferredPaleoBoundary">pygplates.FeatureType.gpml_inferred_paleo_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:IslandArc">pygplates.FeatureType.gpml_island_arc</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">pygplates.FeatureType.gpml_isochron</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:LargeIgneousProvince">pygplates.FeatureType.gpml_large_igneous_province</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyIdentification">pygplates.FeatureType.gpml_magnetic_anomaly_identification</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyLineation">pygplates.FeatureType.gpml_magnetic_anomaly_lineation</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyShipTrack">pygplates.FeatureType.gpml_magnetic_anomaly_ship_track</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">pygplates.FeatureType.gpml_mid_ocean_ridge</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">pygplates.FeatureType.gpml_motion_path</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:OceanicCrust">pygplates.FeatureType.gpml_oceanic_crust</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Ophiolite">pygplates.FeatureType.gpml_ophiolite</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:OrogenicBelt">pygplates.FeatureType.gpml_orogenic_belt</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:PassiveContinentalBoundary">pygplates.FeatureType.gpml_passive_continental_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Pluton">pygplates.FeatureType.gpml_pluton</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:PseudoFault">pygplates.FeatureType.gpml_pseudo_fault</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Seamount">pygplates.FeatureType.gpml_seamount</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SlabEdge">pygplates.FeatureType.gpml_slab_edge</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">pygplates.FeatureType.gpml_subduction_zone</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Suture">pygplates.FeatureType.gpml_suture</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TerraneBoundary">pygplates.FeatureType.gpml_terrane_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TopologicalClosedPlateBoundary">pygplates.FeatureType.gpml_topological_closed_plate_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TopologicalNetwork">pygplates.FeatureType.gpml_topological_network</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TopologicalSlabBoundary">pygplates.FeatureType.gpml_topological_slab_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">pygplates.FeatureType.gpml_total_reconstruction_sequence</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Transform">pygplates.FeatureType.gpml_transform</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TransitionalCrust">pygplates.FeatureType.gpml_transitional_crust</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Unconformity">pygplates.FeatureType.gpml_unconformity</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:UnknownContact">pygplates.FeatureType.gpml_unknown_contact</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">pygplates.FeatureType.gpml_virtual_geomagnetic_pole</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Volcano">pygplates.FeatureType.gpml_volcano</a></p></li>
+</ul>
+<p>A <em>FeatureType</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.__init__" title="Link to this definition"></a></dt>
+<dd><p>You cannot directly instantiate this class from Python.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This constructor is only provided for <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickle</a> support.</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureType.__init__" title="pygplates.FeatureType.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>You cannot directly instantiate this class from Python.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.FeatureType.create_from_qualified_string" title="pygplates.FeatureType.create_from_qualified_string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_from_qualified_string</span></code></a>(name)</p></td>
+<td><p>[<em>staticmethod</em>] Creates a <a class="reference internal" href="#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a> instance from a fully qualified name string.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureType.create_gpml" title="pygplates.FeatureType.create_gpml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gpml</span></code></a>(name)</p></td>
+<td><p>[<em>staticmethod</em>] Create a feature type qualified with the <code class="docutils literal notranslate"><span class="pre">gpml:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">gpml:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.FeatureType.get_default_geometry_property_name" title="pygplates.FeatureType.get_default_geometry_property_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_default_geometry_property_name</span></code></a>()</p></td>
+<td><p>Returns the default geometry property name associated with this feature type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureType.get_name" title="pygplates.FeatureType.get_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_name</span></code></a>()</p></td>
+<td><p>Returns the unqualified name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.FeatureType.get_namespace" title="pygplates.FeatureType.get_namespace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_namespace</span></code></a>()</p></td>
+<td><p>Returns the namespace URI.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureType.get_namespace_alias" title="pygplates.FeatureType.get_namespace_alias"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_namespace_alias</span></code></a>()</p></td>
+<td><p>Returns the namespace alias.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.FeatureType.to_qualified_string" title="pygplates.FeatureType.to_qualified_string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_qualified_string</span></code></a>()</p></td>
+<td><p>Returns the fully qualified name.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_aseismic_ridge</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_basic_rock_unit</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_basin</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_closed_continental_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_closed_plate_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_coastline</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_continental_crust</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_continental_fragment</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_continental_rift</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_craton</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_extended_continental_crust</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_fault</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_flowline</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_fold_plane</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_fracture_zone</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_fracture_zone_identification</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_geological_lineation</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_geological_plane</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_hot_spot</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_hot_spot_trail</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_inferred_paleo_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_island_arc</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_isochron</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_large_igneous_province</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_magnetic_anomaly_identification</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_magnetic_anomaly_lineation</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_magnetic_anomaly_ship_track</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_mid_ocean_ridge</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_motion_path</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_oceanic_crust</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_ophiolite</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_orogenic_belt</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_passive_continental_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_pluton</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_pseudo_fault</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_seamount</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_slab_edge</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_subduction_zone</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_suture</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_terrane_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_topological_closed_plate_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_topological_network</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_topological_slab_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_total_reconstruction_sequence</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_transform</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_transitional_crust</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_unclassified_feature</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_unconformity</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_unknown_contact</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_virtual_geomagnetic_pole</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_volcano</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.create_from_qualified_string">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_from_qualified_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.create_from_qualified_string" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Creates a <a class="reference internal" href="#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a> instance from a fully qualified name string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – qualified name</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a> or None</p>
+</dd>
+</dl>
+<p>The name string should have a <code class="docutils literal notranslate"><span class="pre">:</span></code> character separating the namespace alias from the unqualified name, for example <code class="docutils literal notranslate"><span class="pre">gpml:Coastline</span></code>. If the namespace alias is not recognised (as <code class="docutils literal notranslate"><span class="pre">gpml</span></code>, <code class="docutils literal notranslate"><span class="pre">gml</span></code> or <code class="docutils literal notranslate"><span class="pre">xsi</span></code>) then <code class="docutils literal notranslate"><span class="pre">gpml</span></code> is assumed.</p>
+<p>An over-qualified name string (eg, containing two or more <code class="docutils literal notranslate"><span class="pre">:</span></code> characters) will result in <code class="docutils literal notranslate"><span class="pre">None</span></code> being returned.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">feature_type</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">create_from_qualified_string</span><span class="p">(</span><span class="s1">&#39;gpml:Coastline&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.create_gpml">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_gpml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.create_gpml" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Create a feature type qualified with the <code class="docutils literal notranslate"><span class="pre">gpml:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">gpml:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – unqualified name</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a></p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gpml_coastline_feature_type</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">create_gpml</span><span class="p">(</span><span class="s1">&#39;Coastline&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.get_default_geometry_property_name">
+<span class="sig-name descname"><span class="pre">get_default_geometry_property_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.get_default_geometry_property_name" title="Link to this definition"></a></dt>
+<dd><p>Returns the default geometry property name associated with this feature type.</p>
+<p>Usually a feature type supports <em>geometry</em> properties with more than one property name. For example, a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">coastline</a> feature supports both a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:centerLineOf">pygplates.PropertyName.gpml_center_line_of</a> geometry and a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry">pygplates.PropertyName.gpml_unclassified_geometry</a>) geometry. But only one of them is the default (the default property that geometry data is imported into the feature). You can see which is the default by reading the <code class="docutils literal notranslate"><span class="pre">Default</span> <span class="pre">Geometry</span> <span class="pre">Property</span></code> label in the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">coastline feature model</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PropertyName.html#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a> or None</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This can return <cite>None</cite> if this feature type represents an abstract feature class (ie, those feature classes tagged “<em>Class Type: abstract</em>” in the <a class="reference external" href="http://www.gplates.org/docs/gpgim">GPGIM</a>).</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.43.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.get_name">
+<span class="sig-name descname"><span class="pre">get_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.get_name" title="Link to this definition"></a></dt>
+<dd><p>Returns the unqualified name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>This is the fully qualified name minus the <code class="docutils literal notranslate"><span class="pre">gpml:</span></code> prefix (if created with <em>create_gpml()</em>).</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">Coastline</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.get_namespace">
+<span class="sig-name descname"><span class="pre">get_namespace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.get_namespace" title="Link to this definition"></a></dt>
+<dd><p>Returns the namespace URI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>For example, the <code class="docutils literal notranslate"><span class="pre">gpml</span></code> namespace alias has the namespace <code class="docutils literal notranslate"><span class="pre">http://www.gplates.org/gplates</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.get_namespace_alias">
+<span class="sig-name descname"><span class="pre">get_namespace_alias</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.get_namespace_alias" title="Link to this definition"></a></dt>
+<dd><p>Returns the namespace alias.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">gpml</span></code> (if created with <em>create_gpml()</em>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureType.to_qualified_string">
+<span class="sig-name descname"><span class="pre">to_qualified_string</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureType.to_qualified_string" title="Link to this definition"></a></dt>
+<dd><p>Returns the fully qualified name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">gpml:Coastline</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.FeatureId.html" class="btn btn-neutral float-left" title="pygplates.FeatureId" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.ScalarType.html" class="btn btn-neutral float-right" title="pygplates.ScalarType" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

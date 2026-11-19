@@ -1,0 +1,30 @@
+﻿pygplates.Earth
+===============
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Earth
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Earth.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Earth.equatorial_radius_in_kms
+      ~Earth.mean_radius_in_kms
+      ~Earth.polar_radius_in_kms
+   
+   

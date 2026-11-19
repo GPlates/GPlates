@@ -1,0 +1,28 @@
+﻿pygplates.GpmlPlateId
+=====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlPlateId
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlPlateId.__init__
+      ~GpmlPlateId.accept_visitor
+      ~GpmlPlateId.clone
+      ~GpmlPlateId.get_geometry
+      ~GpmlPlateId.get_plate_id
+      ~GpmlPlateId.get_value
+      ~GpmlPlateId.set_plate_id
+   
+   
+
+   
+   
+   

@@ -1,0 +1,32 @@
+﻿pygplates.GpmlTopologicalLineSection
+====================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTopologicalLineSection
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTopologicalLineSection.__init__
+      ~GpmlTopologicalLineSection.accept_visitor
+      ~GpmlTopologicalLineSection.clone
+      ~GpmlTopologicalLineSection.create
+      ~GpmlTopologicalLineSection.create_network_interior
+      ~GpmlTopologicalLineSection.get_geometry
+      ~GpmlTopologicalLineSection.get_property_delegate
+      ~GpmlTopologicalLineSection.get_reverse_orientation
+      ~GpmlTopologicalLineSection.get_value
+      ~GpmlTopologicalLineSection.set_property_delegate
+      ~GpmlTopologicalLineSection.set_reverse_orientation
+   
+   
+
+   
+   
+   

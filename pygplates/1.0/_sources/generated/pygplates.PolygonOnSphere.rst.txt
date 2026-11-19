@@ -1,0 +1,47 @@
+﻿pygplates.PolygonOnSphere
+=========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PolygonOnSphere
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PolygonOnSphere.__init__
+      ~PolygonOnSphere.clone
+      ~PolygonOnSphere.distance
+      ~PolygonOnSphere.get_arc_length
+      ~PolygonOnSphere.get_area
+      ~PolygonOnSphere.get_boundary_centroid
+      ~PolygonOnSphere.get_centroid
+      ~PolygonOnSphere.get_exterior_ring_points
+      ~PolygonOnSphere.get_exterior_ring_segments
+      ~PolygonOnSphere.get_interior_centroid
+      ~PolygonOnSphere.get_interior_ring_points
+      ~PolygonOnSphere.get_interior_ring_segments
+      ~PolygonOnSphere.get_number_of_interior_rings
+      ~PolygonOnSphere.get_orientation
+      ~PolygonOnSphere.get_points
+      ~PolygonOnSphere.get_segments
+      ~PolygonOnSphere.get_signed_area
+      ~PolygonOnSphere.is_point_in_polygon
+      ~PolygonOnSphere.partition
+      ~PolygonOnSphere.to_lat_lon_array
+      ~PolygonOnSphere.to_lat_lon_list
+      ~PolygonOnSphere.to_lat_lon_point_list
+      ~PolygonOnSphere.to_tessellated
+      ~PolygonOnSphere.to_uniform_points
+      ~PolygonOnSphere.to_xyz_array
+      ~PolygonOnSphere.to_xyz_list
+   
+   
+
+   
+   
+   

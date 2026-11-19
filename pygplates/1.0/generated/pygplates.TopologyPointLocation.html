@@ -1,0 +1,300 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.TopologyPointLocation &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.ResolveTopologyParameters" href="pygplates.ResolveTopologyParameters.html" />
+    <link rel="prev" title="pygplates.ReconstructedGeometryTimeSpan" href="pygplates.ReconstructedGeometryTimeSpan.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalModel.html">pygplates.TopologicalModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalSnapshot.html">pygplates.TopologicalSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html">pygplates.ReconstructedGeometryTimeSpan</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.TopologyPointLocation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.TopologyPointLocation"><code class="docutils literal notranslate"><span class="pre">TopologyPointLocation</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolveTopologyParameters.html">pygplates.ResolveTopologyParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.resolve_topologies.html">pygplates.resolve_topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html">pygplates.ResolvedTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html">pygplates.ResolvedTopologicalBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html">pygplates.ResolvedTopologicalNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionGeometry.html">pygplates.ReconstructionGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html">pygplates.ResolvedTopologicalSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSection.html">pygplates.ResolvedTopologicalSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html">pygplates.ResolvedTopologicalSharedSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetworkTriangulation.html">pygplates.NetworkTriangulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.TopologyPointLocation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.TopologyPointLocation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-topologypointlocation">
+<h1>pygplates.TopologyPointLocation<a class="headerlink" href="#pygplates-topologypointlocation" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.TopologyPointLocation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">TopologyPointLocation</span></span><a class="headerlink" href="#pygplates.TopologyPointLocation" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>Locates a point in a specific resolved topological boundary or network (deforming region or interior rigid block).</p>
+<p>TopologyPointLocations are equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>) comparable (but not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>).</p>
+<blockquote>
+<div><div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.29.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.47: </span>Equality compares object <em>state</em> instead of object <em>identity</em>.</p>
+</div>
+</div></blockquote>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologyPointLocation.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologyPointLocation.__init__" title="Link to this definition"></a></dt>
+<dd><p>Raises an exception
+This class cannot be instantiated from Python</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologyPointLocation.__init__" title="pygplates.TopologyPointLocation.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>Raises an exception This class cannot be instantiated from Python</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologyPointLocation.located_in_resolved_boundary" title="pygplates.TopologyPointLocation.located_in_resolved_boundary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">located_in_resolved_boundary</span></code></a>()</p></td>
+<td><p>Query if point is located in a <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologyPointLocation.located_in_resolved_network" title="pygplates.TopologyPointLocation.located_in_resolved_network"><code class="xref py py-obj docutils literal notranslate"><span class="pre">located_in_resolved_network</span></code></a>()</p></td>
+<td><p>Query if point is located in a <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-obj docutils literal notranslate"><span class="pre">located_in_resolved_network_deforming_region</span></code></a>(...)</p></td>
+<td><p>Query if point is located in the deforming region of a <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block" title="pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block"><code class="xref py py-obj docutils literal notranslate"><span class="pre">located_in_resolved_network_rigid_block</span></code></a>()</p></td>
+<td><p>Query if point is located in an interior rigid block of a <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologyPointLocation.not_located_in_resolved_topology" title="pygplates.TopologyPointLocation.not_located_in_resolved_topology"><code class="xref py py-obj docutils literal notranslate"><span class="pre">not_located_in_resolved_topology</span></code></a>()</p></td>
+<td><p>Query if point is not located in any resolved topological boundaries or networks.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologyPointLocation.located_in_resolved_boundary">
+<span class="sig-name descname"><span class="pre">located_in_resolved_boundary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologyPointLocation.located_in_resolved_boundary" title="Link to this definition"></a></dt>
+<dd><p>Query if point is located in a <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the resolved topological boundary that contains the point, otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologyPointLocation.located_in_resolved_network">
+<span class="sig-name descname"><span class="pre">located_in_resolved_network</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologyPointLocation.located_in_resolved_network" title="Link to this definition"></a></dt>
+<dd><p>Query if point is located in a <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the resolved topological network that contains the point, otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The point can be anywhere inside a resolved topological network - inside its deforming region or inside any one of its interior rigid blocks (if it has any).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region">
+<span class="sig-name descname"><span class="pre">located_in_resolved_network_deforming_region</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">return_network_triangle=False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="Link to this definition"></a></dt>
+<dd><p>Query if point is located in the deforming region of a <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>return_network_triangle</strong> (<em>bool</em>) – Whether to also return the <a class="reference internal" href="pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">triangle</span></code></a> (in the network triangulation) containing the point. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the resolved topological network whose deforming region contains the point (and the triangle in the network triangulation containing the point if <em>return_network_triangle</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>), otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a>, or 2-tuple (<a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a>, <a class="reference internal" href="pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">NetworkTriangulation.Triangle</span></code></a>) if <em>return_network_triangle</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if point is inside a resolved topological network but is also inside one of its interior rigid blocks (and hence not inside its deforming region).</p>
+</div>
+<p>To locate the triangle (in the network triangulation) that contains the point:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">resolved_topological_network_and_triangle</span> <span class="o">=</span> <span class="n">topology_point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">(</span>
+        <span class="n">return_network_triangle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">resolved_topological_network_and_triangle</span><span class="p">:</span>
+    <span class="n">resolved_topological_network</span><span class="p">,</span> <span class="n">network_triangle_containing_point</span> <span class="o">=</span> <span class="n">resolved_topological_network_and_triangle</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">When a point location is queried, for example with <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_point_location" title="pygplates.ResolvedTopologicalNetwork.get_point_location"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork.get_point_location()</span></code></a>, the point is first projected from 3D space into 2D projection space using the Lambert azimuthal equal-area projection (with projection centre at the centroid of the network’s polygon boundary). Only then is the point tested against the triangles of the network’s 2D Delaunay triangulation (also in the same 2D projection) to locate the containing 2D triangle.</div>
+<div class="line">This means the original 3D point might not be contained by the 3D version of that triangle (ie, the 2D triangle with vertices unprojected back to 3D). For example, if you took the <a class="reference internal" href="pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">network</span> <span class="pre">triangle</span></code></a> (containing the 2D point) and created a <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polygon</span></code></a> from its <a class="reference internal" href="pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex.position" title="pygplates.NetworkTriangulation.Vertex.position"><code class="xref py py-attr docutils literal notranslate"><span class="pre">3D</span> <span class="pre">vertices</span></code></a> and then did a <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.is_point_in_polygon" title="pygplates.PolygonOnSphere.is_point_in_polygon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">point-in-polygon</span> <span class="pre">test</span></code></a> using the original 3D point then it could potentially be <em>outside</em> the polygon (3D triangle). This is because the triangle boundary lines in 2D space do not map to the triangle boundary lines in 3D space (since the projection is not gnomonic, ie, doesn’t project 3D great circle arcs as <em>straight</em> 2D lines).</div>
+<div class="line">This also means the network triangle containing the point might be <a class="reference internal" href="pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.is_in_deforming_region" title="pygplates.NetworkTriangulation.Triangle.is_in_deforming_region"><code class="xref py py-attr docutils literal notranslate"><span class="pre">marked</span></code></a> as <em>outside</em> the deforming region. However the point is still considered to be <em>inside</em> the deforming region since it is inside the network’s polygon boundary (and outside the network’s interior rigid blocks, if any). And it can still have a <em>non-zero</em> <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_point_strain_rate" title="pygplates.ResolvedTopologicalNetwork.get_point_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span></code></a> due to <a class="reference internal" href="../pygplates_primer.html#pygplates-primer-strain-rate-smoothing"><span class="std std-ref">strain rate smoothing</span></a>.</div>
+</div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.50: </span>Added <em>return_network_triangle</em> argument.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block">
+<span class="sig-name descname"><span class="pre">located_in_resolved_network_rigid_block</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block" title="Link to this definition"></a></dt>
+<dd><p>Query if point is located in an interior rigid block of a <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of resolved topological network and its interior rigid block (that contains the point), otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>2-tuple (<a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a>, <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedFeatureGeometry</span></code></a>),  or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if point is inside a resolved topological network but is <em>not</em> inside one of its interior rigid blocks.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologyPointLocation.not_located_in_resolved_topology">
+<span class="sig-name descname"><span class="pre">not_located_in_resolved_topology</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologyPointLocation.not_located_in_resolved_topology" title="Link to this definition"></a></dt>
+<dd><p>Query if point is not located in any resolved topological boundaries or networks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if point is not located in any resolved topologies</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ReconstructedGeometryTimeSpan.html" class="btn btn-neutral float-left" title="pygplates.ReconstructedGeometryTimeSpan" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.ResolveTopologyParameters.html" class="btn btn-neutral float-right" title="pygplates.ResolveTopologyParameters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

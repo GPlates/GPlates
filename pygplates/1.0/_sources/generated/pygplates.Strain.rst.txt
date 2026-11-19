@@ -1,0 +1,32 @@
+﻿pygplates.Strain
+================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Strain
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Strain.__init__
+      ~Strain.accumulate
+      ~Strain.get_deformation_gradient
+      ~Strain.get_dilatation
+      ~Strain.get_principal_strain
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Strain.identity
+   
+   

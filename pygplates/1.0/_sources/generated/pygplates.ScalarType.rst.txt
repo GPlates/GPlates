@@ -1,0 +1,39 @@
+﻿pygplates.ScalarType
+====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ScalarType
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ScalarType.__init__
+      ~ScalarType.create_from_qualified_string
+      ~ScalarType.create_gml
+      ~ScalarType.create_gpml
+      ~ScalarType.create_xsi
+      ~ScalarType.get_name
+      ~ScalarType.get_namespace
+      ~ScalarType.get_namespace_alias
+      ~ScalarType.to_qualified_string
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ScalarType.gpml_crustal_stretching_factor
+      ~ScalarType.gpml_crustal_thickness
+      ~ScalarType.gpml_crustal_thinning_factor
+      ~ScalarType.gpml_tectonic_subsidence
+   
+   

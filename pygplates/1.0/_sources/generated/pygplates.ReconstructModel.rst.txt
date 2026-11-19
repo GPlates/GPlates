@@ -1,0 +1,25 @@
+﻿pygplates.ReconstructModel
+==========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReconstructModel.__init__
+      ~ReconstructModel.get_anchor_plate_id
+      ~ReconstructModel.get_rotation_model
+      ~ReconstructModel.reconstruct_snapshot
+   
+   
+
+   
+   
+   

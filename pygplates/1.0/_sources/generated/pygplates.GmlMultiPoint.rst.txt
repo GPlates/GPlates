@@ -1,0 +1,28 @@
+﻿pygplates.GmlMultiPoint
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlMultiPoint
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlMultiPoint.__init__
+      ~GmlMultiPoint.accept_visitor
+      ~GmlMultiPoint.clone
+      ~GmlMultiPoint.get_geometry
+      ~GmlMultiPoint.get_multi_point
+      ~GmlMultiPoint.get_value
+      ~GmlMultiPoint.set_multi_point
+   
+   
+
+   
+   
+   

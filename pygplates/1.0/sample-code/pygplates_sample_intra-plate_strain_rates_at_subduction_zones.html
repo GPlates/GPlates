@@ -1,0 +1,418 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample strain rates inside the overriding plate at subduction zones &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Find gaps and overlaps in global topological boundaries" href="pygplates_detect_topology_gaps_and_overlaps.html" />
+    <link rel="prev" title="Find divergence at subduction zones and convergence at ridges" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#import">Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-save">Load/Save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-query-features">Create/query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct-features">Reconstruct features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#topologies">Topologies</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html">Find average area and subducting boundary proportion of topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html">Find the total length of ridges and subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Sample strain rates inside the overriding plate at subduction zones</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities">Velocities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-proximity">Spatial proximity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Sample strain rates inside the overriding plate at subduction zones</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sample-strain-rates-inside-the-overriding-plate-at-subduction-zones">
+<span id="pygplates-sample-intra-plate-strain-rates-at-subduction-zones"></span><h1>Sample strain rates inside the overriding plate at subduction zones<a class="headerlink" href="#sample-strain-rates-inside-the-overriding-plate-at-subduction-zones" title="Link to this heading"></a></h1>
+<p>This example calculates strain rates just inside the overriding plate along subduction zones over time by :</p>
+<ul class="simple">
+<li><p>sampling along plate boundaries that are subduction zones,</p></li>
+<li><p>determining which side the overriding plate is on,</p></li>
+<li><p>rotating each sample point 50 kms inside the overriding plate (along plate boundary normal direction),</p></li>
+<li><p>sampling the strain rate of the overriding plate at the rotated point location.</p></li>
+</ul>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#sample-code" id="id1">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id2">Details</a></p></li>
+</ul>
+</nav>
+<section id="sample-code">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">&#39;topologies.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+
+<span class="c1"># Our geological times will be from 0Ma to &#39;num_time_steps&#39; Ma (inclusive) in 1 My intervals.</span>
+<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">140</span>
+
+<span class="n">strain_rate_features</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># &#39;time&#39; = 0, 1, 2, ...</span>
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+    <span class="c1"># Get a snapshot of our resolved topologies at the current &#39;time&#39;.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Calculate statistics along plate boundary sections labelled with the requested feature type(s).</span>
+    <span class="n">plate_boundary_stats_dict</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">calculate_plate_boundary_statistics</span><span class="p">(</span>
+            <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span>  <span class="c1"># 0.5 degree spacing between points</span>
+            <span class="n">boundary_section_filter</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">,</span>
+            <span class="n">return_shared_sub_segment_dict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Record boundary points and their strain rates (along the uniformly sampled subduction zones).</span>
+    <span class="n">boundary_points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">strain_rate_dilatations</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">shared_sub_segment</span><span class="p">,</span> <span class="n">plate_boundary_stats</span> <span class="ow">in</span> <span class="n">plate_boundary_stats_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+        <span class="c1"># Get the subduction polarity of the subducting line.</span>
+        <span class="n">subduction_polarity</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_enumeration</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_subduction_polarity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">subduction_polarity</span> <span class="ow">or</span>
+            <span class="n">subduction_polarity</span> <span class="o">==</span> <span class="s1">&#39;Unknown&#39;</span><span class="p">):</span>
+            <span class="c1"># Subduction polarity is not defined or known, so skip shared sub-segment.</span>
+            <span class="k">continue</span>
+        <span class="n">overriding_plate_is_on_left</span> <span class="o">=</span> <span class="n">subduction_polarity</span> <span class="o">==</span> <span class="s1">&#39;Left&#39;</span>
+
+        <span class="c1"># Iterate over the uniformly sampled points along plate boundary.</span>
+        <span class="k">for</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">plate_boundary_stats</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">overriding_plate_is_on_left</span><span class="p">:</span>
+                <span class="n">overriding_plate</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">left_plate</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">overriding_plate</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">right_plate</span>
+
+            <span class="c1">#</span>
+            <span class="c1"># Move boundary point inside the overriding plate a specific distance and sample its strain rate there.</span>
+            <span class="c1">#</span>
+            <span class="c1"># NOTE: Only if the overriding plate is a deforming network (and it must be attached to the boundary line).</span>
+            <span class="c1">#</span>
+            <span class="n">overriding_resolved_network</span> <span class="o">=</span> <span class="n">overriding_plate</span><span class="o">.</span><span class="n">located_in_resolved_network</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">overriding_resolved_network</span><span class="p">:</span>
+                <span class="c1"># To rotate a point along boundary normal direction we need a rotation pole that is orthogonal to the boundary point and normal.</span>
+                <span class="n">off_boundary_rotation_pole</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">boundary_point</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">stat</span><span class="o">.</span><span class="n">boundary_normal</span><span class="p">)</span><span class="o">.</span><span class="n">to_normalised</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">overriding_plate_is_on_left</span><span class="p">:</span>
+                    <span class="c1"># Overriding plate is to the right of the boundary line, but boundary normal is to the left.</span>
+                    <span class="c1"># So reverse rotation direction.</span>
+                    <span class="n">off_boundary_rotation_pole</span> <span class="o">=</span> <span class="o">-</span><span class="n">off_boundary_rotation_pole</span>
+                <span class="c1"># Rotate point off the boundary by this distance.</span>
+                <span class="n">off_boundary_distance_kms</span> <span class="o">=</span> <span class="mi">50</span>
+                <span class="n">off_boundary_rotation_angle_radians</span> <span class="o">=</span> <span class="n">off_boundary_distance_kms</span> <span class="o">/</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
+                <span class="c1"># Finite rotation to move point off the boundary.</span>
+                <span class="n">off_boundary_rotation</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="p">(</span><span class="n">off_boundary_rotation_pole</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">off_boundary_rotation_angle_radians</span><span class="p">)</span>
+                <span class="n">off_boundary_point</span> <span class="o">=</span> <span class="n">off_boundary_rotation</span> <span class="o">*</span> <span class="n">stat</span><span class="o">.</span><span class="n">boundary_point</span>
+
+                <span class="c1"># Sample strain rate in the overriding deforming network at the off-boundary point.</span>
+                <span class="n">overriding_strain_rate</span> <span class="o">=</span> <span class="n">overriding_resolved_network</span><span class="o">.</span><span class="n">get_point_strain_rate</span><span class="p">(</span><span class="n">off_boundary_point</span><span class="p">)</span>
+                <span class="c1"># Off-boundary point might no longer be &quot;inside&quot; the overriding deforming network.</span>
+                <span class="k">if</span> <span class="n">overriding_strain_rate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">overriding_strain_rate</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">StrainRate</span><span class="o">.</span><span class="n">zero</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># The overriding plate at the current boundary point is not deforming.</span>
+                <span class="c1"># So set the strain rate to zero (non-deforming).</span>
+                <span class="n">overriding_strain_rate</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">StrainRate</span><span class="o">.</span><span class="n">zero</span>
+
+            <span class="n">boundary_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">boundary_point</span><span class="p">)</span>
+            <span class="n">strain_rate_dilatations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">overriding_strain_rate</span><span class="o">.</span><span class="n">get_dilatation_rate</span><span class="p">())</span>
+
+    <span class="c1"># Output the data.</span>
+    <span class="k">if</span> <span class="n">boundary_points</span><span class="p">:</span>
+        <span class="c1"># Create a feature containing the boundary points (and their dilatation strain rates).</span>
+        <span class="n">strain_rate_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span>
+        <span class="c1"># Feature only exists at the current &#39;time&#39; (for display in GPlates).</span>
+        <span class="n">strain_rate_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">time</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">time</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="c1"># Set the geometry as a coverage geometry (ie, a multipoint and scalar values).</span>
+        <span class="c1"># The dilatation rate scalar values will show up in GPlates as a separate layer.</span>
+        <span class="n">strain_rate_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="n">boundary_points</span><span class="p">),</span>
+                <span class="p">{</span>
+                    <span class="n">pygplates</span><span class="o">.</span><span class="n">ScalarType</span><span class="o">.</span><span class="n">create_gpml</span><span class="p">(</span><span class="s1">&#39;StrainRateDilatation&#39;</span><span class="p">)</span> <span class="p">:</span> <span class="n">strain_rate_dilatations</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">strain_rate_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strain_rate_feature</span><span class="p">)</span>
+
+<span class="c1"># Write all output features at all times.</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">strain_rate_features</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;subducting-strain-rates.gpmlz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">First create a <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> from topological features and rotation files.</div>
+<div class="line">The topological features can be plate polygons and/or deforming networks.</div>
+<div class="line">More than one file containing topological features can be specified here, however we’re only specifying one file.</div>
+<div class="line">Also note that more than one rotation file (or even a single <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>) can be specified here,
+however we’re only specifying a single rotation file.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">&#39;topologies.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We create our <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a> <strong>outside</strong> the time loop since that does not require <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+</div>
+<div class="line-block">
+<div class="line">Get a snapshot of our resolved topologies.</div>
+<div class="line">Here the topological features are resolved to the current <code class="docutils literal notranslate"><span class="pre">time</span></code>
+using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a>.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Next we <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics" title="pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calculate</span> <span class="pre">boundary</span> <span class="pre">statistics</span></code></a>
+along subduction zones (using the <code class="docutils literal notranslate"><span class="pre">boundary_section_filter</span></code> argument).
+Hence only boundaries of feature type <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_subduction_zone</span></code> are looked at.</div>
+<div class="line">We also use the <code class="docutils literal notranslate"><span class="pre">return_shared_sub_segment_dict</span></code> argument to return a dictionary that maps
+each <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment" title="pygplates.ResolvedTopologicalSharedSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">shared</span> <span class="pre">sub-segment</span></code></a> to a list of
+boundary sample points associated with it.</div>
+<div class="line">Also the sample points are spaced 0.5 degrees apart along the subduction zones.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_boundary_stats_dict</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">calculate_plate_boundary_statistics</span><span class="p">(</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span>  <span class="c1"># 0.5 degree spacing between points</span>
+        <span class="n">boundary_section_filter</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">,</span>
+        <span class="n">return_shared_sub_segment_dict</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Then we iterate over the shared sub-segments. Each one has a list of its associated boundary sample points.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">strain_rate_dilatations</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">shared_sub_segment</span><span class="p">,</span> <span class="n">plate_boundary_stats</span> <span class="ow">in</span> <span class="n">plate_boundary_stats_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Next we determine the subduction polarity of the current shared sub-segment (of a subducting line).</div>
+<div class="line">This enables us to determine which side of the subducting line the overriding plate is on.
+If it’s on the left then if you follow the order of vertices in the subducting line then it means
+the overriding plate is to the left. Similarly for the right side.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">subduction_polarity</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_enumeration</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_subduction_polarity</span><span class="p">)</span>
+<span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">subduction_polarity</span> <span class="ow">or</span>
+    <span class="n">subduction_polarity</span> <span class="o">==</span> <span class="s1">&#39;Unknown&#39;</span><span class="p">):</span>
+    <span class="c1"># Subduction polarity is not defined or known, so skip shared sub-segment.</span>
+    <span class="k">continue</span>
+<span class="n">overriding_plate_is_on_left</span> <span class="o">=</span> <span class="n">subduction_polarity</span> <span class="o">==</span> <span class="s1">&#39;Left&#39;</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Then we iterate over the <a class="reference internal" href="../generated/pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlateBoundaryStatistic</span></code></a>’s of the sampled points along the
+current shared sub-segment (of a subducting line).</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">plate_boundary_stats</span><span class="p">:</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">For each sampled point we obtain its <a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">topology</span> <span class="pre">location</span></code></a> for the overriding plate.
+For example, if the overriding plate is on the left side then we query the resolved topology on its left side (similarly if on the right side).</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">overriding_plate_is_on_left</span><span class="p">:</span>
+    <span class="n">overriding_plate</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">left_plate</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">overriding_plate</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">right_plate</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Since strain rates are non-zero only for <em>deforming</em> networks, we use a zero strain rate
+if the overriding plate is <em>not</em> deforming (ie, if it’s not a resolved <em>network</em>).</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">overriding_resolved_network</span> <span class="o">=</span> <span class="n">overriding_plate</span><span class="o">.</span><span class="n">located_in_resolved_network</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">overriding_resolved_network</span><span class="p">:</span>
+    <span class="o">...</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">overriding_strain_rate</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">StrainRate</span><span class="o">.</span><span class="n">zero</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">If the overriding plate is <em>deforming</em> then we rotate the sampled point <em>off</em> the plate boundary (subduction zone)
+into the interior of the deforming network of the overriding plate by 50 kms.</div>
+</div>
+<div class="line-block">
+<div class="line">In order to rotate the sampled point along the boundary normal direction we need a rotation <em>pole</em> that is orthogonal to the boundary point and normal.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">off_boundary_rotation_pole</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">boundary_point</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">stat</span><span class="o">.</span><span class="n">boundary_normal</span><span class="p">)</span><span class="o">.</span><span class="n">to_normalised</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Since the boundary normal points to the <em>left</em> side, if the overriding plate is on the right side then we need to reverse the rotation direction.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="ow">not</span> <span class="n">overriding_plate_is_on_left</span><span class="p">:</span>
+    <span class="n">off_boundary_rotation_pole</span> <span class="o">=</span> <span class="o">-</span><span class="n">off_boundary_rotation_pole</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Next we determine the finite rotation that will move the sampled point <em>off</em> the boundary by 50 kms.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">off_boundary_distance_kms</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">off_boundary_rotation_angle_radians</span> <span class="o">=</span> <span class="n">off_boundary_distance_kms</span> <span class="o">/</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
+<span class="n">off_boundary_rotation</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="p">(</span><span class="n">off_boundary_rotation_pole</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">off_boundary_rotation_angle_radians</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Then we rotate the sampled boundary point <em>into</em> the overriding plate.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">off_boundary_point</span> <span class="o">=</span> <span class="n">off_boundary_rotation</span> <span class="o">*</span> <span class="n">stat</span><span class="o">.</span><span class="n">boundary_point</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Finally we <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_point_strain_rate" title="pygplates.ResolvedTopologicalNetwork.get_point_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sample</span> <span class="pre">the</span> <span class="pre">strain</span> <span class="pre">rate</span></code></a>
+in the overriding deforming network at the off-boundary point.</div>
+<div class="line">The off-boundary point might no longer be <em>inside</em> the overriding <em>deforming</em> network.
+This is possible if the sampled boundary point is very close to the edge of the deforming network.
+In this case we just set the strain rate to zero.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">overriding_strain_rate</span> <span class="o">=</span> <span class="n">overriding_resolved_network</span><span class="o">.</span><span class="n">get_point_strain_rate</span><span class="p">(</span><span class="n">off_boundary_point</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">overriding_strain_rate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">overriding_strain_rate</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">StrainRate</span><span class="o">.</span><span class="n">zero</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Now that we’ve sampled all the strain rates, we create a <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a> containing the boundary points and their strain rates.</div>
+<div class="line">Note that each feature only exists at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>. This makes it easier when visualising over a range of times in GPlates.</div>
+<div class="line">We also <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span> <span class="pre">the</span> <span class="pre">geometry</span></code></a> as a coverage geometry (ie, a multipoint and scalar values).
+This causes the dilatation rate scalar values to show up in GPlates as a separate layer.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">strain_rate_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span>
+<span class="n">strain_rate_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">time</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">time</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="n">strain_rate_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span>
+    <span class="p">(</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="n">boundary_points</span><span class="p">),</span>
+        <span class="p">{</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">ScalarType</span><span class="o">.</span><span class="n">create_gpml</span><span class="p">(</span><span class="s1">&#39;StrainRateDilatation&#39;</span><span class="p">)</span> <span class="p">:</span> <span class="n">strain_rate_dilatations</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Finally we write to a file that contains all points (and their dilatation strain rates) at all times along subduction zones.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">strain_rate_features</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;subducting-strain-rates.gpmlz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">We can now load this file into GPlates (along with the topological model used to generate it) and
+visualise the intra-plate strain rates along subduction zones.</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html" class="btn btn-neutral float-left" title="Find divergence at subduction zones and convergence at ridges" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_detect_topology_gaps_and_overlaps.html" class="btn btn-neutral float-right" title="Find gaps and overlaps in global topological boundaries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+﻿pygplates.GmlTimeInstant
+========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlTimeInstant
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlTimeInstant.__init__
+      ~GmlTimeInstant.accept_visitor
+      ~GmlTimeInstant.clone
+      ~GmlTimeInstant.get_geometry
+      ~GmlTimeInstant.get_time
+      ~GmlTimeInstant.get_value
+      ~GmlTimeInstant.set_time
+   
+   
+
+   
+   
+   

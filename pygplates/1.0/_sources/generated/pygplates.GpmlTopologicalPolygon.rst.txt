@@ -1,0 +1,28 @@
+﻿pygplates.GpmlTopologicalPolygon
+================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTopologicalPolygon
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTopologicalPolygon.__init__
+      ~GpmlTopologicalPolygon.accept_visitor
+      ~GpmlTopologicalPolygon.clone
+      ~GpmlTopologicalPolygon.get_boundary_sections
+      ~GpmlTopologicalPolygon.get_exterior_sections
+      ~GpmlTopologicalPolygon.get_geometry
+      ~GpmlTopologicalPolygon.get_value
+   
+   
+
+   
+   
+   

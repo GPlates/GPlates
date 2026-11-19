@@ -1,0 +1,585 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample code &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Import geometries and assign plate IDs" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html" />
+    <link rel="prev" title="Primer" href="pygplates_primer.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Sample code</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#import">Import</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html">Import geometries and assign plate IDs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#load-save">Load/Save</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html">Load and save feature collections</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#create-query-features">Create/query features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html">Create common feature types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html">Query common feature types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html">Create topological features</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reconstruct-features">Reconstruct features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html">Reconstruct regular features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html">Reconstruct motion path features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html">Reconstruct flowline features</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#rotations">Rotations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_plate_rotation_hierarchy.html">Hierarchy of plate rotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_plate_circuits_to_anchored_plate.html">Plate circuits to anchored plate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_modify_reconstruction_pole.html">Modify a reconstruction pole</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#topologies">Topologies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html">Find average area and subducting boundary proportion of topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html">Find the total length of ridges and subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#velocities">Velocities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#spatial-proximity">Spatial proximity</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html">Find nearest reconstructed feature to a point</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html">Find reconstructed features overlapping a polygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#isochrons">Isochrons</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_conjugate_isochrons_from_ridge.html">Create conjugate isochrons from a ridge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html">Split an isochron into ridge and transform segments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Sample code</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pygplates_sample_code.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sample-code">
+<span id="pygplates-sample-code"></span><h1>Sample code<a class="headerlink" href="#sample-code" title="Link to this heading"></a></h1>
+<p>This document contains sample code that shows pyGPlates solving common plate tectonic problems.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="pygplates_getting_started.html#pygplates-getting-started"><span class="std std-ref">Getting started</span></a> section has a
+<a class="reference internal" href="pygplates_getting_started.html#pygplates-getting-started-tutorial"><span class="std std-ref">Getting Started tutorial</span></a> as well as an
+<a class="reference internal" href="pygplates_getting_started.html#pygplates-getting-started-installation"><span class="std std-ref">installation guide</span></a> to help get started.</p>
+</div>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#import" id="id1">Import</a></p></li>
+<li><p><a class="reference internal" href="#load-save" id="id2">Load/Save</a></p></li>
+<li><p><a class="reference internal" href="#create-query-features" id="id3">Create/query features</a></p></li>
+<li><p><a class="reference internal" href="#reconstruct-features" id="id4">Reconstruct features</a></p></li>
+<li><p><a class="reference internal" href="#rotations" id="id5">Rotations</a></p></li>
+<li><p><a class="reference internal" href="#topologies" id="id6">Topologies</a></p></li>
+<li><p><a class="reference internal" href="#velocities" id="id7">Velocities</a></p></li>
+<li><p><a class="reference internal" href="#spatial-proximity" id="id8">Spatial proximity</a></p></li>
+<li><p><a class="reference internal" href="#isochrons" id="id9">Isochrons</a></p></li>
+</ul>
+</nav>
+<section id="import">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Import</a><a class="headerlink" href="#import" title="Link to this heading"></a></h2>
+<p>This section covers how to get geometry data into a state where it can be reconstructed by pyGPlates.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html">Import geometries and assign plate IDs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#import-points-from-a-text-file-and-assign-plate-ids">Import <em>points</em> from a text file and assign plate IDs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#load-points-from-a-gmt-file-and-assign-plate-ids">Load <em>points</em> from a GMT file and assign plate IDs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id2">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id3">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#import-polylines-from-a-text-file-and-assign-plate-ids">Import <em>polylines</em> from a text file and assign plate IDs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id5">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id6">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id7">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#load-polylines-from-a-gmt-file-and-assign-plate-ids">Load <em>polylines</em> from a GMT file and assign plate IDs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id8">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id9">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#id10">Details</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="load-save">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Load/Save</a><a class="headerlink" href="#load-save" title="Link to this heading"></a></h2>
+<p>This section covers how to load and save collections of features from/to files.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html">Load and save feature collections</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html#create-a-file-containing-a-subset-of-features-from-another-file">Create a file containing a subset of features from another file</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html#create-a-file-containing-features-from-multiple-files">Create a file containing features from multiple files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html#id2">Details</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="create-query-features">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Create/query features</a><a class="headerlink" href="#create-query-features" title="Link to this heading"></a></h2>
+<p>This section covers how to create features from scratch and how to query their properties.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html">Create common feature types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-a-coastline-feature-from-present-day-geometry">Create a <em>coastline</em> feature from present-day geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#details">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#alternate-sample-code">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id4">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-an-isochron-feature-from-geometry-at-a-past-geological-time">Create an <em>isochron</em> feature from geometry at a past geological time</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id5">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id6">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id7">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id8">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-a-mid-ocean-ridge-feature-from-geometry-at-a-past-geological-time">Create a <em>mid-ocean ridge</em> feature from geometry at a past geological time</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id9">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id10">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id13">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id14">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-a-subduction-zone-feature-from-present-day-geometry">Create a <em>subduction zone</em> feature from present-day geometry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id15">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id16">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id18">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id19">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-a-virtual-geomagnetic-pole-feature">Create a <em>virtual geomagnetic pole</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id20">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id21">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id25">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id26">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-a-motion-path-feature">Create a <em>motion path</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id27">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id28">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id31">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id32">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-a-flowline-feature">Create a <em>flowline</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id33">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id34">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id36">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id37">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#create-a-total-reconstruction-sequence-rotation-feature">Create a <em>total reconstruction sequence</em> (rotation) feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id38">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id39">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id41">Alternate sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_common_feature_types.html#id42">Details</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html">Query common feature types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-a-coastline-feature">Query a <em>coastline</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#details">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-an-isochron-feature">Query an <em>isochron</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id3">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id4">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id6">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-a-mid-ocean-ridge-feature">Query a <em>mid-ocean ridge</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id7">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id8">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-a-subduction-zone-feature">Query a <em>subduction zone</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id9">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id10">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-a-virtual-geomagnetic-pole-feature">Query a <em>virtual geomagnetic pole</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id11">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id12">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-a-motion-path-feature">Query a <em>motion path</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id13">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id14">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-a-flowline-feature">Query a <em>flowline</em> feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id15">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id16">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#query-a-total-reconstruction-sequence-rotation-feature">Query a <em>total reconstruction sequence</em> (rotation) feature</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id17">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_common_feature_types.html#id18">Output</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html">Create topological features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#details">Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#create-a-topological-line-feature">Create a topological line feature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#create-a-topological-polygon-feature">Create a topological polygon feature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#create-a-topological-network-feature">Create a topological network feature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#find-features-referenced-by-a-topology">Find features referenced by a topology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#create-a-topological-section-for-each-referenced-feature">Create a topological section for each referenced feature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#create-a-topological-network-interior-for-each-referenced-feature">Create a topological network interior for each referenced feature</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#input">Input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_topological_features.html#output">Output</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="reconstruct-features">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Reconstruct features</a><a class="headerlink" href="#reconstruct-features" title="Link to this heading"></a></h2>
+<p>This section covers how to reconstruct regular features, motion path features and flowline features
+to past geological times.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html">Reconstruct regular features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#exported-reconstructed-features-to-a-file">Exported reconstructed features to a file</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#details">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#calculate-distance-a-feature-is-reconstructed">Calculate distance a feature is reconstructed</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#id2">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#id3">Output</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html">Reconstruct motion path features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#exported-reconstructed-motion-paths-to-a-file">Exported reconstructed motion paths to a file</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#details">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#query-a-reconstructed-motion-path">Query a reconstructed motion path</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#id2">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#id3">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_motion_path_features.html#id4">Output</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html">Reconstruct flowline features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#exported-reconstructed-flowlines-to-a-file">Exported reconstructed flowlines to a file</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#details">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#query-a-reconstructed-flowline">Query a reconstructed flowline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#id2">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#id3">Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_flowline_features.html#id4">Output</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="rotations">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Rotations</a><a class="headerlink" href="#rotations" title="Link to this heading"></a></h2>
+<p>This section covers querying and modifying the rotations that are used to reconstruct features to
+past geological times.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_plate_rotation_hierarchy.html">Hierarchy of plate rotations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_plate_rotation_hierarchy.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_plate_rotation_hierarchy.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_plate_rotation_hierarchy.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_plate_circuits_to_anchored_plate.html">Plate circuits to anchored plate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_plate_circuits_to_anchored_plate.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_plate_circuits_to_anchored_plate.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_plate_circuits_to_anchored_plate.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_modify_reconstruction_pole.html">Modify a reconstruction pole</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_modify_reconstruction_pole.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_modify_reconstruction_pole.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_modify_reconstruction_pole.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html">Calculate net rotation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html#details">Details</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="topologies">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">Topologies</a><a class="headerlink" href="#topologies" title="Link to this heading"></a></h2>
+<p>This section covers how to reconstruct (or resolve) dynamic geometries (such as topological plate boundaries)
+at past geological times, and how to query their topologies.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html">Find average area and subducting boundary proportion of topologies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html">Find the total length of ridges and subduction zones</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html#visualising-gaps-and-overlaps-in-gplates">Visualising gaps and overlaps in GPlates</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_strain_and_strain_rate.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_strain_and_strain_rate.html#details">Details</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="velocities">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Velocities</a><a class="headerlink" href="#velocities" title="Link to this heading"></a></h2>
+<p>This section covers how to calculate velocities of features as they move through geological time
+and also how to calculate velocities of plates at non-moving point locations.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points">Calculate velocities by assigning plate IDs of dynamic plates to static points</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#sample-code">Sample code</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#calculate-velocities-by-grouping-static-points-into-dynamic-plates">Calculate velocities by grouping static points into dynamic plates</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#id1">Sample code</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates">Calculate velocities by individually partitioning each static point into dynamic plates</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#id2">Sample code</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="spatial-proximity">
+<h2><a class="toc-backref" href="#id8" role="doc-backlink">Spatial proximity</a><a class="headerlink" href="#spatial-proximity" title="Link to this heading"></a></h2>
+<p>This section covers queries involving distances between geometries.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html">Find nearest reconstructed feature to a point</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html#advanced">Advanced</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html">Find reconstructed features overlapping a polygon</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html#output">Output</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="sample-code/pygplates_reconstruct_regular_features.html#pygplates-calculate-distance-a-feature-is-reconstructed"><span class="std std-ref">Calculate distance a feature is reconstructed</span></a></p>
+</div>
+</section>
+<section id="isochrons">
+<h2><a class="toc-backref" href="#id9" role="doc-backlink">Isochrons</a><a class="headerlink" href="#isochrons" title="Link to this heading"></a></h2>
+<p>This section covers some use cases specific to the isochron feature type.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_create_conjugate_isochrons_from_ridge.html">Create conjugate isochrons from a ridge</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_conjugate_isochrons_from_ridge.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_conjugate_isochrons_from_ridge.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_create_conjugate_isochrons_from_ridge.html#advanced">Advanced</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html">Split an isochron into ridge and transform segments</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html#details">Details</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_primer.html" class="btn btn-neutral float-left" title="Primer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html" class="btn btn-neutral float-right" title="Import geometries and assign plate IDs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

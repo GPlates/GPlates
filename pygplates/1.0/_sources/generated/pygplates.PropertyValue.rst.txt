@@ -1,0 +1,26 @@
+﻿pygplates.PropertyValue
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PropertyValue
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PropertyValue.__init__
+      ~PropertyValue.accept_visitor
+      ~PropertyValue.clone
+      ~PropertyValue.get_geometry
+      ~PropertyValue.get_value
+   
+   
+
+   
+   
+   

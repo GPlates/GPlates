@@ -1,0 +1,25 @@
+﻿pygplates.RotationModel
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: RotationModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~RotationModel.__init__
+      ~RotationModel.get_default_anchor_plate_id
+      ~RotationModel.get_reconstruction_tree
+      ~RotationModel.get_rotation
+   
+   
+
+   
+   
+   

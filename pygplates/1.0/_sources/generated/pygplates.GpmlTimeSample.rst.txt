@@ -1,0 +1,33 @@
+﻿pygplates.GpmlTimeSample
+========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTimeSample
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTimeSample.__init__
+      ~GpmlTimeSample.get_description
+      ~GpmlTimeSample.get_time
+      ~GpmlTimeSample.get_value
+      ~GpmlTimeSample.get_value_type
+      ~GpmlTimeSample.is_disabled
+      ~GpmlTimeSample.is_enabled
+      ~GpmlTimeSample.set_description
+      ~GpmlTimeSample.set_disabled
+      ~GpmlTimeSample.set_enabled
+      ~GpmlTimeSample.set_time
+      ~GpmlTimeSample.set_value
+   
+   
+
+   
+   
+   

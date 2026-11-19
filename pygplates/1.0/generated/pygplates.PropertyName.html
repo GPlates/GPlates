@@ -1,0 +1,549 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.PropertyName &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.PropertyValue" href="pygplates.PropertyValue.html" />
+    <link rel="prev" title="pygplates.Property" href="pygplates.Property.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Property.html">pygplates.Property</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.PropertyName</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.PropertyName"><code class="docutils literal notranslate"><span class="pre">PropertyName</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PropertyValue.html">pygplates.PropertyValue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PropertyValueVisitor.html">pygplates.PropertyValueVisitor</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#string">String</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.EnumerationType.html">pygplates.EnumerationType</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeatureId.html">pygplates.FeatureId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeatureType.html">pygplates.FeatureType</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.PropertyName</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.PropertyName"><code class="docutils literal notranslate"><span class="pre">PropertyName</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ScalarType.html">pygplates.ScalarType</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.PropertyName</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.PropertyName.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-propertyname">
+<h1>pygplates.PropertyName<a class="headerlink" href="#pygplates-propertyname" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.PropertyName">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">PropertyName</span></span><a class="headerlink" href="#pygplates.PropertyName" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>The namespace-qualified name of a property.</p>
+<p>All comparison operators (==, !=, &lt;, &lt;=, &gt;, &gt;=) are supported. PropertyName is hashable (can be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>).</p>
+<p>As a convenience the following common property names are available as class attributes:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gml:description">pygplates.PropertyName.gml_description</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gml:name">pygplates.PropertyName.gml_name</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gml:validTime">pygplates.PropertyName.gml_valid_time</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageAge">pygplates.PropertyName.gpml_average_age</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageDeclination">pygplates.PropertyName.gpml_average_declination</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageInclination">pygplates.PropertyName.gpml_average_inclination</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId">pygplates.PropertyName.gpml_conjugate_plate_id</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame">pygplates.PropertyName.gpml_fixed_reference_frame</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime">pygplates.PropertyName.gpml_geometry_import_time</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:leftPlate">pygplates.PropertyName.gpml_left_plate</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame">pygplates.PropertyName.gpml_moving_reference_frame</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:polarityChronId">pygplates.PropertyName.gpml_polarity_chron_id</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:polarityChronOffset">pygplates.PropertyName.gpml_polarity_chron_offset</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:poleA95">pygplates.PropertyName.gpml_pole_a95</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:poleDm">pygplates.PropertyName.gpml_pole_dm</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:poleDp">pygplates.PropertyName.gpml_pole_dp</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod">pygplates.PropertyName.gpml_reconstruction_method</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId">pygplates.PropertyName.gpml_reconstruction_plate_id</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:relativePlate">pygplates.PropertyName.gpml_relative_plate</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rift_edgeLength_threshold_degrees">pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rift_exponential_stretching_constant">pygplates.PropertyName.gpml_rift_exponential_stretching_constant</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rift_left_plate">pygplates.PropertyName.gpml_rift_left_plate</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rift_right_plate">pygplates.PropertyName.gpml_rift_right_plate</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rift_strain_rate_resolution_log10">pygplates.PropertyName.gpml_rift_strain_rate_resolution_log10</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rightPlate">pygplates.PropertyName.gpml_right_plate</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes">pygplates.PropertyName.gpml_shapefile_attributes</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:times">pygplates.PropertyName.gpml_times</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:totalReconstructionPole">pygplates.PropertyName.gpml_total_reconstruction_pole</a></p></li>
+</ul>
+<p>As a convenience the following common <a class="reference internal" href="pygplates.Enumeration.html#pygplates.Enumeration" title="pygplates.Enumeration"><code class="xref py py-class docutils literal notranslate"><span class="pre">enumeration</span></code></a> property names are available as class attributes:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:absoluteReferenceFrame">pygplates.PropertyName.gpml_absolute_reference_frame</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:crust">pygplates.PropertyName.gpml_crust</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:dipSide">pygplates.PropertyName.gpml_dip_side</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:dipSlip">pygplates.PropertyName.gpml_dip_slip</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:edge">pygplates.PropertyName.gpml_edge</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:foldAnnotation">pygplates.PropertyName.gpml_fold_annotation</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:motion">pygplates.PropertyName.gpml_motion</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:polarityChronOrientation">pygplates.PropertyName.gpml_polarity_chron_orientation</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:primarySlipComponent">pygplates.PropertyName.gpml_primary_slip_component</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:quality">pygplates.PropertyName.gpml_quality</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:side">pygplates.PropertyName.gpml_side</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:strikeSlip">pygplates.PropertyName.gpml_strike_slip</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity">pygplates.PropertyName.gpml_subduction_polarity</a></p></li>
+</ul>
+<p>As a convenience the following common <em>geometry</em> property names are available as class attributes:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition">pygplates.PropertyName.gpml_average_sample_site_position</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:boundary">pygplates.PropertyName.gpml_boundary</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:centerLineOf">pygplates.PropertyName.gpml_center_line_of</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:errorBounds">pygplates.PropertyName.gpml_error_bounds</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:multiPosition">pygplates.PropertyName.gpml_multi_position</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:network">pygplates.PropertyName.gpml_network</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:outlineOf">pygplates.PropertyName.gpml_outline_of</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:polePosition">pygplates.PropertyName.gpml_pole_position</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:position">pygplates.PropertyName.gpml_position</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:seedPoints">pygplates.PropertyName.gpml_seed_points</a></p></li>
+<li><p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry">pygplates.PropertyName.gpml_unclassified_geometry</a></p></li>
+</ul>
+<p>A <em>PropertyName</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.49: </span>Added attributes <em>gpml_rift_edgeLength_threshold_degrees</em>, <em>gpml_rift_exponential_stretching_constant</em>, <em>gpml_rift_left_plate</em>, <em>gpml_rift_right_plate</em> and <em>gpml_rift_strain_rate_resolution_log10</em>.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.__init__" title="Link to this definition"></a></dt>
+<dd><p>You cannot directly instantiate this class from Python.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This constructor is only provided for <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickle</a> support.</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PropertyName.__init__" title="pygplates.PropertyName.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>You cannot directly instantiate this class from Python.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PropertyName.create_from_qualified_string" title="pygplates.PropertyName.create_from_qualified_string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_from_qualified_string</span></code></a>(name)</p></td>
+<td><p>[<em>staticmethod</em>] Creates a <a class="reference internal" href="#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a> instance from a fully qualified name string.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PropertyName.create_gml" title="pygplates.PropertyName.create_gml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gml</span></code></a>(name)</p></td>
+<td><p>[<em>staticmethod</em>] Create a property name qualified with the <code class="docutils literal notranslate"><span class="pre">gml:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">gml:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PropertyName.create_gpml" title="pygplates.PropertyName.create_gpml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gpml</span></code></a>(name)</p></td>
+<td><p>[<em>staticmethod</em>] Create a property name qualified with the <code class="docutils literal notranslate"><span class="pre">gpml:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">gpml:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PropertyName.create_xsi" title="pygplates.PropertyName.create_xsi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_xsi</span></code></a>(name)</p></td>
+<td><p>[<em>staticmethod</em>] Create a property name qualified with the <code class="docutils literal notranslate"><span class="pre">xsi:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">xsi:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PropertyName.get_name" title="pygplates.PropertyName.get_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_name</span></code></a>()</p></td>
+<td><p>Returns the unqualified name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PropertyName.get_namespace" title="pygplates.PropertyName.get_namespace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_namespace</span></code></a>()</p></td>
+<td><p>Returns the namespace URI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PropertyName.get_namespace_alias" title="pygplates.PropertyName.get_namespace_alias"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_namespace_alias</span></code></a>()</p></td>
+<td><p>Returns the namespace alias.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PropertyName.to_qualified_string" title="pygplates.PropertyName.to_qualified_string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_qualified_string</span></code></a>()</p></td>
+<td><p>Returns the fully qualified name.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gml_description</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gml_name</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gml_valid_time</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_absolute_reference_frame</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_average_age</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_average_declination</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_average_inclination</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_average_sample_site_position</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_boundary</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_center_line_of</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_conjugate_plate_id</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_crust</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_dip_side</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_dip_slip</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_edge</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_error_bounds</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_fixed_reference_frame</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_fold_annotation</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_geometry_import_time</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_left_plate</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_motion</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_moving_reference_frame</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_multi_position</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_network</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_outline_of</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_polarity_chron_id</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_polarity_chron_offset</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_polarity_chron_orientation</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_pole_a95</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_pole_dm</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_pole_dp</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_pole_position</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_position</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_primary_slip_component</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_quality</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_reconstruction_method</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_reconstruction_plate_id</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_relative_plate</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_rift_edgeLength_threshold_degrees</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_rift_exponential_stretching_constant</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_rift_left_plate</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_rift_right_plate</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_rift_strain_rate_resolution_log10</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_right_plate</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_seed_points</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_shapefile_attributes</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_side</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_strike_slip</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_subduction_polarity</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_times</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_total_reconstruction_pole</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">gpml_unclassified_geometry</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.create_from_qualified_string">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_from_qualified_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.create_from_qualified_string" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Creates a <a class="reference internal" href="#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a> instance from a fully qualified name string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – qualified name</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a> or None</p>
+</dd>
+</dl>
+<p>The name string should have a <code class="docutils literal notranslate"><span class="pre">:</span></code> character separating the namespace alias from the unqualified name, for example <code class="docutils literal notranslate"><span class="pre">gpml:reconstructionPlateId</span></code>. If the namespace alias is not recognised (as <code class="docutils literal notranslate"><span class="pre">gpml</span></code>, <code class="docutils literal notranslate"><span class="pre">gml</span></code> or <code class="docutils literal notranslate"><span class="pre">xsi</span></code>) then <code class="docutils literal notranslate"><span class="pre">gpml</span></code> is assumed.</p>
+<p>An over-qualified name string (eg, containing two or more <code class="docutils literal notranslate"><span class="pre">:</span></code> characters) will result in <code class="docutils literal notranslate"><span class="pre">None</span></code> being returned.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">property_name</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">create_from_qualified_string</span><span class="p">(</span><span class="s1">&#39;gpml:reconstructionPlateId&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.create_gml">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_gml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.create_gml" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Create a property name qualified with the <code class="docutils literal notranslate"><span class="pre">gml:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">gml:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – unqualified name</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a></p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gml_valid_time_property_name</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">create_gml</span><span class="p">(</span><span class="s1">&#39;validTime&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.create_gpml">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_gpml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.create_gpml" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Create a property name qualified with the <code class="docutils literal notranslate"><span class="pre">gpml:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">gpml:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – unqualified name</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a></p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gpml_reconstruction_plate_id_property_name</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">create_gpml</span><span class="p">(</span><span class="s1">&#39;reconstructionPlateId&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.create_xsi">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_xsi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.create_xsi" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Create a property name qualified with the <code class="docutils literal notranslate"><span class="pre">xsi:</span></code> prefix (<code class="docutils literal notranslate"><span class="pre">xsi:</span></code> + <code class="docutils literal notranslate"><span class="pre">name</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – unqualified name</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a></p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">property_name</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">create_xsi</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.get_name">
+<span class="sig-name descname"><span class="pre">get_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.get_name" title="Link to this definition"></a></dt>
+<dd><p>Returns the unqualified name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>This is the fully qualified name minus the <code class="docutils literal notranslate"><span class="pre">gpml:</span></code> prefix (if created with <em>create_gpml()</em>).</p>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">reconstructionPlateId</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.get_namespace">
+<span class="sig-name descname"><span class="pre">get_namespace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.get_namespace" title="Link to this definition"></a></dt>
+<dd><p>Returns the namespace URI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>For example, the <code class="docutils literal notranslate"><span class="pre">gpml</span></code> namespace alias has the namespace <code class="docutils literal notranslate"><span class="pre">http://www.gplates.org/gplates</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.get_namespace_alias">
+<span class="sig-name descname"><span class="pre">get_namespace_alias</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.get_namespace_alias" title="Link to this definition"></a></dt>
+<dd><p>Returns the namespace alias.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">gpml</span></code> (if created with <em>create_gpml()</em>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PropertyName.to_qualified_string">
+<span class="sig-name descname"><span class="pre">to_qualified_string</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PropertyName.to_qualified_string" title="Link to this definition"></a></dt>
+<dd><p>Returns the fully qualified name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+</dl>
+<p>For example, <code class="docutils literal notranslate"><span class="pre">gpml:reconstructionPlateId</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.Property.html" class="btn btn-neutral float-left" title="pygplates.Property" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.PropertyValue.html" class="btn btn-neutral float-right" title="pygplates.PropertyValue" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

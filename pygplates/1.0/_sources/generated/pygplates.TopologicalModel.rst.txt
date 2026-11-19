@@ -1,0 +1,26 @@
+﻿pygplates.TopologicalModel
+==========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: TopologicalModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TopologicalModel.__init__
+      ~TopologicalModel.get_anchor_plate_id
+      ~TopologicalModel.get_rotation_model
+      ~TopologicalModel.reconstruct_geometry
+      ~TopologicalModel.topological_snapshot
+   
+   
+
+   
+   
+   

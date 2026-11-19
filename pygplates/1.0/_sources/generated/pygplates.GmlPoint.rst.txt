@@ -1,0 +1,28 @@
+﻿pygplates.GmlPoint
+==================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlPoint
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlPoint.__init__
+      ~GmlPoint.accept_visitor
+      ~GmlPoint.clone
+      ~GmlPoint.get_geometry
+      ~GmlPoint.get_point
+      ~GmlPoint.get_value
+      ~GmlPoint.set_point
+   
+   
+
+   
+   
+   

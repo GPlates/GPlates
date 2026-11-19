@@ -1,0 +1,620 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.PlatePartitioner &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.FeatureCollection" href="pygplates.FeatureCollection.html" />
+    <link rel="prev" title="pygplates.partition_into_plates" href="pygplates.partition_into_plates.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.partition_into_plates.html">pygplates.partition_into_plates</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.PlatePartitioner</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.PlatePartitioner"><code class="docutils literal notranslate"><span class="pre">PlatePartitioner</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.PlatePartitioner</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.PlatePartitioner.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-platepartitioner">
+<h1>pygplates.PlatePartitioner<a class="headerlink" href="#pygplates-platepartitioner" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.PlatePartitioner">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">PlatePartitioner</span></span><a class="headerlink" href="#pygplates.PlatePartitioner" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>Partition features or geometries into plates.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PlatePartitioner.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PlatePartitioner.__init__" title="Link to this definition"></a></dt>
+<dd><p>A <em>PlatePartitioner</em> object can be constructed in more than one way. The following applies to both ways…</p>
+<blockquote>
+<div><p>This table maps the values of the <em>sort_partitioning_plates</em> parameter to the sorting criteria used for the partitioning plates:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Value</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SortPartitioningPlates.by_partition_type</p></td>
+<td><p>Group in order of resolved topological networks then resolved topological boundaries
+then reconstructed static polygons, but with no sorting within each group
+(ordering within each group is unchanged).</p></td>
+</tr>
+<tr class="row-odd"><td><p>SortPartitioningPlates.by_partition_type_then_plate_id</p></td>
+<td><p>Same as <em>by_partition_type</em>, but also sort by plate ID (from highest to lowest)
+within each partition type group.</p></td>
+</tr>
+<tr class="row-even"><td><p>SortPartitioningPlates.by_partition_type_then_plate_area</p></td>
+<td><p>Same as <em>by_partition_type</em>, but also sort by plate area (from highest to lowest)
+within each partition type group.</p></td>
+</tr>
+<tr class="row-odd"><td><p>SortPartitioningPlates.by_plate_id</p></td>
+<td><p>Sort by plate ID (from highest to lowest), but no grouping by partition type.</p></td>
+</tr>
+<tr class="row-even"><td><p>SortPartitioningPlates.by_plate_area</p></td>
+<td><p>Sort by plate area (from highest to lowest), but no grouping by partition type.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you don’t want to sort the partitioning plates (for example, if you have already sorted them) then you’ll need to explicitly specify <code class="docutils literal notranslate"><span class="pre">None</span></code> for the <em>sort_partitioning_plates</em> parameter (eg, <code class="docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner(...,</span> <span class="pre">sort_partitioning_plates=None)</span></code>). This is because not specifying anything defaults to <em>SortPartitioningPlates.by_partition_type_then_plate_id</em> (since this always gives deterministic partitioning results).</p>
+</div>
+<p>If the partitioning plates overlap each other then their final ordering  determines the partitioning results. Resolved topologies do not tend to overlap, but reconstructed static polygons do overlap (for non-zero reconstruction times) and hence the sorting order becomes relevant.</p>
+<p>Partitioning of points is more efficient if you sort by plate <em>area</em> because an arbitrary point is likely to be found sooner when testing against larger partitioning polygons first (and hence more remaining partitioning polygons can be skipped). Since resolved topologies don’t tend to overlap you don’t need to sort them by plate <em>ID</em> to get deterministic partitioning results. So we are free to sort by plate <em>area</em> (well, plate area is also deterministic but not as deterministic as sorting by plate <em>ID</em> since modifications to the plate geometries change their areas but not their plate IDs). Note that we also group by partition type since the topological networks usually overlay the topological plate boundaries:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">sort_partitioning_plates</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">SortPartitioningPlates</span><span class="o">.</span><span class="n">by_partition_type_then_plate_area</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only those reconstructed/resolved geometries that contain a <em>polygon</em> boundary are actually used for partitioning. For <a class="reference internal" href="pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topologies</span></code></a> this includes <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a>. For <a class="reference internal" href="pygplates.reconstruct.html#pygplates.reconstruct" title="pygplates.reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">geometries</span></code></a>, a <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedFeatureGeometry</span></code></a> is only included if its reconstructed geometry is a <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a>.</p>
+</div>
+</div></blockquote>
+<p><strong>A PlatePartitioner object can be constructed in the following ways…</strong></p>
+<dl>
+<dt>__init__(partitioning_plates, rotation_model, [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])</dt><dd><p>Create a partitioner from a sequence of reconstructed/resolved plates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param partitioning_plates<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A sequence of reconstructed/resolved plates to partition with.</p>
+</dd>
+<dt class="field-even">type partitioning_plates<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any sequence of <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a></p>
+</dd>
+<dt class="field-odd">param rotation_model<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.</p>
+</dd>
+<dt class="field-even">type rotation_model<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a>. Or <a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a>, or string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>, or <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of any combination of those four types</p>
+</dd>
+<dt class="field-odd">param sort_partitioning_plates<span class="colon">:</span></dt>
+<dd class="field-odd"><p>optional sort order of partitioning plates (defaults to <em>SortPartitioningPlates.by_partition_type_then_plate_id</em>)</p>
+</dd>
+<dt class="field-even">type sort_partitioning_plates<span class="colon">:</span></dt>
+<dd class="field-even"><p>One of the values in the <em>SortPartitioningPlates</em> table above, or None</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DifferentTimesInPartitioningPlatesError if all partitioning plates do not have the same <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">times</span></code></a></p>
+</dd>
+</dl>
+<p>The <em>partitioning_plates</em> sequence can be generated by <a class="reference internal" href="pygplates.reconstruct.html#pygplates.reconstruct" title="pygplates.reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reconstructing</span> <span class="pre">regular</span> <span class="pre">geological</span> <span class="pre">features</span></code></a> and/or <a class="reference internal" href="pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolving</span> <span class="pre">topological</span> <span class="pre">features</span></code></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+
+<span class="n">resolved_topologies</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">resolve_topologies</span><span class="p">(</span><span class="s1">&#39;topologies.gpml&#39;</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">resolved_topologies</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="n">resolved_topologies</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All partitioning plates should have been generated for the same reconstruction time otherwise <em>DifferentTimesInPartitioningPlatesError</em> is raised.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>rotation_model</em> should be the same rotation model used to reconstruct/resolve the partitioning plates. This enables partitioned feature geometries to be reverse-reconstructed correctly in <a class="reference internal" href="#pygplates.PlatePartitioner.partition_features" title="pygplates.PlatePartitioner.partition_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">partition_features()</span></code></a> for non-zero reconstruction times.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd>
+<dt>__init__(partitioning_features, rotation_model, [reconstruction_time=0], [sort_partitioning_plates=SortPartitioningPlates.by_partition_type_then_plate_id])</dt><dd><p>Create a partitioner by reconstructing/resolving plates from a sequence of plate features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param partitioning_features<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A sequence of plate features to partition with.</p>
+</dd>
+<dt class="field-even">type partitioning_features<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a>, or string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>, or <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of any combination of those four types</p>
+</dd>
+<dt class="field-odd">param rotation_model<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.</p>
+</dd>
+<dt class="field-even">type rotation_model<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a>. Or <a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a>, or string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>, or <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of any combination of those four types</p>
+</dd>
+<dt class="field-odd">param reconstruction_time<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the specific geological time to reconstruct/resolve the <em>partitioning_features</em> to (defaults to zero)</p>
+</dd>
+<dt class="field-even">type reconstruction_time<span class="colon">:</span></dt>
+<dd class="field-even"><p>float or <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a></p>
+</dd>
+<dt class="field-odd">param sort_partitioning_plates<span class="colon">:</span></dt>
+<dd class="field-odd"><p>optional sort order of partitioning plates (defaults to <em>SortPartitioningPlates.by_partition_type_then_plate_id</em>)</p>
+</dd>
+<dt class="field-even">type sort_partitioning_plates<span class="colon">:</span></dt>
+<dd class="field-even"><p>One of the values in the <em>SortPartitioningPlates</em> table above, or None</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if <em>reconstruction_time</em> is <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">past</span></code></a> or <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">future</span></code></a></p>
+</dd>
+</dl>
+<p>The partitioning plates are generated internally by <a class="reference internal" href="pygplates.reconstruct.html#pygplates.reconstruct" title="pygplates.reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reconstructing</span> <span class="pre">the</span> <span class="pre">regular</span> <span class="pre">geological</span> <span class="pre">features</span></code></a> and <a class="reference internal" href="pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolving</span> <span class="pre">the</span> <span class="pre">topological</span> <span class="pre">features</span></code></a> in <em>partitioning_features</em> using the rotation model and optional reconstruction time.</p>
+<p>To create a plate partitioner suitable for partitioning present day geometries/features (ie, <em>reconstruction_time</em> is zero):.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PlatePartitioner.__init__" title="pygplates.PlatePartitioner.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(...)</p></td>
+<td><p>A <em>PlatePartitioner</em> object can be constructed in more than one way.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PlatePartitioner.partition_features" title="pygplates.PlatePartitioner.partition_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_features</span></code></a>(features, ...)</p></td>
+<td><p>Partitions features into partitioning plates.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PlatePartitioner.partition_geometry" title="pygplates.PlatePartitioner.partition_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_geometry</span></code></a>(geometry, ...)</p></td>
+<td><p>Partitions one or more geometries into partitioning plates.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PlatePartitioner.partition_point" title="pygplates.PlatePartitioner.partition_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition_point</span></code></a>(point)</p></td>
+<td><p>A convenient alternative to <a class="reference internal" href="#pygplates.PlatePartitioner.partition_geometry" title="pygplates.PlatePartitioner.partition_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">partition_geometry()</span></code></a>, for a point, that finds the first partitioning plate (if any) containing the point.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PlatePartitioner.partition_features">
+<span class="sig-name descname"><span class="pre">partition_features</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">features,</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">[properties_to_copy=[PartitionProperty.reconstruction_plate_id]],</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">[partition_method=PartitionMethod.split_into_plates],</span>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; <span class="pre">[partition_return=PartitionReturn.combined_partitioned_and_unpartitioned]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PlatePartitioner.partition_features" title="Link to this definition"></a></dt>
+<dd><p>Partitions features into partitioning plates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>features</strong> (<a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a>, or string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>, or <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>,         or sequence of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of any combination of those four types) – the features to partition</p></li>
+<li><p><strong>properties_to_copy</strong> (a sequence of any combination of <a class="reference internal" href="pygplates.PropertyName.html#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a> and         the <em>PartitionProperty</em> enumeration values (see table below)) – the properties to copy from partitioning plate features to the partitioned features         (defaults to just the reconstruction plate ID)</p></li>
+<li><p><strong>partition_method</strong> (a <em>PartitionMethod</em> enumeration value (see table below)) – how the features are to be partitioned by the partitioning plates (defaults to <em>PartitionMethod.split_into_plates</em>)</p></li>
+<li><p><strong>partition_return</strong> (a <em>PartitionReturn</em> enumeration value (see table below)) – how to return the partitioned and unpartitioned features and whether to include the partitioning plates         (defaults to <em>PartitionReturn.combined_partitioned_and_unpartitioned</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the partitioned and unpartitioned features         (<strong>note:</strong> new features are always returned, never the originals passed in via <em>features</em>)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>depends on <em>partition_return</em> (see table below)</p>
+</dd>
+</dl>
+<p>The features in <em>features</em> are tested for overlap/intersection with the partitioning plates using the partition method
+specified by <em>partition_method</em>. Properties are copied from the partitioning plate features to the
+features partitioned by them as specified by <em>properties_to_copy</em> (by default this is only the reconstruction plate ID).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>New features are always returned. The original features (passed into the <em>features</em> argument) are never modified or returned.</p>
+</div>
+<p>So while the partitioning polygons are reconstructed/resolved to the reconstruction time before testing for overlap/intersection,
+the geometries in the features to be partitioned (<em>features</em>) are not since they effectively represent a snapshot of the features at the reconstruction time.
+In other words the features to be partitioned effectively contain geometry at the reconstruction time (rather than present day) and hence they are <em>not</em> reconstructed
+to the reconstruction time before testing for overlap/intersection with the partitioning plates (even if they already happen to have a reconstruction plate ID property).</p>
+<p>To partition features at present day (and assign reconstruction plate IDs) and write them to a new file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span><span class="s1">&#39;features_to_partition.gpml&#39;</span><span class="p">)</span>
+
+<span class="n">feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;partitioned_and_unpartitioned_features.gpml&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><em>partition_method</em> specifies how the features are to be partitioned by the partitioning plates.</p>
+<p><em>partition_method</em> supports the following enumeration values:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Value</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><em>PartitionMethod.split_into_plates</em></p></td>
+<td><p>Split each feature into partitioning plates and into unpartitioned parts that
+are outside all partitioning plates (if plates don’t have global coverage).</p>
+<p>For example, if a feature overlaps two plates then it will get cloned twice.
+Each clone will have its geometry set to the part of the original feature geometry
+contained within the respective partitioning plate. Any part (or parts) of the
+original feature geometry outside all the plates will result in a third cloned
+feature containing the unpartitioned geometry(s).</p>
+<p>The two partitioned cloned features will have properties copied from the
+respective partitioned plate feature (as determined by <em>properties_to_copy</em>).
+The unpartitioned cloned feature will not have any properties copied to it.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><em>PartitionMethod.most_overlapping_plate</em></p></td>
+<td><p>Don’t split each feature into partitioning plates, instead use the partitioning
+plate that most overlaps the feature’s geometry.</p>
+<p>For example, if a feature overlaps two plates then it will still only get cloned
+once (and its geometry unmodified). Only the most overlapping partitioning plate
+(if any) is selected. The overlap is measured based on the length of the polyline
+or polygon geometry contained within each partitioning plate (or number of points
+if geometry is a multipoint or point).</p>
+<p>The cloned feature will have properties copied from the most overlapping
+partitioned plate feature (as determined by <em>properties_to_copy</em>) if it overlaps
+any, otherwise it will not have any properties copied to it.</p>
+<p>Note that if a feature contains multiple geometries then they are treated as one
+composite geometry in the overlap calculation.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>VirtualGeomagneticPole features (of <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> <code class="docutils literal notranslate"><span class="pre">FeatureType.gpml_virtual_geomagnetic_pole</span></code>) ignore <em>partition_method</em>
+since these features are always partitioned using the average sample site position (<code class="docutils literal notranslate"><span class="pre">PropertyName.gpml_average_sample_site_position</span></code>).
+The pole position (<code class="docutils literal notranslate"><span class="pre">PropertyName.gpml_pole_position</span></code>) is not used during the partitioning.</p>
+</div>
+<p>To assign reconstruction plate IDs to features using the most overlapping partitioning plate:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span>
+        <span class="s1">&#39;features_to_partition.gpml&#39;</span><span class="p">,</span>
+        <span class="n">partition_method</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionMethod</span><span class="o">.</span><span class="n">most_overlapping_plate</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><em>properties_to_copy</em> specifies the properties to copy from the partitioning features to the features that are being partitioned.</p>
+<p><em>properties_to_copy</em> supports a sequence of any of the following arguments:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><em>PartitionProperty.reconstruction_plate_id</em></p></td>
+<td><p>The reconstruction plate ID. This is an alternative to specifying the property
+name <code class="docutils literal notranslate"><span class="pre">PropertyName.gpml_reconstruction_plate_id</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>PartitionProperty.valid_time_period</em></p></td>
+<td><p>The valid time period. This is an alternative to specifying the property name
+<code class="docutils literal notranslate"><span class="pre">PropertyName.gml_valid_time</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><em>PartitionProperty.valid_time_begin</em></p></td>
+<td><p>Only the <em>begin</em> time of the valid time period of the partitioning feature is
+copied (the <em>end</em> time remains unchanged). If the <em>begin</em> time is later than
+(has a smaller value than) the <em>end</em> time then it is set to the <em>end</em> time.</p>
+<p>Note that there is no equivalent way to specify this using a <em>PropertyName</em>.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><em>PartitionProperty.valid_time_end</em></p></td>
+<td><p>Only the <em>end</em> time of the valid time period of the partitioning feature is
+copied (the <em>begin</em> time remains unchanged). If the <em>end</em> time is earlier than
+(has a larger value) the <em>begin</em> time then it is set to the <em>begin</em> time.</p>
+<p>Note that there is no equivalent way to specify this using a <em>PropertyName</em>.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyName.html#pygplates.PropertyName" title="pygplates.PropertyName"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyName</span></code></a></p></td>
+<td><p>Any property name. If the partitioning feature has one or more properties
+with this name then they will be copied/cloned to the feature being partitioned
+provided its <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a> supports the property name.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If a property cannot copied into a feature (eg, because the property is not supported the feature’s type) then that copy is silently ignored.</p>
+</div>
+<p>To copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span>
+        <span class="s1">&#39;features_to_partition.gpml&#39;</span><span class="p">,</span>
+        <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">reconstruction_plate_id</span><span class="p">,</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">valid_time_period</span><span class="p">,</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gml_name</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><em>properties_to_copy</em> can also be a single callable (function):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Arbitrary callable (function)</p></td>
+<td><p>A callable accepting the following arguments:</p>
+<ul class="simple">
+<li><p>the partitioning <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a></p></li>
+<li><p>the <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a> being partitioned</p></li>
+</ul>
+<p>This can be used to write your own implementation for copying properties.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>An alternative way to copy/assign reconstruction plate ID, valid time period and name from the partitioning features to their associated partitioned features:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">properties_to_copy_func</span><span class="p">(</span><span class="n">partitioning_feature</span><span class="p">,</span> <span class="n">feature</span><span class="p">):</span>
+    <span class="c1"># If a property cannot be set on the feature (eg, because not supported by feature type)</span>
+    <span class="c1"># then don&#39;t copy that property (ie, do nothing if pygplates.InformationModelError is raised).</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="n">partitioning_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">())</span>
+    <span class="k">except</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">InformationModelError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="n">begin</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">partitioning_feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">begin</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">InformationModelError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="n">partitioning_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span>
+    <span class="k">except</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">InformationModelError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">except</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">InformationModelError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+
+<span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span>
+        <span class="s1">&#39;features_to_partition.gpml&#39;</span><span class="p">,</span>
+        <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="n">properties_to_copy_func</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><em>partition_return</em> specifies how the features are to be partitioned by the partitioning plates. This applies regardless of the value of <em>partition_method</em>.</p>
+<p><em>partition_return</em> supports the following enumeration values:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Value</p></th>
+<th class="head"><p>Return Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><em>PartitionReturn.combined_partitioned_and_unpartitioned</em></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a></p></td>
+<td><p>Return a single combined <code class="docutils literal notranslate"><span class="pre">list</span></code> of partitioned and unpartitioned features.</p></td>
+</tr>
+<tr class="row-odd"><td><p><em>PartitionReturn.separate_partitioned_and_unpartitioned</em></p></td>
+<td><p>2-tuple (
+<code class="docutils literal notranslate"><span class="pre">list</span></code> of partitioned <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>,
+<code class="docutils literal notranslate"><span class="pre">list</span></code> of unpartitioned <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>)</p></td>
+<td><p>Return a 2-tuple whose first element is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of partitioned  features and
+whose second element is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of unpartitioned  features.</p></td>
+</tr>
+<tr class="row-even"><td><p><em>PartitionReturn.partitioned_groups_and_unpartitioned</em></p></td>
+<td><p>2-tuple (
+<code class="docutils literal notranslate"><span class="pre">list</span></code> of 2-tuple (
+<a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">partitioning</span> <span class="pre">plate</span></code></a>,
+<code class="docutils literal notranslate"><span class="pre">list</span></code> of partitioned <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>),
+<code class="docutils literal notranslate"><span class="pre">list</span></code> of unpartitioned <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>)</p></td>
+<td><p>Return a 2-tuple whose first element is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of partitioned groups and
+whose second element is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of unpartitioned features.</p>
+<p>Each partitioned group associates a partitioning plate with its partitioned
+features and consists of a 2-tuple whose first element is the partitioning plate
+and whose second element is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of features partitioned by that plate.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>To reset the reconstruction plate ID (to zero) for all unpartitioned features (features that did not intersect any partitioning plates):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+<span class="n">partitioned_features</span><span class="p">,</span> <span class="n">unpartitioned_features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span>
+        <span class="s1">&#39;features_to_partition.gpml&#39;</span><span class="p">,</span>
+        <span class="n">partition_return</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionReturn</span><span class="o">.</span><span class="n">separate_partitioned_and_unpartitioned</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">unpartitioned_feature</span> <span class="ow">in</span> <span class="n">unpartitioned_features</span><span class="p">:</span>
+    <span class="n">unpartitioned_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>…this is useful when the features to be partitioned already have reconstruction plate IDs but
+they are deemed to be incorrect. By resetting them to zero we ensure the unpartitioned features remain stationary
+and do not reconstruct incorrectly over geological time. Any partitioned features will get a new plate ID.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a>     (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PlatePartitioner.partition_geometry">
+<span class="sig-name descname"><span class="pre">partition_geometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geometry</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">partitioned_inside_geometries</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">partitioned_outside_geometries</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PlatePartitioner.partition_geometry" title="Link to this definition"></a></dt>
+<dd><p>Partitions one or more geometries into partitioning plates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>geometry</strong> (<a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>, or sequence (eg, <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) of <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>) – the geometry, or geometries, to partition</p></li>
+<li><p><strong>partitioned_inside_geometries</strong> (<code class="docutils literal notranslate"><span class="pre">list</span></code> of 2-tuple (<a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a>, <code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>), or None) – optional list of geometries partitioned <em>inside</em> the partitioning plates (note that the list is <em>not</em> cleared first)</p></li>
+<li><p><strong>partitioned_outside_geometries</strong> (<code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>, or None) – optional list of geometries partitioned <em>outside</em> all partitioning plates (note that the list is <em>not</em> cleared first)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+<p>If <em>geometry</em> is inside any partitioning plates (even partially) then <code class="docutils literal notranslate"><span class="pre">True</span></code> is returned and the inside parts of <em>geometry</em> are appended to <em>partitioned_inside_geometries</em> (if specified) and the outside parts appended to <em>partitioned_outside_geometries</em> (if specified). Otherwise <code class="docutils literal notranslate"><span class="pre">False</span></code> is returned and <em>geometry</em> is appended to <em>partitioned_outside_geometries</em> (if specified).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each element in <em>partitioned_inside_geometries</em> is a 2-tuple consisting of a partitioning <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a> and a list of the <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">geometry</span></code></a> pieces partitioned into it (note that these pieces can come from multiple input geometries if <em>geometry</em> is a sequence). In contrast, <em>partitioned_outside_geometries</em> is simply a list of <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">geometries</span></code></a> outside all partitioning plates.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Support for partitioning a <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polygon</span></code></a> geometry is partial. See <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.partition" title="pygplates.PolygonOnSphere.partition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PolygonOnSphere.partition()</span></code></a> for more details.</p>
+</div>
+<p>To find the length of a polyline partitioned inside all reconstructed static polygons:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polyline_to_partition</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">polyline_inside_length</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+<span class="n">partitioned_inside_geometries</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">if</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">polyline_to_partition</span><span class="p">,</span> <span class="n">partitioned_inside_geometries</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">partitioning_recon_geom</span><span class="p">,</span> <span class="n">inside_geometries</span> <span class="ow">in</span> <span class="n">partitioned_inside_geometries</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">inside_geometry</span> <span class="ow">in</span> <span class="n">inside_geometries</span><span class="p">:</span>
+            <span class="n">polyline_inside_length</span> <span class="o">+=</span> <span class="n">inside_geometry</span><span class="o">.</span><span class="n">get_arc_length</span><span class="p">()</span>
+
+<span class="n">polyline_inside_length_in_kms</span> <span class="o">=</span> <span class="n">polyline_inside_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.partition" title="pygplates.PolygonOnSphere.partition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PolygonOnSphere.partition()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PlatePartitioner.partition_point">
+<span class="sig-name descname"><span class="pre">partition_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PlatePartitioner.partition_point" title="Link to this definition"></a></dt>
+<dd><p>A convenient alternative to <a class="reference internal" href="#pygplates.PlatePartitioner.partition_geometry" title="pygplates.PlatePartitioner.partition_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">partition_geometry()</span></code></a>, for a point, that finds the first partitioning plate (if any) containing the point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)) – the point to partition</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a> or None</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">None</span></code> is returned if <em>point</em> is not contained by any partitioning plates.</p>
+</div>
+<p>To find the plate ID of the reconstructed static polygon containing latitude/longitude (0,0):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="s1">&#39;static_polygons.gpml&#39;</span><span class="p">,</span> <span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+<span class="n">reconstructed_static_polygon</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_point</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">reconstructed_static_polygon</span><span class="p">:</span>
+    <span class="n">partitioning_plate_id</span> <span class="o">=</span> <span class="n">reconstructed_static_polygon</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.is_point_in_polygon" title="pygplates.PolygonOnSphere.is_point_in_polygon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PolygonOnSphere.is_point_in_polygon()</span></code></a></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.partition_into_plates.html" class="btn btn-neutral float-left" title="pygplates.partition_into_plates" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.FeatureCollection.html" class="btn btn-neutral float-right" title="pygplates.FeatureCollection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

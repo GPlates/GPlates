@@ -1,0 +1,84 @@
+﻿pygplates.Feature
+=================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Feature
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Feature.__init__
+      ~Feature.add
+      ~Feature.clone
+      ~Feature.create_flowline
+      ~Feature.create_motion_path
+      ~Feature.create_reconstructable_feature
+      ~Feature.create_tectonic_section
+      ~Feature.create_topological_feature
+      ~Feature.create_topological_network_feature
+      ~Feature.create_total_reconstruction_sequence
+      ~Feature.get
+      ~Feature.get_all_geometries
+      ~Feature.get_all_topological_geometries
+      ~Feature.get_boolean
+      ~Feature.get_conjugate_plate_id
+      ~Feature.get_description
+      ~Feature.get_double
+      ~Feature.get_enumeration
+      ~Feature.get_feature_id
+      ~Feature.get_feature_type
+      ~Feature.get_geometries
+      ~Feature.get_geometry
+      ~Feature.get_geometry_import_time
+      ~Feature.get_integer
+      ~Feature.get_left_plate
+      ~Feature.get_name
+      ~Feature.get_reconstruction_method
+      ~Feature.get_reconstruction_plate_id
+      ~Feature.get_relative_plate
+      ~Feature.get_right_plate
+      ~Feature.get_shapefile_attribute
+      ~Feature.get_shapefile_attributes
+      ~Feature.get_string
+      ~Feature.get_times
+      ~Feature.get_topological_geometries
+      ~Feature.get_topological_geometry
+      ~Feature.get_total_reconstruction_pole
+      ~Feature.get_valid_time
+      ~Feature.get_value
+      ~Feature.is_valid_at_time
+      ~Feature.remove
+      ~Feature.set
+      ~Feature.set_boolean
+      ~Feature.set_conjugate_plate_id
+      ~Feature.set_description
+      ~Feature.set_double
+      ~Feature.set_enumeration
+      ~Feature.set_geometry
+      ~Feature.set_geometry_import_time
+      ~Feature.set_integer
+      ~Feature.set_left_plate
+      ~Feature.set_name
+      ~Feature.set_reconstruction_method
+      ~Feature.set_reconstruction_plate_id
+      ~Feature.set_relative_plate
+      ~Feature.set_right_plate
+      ~Feature.set_shapefile_attribute
+      ~Feature.set_shapefile_attributes
+      ~Feature.set_string
+      ~Feature.set_times
+      ~Feature.set_topological_geometry
+      ~Feature.set_total_reconstruction_pole
+      ~Feature.set_valid_time
+   
+   
+
+   
+   
+   

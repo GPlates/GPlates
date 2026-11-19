@@ -1,0 +1,27 @@
+﻿pygplates.TopologyPointLocation
+===============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: TopologyPointLocation
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TopologyPointLocation.__init__
+      ~TopologyPointLocation.located_in_resolved_boundary
+      ~TopologyPointLocation.located_in_resolved_network
+      ~TopologyPointLocation.located_in_resolved_network_deforming_region
+      ~TopologyPointLocation.located_in_resolved_network_rigid_block
+      ~TopologyPointLocation.not_located_in_resolved_topology
+   
+   
+
+   
+   
+   

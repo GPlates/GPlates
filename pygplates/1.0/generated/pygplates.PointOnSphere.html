@@ -1,0 +1,428 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.PointOnSphere &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.MultiPointOnSphere" href="pygplates.MultiPointOnSphere.html" />
+    <link rel="prev" title="pygplates.GpmlTimeWindowList" href="pygplates.GpmlTimeWindowList.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.PointOnSphere</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.PointOnSphere"><code class="docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.MultiPointOnSphere.html">pygplates.MultiPointOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PolylineOnSphere.html">pygplates.PolylineOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PolygonOnSphere.html">pygplates.PolygonOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GeometryOnSphere.html">pygplates.GeometryOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GreatCircleArc.html">pygplates.GreatCircleArc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.LatLonPoint.html">pygplates.LatLonPoint</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.PointOnSphere</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.PointOnSphere.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-pointonsphere">
+<h1>pygplates.PointOnSphere<a class="headerlink" href="#pygplates-pointonsphere" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">PointOnSphere</span></span><a class="headerlink" href="#pygplates.PointOnSphere" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a></p>
+<p>Represents a point on the surface of the unit length sphere in 3D cartesian coordinates.</p>
+<p>Points are equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>) comparable (but not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>). Two points are considered equal if their coordinates match within a <em>very</em> small numerical epsilon that accounts for the limits of floating-point precision. Note that usually two points will only compare equal if they are the same point or created from the exact same input data. If two points are generated in two different ways (eg, two different processing paths) they will most likely <em>not</em> compare equal even if mathematically they should be identical.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since a <em>PointOnSphere</em> is <strong>immutable</strong> it contains no operations or methods that modify its state.</p>
+</div>
+<p>Convenience class static data are available for the North and South poles:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.north_pole</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.south_pole</span></code></p></li>
+</ul>
+<p>A <em>PointOnSphere</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.__init__" title="Link to this definition"></a></dt>
+<dd><p>A <em>PointOnSphere</em> object can be constructed in more than one way…</p>
+<dl>
+<dt>__init__(point)</dt><dd><p>Create a <em>PointOnSphere</em> instance from a (x,y,z) or (latitude,longitude) point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param point<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(x,y,z) point, or (latitude,longitude) point (in degrees)</p>
+</dd>
+<dt class="field-even">type point<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (float,float,float) or tuple (float,float)</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InvalidLatLonError if <em>latitude</em> or <em>longitude</em> is invalid</p>
+</dd>
+<dt class="field-even">raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude</p>
+</dd>
+</dl>
+<p>The following example shows a few different ways to use this method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">))</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">])</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">]))</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">LatLonPoint</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span><span class="n">longitude</span><span class="p">))</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">((</span><span class="n">latitude</span><span class="p">,</span><span class="n">longitude</span><span class="p">))</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">([</span><span class="n">latitude</span><span class="p">,</span><span class="n">longitude</span><span class="p">])</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">latitude</span><span class="p">,</span><span class="n">longitude</span><span class="p">]))</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd>
+<dt>__init__(latitude, longitude)</dt><dd><p>Create a <em>PointOnSphere</em> instance from a <em>latitude</em> and <em>longitude</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param latitude<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the latitude (in degrees)</p>
+</dd>
+<dt class="field-even">type latitude<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param longitude<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the longitude (in degrees)</p>
+</dd>
+<dt class="field-even">type longitude<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InvalidLatLonError if <em>latitude</em> or <em>longitude</em> is invalid</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>latitude</em> must satisfy <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint.is_valid_latitude" title="pygplates.LatLonPoint.is_valid_latitude"><code class="xref py py-meth docutils literal notranslate"><span class="pre">LatLonPoint.is_valid_latitude()</span></code></a> and <em>longitude</em> must satisfy <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint.is_valid_longitude" title="pygplates.LatLonPoint.is_valid_longitude"><code class="xref py py-meth docutils literal notranslate"><span class="pre">LatLonPoint.is_valid_longitude()</span></code></a>, otherwise <em>InvalidLatLonError</em> will be raised.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>__init__(x, y, z, [normalise=False])</dt><dd><p>Create a <em>PointOnSphere</em> instance from a 3D cartesian coordinate consisting of floating-point coordinates <em>x</em>, <em>y</em> and <em>z</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>x</em> component of the 3D unit vector</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>y</em> component of the 3D unit vector</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param z<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>z</em> component of the 3D unit vector</p>
+</dd>
+<dt class="field-even">type z<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param normalise<span class="colon">:</span></dt>
+<dd class="field-odd"><p>whether to normalise (to unit-length magnitude) the vector (x,y,z) - defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+<dt class="field-even">type normalise<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ViolatedUnitVectorInvariantError if <em>normalise</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code> and the resulting vector does not have unit magnitude</p>
+</dd>
+<dt class="field-even">raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>UnableToNormaliseZeroVectorError if <em>normalise</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and the resulting vector is (0,0,0) (ie, has zero magnitude)</p>
+</dd>
+</dl>
+<p><strong>NOTE:</strong> If the length of the 3D vector (x,y,z) is not 1.0 then you should set <em>normalise</em> to <code class="docutils literal notranslate"><span class="pre">True</span></code> (to normalise the vector components such that the 3D vector has unit magnitude). Otherwise if (x,y,z) is not unit magnitude then <em>ViolatedUnitVectorInvariantError</em> is raised.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># If you know that (x,y,z) has unit magnitude (is on the unit globe).</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+
+<span class="c1"># If (x,y,z) might not be on the unit globe.</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">normalise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.__init__" title="pygplates.PointOnSphere.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(...)</p></td>
+<td><p>A <em>PointOnSphere</em> object can be constructed in more than one way...</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code>()</p></td>
+<td><p>Create a duplicate of this geometry (derived) instance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">distance</span></code>(geometry1, geometry2, ...)</p></td>
+<td><p>[<em>staticmethod</em>] Returns the (minimum) distance between two geometries (in radians).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.get_centroid" title="pygplates.PointOnSphere.get_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_centroid</span></code></a>()</p></td>
+<td><p>Simply returns this point.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_points</span></code>()</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in this geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.get_x" title="pygplates.PointOnSphere.get_x"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_x</span></code></a>()</p></td>
+<td><p>Returns the <em>x</em> coordinate.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.get_y" title="pygplates.PointOnSphere.get_y"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_y</span></code></a>()</p></td>
+<td><p>Returns the <em>y</em> coordinate.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.get_z" title="pygplates.PointOnSphere.get_z"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_z</span></code></a>()</p></td>
+<td><p>Returns the <em>z</em> coordinate.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.to_lat_lon" title="pygplates.PointOnSphere.to_lat_lon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon</span></code></a>()</p></td>
+<td><p>Returns the tuple (latitude,longitude) in degrees.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_array</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as a numpy array of (latitude,longitude) pairs (in degrees).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as (latitude,longitude) tuples (in degrees).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.to_lat_lon_point" title="pygplates.PointOnSphere.to_lat_lon_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_point</span></code></a>()</p></td>
+<td><p>Returns the (latitude,longitude) equivalent of this <a class="reference internal" href="#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_point_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">lat</span> <span class="pre">lon</span> <span class="pre">points</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PointOnSphere.to_xyz" title="pygplates.PointOnSphere.to_xyz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_xyz</span></code></a>()</p></td>
+<td><p>Returns the cartesian coordinates as the tuple (x,y,z).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_xyz_array</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as a numpy array of (x,y,z) triplets.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_xyz_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as (x,y,z) cartesian coordinate tuples.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">north_pole</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">south_pole</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.get_centroid">
+<span class="sig-name descname"><span class="pre">get_centroid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.get_centroid" title="Link to this definition"></a></dt>
+<dd><p>Simply returns this point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is only here so that <code class="docutils literal notranslate"><span class="pre">get_centroid()</span></code> can be called for all <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">geometry</span> <span class="pre">types</span></code></a> (points, multi-points, polylines and polygons).</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.36.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.get_x">
+<span class="sig-name descname"><span class="pre">get_x</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.get_x" title="Link to this definition"></a></dt>
+<dd><p>Returns the <em>x</em> coordinate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.get_y">
+<span class="sig-name descname"><span class="pre">get_y</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.get_y" title="Link to this definition"></a></dt>
+<dd><p>Returns the <em>y</em> coordinate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.get_z">
+<span class="sig-name descname"><span class="pre">get_z</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.get_z" title="Link to this definition"></a></dt>
+<dd><p>Returns the <em>z</em> coordinate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.to_lat_lon">
+<span class="sig-name descname"><span class="pre">to_lat_lon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.to_lat_lon" title="Link to this definition"></a></dt>
+<dd><p>Returns the tuple (latitude,longitude) in degrees.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the tuple (float, float)</p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is similar to <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint.to_lat_lon" title="pygplates.LatLonPoint.to_lat_lon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">LatLonPoint.to_lat_lon()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.to_lat_lon_point">
+<span class="sig-name descname"><span class="pre">to_lat_lon_point</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.to_lat_lon_point" title="Link to this definition"></a></dt>
+<dd><p>Returns the (latitude,longitude) equivalent of this <a class="reference internal" href="#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PointOnSphere.to_xyz">
+<span class="sig-name descname"><span class="pre">to_xyz</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PointOnSphere.to_xyz" title="Link to this definition"></a></dt>
+<dd><p>Returns the cartesian coordinates as the tuple (x,y,z).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the tuple (float,float,float)</p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is also useful for performing vector dot and cross products:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dot_product</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">point1</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">point2</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">())</span>
+<span class="n">cross_product</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">point1</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">point2</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">())</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.GpmlTimeWindowList.html" class="btn btn-neutral float-left" title="pygplates.GpmlTimeWindowList" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.MultiPointOnSphere.html" class="btn btn-neutral float-right" title="pygplates.MultiPointOnSphere" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

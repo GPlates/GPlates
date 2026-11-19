@@ -1,0 +1,1105 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.PolygonOnSphere &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.GeometryOnSphere" href="pygplates.GeometryOnSphere.html" />
+    <link rel="prev" title="pygplates.PolylineOnSphere" href="pygplates.PolylineOnSphere.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PointOnSphere.html">pygplates.PointOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.MultiPointOnSphere.html">pygplates.MultiPointOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PolylineOnSphere.html">pygplates.PolylineOnSphere</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.PolygonOnSphere</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.PolygonOnSphere"><code class="docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GeometryOnSphere.html">pygplates.GeometryOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GreatCircleArc.html">pygplates.GreatCircleArc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.LatLonPoint.html">pygplates.LatLonPoint</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.PolygonOnSphere</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.PolygonOnSphere.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-polygononsphere">
+<h1>pygplates.PolygonOnSphere<a class="headerlink" href="#pygplates-polygononsphere" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">PolygonOnSphere</span></span><a class="headerlink" href="#pygplates.PolygonOnSphere" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a></p>
+<p>Represents a polygon on the surface of the unit length sphere. Polygons are equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>) comparable (but not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>). See <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> for an overview of equality in the presence of limited floating-point precision.</p>
+<p>A polygon instance is both:</p>
+<ul class="simple">
+<li><p>a sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> - see <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_points</span></code></a>, and</p></li>
+<li><p>a sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segments</span></code></a> (between adjacent points) - see <a class="reference internal" href="#pygplates.PolygonOnSphere.get_segments" title="pygplates.PolygonOnSphere.get_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_segments()</span></code></a>.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This includes points and segments from the exterior ring followed by all interior rings (if any).</p>
+</div>
+<p>In addition a polygon instance is <em>directly</em> iterable over its points (without having to use <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_points</span></code></a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">polygon</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>…and so the following operations for accessing the points are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(polygon)</span></code></p></td>
+<td><p>number of vertices in <em>polygon</em> (in exterior ring and interior rings)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">p</span> <span class="pre">in</span> <span class="pre">polygon</span></code></p></td>
+<td><p>iterates over the vertices <em>p</em> of <em>polygon</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">in</span> <span class="pre">polygon</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>p</em> is equal to a <strong>vertex</strong> of <em>polygon</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">polygon</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>p</em> is equal to a <strong>vertex</strong> of <em>polygon</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">polygon[i]</span></code></p></td>
+<td><p>the vertex of <em>polygon</em> at index <em>i</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">polygon[i:j]</span></code></p></td>
+<td><p>slice of <em>polygon</em> from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">polygon[i:j:k]</span></code></p></td>
+<td><p>slice of <em>polygon</em> from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">p</span> <span class="pre">in</span> <span class="pre">polygon</span></code> does <strong>not</strong> test whether a point <code class="docutils literal notranslate"><span class="pre">p</span></code> is <em>inside</em> the the <em>interior area</em> of a polygon - use <a class="reference internal" href="#pygplates.PolygonOnSphere.is_point_in_polygon" title="pygplates.PolygonOnSphere.is_point_in_polygon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_point_in_polygon()</span></code></a> for that instead.</p>
+</div>
+<div class="line-block">
+<div class="line">Since a <em>PolygonOnSphere</em> is <strong>immutable</strong> it contains no operations or methods that modify its state (such as adding or removing points). This is similar to other immutable types in python such as <code class="docutils literal notranslate"><span class="pre">str</span></code>.</div>
+<div class="line">So instead of modifying an existing polygon you will need to create a new <a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a> instance. The following example demonstrates modifying points in the exterior ring:</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a list of exterior ring points from an existing &#39;polygon&#39;.</span>
+<span class="n">exterior_ring</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_exterior_ring_points</span><span class="p">())</span>
+
+<span class="c1"># Modify the exterior ring points list somehow.</span>
+<span class="n">exterior_ring</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">exterior_ring</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+
+<span class="c1"># Extract the interior rings (we&#39;ll just pass these through unmodified).</span>
+<span class="n">interior_rings</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_interior_ring_points</span><span class="p">(</span><span class="n">interior_ring_index</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">interior_ring_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">())]</span>
+
+<span class="c1"># &#39;polygon&#39; now references a new PolygonOnSphere instance with a modified exterior ring.</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">exterior_ring</span><span class="p">,</span> <span class="n">interior_rings</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The following example demonstrates creating a <a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a> from a <a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolylineOnSphere</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">polyline</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A polygon closes the loop between the last and first points in its exterior ring (created from the polyline) so there’s no need to make the first and last points equal.</p>
+</div>
+<p>A <em>PolygonOnSphere</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.36: </span><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_points</span></code></a> and <a class="reference internal" href="#pygplates.PolygonOnSphere.get_segments" title="pygplates.PolygonOnSphere.get_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_segments()</span></code></a> now include points and segments from interior rings (as do the operations listed in the table above).</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.__init__" title="Link to this definition"></a></dt>
+<dd><p>A <em>PolygonOnSphere</em> object can be constructed in more than one way…</p>
+<dl>
+<dt>__init__(exterior_ring, [interior_rings])</dt><dd><p>Create a polygon from an exterior ring and optional interior rings, where each ring is a sequence of (x,y,z) or (latitude,longitude) points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param exterior_ring<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Exterior ring sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).</p>
+</dd>
+<dt class="field-even">type exterior_ring<span class="colon">:</span></dt>
+<dd class="field-even"><p>any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (float,float,float) or tuple (float,float).</p>
+</dd>
+<dt class="field-odd">param interior_rings<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional sequence of interior rings where each ring is a sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).</p>
+</dd>
+<dt class="field-even">type interior_rings<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any sequence of rings (where ring is any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (float,float,float) or tuple (float,float)), or None.</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InvalidLatLonError if any <em>latitude</em> or <em>longitude</em> is invalid</p>
+</dd>
+<dt class="field-even">raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InvalidPointsForPolygonConstructionError if any ring has less than three points or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each ring must contain at least three points in order for the polygon to be valid, otherwise <em>InvalidPointsForPolygonConstructionError</em> will be raised.</p>
+</div>
+<p>During creation, a <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreatCircleArc</span></code></a> is created between each adjacent pair of of points in a ring - see <a class="reference internal" href="#pygplates.PolygonOnSphere.get_segments" title="pygplates.PolygonOnSphere.get_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_segments()</span></code></a>. The last arc in each ring is created between the last and first points in that ring to close the loop of the ring. For this reason you do <em>not</em> need to ensure that the first and last points in a ring have the same position (although it’s not an error if this is the case because the final arc in the ring will then just have a zero length).</p>
+<p>It is <em>not</em> an error for adjacent points in a ring to be coincident. In this case each <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreatCircleArc</span></code></a> between two such adjacent points will have zero length (<a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.is_zero_length" title="pygplates.GreatCircleArc.is_zero_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GreatCircleArc.is_zero_length()</span></code></a> will return <code class="docutils literal notranslate"><span class="pre">True</span></code>) and will have no rotation axis (<a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_rotation_axis" title="pygplates.GreatCircleArc.get_rotation_axis"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GreatCircleArc.get_rotation_axis()</span></code></a> will raise an error).</p>
+<p>The following example shows a few different ways to create a <a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polygon</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Polygon with only an exterior ring.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+<span class="c1"># Polygon with only an exterior ring.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lat1</span><span class="p">,</span><span class="n">lon1</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lat2</span><span class="p">,</span><span class="n">lon2</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lat3</span><span class="p">,</span><span class="n">lon3</span><span class="p">))</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+<span class="c1"># Polygon with only an exterior ring.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">z1</span><span class="p">])</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x2</span><span class="p">,</span><span class="n">y2</span><span class="p">,</span><span class="n">z2</span><span class="p">])</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x3</span><span class="p">,</span><span class="n">y3</span><span class="p">,</span><span class="n">z3</span><span class="p">])</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+<span class="c1"># Polygon with an exterior ring and interior rings.</span>
+<span class="n">exterior_ring</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">exterior_ring</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="o">...</span>
+<span class="n">interior_rings</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">first_interior_ring</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">first_interior_ring</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="o">...</span>
+<span class="n">interior_rings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">first_interior_ring</span><span class="p">)</span>
+<span class="n">second_interior_ring</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">second_interior_ring</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="o">...</span>
+<span class="n">interior_rings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">second_interior_ring</span><span class="p">)</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">exterior_ring</span><span class="p">,</span> <span class="n">interior_rings</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you have latitude/longitude values but they are not a sequence of tuples or if the latitude/longitude order is swapped then the following examples demonstrate how you could restructure them:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Flat lat/lon array.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lon1</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lat3</span><span class="p">,</span> <span class="n">lon3</span><span class="p">])</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">[::</span><span class="mi">2</span><span class="p">],</span><span class="n">points</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]))</span>
+
+<span class="c1"># Flat lon/lat list (ie, different latitude/longitude order).</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lon3</span><span class="p">,</span> <span class="n">lat3</span><span class="p">]</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span><span class="n">points</span><span class="p">[::</span><span class="mi">2</span><span class="p">]))</span>
+
+<span class="c1"># Separate lat/lon arrays.</span>
+<span class="n">lats</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lat3</span><span class="p">])</span>
+<span class="n">lons</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lon3</span><span class="p">])</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lats</span><span class="p">,</span><span class="n">lons</span><span class="p">))</span>
+
+<span class="c1"># Lon/lat list of tuples (ie, different latitude/longitude order).</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">),</span> <span class="p">(</span><span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">),</span> <span class="p">(</span><span class="n">lon3</span><span class="p">,</span> <span class="n">lat3</span><span class="p">)]</span>
+<span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">([(</span><span class="n">lat</span><span class="p">,</span><span class="n">lon</span><span class="p">)</span> <span class="k">for</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.36: </span>Can now optionally specify interior rings (in addition to the exterior ring).</p>
+</div>
+</dd>
+<dt>__init__(geometry, [allow_one_or_two_points=True])</dt><dd><p>Create a polygon from a <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param geometry<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The point, multi-point, polyline or polygon geometry to convert from.</p>
+</dd>
+<dt class="field-even">type geometry<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a></p>
+</dd>
+<dt class="field-odd">param allow_one_or_two_points<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Whether <em>geometry</em> is allowed to be a <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a> containing only one or two points - if allowed then one of those points is duplicated since a PolygonOnSphere requires at least three points - default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt class="field-even">type allow_one_or_two_points<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InvalidPointsForPolygonConstructionError if <em>geometry</em> is a <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a>, or a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a> with one or two points (and <em>allow_one_or_two_points</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code>), or if any two consecutive points in a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a> are antipodal to each other (on opposite sides of the globe)</p>
+</dd>
+</dl>
+<p>If <em>allow_one_or_two_points</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then <em>geometry</em> can be <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a>, <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a>, <a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolylineOnSphere</span></code></a> or <a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a>. However if <em>allow_one_or_two_points</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code> then <em>geometry</em> must be a <a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a>, or a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolylineOnSphere</span></code></a> containing at least three points to avoid raising <em>InvalidPointsForPolygonConstructionError</em>.</p>
+<p>During creation, a <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreatCircleArc</span></code></a> is created between each adjacent pair of geometry points - see <a class="reference internal" href="#pygplates.PolygonOnSphere.get_segments" title="pygplates.PolygonOnSphere.get_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_segments()</span></code></a>.</p>
+<p>It is <em>not</em> an error for adjacent points in a geometry sequence to be coincident. In this case each <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreatCircleArc</span></code></a> between two such adjacent points will have zero length (<a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.is_zero_length" title="pygplates.GreatCircleArc.is_zero_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GreatCircleArc.is_zero_length()</span></code></a> will return <code class="docutils literal notranslate"><span class="pre">True</span></code>) and will have no rotation axis (<a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_rotation_axis" title="pygplates.GreatCircleArc.get_rotation_axis"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GreatCircleArc.get_rotation_axis()</span></code></a> will raise an error). However if two such adjacent points are antipodal (on opposite sides of the globe) then InvalidPointsForPolygonConstructionError will be raised</p>
+<p>To create a PolygonOnSphere from any geometry type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To create a PolygonOnSphere from any geometry containing at least three points:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">allow_one_or_two_points</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">InvalidPointsForPolygonConstructionError</span><span class="p">:</span>
+    <span class="o">...</span> <span class="c1"># Handle failure to convert &#39;geometry&#39; to a PolygonOnSphere.</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The created polygon will have no interior rings unless <em>geometry</em> is also a <a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a> and has interior rings.</p>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.__init__" title="pygplates.PolygonOnSphere.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(...)</p></td>
+<td><p>A <em>PolygonOnSphere</em> object can be constructed in more than one way...</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code>()</p></td>
+<td><p>Create a duplicate of this geometry (derived) instance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">distance</span></code>(geometry1, geometry2, ...)</p></td>
+<td><p>[<em>staticmethod</em>] Returns the (minimum) distance between two geometries (in radians).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_arc_length" title="pygplates.PolygonOnSphere.get_arc_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_arc_length</span></code></a>()</p></td>
+<td><p>Returns the total arc length of this polygon (in radians) including the exterior ring and all interiors rings (if any).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_area</span></code></a>()</p></td>
+<td><p>Returns the area of this polygon on a sphere of unit radius (steradians, or square radians).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_boundary_centroid" title="pygplates.PolygonOnSphere.get_boundary_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_boundary_centroid</span></code></a>()</p></td>
+<td><p>Returns the <em>boundary</em> centroid of this polygon.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_centroid" title="pygplates.PolygonOnSphere.get_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_centroid</span></code></a>()</p></td>
+<td><p>Returns the centroid of this polygon (equivalent to calling <a class="reference internal" href="#pygplates.PolygonOnSphere.get_interior_centroid" title="pygplates.PolygonOnSphere.get_interior_centroid"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_interior_centroid()</span></code></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_exterior_ring_points" title="pygplates.PolygonOnSphere.get_exterior_ring_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_exterior_ring_points</span></code></a>()</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in the <em>exterior</em> ring.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_exterior_ring_segments" title="pygplates.PolygonOnSphere.get_exterior_ring_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_exterior_ring_segments</span></code></a>()</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segments</span></code></a> in the <em>exterior</em> ring.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_interior_centroid" title="pygplates.PolygonOnSphere.get_interior_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_interior_centroid</span></code></a>()</p></td>
+<td><p>Returns the <em>interior</em> centroid of this polygon.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_interior_ring_points" title="pygplates.PolygonOnSphere.get_interior_ring_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_interior_ring_points</span></code></a>(interior_ring_index)</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in the <em>interior</em> ring at the specified interior ring index.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_interior_ring_segments" title="pygplates.PolygonOnSphere.get_interior_ring_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_interior_ring_segments</span></code></a>(interior_ring_index)</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segments</span></code></a> in the <em>interior</em> ring at the specified interior ring index.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_number_of_interior_rings" title="pygplates.PolygonOnSphere.get_number_of_interior_rings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_number_of_interior_rings</span></code></a>()</p></td>
+<td><p>Returns the number of interior rings.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_orientation" title="pygplates.PolygonOnSphere.get_orientation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_orientation</span></code></a>()</p></td>
+<td><p>Returns whether this polygon is clockwise or counter-clockwise.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_points</span></code>()</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in this geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_segments" title="pygplates.PolygonOnSphere.get_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_segments</span></code></a>()</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <strong>all</strong> <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segments</span></code></a> in this polygon (exterior ring followed by interior rings if any).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_signed_area" title="pygplates.PolygonOnSphere.get_signed_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_signed_area</span></code></a>()</p></td>
+<td><p>Returns the <em>signed</em> area of this polygon (on a sphere of unit radius).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.is_point_in_polygon" title="pygplates.PolygonOnSphere.is_point_in_polygon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_point_in_polygon</span></code></a>(point)</p></td>
+<td><p>Determines whether the specified point lies within the interior of this polygon.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.partition" title="pygplates.PolygonOnSphere.partition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition</span></code></a>(geometry, ...)</p></td>
+<td><p>Partition a geometry into optional inside/outside lists of partitioned geometry pieces.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_array</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as a numpy array of (latitude,longitude) pairs (in degrees).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as (latitude,longitude) tuples (in degrees).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_point_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">lat</span> <span class="pre">lon</span> <span class="pre">points</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.to_tessellated" title="pygplates.PolygonOnSphere.to_tessellated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_tessellated</span></code></a>(tessellate_radians)</p></td>
+<td><p>Returns a new polygon that is a tessellated version of this polygon.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.PolygonOnSphere.to_uniform_points" title="pygplates.PolygonOnSphere.to_uniform_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_uniform_points</span></code></a>(point_spacing_radians, ...)</p></td>
+<td><p>Returns a sequence of points uniformly spaced along each ring of this polygon.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_xyz_array</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as a numpy array of (x,y,z) triplets.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_xyz_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as (x,y,z) cartesian coordinate tuples.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.Orientation">
+<span class="sig-name descname"><span class="pre">Orientation</span></span><a class="headerlink" href="#pygplates.PolygonOnSphere.Orientation" title="Link to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphereOrientation</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.PartitionResult">
+<span class="sig-name descname"><span class="pre">PartitionResult</span></span><a class="headerlink" href="#pygplates.PolygonOnSphere.PartitionResult" title="Link to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSpherePartitionResult</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_arc_length">
+<span class="sig-name descname"><span class="pre">get_arc_length</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_arc_length" title="Link to this definition"></a></dt>
+<dd><p>Returns the total arc length of this polygon (in radians) including the exterior ring and all interiors rings (if any).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line">This is the sum of the arc lengths of the exterior ring and all interior rings (if any).</div>
+<div class="line">To convert to distance, multiply the result by the Earth radius (see <a class="reference internal" href="pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">Earth</span></code></a>).</div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_area">
+<span class="sig-name descname"><span class="pre">get_area</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_area" title="Link to this definition"></a></dt>
+<dd><p>Returns the area of this polygon on a sphere of unit radius (steradians, or square radians).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p>The area is essentially the absolute value of the <a class="reference internal" href="#pygplates.PolygonOnSphere.get_signed_area" title="pygplates.PolygonOnSphere.get_signed_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">signed</span> <span class="pre">area</span></code></a>.</p>
+<p>To convert the area from steradians (square radians) to square kms, multiply by the square of the <a class="reference internal" href="pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">Earth's</span> <span class="pre">radius</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">area_in_square_kms</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The interior rings reduce the absolute area of the exterior ring (regardless of their orientation) because they are holes in the polygon.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_boundary_centroid">
+<span class="sig-name descname"><span class="pre">get_boundary_centroid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_boundary_centroid" title="Link to this definition"></a></dt>
+<dd><p>Returns the <em>boundary</em> centroid of this polygon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<p>The <em>boundary</em> centroid is calculated as a weighted average of the mid-points of the <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">great</span> <span class="pre">circle</span> <span class="pre">arcs</span></code></a> of the <em>exterior</em> ring of this polygon with weighting proportional to the individual arc lengths. The <em>interior</em> rings are ignored.</p>
+<p>Note that if you want a centroid closer to the centre-of-mass of the polygon interior then use <a class="reference internal" href="#pygplates.PolygonOnSphere.get_interior_centroid" title="pygplates.PolygonOnSphere.get_interior_centroid"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_interior_centroid()</span></code></a> instead.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_centroid">
+<span class="sig-name descname"><span class="pre">get_centroid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_centroid" title="Link to this definition"></a></dt>
+<dd><p>Returns the centroid of this polygon (equivalent to calling <a class="reference internal" href="#pygplates.PolygonOnSphere.get_interior_centroid" title="pygplates.PolygonOnSphere.get_interior_centroid"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_interior_centroid()</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_interior_centroid" title="pygplates.PolygonOnSphere.get_interior_centroid"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_interior_centroid()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.36.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_exterior_ring_points">
+<span class="sig-name descname"><span class="pre">get_exterior_ring_points</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_exterior_ring_points" title="Link to this definition"></a></dt>
+<dd><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in the <em>exterior</em> ring.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a read-only sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<p>The following operations for accessing the points in the returned read-only sequence are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(seq)</span></code></p></td>
+<td><p>number of points in the exterior ring</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">p</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p>iterates over the points <em>p</em> in the exterior ring</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>p</em> is an exterior ring point</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>p</em> is an exterior ring point</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i]</span></code></p></td>
+<td><p>the exterior ring point at index <em>i</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j]</span></code></p></td>
+<td><p>slice of exterior ring points from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j:k]</span></code></p></td>
+<td><p>slice of exterior ring points from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+</tbody>
+</table>
+<p>The following example demonstrates some uses of the above operations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">exterior_ring</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">exterior_ring_points</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_exterior_ring_points</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">exterior_ring_points</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned sequence is <em>read-only</em> and cannot be modified.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.36.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_exterior_ring_segments">
+<span class="sig-name descname"><span class="pre">get_exterior_ring_segments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_exterior_ring_segments" title="Link to this definition"></a></dt>
+<dd><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segments</span></code></a> in the <em>exterior</em> ring.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a read-only sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreatCircleArc</span></code></a></p>
+</dd>
+</dl>
+<p>The following operations for accessing the great circle arcs in the returned read-only sequence are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(seq)</span></code></p></td>
+<td><p>number of segments in the exterior ring</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">s</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p>iterates over the segments <em>s</em> in the exterior ring</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>s</em> is an exterior ring segment</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>s</em> is an exterior ring segment</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i]</span></code></p></td>
+<td><p>the exterior ring segment at index <em>i</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j]</span></code></p></td>
+<td><p>slice of exterior ring segments from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j:k]</span></code></p></td>
+<td><p>slice of exterior ring segments from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Between each adjacent pair of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in the exterior ring there is a <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> such that the number of exterior ring points equals the number of exterior ring segments.</p>
+</div>
+<p>The following example demonstrates some uses of the above operations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">exterior_ring</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">exterior_ring_segments</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_exterior_ring_segments</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">exterior_ring_segments</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">segment</span><span class="o">.</span><span class="n">is_zero_length</span><span class="p">():</span>
+        <span class="n">segment_midpoint_direction</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">get_arc_direction</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_end_point" title="pygplates.GreatCircleArc.get_end_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">end</span> <span class="pre">point</span></code></a> of the last segment in the exterior ring is equal to the <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_start_point" title="pygplates.GreatCircleArc.get_start_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">start</span> <span class="pre">point</span></code></a> of the first segment in the exterior ring.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned sequence is <em>read-only</em> and cannot be modified.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.36.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_interior_centroid">
+<span class="sig-name descname"><span class="pre">get_interior_centroid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_interior_centroid" title="Link to this definition"></a></dt>
+<dd><p>Returns the <em>interior</em> centroid of this polygon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<p>The <em>interior</em> centroid is calculated as a weighted average of the centroids of spherical triangles formed by all <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">great</span> <span class="pre">circle</span> <span class="pre">arcs</span></code></a> of this polygon with weighting proportional to the signed area of each individual spherical triangle. The interior rings change the spherical area weighting because they are holes in the polygon and essentially cut out the internal area of the exterior ring.</p>
+<p>This centroid is useful when the centre-of-mass of the polygon interior is desired. For example, the <em>interior</em> centroid of a bottom-heavy, pear-shaped polygon will be closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, but it will be a lot closer to the real centre-of-mass than <a class="reference internal" href="#pygplates.PolygonOnSphere.get_boundary_centroid" title="pygplates.PolygonOnSphere.get_boundary_centroid"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_boundary_centroid()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_interior_ring_points">
+<span class="sig-name descname"><span class="pre">get_interior_ring_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interior_ring_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_interior_ring_points" title="Link to this definition"></a></dt>
+<dd><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in the <em>interior</em> ring at the specified interior ring index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>interior_ring_index</strong> (<em>int</em>) – Index of interior ring (must be less than <a class="reference internal" href="#pygplates.PolygonOnSphere.get_number_of_interior_rings" title="pygplates.PolygonOnSphere.get_number_of_interior_rings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_number_of_interior_rings()</span></code></a>).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>a read-only sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<p>The following operations for accessing the points in the returned read-only sequence are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(seq)</span></code></p></td>
+<td><p>number of points in the interior ring</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">p</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p>iterates over the points <em>p</em> in the interior ring</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>p</em> is a point in the interior ring</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>p</em> is a point in the interior ring</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i]</span></code></p></td>
+<td><p>the interior ring’s point at index <em>i</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j]</span></code></p></td>
+<td><p>slice of interior ring’s points from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j:k]</span></code></p></td>
+<td><p>slice of interior ring’s points from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+</tbody>
+</table>
+<p>The following example demonstrates some uses of the above operations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">exterior_ring</span><span class="p">,</span> <span class="p">[</span><span class="n">interior_ring_0</span><span class="p">,</span> <span class="n">interior_ring_1</span><span class="p">])</span>
+<span class="o">...</span>
+<span class="k">for</span> <span class="n">interior_ring_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">()):</span>
+    <span class="n">interior_ring_points</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_interior_ring_points</span><span class="p">(</span><span class="n">interior_ring_index</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">interior_ring_points</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned sequence is <em>read-only</em> and cannot be modified.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.36.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_interior_ring_segments">
+<span class="sig-name descname"><span class="pre">get_interior_ring_segments</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interior_ring_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_interior_ring_segments" title="Link to this definition"></a></dt>
+<dd><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segments</span></code></a> in the <em>interior</em> ring at the specified interior ring index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>interior_ring_index</strong> (<em>int</em>) – Index of interior ring (must be less than <a class="reference internal" href="#pygplates.PolygonOnSphere.get_number_of_interior_rings" title="pygplates.PolygonOnSphere.get_number_of_interior_rings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_number_of_interior_rings()</span></code></a>).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>a read-only sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreatCircleArc</span></code></a></p>
+</dd>
+</dl>
+<p>The following operations for accessing the great circle arcs in the returned read-only sequence are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(seq)</span></code></p></td>
+<td><p>number of segments in the interior ring</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">s</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p>iterates over the segments <em>s</em> in the interior ring</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>s</em> is a segment in the interior ring</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>s</em> is a segment in the interior ring</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i]</span></code></p></td>
+<td><p>the interior ring’s segment at index <em>i</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j]</span></code></p></td>
+<td><p>slice of the interior ring’s segments from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j:k]</span></code></p></td>
+<td><p>slice of the interior ring’s segments from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Between each adjacent pair of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in the interior ring there is a <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> such that the number of points in the interior ring equals its number of segments.</p>
+</div>
+<p>The following example demonstrates some uses of the above operations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">exterior_ring</span><span class="p">,</span> <span class="p">[</span><span class="n">interior_ring_0</span><span class="p">,</span> <span class="n">interior_ring_1</span><span class="p">])</span>
+<span class="o">...</span>
+<span class="k">for</span> <span class="n">interior_ring_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">()):</span>
+    <span class="n">interior_ring_segments</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_interior_ring_segments</span><span class="p">(</span><span class="n">interior_ring_index</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">interior_ring_segments</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">segment</span><span class="o">.</span><span class="n">is_zero_length</span><span class="p">():</span>
+            <span class="n">segment_midpoint_direction</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">get_arc_direction</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_end_point" title="pygplates.GreatCircleArc.get_end_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">end</span> <span class="pre">point</span></code></a> of the last segment in an interior ring is equal to the <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_start_point" title="pygplates.GreatCircleArc.get_start_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">start</span> <span class="pre">point</span></code></a> of the first segment in that interior ring.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned sequence is <em>read-only</em> and cannot be modified.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.36.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_number_of_interior_rings">
+<span class="sig-name descname"><span class="pre">get_number_of_interior_rings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_number_of_interior_rings" title="Link to this definition"></a></dt>
+<dd><p>Returns the number of interior rings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+<p>If there are no interior rings then <code class="docutils literal notranslate"><span class="pre">0</span></code> is returned.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.36.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_orientation">
+<span class="sig-name descname"><span class="pre">get_orientation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_orientation" title="Link to this definition"></a></dt>
+<dd><p>Returns whether this polygon is clockwise or counter-clockwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PolygonOnSphere.Orientation</p>
+</dd>
+</dl>
+<p>If this polygon is clockwise (when viewed from above the surface of the sphere) then <em>PolygonOnSphere.Orientation.clockwise</em> is returned, otherwise <em>PolygonOnSphere.Orientation.counter_clockwise</em> is returned.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_orientation</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="o">.</span><span class="n">Orientation</span><span class="o">.</span><span class="n">clockwise</span><span class="p">:</span>
+  <span class="nb">print</span> <span class="s1">&#39;Orientation is clockwise&#39;</span>
+<span class="k">else</span><span class="p">:</span>
+  <span class="nb">print</span> <span class="s1">&#39;Orientation is counter-clockwise&#39;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The orientation is determined by the sign of the <a class="reference internal" href="#pygplates.PolygonOnSphere.get_signed_area" title="pygplates.PolygonOnSphere.get_signed_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">signed</span> <span class="pre">area</span></code></a> (with an optimization to make it more efficient in most cases).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_segments">
+<span class="sig-name descname"><span class="pre">get_segments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_segments" title="Link to this definition"></a></dt>
+<dd><p>Returns a <em>read-only</em> sequence of <strong>all</strong> <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segments</span></code></a> in this polygon (exterior ring followed by interior rings if any).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a read-only sequence of <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreatCircleArc</span></code></a></p>
+</dd>
+</dl>
+<p>The following operations for accessing the great circle arcs in the returned read-only sequence are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(seq)</span></code></p></td>
+<td><p>number of segments of the polygon (in exterior ring and interior rings)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">s</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p>iterates over the segments <em>s</em> of the polygon</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>s</em> is an segment of the polygon</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">seq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>s</em> is an segment of the polygon</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i]</span></code></p></td>
+<td><p>the segment of the polygon at index <em>i</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j]</span></code></p></td>
+<td><p>slice of segments of the polygon from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">seq[i:j:k]</span></code></p></td>
+<td><p>slice of segments of the polygon from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Between each adjacent pair of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in each ring there is a <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> such that the total number of points equals the total number of segments.</p>
+</div>
+<p>The following example demonstrates some uses of the above operations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">polygon</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">exterior_ring</span><span class="p">,</span> <span class="n">interior_rings</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">segments</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_segments</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">segment</span><span class="o">.</span><span class="n">is_zero_length</span><span class="p">():</span>
+        <span class="n">segment_midpoint_direction</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">get_arc_direction</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_end_point" title="pygplates.GreatCircleArc.get_end_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">end</span> <span class="pre">point</span></code></a> of the last segment in a ring is equal to the <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_start_point" title="pygplates.GreatCircleArc.get_start_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">start</span> <span class="pre">point</span></code></a> of the first segment in that ring.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned sequence is <em>read-only</em> and cannot be modified.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.36: </span>The returned segments now include interior rings (if any).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.get_signed_area">
+<span class="sig-name descname"><span class="pre">get_signed_area</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.get_signed_area" title="Link to this definition"></a></dt>
+<dd><p>Returns the <em>signed</em> area of this polygon (on a sphere of unit radius).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p>If this polygon is clockwise (when viewed from above the surface of the sphere) then the returned area will be negative, otherwise it will be positive. However if you only want to determine the orientation of this polygon then <a class="reference internal" href="#pygplates.PolygonOnSphere.get_orientation" title="pygplates.PolygonOnSphere.get_orientation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_orientation()</span></code></a> is more efficient than comparing the sign of the area.</p>
+<p>To convert to <em>signed</em> area on the Earth’s surface, multiply the result by the Earth radius squared (see <a class="reference internal" href="pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">Earth</span></code></a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The interior rings reduce the absolute area of the exterior ring (regardless of their orientation) because they are holes in the polygon. So if the signed area of exterior ring is positive then any interior rings will reduce that, and if it’s negative then any interior rings will make it less negative.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_area()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.is_point_in_polygon">
+<span class="sig-name descname"><span class="pre">is_point_in_polygon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.is_point_in_polygon" title="Link to this definition"></a></dt>
+<dd><p>Determines whether the specified point lies within the interior of this polygon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)) – the point to be tested</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+<p>Test if a (latitude, longitude) point is inside a polygon:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">polygon</span><span class="o">.</span><span class="n">is_point_in_polygon</span><span class="p">((</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)):</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If a polygon has one or more non-intersecting interior rings contained fully within its exterior ring and the test point is inside any interior ring then the test point is considered to be <em>outside</em> the polygon. This is because the interior rings subtract area from the exterior ring.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.partition">
+<span class="sig-name descname"><span class="pre">partition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geometry</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">partitioned_geometries_inside</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">partitioned_geometries_outside</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.partition" title="Link to this definition"></a></dt>
+<dd><p>Partition a geometry into optional inside/outside lists of partitioned geometry pieces.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>geometry</strong> (<a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>) – the geometry to be partitioned</p></li>
+<li><p><strong>partitioned_geometries_inside</strong> (<code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>, or None) – optional list of geometries partitioned <em>inside</em> this polygon (note that the list is <em>not</em> cleared first)</p></li>
+<li><p><strong>partitioned_geometries_outside</strong> (<code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>, or None) – optional list of geometries partitioned <em>outside</em> this polygon (note that the list is <em>not</em> cleared first)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>PolygonOnSphere.PartitionResult</p>
+</dd>
+</dl>
+<p>The returned result is:</p>
+<ul class="simple">
+<li><p><em>PolygonOnSphere.PartitionResult.inside</em>: if <em>geometry</em> is entirely <em>inside</em> this polygon, or</p></li>
+<li><p><em>PolygonOnSphere.PartitionResult.outside</em>: if <em>geometry</em> is entirely <em>outside</em> this polygon, or</p></li>
+<li><p><em>PolygonOnSphere.PartitionResult.intersecting</em>: if <em>geometry</em> <em>intersects</em> this polygon.</p></li>
+</ul>
+<p>If <em>partitioned_geometries_inside</em> is specified then it must be a <code class="docutils literal notranslate"><span class="pre">list</span></code> and any part of <em>geometry</em> inside this polygon is added to it. So if <em>PolygonOnSphere.PartitionResult.inside</em> is returned this means <em>geometry</em> is added and if <em>PolygonOnSphere.PartitionResult.intersecting</em> is returned this means the partitioned parts of <em>geometry</em> inside this polygon are added.</p>
+<p>If <em>partitioned_geometries_outside</em> is specified then if must be a <code class="docutils literal notranslate"><span class="pre">list</span></code> and any part of <em>geometry</em> outside this polygon is added to it. So if <em>PolygonOnSphere.PartitionResult.outside</em> is returned this means <em>geometry</em> is added and if <em>PolygonOnSphere.PartitionResult.intersecting</em> is returned this means the partitioned parts of <em>geometry</em> outside this polygon are added.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Partitioning <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">point</span></code></a> geometries returns only <em>PolygonOnSphere.PartitionResult.inside</em> or <em>PolygonOnSphere.PartitionResult.outside</em>.</p>
+</div>
+<p>If a partitioned <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">multi-point</span></code></a> contains points both inside and outside this polygon then <em>PolygonOnSphere.PartitionResult.intersecting</em> is returned. In this case the points <em>inside</em> are added as a single <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a> to <em>partitioned_geometries_inside</em> (if specified) and the points <em>outside</em> are added as a single <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a> to <em>partitioned_geometries_outside</em> (if specified).</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<div class="line-block">
+<div class="line">Support for partitioning a <a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polygon</span></code></a> geometry is partial.</div>
+<div class="line">If a polygon geometry is entirely inside or entirely outside this polygon then it will get added as a <strong>polygon</strong> as expected (to <em>partitioned_geometries_inside</em> or <em>partitioned_geometries_outside</em> respectively if specified).</div>
+<div class="line">But if a polygon geometry intersects this polygon, then partitioned <strong>polylines</strong> (not polygons) are added (to the optional inside/outside lists).</div>
+<div class="line">This is also how it is in the Assign Plate IDs dialog in <a class="reference external" href="http://www.gplates.org">GPlates</a>.</div>
+<div class="line"><em>In a future release this will be fixed to always return polygons.</em></div>
+</div>
+</div>
+<p>Test if a polyline is entirely inside a polygon:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">polygon</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">polyline</span><span class="p">)</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="o">.</span><span class="n">PartitionResult</span><span class="o">.</span><span class="n">inside</span><span class="p">:</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<p>Find the bits of a polyline that are outside a group of continental polygons:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start with the original polyline to partition.</span>
+<span class="n">oceanic_polylines</span> <span class="o">=</span> <span class="p">[</span><span class="n">polyline</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">continental_polygon</span> <span class="ow">in</span> <span class="n">continental_polygons</span><span class="p">:</span>
+    <span class="c1"># Iterate over the polylines that are outside the continental polygons processed so far.</span>
+    <span class="n">current_oceanic_polylines</span> <span class="o">=</span> <span class="n">oceanic_polylines</span>
+    <span class="c1"># The new list of polylines will also be outside the current continental polygon.</span>
+    <span class="n">oceanic_polylines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">current_oceanic_polyline</span> <span class="ow">in</span> <span class="n">current_oceanic_polylines</span><span class="p">:</span>
+        <span class="n">continental_polygon</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">current_oceanic_polyline</span><span class="p">,</span> <span class="n">partitioned_geometries_outside</span><span class="o">=</span><span class="n">oceanic_polylines</span><span class="p">)</span>
+
+<span class="c1"># The final result is in &#39;oceanic_polylines&#39;.</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.to_tessellated">
+<span class="sig-name descname"><span class="pre">to_tessellated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tessellate_radians</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.to_tessellated" title="Link to this definition"></a></dt>
+<dd><p>Returns a new polygon that is a tessellated version of this polygon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tessellate_radians</strong> (<em>float</em>) – maximum tessellation angle (in radians)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolygonOnSphere</span></code></a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if <em>tessellate_radians</em> is negative or zero</p>
+</dd>
+</dl>
+<p>Adjacent points (in the returned tessellated polygon) are separated by no more than <em>tessellate_radians</em> on the globe.</p>
+<p>Create a polygon tessellated to 2 degrees:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tessellated_polygon</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">to_tessellated</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since a <em>PolygonOnSphere</em> is immutable it cannot be modified. Which is why a new (tessellated) <em>PolygonOnSphere</em> is returned.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The distance between adjacent points (in each tessellated ring) will not be exactly <em>uniform</em>. This is because each <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> in the original polygon is tessellated to the nearest integer number of points (that keeps that segment under the threshold) and hence each original <em>segment</em> will have a slightly different tessellation angle.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.PolygonOnSphere.to_uniform_points" title="pygplates.PolygonOnSphere.to_uniform_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_uniform_points()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.PolygonOnSphere.to_uniform_points">
+<span class="sig-name descname"><span class="pre">to_uniform_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point_spacing_radians</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">first_point_spacing_radians=0.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">return_segment_informations=False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.PolygonOnSphere.to_uniform_points" title="Link to this definition"></a></dt>
+<dd><p>Returns a sequence of points uniformly spaced along each ring of this polygon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point_spacing_radians</strong> (<em>float</em>) – spacing between points within a ring (in radians)</p></li>
+<li><p><strong>first_point_spacing_radians</strong> (<em>float</em>) – Spacing of first uniform point in each ring from the ring’s first vertex (in radians). By default the first uniform point in each ring <em>coincides</em> with the ring’s first vertex. Ideally this is non-negative (but, for example, if it’s slightly negative then the first uniform point in each ring will be slightly off its first arc near its start point but still on its great circle).</p></li>
+<li><p><strong>return_segment_informations</strong> (<em>bool</em>) – whether to also return information about the polygon segment that each uniform point is on - default is <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of points, or (if <em>return_segment_informations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) a 2-tuple containing a list of points and a list of segment informations (which are 2-tuples identifying the index of the <a class="reference internal" href="pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> containing the point, and where the point is located <em>on</em> that segment in the range [0,1])</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a>, or tuple (list of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a>, list of tuple (int, float)) if <em>return_segment_informations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ValueError if <em>point_spacing_radians</em> is negative or zero</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">The distance (along a polygon ring) between the last uniform point of a ring and the last vertex of the ring (also its first vertex) can be less than <em>point_spacing_radians</em> (since the length of the ring minus <em>first_point_spacing_radians</em> might not be an integer multiple of <em>point_spacing_radians</em>).</div>
+<div class="line">And if the first uniform point of a ring was added at the ring’s first vertex location (ie, <em>first_point_spacing_radians</em> is zero) and the last uniform point of the ring is at the same location (ie, the ring’s first/last vertex location), due to the ring’s length being an integer multiple of <em>point_spacing_radians</em>, then the last uniform point is not added.</div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">If <em>first_point_spacing_radians</em> is greater than a ring’s length then no uniform points will be generated for that ring.</div>
+<div class="line">And if the ring’s length is zero and <em>first_point_spacing_radians</em> is zero then a single uniform point will be generated for that ring.</div>
+</div>
+</div>
+<p>Create points uniformly spaced by 1 degree along a polygon starting 0.5 degrees from the first vertex of each ring:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">uniform_points</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">to_uniform_points</span><span class="p">(</span>
+    <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">first_point_spacing_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Next, we extend the above example by associating a segment normal (from great circle arc) with each uniform point (noting that segments come from the exterior ring and any interior rings since <a class="reference internal" href="#pygplates.PolygonOnSphere.get_segments" title="pygplates.PolygonOnSphere.get_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_segments()</span></code></a> includes all segments):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">uniform_points</span><span class="p">,</span> <span class="n">uniform_point_segment_informations</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">to_uniform_points</span><span class="p">(</span>
+    <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">first_point_spacing_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span>
+    <span class="n">return_segment_informations</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Each uniform point is on a segment, so retrieve a segment normal for each point.</span>
+<span class="c1"># We end up with a list of normals (with a list length equal to the number of uniform points).</span>
+<span class="n">polygon_segments</span> <span class="o">=</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_segments</span><span class="p">()</span>
+<span class="n">uniform_point_normals</span> <span class="o">=</span> <span class="p">[</span><span class="n">polygon_segments</span><span class="p">[</span><span class="n">segment_index</span><span class="p">]</span><span class="o">.</span><span class="n">get_great_circle_normal</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">segment_index</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">uniform_point_segment_informations</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.PolygonOnSphere.to_tessellated" title="pygplates.PolygonOnSphere.to_tessellated"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_tessellated()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.47.</span></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.PolylineOnSphere.html" class="btn btn-neutral float-left" title="pygplates.PolylineOnSphere" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.GeometryOnSphere.html" class="btn btn-neutral float-right" title="pygplates.GeometryOnSphere" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

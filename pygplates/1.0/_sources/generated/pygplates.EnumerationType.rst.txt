@@ -1,0 +1,28 @@
+﻿pygplates.EnumerationType
+=========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: EnumerationType
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~EnumerationType.__init__
+      ~EnumerationType.create_from_qualified_string
+      ~EnumerationType.create_gpml
+      ~EnumerationType.get_name
+      ~EnumerationType.get_namespace
+      ~EnumerationType.get_namespace_alias
+      ~EnumerationType.to_qualified_string
+   
+   
+
+   
+   
+   

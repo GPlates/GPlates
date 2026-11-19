@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reconstruct flowline features &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Hierarchy of plate rotations" href="pygplates_plate_rotation_hierarchy.html" />
+    <link rel="prev" title="Reconstruct motion path features" href="pygplates_reconstruct_motion_path_features.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#import">Import</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-save">Load/Save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-query-features">Create/query features</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct-features">Reconstruct features</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_regular_features.html">Reconstruct regular features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_motion_path_features.html">Reconstruct motion path features</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Reconstruct flowline features</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#exported-reconstructed-flowlines-to-a-file">Exported reconstructed flowlines to a file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#query-a-reconstructed-flowline">Query a reconstructed flowline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies">Topologies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities">Velocities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-proximity">Spatial proximity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Reconstruct flowline features</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_reconstruct_flowline_features.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="reconstruct-flowline-features">
+<span id="pygplates-reconstruct-flowline-features"></span><h1>Reconstruct flowline features<a class="headerlink" href="#reconstruct-flowline-features" title="Link to this heading"></a></h1>
+<p>This example shows a couple of different scenarios involving the reconstruction of
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a> features to geological times.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_reconstruct_motion_path_features.html#pygplates-reconstruct-motion-path-features"><span class="std std-ref">Reconstruct motion path features</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_reconstruct_regular_features.html#pygplates-reconstruct-regular-features"><span class="std std-ref">Reconstruct regular features</span></a></p>
+</div>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#exported-reconstructed-flowlines-to-a-file" id="id5">Exported reconstructed flowlines to a file</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sample-code" id="id6">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id7">Details</a></p></li>
+<li><p><a class="reference internal" href="#output" id="id8">Output</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#query-a-reconstructed-flowline" id="id9">Query a reconstructed flowline</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id2" id="id10">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id11">Details</a></p></li>
+<li><p><a class="reference internal" href="#id4" id="id12">Output</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="exported-reconstructed-flowlines-to-a-file">
+<span id="pygplates-export-reconstructed-flowlines-to-a-file"></span><h2><a class="toc-backref" href="#id5" role="doc-backlink">Exported reconstructed flowlines to a file</a><a class="headerlink" href="#exported-reconstructed-flowlines-to-a-file" title="Link to this heading"></a></h2>
+<p>In this example we reconstruct <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a>
+features and export the results to a Shapefile.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-flowline-feature"><span class="std std-ref">Create a flowline feature</span></a> and <a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-flowline-feature"><span class="std std-ref">Query a flowline feature</span></a></p>
+</div>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+
+<span class="c1"># Create a reconstruct model from some flowline features and the rotation model.</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">&#39;flowline_features.gpml&#39;</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
+
+<span class="c1"># Reconstruct features to this geological time.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+
+<span class="c1"># The filename of the exported reconstructed flowlines.</span>
+<span class="c1"># It&#39;s a shapefile called &#39;flowline_output_50Ma.shp&#39;.</span>
+<span class="n">export_filename</span> <span class="o">=</span> <span class="s1">&#39;flowline_output_</span><span class="si">{0}</span><span class="s1">Ma.shp&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+
+<span class="c1"># Reconstruct the flowlines to the reconstruction time and export them to a shapefile.</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+<span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">export_reconstructed_geometries</span><span class="p">(</span><span class="n">export_filename</span><span class="p">,</span>
+    <span class="n">reconstruct_type</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructType</span><span class="o">.</span><span class="n">flowline</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> from the flowline features and the rotation model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">&#39;flowline_features.gpml&#39;</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The flowline features will be reconstructed to their 50Ma positions.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">All flowline features are <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel.reconstruct_snapshot" title="pygplates.ReconstructModel.reconstruct_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span></code></a> to 50Ma.</div>
+<div class="line">We then <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.export_reconstructed_geometries" title="pygplates.ReconstructSnapshot.export_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export</span> <span class="pre">the</span> <span class="pre">reconstructed</span> <span class="pre">geometries</span></code></a> to a file.</div>
+<div class="line">We specify we only want to reconstruct flowline features by specifying
+<code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.flowline</span></code> for the <em>reconstruct_type</em> argument.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+<span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">export_reconstructed_geometries</span><span class="p">(</span><span class="n">export_filename</span><span class="p">,</span>
+    <span class="n">reconstruct_type</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructType</span><span class="o">.</span><span class="n">flowline</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="output">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Output</a><a class="headerlink" href="#output" title="Link to this heading"></a></h3>
+<p>We should now have a file called <code class="docutils literal notranslate"><span class="pre">flowline_output_50Ma.shp</span></code> containing the flowlines
+reconstructed to their 50Ma positions.</p>
+</section>
+</section>
+<section id="query-a-reconstructed-flowline">
+<span id="pygplates-query-reconstructed-flowline"></span><h2><a class="toc-backref" href="#id9" role="doc-backlink">Query a reconstructed flowline</a><a class="headerlink" href="#query-a-reconstructed-flowline" title="Link to this heading"></a></h2>
+<p>In this example we print out the point locations in a reconstructed flowline.</p>
+<section id="id2">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">Sample code</a><a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pygplates</span>
+
+
+<span class="c1"># Specify two (lat/lon) seed points on a present-day mid-ocean ridge between plates 201 and 701.</span>
+<span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">35.547600</span><span class="p">,</span> <span class="o">-</span><span class="mf">17.873000</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">46.208000</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.623000</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># A list of times to sample flowline - from 0 to 90Ma in 5My intervals.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+<span class="c1"># Create a flowline feature.</span>
+<span class="n">flowline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_flowline</span><span class="p">(</span>
+        <span class="n">seed_points</span><span class="p">,</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">)),</span>
+        <span class="n">left_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+        <span class="n">right_plate</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+
+<span class="c1"># Create a reconstruct model from the flowline feature and the rotation model.</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="n">flowline_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
+
+<span class="c1"># Reconstruct features to this geological time.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+
+<span class="c1"># Reconstruct the flowline feature to the reconstruction time.</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+<span class="n">reconstructed_flowlines</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">(</span>
+    <span class="n">reconstruct_types</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructType</span><span class="o">.</span><span class="n">flowline</span><span class="p">)</span>
+
+<span class="c1"># Iterate over all reconstructed flowlines.</span>
+<span class="c1"># There will be two (one for each seed point).</span>
+<span class="k">for</span> <span class="n">reconstructed_flowline</span> <span class="ow">in</span> <span class="n">reconstructed_flowlines</span><span class="p">:</span>
+
+    <span class="c1"># Print the flowline left/right plate IDs.</span>
+    <span class="nb">print</span> <span class="s1">&#39;flowline: left </span><span class="si">%d</span><span class="s1">, right </span><span class="si">%d</span><span class="s1"> at </span><span class="si">%f</span><span class="s1">Ma&#39;</span> <span class="o">%</span> <span class="p">(</span>
+        <span class="n">reconstructed_flowline</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_left_plate</span><span class="p">(),</span>
+        <span class="n">reconstructed_flowline</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_right_plate</span><span class="p">(),</span>
+        <span class="n">reconstruction_time</span><span class="p">)</span>
+
+    <span class="c1"># Print the reconstructed seed point location.</span>
+    <span class="nb">print</span> <span class="s1">&#39;  reconstructed seed point: lat: </span><span class="si">%f</span><span class="s1">, lon: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">reconstructed_flowline</span><span class="o">.</span><span class="n">get_reconstructed_seed_point</span><span class="p">()</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+
+    <span class="n">flowline_times</span> <span class="o">=</span> <span class="n">reconstructed_flowline</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_times</span><span class="p">()</span>
+
+    <span class="nb">print</span> <span class="s1">&#39;  left flowline:&#39;</span>
+
+    <span class="c1"># Iterate over the left points in the flowline.</span>
+    <span class="c1"># The first point in the path is the youngest and the last point is the oldest.</span>
+    <span class="c1"># So we reverse the order to start with the oldest.</span>
+    <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">left_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">reconstructed_flowline</span><span class="o">.</span><span class="n">get_left_flowline</span><span class="p">())):</span>
+
+        <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">left_point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+
+        <span class="c1"># The first point in the path is the oldest and the last point is the reconstructed seed point.</span>
+        <span class="c1"># So we need to start at the last time and work our way backwards.</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">flowline_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="n">point_index</span><span class="p">]</span>
+
+        <span class="c1"># Print the point location and the time associated with it.</span>
+        <span class="nb">print</span> <span class="s1">&#39;    time: </span><span class="si">%f</span><span class="s1">, lat: </span><span class="si">%f</span><span class="s1">, lon: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+
+    <span class="nb">print</span> <span class="s1">&#39;  right flowline:&#39;</span>
+
+    <span class="c1"># Iterate over the right points in the flowline.</span>
+    <span class="c1"># The first point in the path is the youngest and the last point is the oldest.</span>
+    <span class="c1"># So we reverse the order to start with the oldest.</span>
+    <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">right_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">reconstructed_flowline</span><span class="o">.</span><span class="n">get_right_flowline</span><span class="p">())):</span>
+
+        <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">right_point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+
+        <span class="c1"># The first point in the path is the oldest and the last point is the reconstructed seed point.</span>
+        <span class="c1"># So we need to start at the last time and work our way backwards.</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">flowline_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="n">point_index</span><span class="p">]</span>
+
+        <span class="c1"># Print the point location and the time associated with it.</span>
+        <span class="nb">print</span> <span class="s1">&#39;    time: </span><span class="si">%f</span><span class="s1">, lat: </span><span class="si">%f</span><span class="s1">, lon: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Details</a><a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">The first part of this example comes from <a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-flowline-feature"><span class="std std-ref">Create a flowline feature</span></a>.</div>
+<div class="line">It creates a flowline feature specifying the seed point locations that each flowline spreads
+from as well as a list of times to plot points in the left/right paths.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">([(</span><span class="o">-</span><span class="mf">35.547600</span><span class="p">,</span> <span class="o">-</span><span class="mf">17.873000</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mf">46.208000</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.623000</span><span class="p">)])</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">flowline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_flowline</span><span class="p">(</span>
+        <span class="n">seed_points</span><span class="p">,</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">)),</span>
+        <span class="n">left_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+        <span class="n">right_plate</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">&#39;rotations.rot&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> from the flowline feature and the rotation model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="n">flowline_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The flowline feature will be reconstructed to its 50Ma position.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The flowline feature is <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel.reconstruct_snapshot" title="pygplates.ReconstructModel.reconstruct_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span></code></a> to 50Ma.</div>
+<div class="line">We then <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">query</span> <span class="pre">the</span> <span class="pre">reconstructed</span> <span class="pre">geometries</span></code></a>.</div>
+<div class="line">We also specify we only want to reconstruct flowline features by specifying
+<code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.flowline</span></code> for the <em>reconstruct_types</em> argument.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+<span class="n">reconstructed_flowlines</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">(</span>
+    <span class="n">reconstruct_types</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructType</span><span class="o">.</span><span class="n">flowline</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">We iterate over the points in the <a class="reference internal" href="../generated/pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline.get_left_flowline" title="pygplates.ReconstructedFlowline.get_left_flowline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">left</span> <span class="pre">flowline</span></code></a>
+and print each point location and its associated time.</div>
+<div class="line">The first point in a flowline path is the youngest and the last point is the oldest.
+We reverse that order so that we start with the oldest point first since there is always a point
+in the path corresponding to the oldest time, but there is not always a point corresponding to the
+youngest time (present day). However when we index into the flowline times we again need to
+reverse our indexing order (since the times array goes from youngest to oldest).
+So we need to start at the last (oldest) time and work our way backwards.
+The last sample is at index <code class="docutils literal notranslate"><span class="pre">-1</span></code> and <code class="docutils literal notranslate"><span class="pre">point_index</span></code> starts at zero.
+So our time indices are <code class="docutils literal notranslate"><span class="pre">-1</span></code>, <code class="docutils literal notranslate"><span class="pre">-2</span></code>, etc, which means last sample, then second last sample, etc.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">left_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">reconstructed_flowline</span><span class="o">.</span><span class="n">get_left_flowline</span><span class="p">())):</span>
+    <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">left_point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">flowline_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="nb">print</span> <span class="s1">&#39;    time: </span><span class="si">%f</span><span class="s1">, lat: </span><span class="si">%f</span><span class="s1">, lon: </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then we do the same thing for the <a class="reference internal" href="../generated/pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline.get_right_flowline" title="pygplates.ReconstructedFlowline.get_right_flowline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">right</span> <span class="pre">flowline</span></code></a>.</p>
+</section>
+<section id="id4">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Output</a><a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<p>Our time range is 90Ma to 0Ma, but since the reconstruction time is 50Ma the output is only
+from 90Ma to 50Ma.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">flowline</span><span class="p">:</span> <span class="n">left</span> <span class="mi">201</span><span class="p">,</span> <span class="n">right</span> <span class="mi">701</span> <span class="n">at</span> <span class="mf">50.000000</span><span class="n">Ma</span>
+  <span class="n">reconstructed</span> <span class="n">seed</span> <span class="n">point</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.850694</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">16.014821</span>
+  <span class="n">left</span> <span class="n">flowline</span><span class="p">:</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">40.901733</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">27.101972</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">85.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">40.656544</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">25.013022</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">80.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">40.483824</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">23.206460</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">75.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">40.334783</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">21.521684</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">70.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">40.162941</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">19.844649</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">65.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">40.040648</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">18.640309</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">60.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.971463</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">17.834474</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">55.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.903776</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">16.997535</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">50.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.850694</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">16.014821</span>
+  <span class="n">right</span> <span class="n">flowline</span><span class="p">:</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">38.122807</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.288718</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">85.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">38.647048</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">7.218192</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">80.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">38.993610</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">8.936790</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">75.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.256681</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">10.566648</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">70.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.498386</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">12.207892</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">65.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.646000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">13.398159</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">60.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.723847</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">14.198892</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">55.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.796142</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">15.033014</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">50.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">39.850694</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">16.014821</span>
+<span class="n">flowline</span><span class="p">:</span> <span class="n">left</span> <span class="mi">201</span><span class="p">,</span> <span class="n">right</span> <span class="mi">701</span> <span class="n">at</span> <span class="mf">50.000000</span><span class="n">Ma</span>
+  <span class="n">reconstructed</span> <span class="n">seed</span> <span class="n">point</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.546458</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">11.620705</span>
+  <span class="n">left</span> <span class="n">flowline</span><span class="p">:</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">51.886602</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">24.489162</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">85.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">51.571835</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">21.855842</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">80.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">51.343265</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">19.679682</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">75.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">51.144581</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">17.701380</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">70.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.919599</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">15.739301</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">65.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.765425</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">14.377055</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">60.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.684497</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">13.516892</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">55.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.605968</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">12.631013</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">50.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.546458</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">11.620705</span>
+  <span class="n">right</span> <span class="n">flowline</span><span class="p">:</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">48.420517</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.540404</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">85.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">49.070539</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.777819</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">80.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">49.499811</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">3.780529</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">75.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">49.827249</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.651092</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">70.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.130910</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">7.543508</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">65.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.312577</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">8.879531</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">60.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.402339</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">9.730844</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">55.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.485515</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">10.611898</span>
+    <span class="n">time</span><span class="p">:</span> <span class="mf">50.000000</span><span class="p">,</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">50.546458</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">11.620705</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The reconstructed seed point is the same position as the last point in the left and right flowlines.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_reconstruct_motion_path_features.html" class="btn btn-neutral float-left" title="Reconstruct motion path features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_plate_rotation_hierarchy.html" class="btn btn-neutral float-right" title="Hierarchy of plate rotations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

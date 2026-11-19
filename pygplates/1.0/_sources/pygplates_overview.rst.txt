@@ -1,0 +1,11 @@
+.. _pygplates_overview:
+
+Overview
+========
+
+This document gives a high-level overview of the functionality of pyGPlates.
+
+.. contents::
+   :local:
+   :depth: 3
+

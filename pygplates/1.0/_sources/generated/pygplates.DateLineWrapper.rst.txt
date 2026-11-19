@@ -1,0 +1,23 @@
+﻿pygplates.DateLineWrapper
+=========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: DateLineWrapper
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DateLineWrapper.__init__
+      ~DateLineWrapper.wrap
+   
+   
+
+   
+   
+   

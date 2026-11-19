@@ -1,0 +1,626 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.TopologicalSnapshot &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.ReconstructedGeometryTimeSpan" href="pygplates.ReconstructedGeometryTimeSpan.html" />
+    <link rel="prev" title="pygplates.TopologicalModel" href="pygplates.TopologicalModel.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalModel.html">pygplates.TopologicalModel</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.TopologicalSnapshot</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.TopologicalSnapshot"><code class="docutils literal notranslate"><span class="pre">TopologicalSnapshot</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html">pygplates.ReconstructedGeometryTimeSpan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologyPointLocation.html">pygplates.TopologyPointLocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolveTopologyParameters.html">pygplates.ResolveTopologyParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.resolve_topologies.html">pygplates.resolve_topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html">pygplates.ResolvedTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html">pygplates.ResolvedTopologicalBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html">pygplates.ResolvedTopologicalNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionGeometry.html">pygplates.ReconstructionGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html">pygplates.ResolvedTopologicalSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSection.html">pygplates.ResolvedTopologicalSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html">pygplates.ResolvedTopologicalSharedSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetworkTriangulation.html">pygplates.NetworkTriangulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.TopologicalSnapshot</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.TopologicalSnapshot.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-topologicalsnapshot">
+<h1>pygplates.TopologicalSnapshot<a class="headerlink" href="#pygplates-topologicalsnapshot" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">TopologicalSnapshot</span></span><a class="headerlink" href="#pygplates.TopologicalSnapshot" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>A snapshot of resolved topological features (lines, boundaries and networks) at a specific geological time.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../pygplates_primer.html#pygplates-primer-topological-snapshot"><span class="std std-ref">Topological snapshot</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<p>A <em>TopologicalSnapshot</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.30.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topological_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconstruction_time</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">anchor_plate_id</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">default_resolve_topology_parameters</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create from topological features and a rotation model at a specific reconstruction time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topological_features</strong> (<a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a>, or string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>, or <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of any combination of those four types) – The topological boundary and/or network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) of any combination of those four types. <strong>Note</strong>: Each entry can optionally be a 2-tuple (entry, <a class="reference internal" href="pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters" title="pygplates.ResolveTopologyParameters"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolveTopologyParameters</span></code></a>) to override <em>default_resolve_topology_parameters</em> for that entry.</p></li>
+<li><p><strong>rotation_model</strong> (<a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a>. Or <a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a>, or string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>, or <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>, or sequence of any combination of those four types) – A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.</p></li>
+<li><p><strong>reconstruction_time</strong> (float or <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a>) – the specific geological time to resolve to</p></li>
+<li><p><strong>anchor_plate_id</strong> (<em>int</em>) – The anchored plate id used for all reconstructions (resolving topologies, and reconstructing regular features). Defaults to the default anchor plate of <em>rotation_model</em> (or zero if <em>rotation_model</em> is not a <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a>).</p></li>
+<li><p><strong>default_resolve_topology_parameters</strong> (<a class="reference internal" href="pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters" title="pygplates.ResolveTopologyParameters"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolveTopologyParameters</span></code></a>) – Default parameters used to resolve topologies. Note that these can optionally be overridden in <em>topological_features</em>. Defaults to <a class="reference internal" href="pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.__init__" title="pygplates.ResolveTopologyParameters.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default-constructed</span> <span class="pre">ResolveTopologyParameters</span></code></a>).</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../pygplates_primer.html#pygplates-primer-topological-snapshot"><span class="std std-ref">Topological snapshot</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.31: </span>Added <em>default_resolve_topology_parameters</em> argument.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(topological_features, ...)</p></td>
+<td><p>Create from topological features and a rotation model at a specific reconstruction time.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics" title="pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_plate_boundary_statistics</span></code></a>(...)</p></td>
+<td><p>Calculate statistics at uniformly spaced points along plate boundaries.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.export_resolved_topological_sections" title="pygplates.TopologicalSnapshot.export_resolved_topological_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_resolved_topological_sections</span></code></a>(...)</p></td>
+<td><p>Exports the resolved topological sections of the requested type(s) to a file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.export_resolved_topologies" title="pygplates.TopologicalSnapshot.export_resolved_topologies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_resolved_topologies</span></code></a>(export_filename, ...)</p></td>
+<td><p>Exports the resolved topologies of the requested type(s) to a file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_anchor_plate_id" title="pygplates.TopologicalSnapshot.get_anchor_plate_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_anchor_plate_id</span></code></a>()</p></td>
+<td><p>Return the anchor plate ID (see <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_locations</span></code></a>(points, ...)</p></td>
+<td><p>Returns the resolved topological boundaries/networks that contain the specified points.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_point_strain_rates" title="pygplates.TopologicalSnapshot.get_point_strain_rates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_strain_rates</span></code></a>(points, ...)</p></td>
+<td><p>Returns the strain rates of the specified points (as determined by the resolved topological boundaries/networks that contain them).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_velocities</span></code></a>(points, ...)</p></td>
+<td><p>Returns the velocities of the specified points (as determined by the resolved topological boundaries/networks that contain them).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_reconstruction_time" title="pygplates.TopologicalSnapshot.get_reconstruction_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstruction_time</span></code></a>()</p></td>
+<td><p>Return the reconstruction time of this snapshot.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_resolved_topological_sections" title="pygplates.TopologicalSnapshot.get_resolved_topological_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_topological_sections</span></code></a>(...)</p></td>
+<td><p>Returns the resolved topological sections of the requested type(s).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_resolved_topologies" title="pygplates.TopologicalSnapshot.get_resolved_topologies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_topologies</span></code></a>(...)</p></td>
+<td><p>Returns the resolved topologies of the requested type(s).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalSnapshot.get_rotation_model" title="pygplates.TopologicalSnapshot.get_rotation_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rotation_model</span></code></a>()</p></td>
+<td><p>Return the rotation model used internally.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics">
+<span class="sig-name descname"><span class="pre">calculate_plate_boundary_statistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uniform_point_spacing_radians</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">first_uniform_point_spacing_radians</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time=1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_units=pygplates.VelocityUnits.kms_per_my</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">include_network_boundaries=False</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">boundary_section_filter</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">return_shared_sub_segment_dict=False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics" title="Link to this definition"></a></dt>
+<dd><p>Calculate statistics at uniformly spaced points along plate boundaries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uniform_point_spacing_radians</strong> (<em>float</em>) – Spacing between uniform points along plate boundaries (in radians). See <a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.to_uniform_points" title="pygplates.PolylineOnSphere.to_uniform_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PolylineOnSphere.to_uniform_points()</span></code></a>.</p></li>
+<li><p><strong>first_uniform_point_spacing_radians</strong> (<em>float</em>) – Spacing of first uniform point in each <a class="reference internal" href="pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection" title="pygplates.ResolvedTopologicalSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">section</span></code></a> (in radians). Each resolved topological section represents a specific boundary <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> and has a list of <a class="reference internal" href="pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection.get_shared_sub_segments" title="pygplates.ResolvedTopologicalSection.get_shared_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">shared</span> <span class="pre">sub-segments</span></code></a> that are the parts of it that actually contribute to plate boundaries. So, this parameter is the distance from the <em>first</em> vertex of the <em>first</em> shared sub-segment (<em>along</em> the sub-segment). And note that the uniform spacing is continuous across adjacent shared sub-segments, unless there’s a gap between them (eg, that no plate uses as part of its boundary), in which case the spacing is reset to <em>first_uniform_point_spacing_radians</em> for the next shared sub-segment (after the gap). See <a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.to_uniform_points" title="pygplates.PolylineOnSphere.to_uniform_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PolylineOnSphere.to_uniform_points()</span></code></a>. Defaults to half of <em>uniform_point_spacing_radians</em>.</p></li>
+<li><p><strong>velocity_delta_time</strong> (<em>float</em>) – The time delta used to calculate velocities (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<em>VelocityDeltaTimeType.t_plus_delta_t_to_t</em>, <em>VelocityDeltaTimeType.t_to_t_minus_delta_t</em> or <em>VelocityDeltaTimeType.t_plus_minus_half_delta_t</em>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>velocity_units</strong> (<em>VelocityUnits.kms_per_my</em> or <em>VelocityUnits.cms_per_yr</em>) – whether to return velocities as <em>kilometres per million years</em> or <em>centimetres per year</em> (defaults to <em>kilometres per million years</em>)</p></li>
+<li><p><strong>earth_radius_in_kms</strong> (<em>float</em>) – The radius of the Earth in <em>kilometres</em> (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code>). This is only used to calculate velocities (strain rates always use <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.equatorial_radius_in_kms</span></code>).</p></li>
+<li><p><strong>include_network_boundaries</strong> (<em>bool</em>) – Whether to calculate statistics along <em>network</em> boundaries that are <strong>not</strong> also plate boundaries (defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>). If a deforming network shares a boundary with a plate then it’ll get included regardless of this option.</p></li>
+<li><p><strong>boundary_section_filter</strong> (<a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a>, or list of <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a>, or callable (accepting a single <a class="reference internal" href="pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection" title="pygplates.ResolvedTopologicalSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalSection</span></code></a>)) – Optionally restrict boundary sections to those that match a feature type, or match one of several feature types, or match a filter function. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> (meaning accept all boundary sections).</p></li>
+<li><p><strong>return_shared_sub_segment_dict</strong> (<em>bool</em>) – Whether to return a <code class="docutils literal notranslate"><span class="pre">dict</span></code> mapping each <a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment" title="pygplates.ResolvedTopologicalSharedSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">shared</span> <span class="pre">sub-segment</span></code></a> (ie, a boundary section shared by one or more plates) to a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlateBoundaryStatistic</span></code></a> associated with it. If <code class="docutils literal notranslate"><span class="pre">False</span></code> then just returns one large <code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlateBoundaryStatistic</span></code></a> for all plate boundaries. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlateBoundaryStatistic</span></code></a> for all uniform points, or (if <em>return_shared_sub_segment_dict</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) a <code class="docutils literal notranslate"><span class="pre">dict</span></code> mapping each <a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment" title="pygplates.ResolvedTopologicalSharedSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalSharedSubSegment</span></code></a> to a list of <a class="reference internal" href="pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlateBoundaryStatistic</span></code></a></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ValueError if <em>uniform_point_spacing_radians</em> is negative or zero</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if <em>velocity_delta_time</em> is negative or zero.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../pygplates_primer.html#pygplates-primer-plate-boundary-statistics"><span class="std std-ref">Plate boundary statistics</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>return_shared_sub_segment_dict</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then any shared sub-segments that are not long enough to contain any uniform points will be missing from the returned <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p>
+</div>
+<p>Uniform points are <strong>not</strong> generated along <em>network</em> boundaries by default (unless they happen to also be a plate boundary) since not all parts of a network’s boundary are necessarily along plate boundaries. But you can optionally generate points along them by setting <em>include_network_boundaries</em> to <code class="docutils literal notranslate"><span class="pre">True</span></code>. Note that, regardless of this option, networks are always used when <em>calculating</em> plate statistics. This is because networks typically <em>overlay</em> rigid plates, and so need to be queried (at uniform points along plate boundaries) with a higher priority than the <em>underlying</em> rigid plate.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The plate boundaries, <em>along</em> which uniform points are generated, can be further restricted using <em>boundary_section_filter</em>.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.47.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.export_resolved_topological_sections">
+<span class="sig-name descname"><span class="pre">export_resolved_topological_sections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">export_filename</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">resolve_topological_section_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">export_topological_line_sub_segments=True</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">wrap_to_dateline=True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.export_resolved_topological_sections" title="Link to this definition"></a></dt>
+<dd><p>Exports the resolved topological sections of the requested type(s) to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>export_filename</strong> (string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>) – the name of the export file</p></li>
+<li><p><strong>resolve_topological_section_types</strong> (a bitwise combination of any of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>) – Determines whether <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> or <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a> (or both types) are listed in the exported resolved topological sections. Note that <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.line</span></code> cannot be specified since only topologies with boundaries are considered. Defaults to <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a>.</p></li>
+<li><p><strong>export_topological_line_sub_segments</strong> (<em>bool</em>) – Whether to export the individual sub-segments of each boundary segment that came from a resolved topological line (<code class="docutils literal notranslate"><span class="pre">True</span></code>) or export a single geometry per boundary segment (<code class="docutils literal notranslate"><span class="pre">False</span></code>). Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>wrap_to_dateline</strong> (<em>bool</em>) – Whether to wrap/clip resolved topological sections to the dateline (currently ignored unless exporting to an ESRI Shapefile format <em>file</em>). Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ValueError if <em>resolve_topological_section_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code></p>
+</dd>
+</dl>
+<p>The following <em>export</em> file formats are currently supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Export File Format</p></th>
+<th class="head"><p>Filename Extension</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ESRI Shapefile</p></td>
+<td><p>‘.shp’</p></td>
+</tr>
+<tr class="row-odd"><td><p>GeoJSON</p></td>
+<td><p>‘.geojson’ or ‘.json’</p></td>
+</tr>
+<tr class="row-even"><td><p>OGR GMT</p></td>
+<td><p>‘.gmt’</p></td>
+</tr>
+<tr class="row-odd"><td><p>GMT xy</p></td>
+<td><p>‘.xy’</p></td>
+</tr>
+</tbody>
+</table>
+<p>The argument <em>export_topological_line_sub_segments</em> only applies to topological lines. It determines whether to export the section of the resolved topological line (contributing to boundaries) or its <a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment.get_sub_segments" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sub-segments</span></code></a>. Note that this also determines whether the feature properties (such as plate ID and feature type) of the topological line feature or its individual sub-segment features are exported.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Resolved topological sections are exported in the same order as that of their respective topological features (see <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>) and the order across topological feature collections (if any) is also retained.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.33: </span>Added <em>export_topological_line_sub_segments</em> argument.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.export_resolved_topologies">
+<span class="sig-name descname"><span class="pre">export_resolved_topologies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">export_filename</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">wrap_to_dateline=True</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">force_boundary_orientation</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.export_resolved_topologies" title="Link to this definition"></a></dt>
+<dd><p>Exports the resolved topologies of the requested type(s) to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>export_filename</strong> (string/<code class="docutils literal notranslate"><span class="pre">os.PathLike</span></code>) – the name of the export file</p></li>
+<li><p><strong>resolve_topology_types</strong> (a bitwise combination of any of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.line</span></code>, <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>) – specifies the resolved topology types to export - defaults to <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> (excludes <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">lines</span></code></a>)</p></li>
+<li><p><strong>wrap_to_dateline</strong> (<em>bool</em>) – Whether to wrap/clip resolved topologies to the dateline (currently ignored unless exporting to an ESRI Shapefile format <em>file</em>). Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>force_boundary_orientation</strong> (<em>int</em>) – Optionally force boundary orientation to clockwise (<code class="docutils literal notranslate"><span class="pre">PolygonOnSphere.Orientation.clockwise</span></code>) or counter-clockwise (<code class="docutils literal notranslate"><span class="pre">PolygonOnSphere.Orientation.counter_clockwise</span></code>). Only applies to resolved topological <em>boundaries</em> and <em>networks</em> (excludes <em>lines</em>). Note that ESRI Shapefiles always use <em>clockwise</em> orientation (and so ignore this parameter).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ValueError if <em>resolve_topology_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.line</span></code>, <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code></p>
+</dd>
+</dl>
+<p>The following <em>export</em> file formats are currently supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Export File Format</p></th>
+<th class="head"><p>Filename Extension</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ESRI Shapefile</p></td>
+<td><p>‘.shp’</p></td>
+</tr>
+<tr class="row-odd"><td><p>GeoJSON</p></td>
+<td><p>‘.geojson’ or ‘.json’</p></td>
+</tr>
+<tr class="row-even"><td><p>OGR GMT</p></td>
+<td><p>‘.gmt’</p></td>
+</tr>
+<tr class="row-odd"><td><p>GMT xy</p></td>
+<td><p>‘.xy’</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Resolved topologies are exported in the same order as that of their respective topological features (see <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>) and the order across topological feature collections (if any) is also retained.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_anchor_plate_id">
+<span class="sig-name descname"><span class="pre">get_anchor_plate_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_anchor_plate_id" title="Link to this definition"></a></dt>
+<dd><p>Return the anchor plate ID (see <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the same as the <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel.get_default_anchor_plate_id" title="pygplates.RotationModel.get_default_anchor_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default</span> <span class="pre">anchor</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a> of <a class="reference internal" href="#pygplates.TopologicalSnapshot.get_rotation_model" title="pygplates.TopologicalSnapshot.get_rotation_model"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation_model()</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_point_locations">
+<span class="sig-name descname"><span class="pre">get_point_locations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_point_locations" title="Link to this definition"></a></dt>
+<dd><p>Returns the resolved topological boundaries/networks that contain the specified points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)) – sequence of points at which to find containing topologies</p></li>
+<li><p><strong>resolve_topology_types</strong> (a bitwise combination of any of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>) – specifies the resolved topology types to search - defaults to <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> (excludes <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">lines</span></code></a> since lines cannot contain points)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologyPointLocation</span></code></a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if <em>resolve_topology_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code></p>
+</dd>
+</dl>
+<p><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">Resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> have a higher priority than <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> since networks typically <em>overlay</em> rigid plates. So if a point is inside both a boundary and a network then the network location is returned.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each point that is <em>outside</em> all resolved topologies searched will have <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.not_located_in_resolved_topology" title="pygplates.TopologyPointLocation.not_located_in_resolved_topology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TopologyPointLocation.not_located_in_resolved_topology()</span></code></a> returning <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</div>
+<p>To associate each point with the resolved topological boundary/network containing it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">topology_point_locations</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)):</span>
+    <span class="n">point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">topology_point_location</span> <span class="o">=</span> <span class="n">topology_point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">topology_point_location</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">():</span>  <span class="c1"># if point is inside a resolved boundary</span>
+        <span class="n">resolved_topological_boundary</span> <span class="o">=</span> <span class="n">topology_point_location</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">topology_point_location</span><span class="o">.</span><span class="n">located_in_resolved_network</span><span class="p">():</span>  <span class="c1"># if point is inside a resolved network</span>
+        <span class="n">resolved_topological_network</span> <span class="o">=</span> <span class="n">topology_point_location</span><span class="o">.</span><span class="n">located_in_resolved_network</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># point is not in any resolved topologies</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_point_strain_rates">
+<span class="sig-name descname"><span class="pre">get_point_strain_rates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">return_point_locations=False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_point_strain_rates" title="Link to this definition"></a></dt>
+<dd><p>Returns the strain rates of the specified points (as determined by the resolved topological boundaries/networks that contain them).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)) – sequence of points at which to calculate strain rates</p></li>
+<li><p><strong>resolve_topology_types</strong> (a bitwise combination of any of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>) – specifies the resolved topology types to use for strain rates - defaults to <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> (excludes <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">lines</span></code></a> since lines cannot contain points)</p></li>
+<li><p><strong>return_point_locations</strong> – whether to also return the resolved topological boundary/network that contains each point - defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrainRate</span></code></a>, or 2-tuple (list of <a class="reference internal" href="pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrainRate</span></code></a>, list of <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologyPointLocation</span></code></a>) if <em>return_point_locations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if <em>resolve_topology_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code></p>
+</dd>
+</dl>
+<p><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">Resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> have a higher priority than <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> since networks typically <em>overlay</em> rigid plates. So a point that is inside a resolved topological network can generate a <em>non-zero</em> <a class="reference internal" href="pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span></code></a>. However, a point that is inside a resolved topological boundary (but is outside all resolved topological networks searched) will generate a <em>zero</em> strain rate (<code class="docutils literal notranslate"><span class="pre">pygplates.StrainRate.zero</span></code>) since it is inside a <em>non-deforming</em> plate.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each point that is <em>outside</em> all resolved topologies searched (boundaries and networks) will have a strain rate of <code class="docutils literal notranslate"><span class="pre">None</span></code>, and optionally (if <em>return_point_locations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) have a <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.not_located_in_resolved_topology" title="pygplates.TopologyPointLocation.not_located_in_resolved_topology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TopologyPointLocation.not_located_in_resolved_topology()</span></code></a> returning <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</div>
+<p>To associate each point with its strain rate and the resolved topological boundary/network containing it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">strain_rates</span><span class="p">,</span> <span class="n">topology_point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_strain_rates</span><span class="p">(</span>
+        <span class="n">points</span><span class="p">,</span>
+        <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)):</span>
+    <span class="n">point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">strain_rate</span> <span class="o">=</span> <span class="n">strain_rates</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">topology_point_location</span> <span class="o">=</span> <span class="n">topology_point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">strain_rate</span><span class="p">:</span>  <span class="c1"># if point is inside a resolved boundary or network</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is more efficient to call <code class="docutils literal notranslate"><span class="pre">topological_snapshot.get_point_strain_rates(points,</span> <span class="pre">return_point_locations=True)</span></code> to get both strain rates and point locations than it is to call both <code class="docutils literal notranslate"><span class="pre">topological_snapshot.get_point_strain_rates(points)</span></code> and <code class="docutils literal notranslate"><span class="pre">topological_snapshot.get_point_locations(points)</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Strain rates in deforming networks are calculated from the spatial gradients of velocity where the velocities are calculated over a 1 Myr time interval and using the <em>equatorial</em> Earth radius <a class="reference internal" href="pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Earth.equatorial_radius_in_kms</span></code></a>.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_point_velocities">
+<span class="sig-name descname"><span class="pre">get_point_velocities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time=1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_units=pygplates.VelocityUnits.kms_per_my</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">return_point_locations=False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_point_velocities" title="Link to this definition"></a></dt>
+<dd><p>Returns the velocities of the specified points (as determined by the resolved topological boundaries/networks that contain them).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)) – sequence of points at which to calculate velocities</p></li>
+<li><p><strong>resolve_topology_types</strong> (a bitwise combination of any of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>) – specifies the resolved topology types to use for calculating velocities - defaults to <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> (excludes <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">lines</span></code></a> since lines cannot contain points)</p></li>
+<li><p><strong>velocity_delta_time</strong> (<em>float</em>) – The time delta used to calculate velocities (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<em>VelocityDeltaTimeType.t_plus_delta_t_to_t</em>, <em>VelocityDeltaTimeType.t_to_t_minus_delta_t</em> or <em>VelocityDeltaTimeType.t_plus_minus_half_delta_t</em>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>velocity_units</strong> (<em>VelocityUnits.kms_per_my</em> or <em>VelocityUnits.cms_per_yr</em>) – whether to return velocities as <em>kilometres per million years</em> or <em>centimetres per year</em> (defaults to <em>kilometres per million years</em>)</p></li>
+<li><p><strong>earth_radius_in_kms</strong> (<em>float</em>) – the radius of the Earth in <em>kilometres</em> (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code>)</p></li>
+<li><p><strong>return_point_locations</strong> – whether to also return the resolved topological boundary/network that contains each point - defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, or 2-tuple (list of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, list of <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologyPointLocation</span></code></a>) if <em>return_point_locations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if <em>resolve_topology_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code></p>
+</dd>
+</dl>
+<p><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">Resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> have a higher priority than <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> since networks typically <em>overlay</em> rigid plates. So if a point is inside both a boundary and a network then the velocity of the network is returned.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each point that is <em>outside</em> all resolved topologies searched will have a velocity of <code class="docutils literal notranslate"><span class="pre">None</span></code>, and optionally (if <em>return_point_locations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) have a <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.not_located_in_resolved_topology" title="pygplates.TopologyPointLocation.not_located_in_resolved_topology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TopologyPointLocation.not_located_in_resolved_topology()</span></code></a> returning <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</div>
+<p>To associate each point with its velocity and the resolved topological boundary/network containing it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">velocities</span><span class="p">,</span> <span class="n">topology_point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+        <span class="n">points</span><span class="p">,</span>
+        <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)):</span>
+    <span class="n">point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">velocity</span> <span class="o">=</span> <span class="n">velocities</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">topology_point_location</span> <span class="o">=</span> <span class="n">topology_point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">velocity</span><span class="p">:</span>  <span class="c1"># if point is inside a resolved boundary or network</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is more efficient to call <code class="docutils literal notranslate"><span class="pre">topological_snapshot.get_point_velocities(points,</span> <span class="pre">return_point_locations=True)</span></code> to get both velocities and point locations than it is to call both <code class="docutils literal notranslate"><span class="pre">topological_snapshot.get_point_velocities(points)</span></code> and <code class="docutils literal notranslate"><span class="pre">topological_snapshot.get_point_locations(points)</span></code>.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_reconstruction_time">
+<span class="sig-name descname"><span class="pre">get_reconstruction_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_reconstruction_time" title="Link to this definition"></a></dt>
+<dd><p>Return the reconstruction time of this snapshot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.43.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_resolved_topological_sections">
+<span class="sig-name descname"><span class="pre">get_resolved_topological_sections</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">resolve_topological_section_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">same_order_as_topological_features=False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_resolved_topological_sections" title="Link to this definition"></a></dt>
+<dd><p>Returns the resolved topological sections of the requested type(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resolve_topological_section_types</strong> (a bitwise combination of any of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>) – Determines whether <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> or <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a> (or both types) are listed in the returned resolved topological sections. Note that <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.line</span></code> cannot be specified since only topologies with boundaries are considered. Defaults to <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a>.</p></li>
+<li><p><strong>same_order_as_topological_features</strong> (<em>bool</em>) – whether the returned resolved topological sections are sorted in the order of the topological features (including order across topological files, if there were any) - defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection" title="pygplates.ResolvedTopologicalSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalSection</span></code></a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if <em>resolve_topological_section_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>same_order_as_topological_features</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then the returned resolved topological sections are sorted in the order of their respective topological features (see <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>). This includes the order across any topological feature collections/files.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_resolved_topologies">
+<span class="sig-name descname"><span class="pre">get_resolved_topologies</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">same_order_as_topological_features=False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_resolved_topologies" title="Link to this definition"></a></dt>
+<dd><p>Returns the resolved topologies of the requested type(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resolve_topology_types</strong> (a bitwise combination of any of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.line</span></code>, <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>) – specifies the resolved topology types to return - defaults to <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a></p></li>
+<li><p><strong>same_order_as_topological_features</strong> (<em>bool</em>) – whether the returned resolved topologies are sorted in the order of the topological features (including order across topological files, if there were any) - defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">lines</span></code></a>, <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">networks</span></code></a> (depending on the optional argument <em>resolve_topology_types</em>) - by default <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">lines</span></code></a> are excluded</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ValueError if <em>resolve_topology_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.line</span></code>, <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>same_order_as_topological_features</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then the returned resolved topologies are sorted in the order of their respective topological features (see <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>). This includes the order across any topological feature collections/files.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalSnapshot.get_rotation_model">
+<span class="sig-name descname"><span class="pre">get_rotation_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalSnapshot.get_rotation_model" title="Link to this definition"></a></dt>
+<dd><p>Return the rotation model used internally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel.get_default_anchor_plate_id" title="pygplates.RotationModel.get_default_anchor_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default</span> <span class="pre">anchor</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a> of the returned rotation model may be different to that of the rotation model passed into the <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> if an anchor plate ID was specified in the <a class="reference internal" href="#pygplates.TopologicalSnapshot.__init__" title="pygplates.TopologicalSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.TopologicalModel.html" class="btn btn-neutral float-left" title="pygplates.TopologicalModel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.ReconstructedGeometryTimeSpan.html" class="btn btn-neutral float-right" title="pygplates.ReconstructedGeometryTimeSpan" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

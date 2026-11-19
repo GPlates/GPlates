@@ -1,0 +1,297 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.ReconstructedMotionPath &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.ReconstructionGeometry" href="pygplates.ReconstructionGeometry.html" />
+    <link rel="prev" title="pygplates.ReconstructedFlowline" href="pygplates.ReconstructedFlowline.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructModel.html">pygplates.ReconstructModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructSnapshot.html">pygplates.ReconstructSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.reconstruct.html">pygplates.reconstruct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.reverse_reconstruct.html">pygplates.reverse_reconstruct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html">pygplates.ReconstructedFeatureGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedFlowline.html">pygplates.ReconstructedFlowline</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.ReconstructedMotionPath</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.ReconstructedMotionPath"><code class="docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionGeometry.html">pygplates.ReconstructionGeometry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.ReconstructedMotionPath</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.ReconstructedMotionPath.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-reconstructedmotionpath">
+<h1>pygplates.ReconstructedMotionPath<a class="headerlink" href="#pygplates-reconstructedmotionpath" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">ReconstructedMotionPath</span></span><a class="headerlink" href="#pygplates.ReconstructedMotionPath" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a></p>
+<p>The reconstructed history of a plate’s motion in the form of a path of points over geological time.</p>
+<p><a class="reference internal" href="pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructModel</span></code></a>, <a class="reference internal" href="pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructSnapshot</span></code></a> or <a class="reference internal" href="pygplates.reconstruct.html#pygplates.reconstruct" title="pygplates.reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reconstruct()</span></code></a> can be used to generate <em>ReconstructedMotionPath</em> instances.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">Although a single motion path <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a> has only a single seed geometry that seed geometry can be either a <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a>.</div>
+<div class="line">And since there is one <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">motion</span> <span class="pre">path</span></code></a> per seed point there can be, in the case of a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a>, multiple <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">motion</span> <span class="pre">paths</span></code></a> per motion path <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a>.</div>
+</div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructedMotionPath.__init__" title="Link to this definition"></a></dt>
+<dd><p>Raises an exception
+This class cannot be instantiated from Python</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructedMotionPath.__init__" title="pygplates.ReconstructedMotionPath.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>Raises an exception This class cannot be instantiated from Python</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_feature" title="pygplates.ReconstructedMotionPath.get_feature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_feature</span></code></a>()</p></td>
+<td><p>Returns the feature associated with this <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_motion_path" title="pygplates.ReconstructedMotionPath.get_motion_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_motion_path</span></code></a>()</p></td>
+<td><p>Returns the motion path.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_present_day_seed_point" title="pygplates.ReconstructedMotionPath.get_present_day_seed_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_present_day_seed_point</span></code></a>()</p></td>
+<td><p>Returns the present day seed point.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_property" title="pygplates.ReconstructedMotionPath.get_property"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_property</span></code></a>()</p></td>
+<td><p>Returns the feature property containing the seed point associated with this <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point" title="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstructed_seed_point</span></code></a>()</p></td>
+<td><p>Returns the reconstructed seed point.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point_velocity" title="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point_velocity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstructed_seed_point_velocity</span></code></a>(...)</p></td>
+<td><p>Returns the velocity of the <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point" title="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">seed</span> <span class="pre">point</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstruction_time</span></code>()</p></td>
+<td><p>Returns the reconstruction time that this instance was created at.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath.get_feature">
+<span class="sig-name descname"><span class="pre">get_feature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructedMotionPath.get_feature" title="Link to this definition"></a></dt>
+<dd><p>Returns the feature associated with this <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Multiple <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">motion</span> <span class="pre">paths</span></code></a> can be associated with the same motion path <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a> if its seed geometry is a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath.get_motion_path">
+<span class="sig-name descname"><span class="pre">get_motion_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructedMotionPath.get_motion_path" title="Link to this definition"></a></dt>
+<dd><p>Returns the motion path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolylineOnSphere</span></code></a></p>
+</dd>
+</dl>
+<p>The returned points plot the history of motion of the <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_present_day_seed_point" title="pygplates.ReconstructedMotionPath.get_present_day_seed_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">seed</span> <span class="pre">point</span></code></a> on the plate associated with <code class="docutils literal notranslate"><span class="pre">get_feature().get_reconstruction_plate_id()</span></code> relative to the plate associated with <code class="docutils literal notranslate"><span class="pre">get_feature().get_relative_plate()</span></code>.</p>
+<p>The first point in the returned <a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PolylineOnSphere</span></code></a> is the furthest in the geological past and subsequent points are progressively more recent with the last point being the <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point" title="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">seed</span> <span class="pre">point</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is just one of the motion paths associated with this <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_feature" title="pygplates.ReconstructedMotionPath.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">feature's</span></code></a> seed geometry if that seed geometry is a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a>.</p>
+</div>
+<p>Iterate over the motion path points:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">reconstructed_motion_path</span><span class="o">.</span><span class="n">get_motion_path</span><span class="p">():</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath.get_present_day_seed_point">
+<span class="sig-name descname"><span class="pre">get_present_day_seed_point</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructedMotionPath.get_present_day_seed_point" title="Link to this definition"></a></dt>
+<dd><p>Returns the present day seed point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is just one of the seed points in this <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_feature" title="pygplates.ReconstructedMotionPath.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">feature's</span></code></a> seed geometry if that seed geometry is a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a>. The remaining seed points are associated with other <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a> instances.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath.get_property">
+<span class="sig-name descname"><span class="pre">get_property</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructedMotionPath.get_property" title="Link to this definition"></a></dt>
+<dd><p>Returns the feature property containing the seed point associated with this <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Property.html#pygplates.Property" title="pygplates.Property"><code class="xref py py-class docutils literal notranslate"><span class="pre">Property</span></code></a></p>
+</dd>
+</dl>
+<p>This is the <a class="reference internal" href="pygplates.Property.html#pygplates.Property" title="pygplates.Property"><code class="xref py py-class docutils literal notranslate"><span class="pre">Property</span></code></a> that the <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_present_day_seed_point" title="pygplates.ReconstructedMotionPath.get_present_day_seed_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">present</span> <span class="pre">day</span> <span class="pre">seed</span> <span class="pre">point</span></code></a> and the <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point" title="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">seed</span> <span class="pre">point</span></code></a> are obtained from.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point">
+<span class="sig-name descname"><span class="pre">get_reconstructed_seed_point</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point" title="Link to this definition"></a></dt>
+<dd><p>Returns the reconstructed seed point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is just one of the seed points in this <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_feature" title="pygplates.ReconstructedMotionPath.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">feature's</span></code></a> seed geometry if that seed geometry is a <a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a>. The remaining seed points are associated with other <a class="reference internal" href="#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a> instances.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point_velocity">
+<span class="sig-name descname"><span class="pre">get_reconstructed_seed_point_velocity</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">velocity_delta_time=1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_units=pygplates.VelocityUnits.kms_per_my</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point_velocity" title="Link to this definition"></a></dt>
+<dd><p>Returns the velocity of the <a class="reference internal" href="#pygplates.ReconstructedMotionPath.get_reconstructed_seed_point" title="pygplates.ReconstructedMotionPath.get_reconstructed_seed_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">seed</span> <span class="pre">point</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>velocity_delta_time</strong> (<em>float</em>) – The time delta used to calculate velocity (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<em>VelocityDeltaTimeType.t_plus_delta_t_to_t</em>, <em>VelocityDeltaTimeType.t_to_t_minus_delta_t</em> or <em>VelocityDeltaTimeType.t_plus_minus_half_delta_t</em>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>velocity_units</strong> (<em>VelocityUnits.kms_per_my</em> or <em>VelocityUnits.cms_per_yr</em>) – whether to return velocity as <em>kilometres per million years</em> or <em>centimetres per year</em> (defaults to <em>kilometres per million years</em>)</p></li>
+<li><p><strong>earth_radius_in_kms</strong> (<em>float</em>) – the radius of the Earth in <em>kilometres</em> (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ReconstructedFlowline.html" class="btn btn-neutral float-left" title="pygplates.ReconstructedFlowline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.ReconstructionGeometry.html" class="btn btn-neutral float-right" title="pygplates.ReconstructionGeometry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

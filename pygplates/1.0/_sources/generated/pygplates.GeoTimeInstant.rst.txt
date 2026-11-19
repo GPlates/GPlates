@@ -1,0 +1,28 @@
+﻿pygplates.GeoTimeInstant
+========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GeoTimeInstant
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GeoTimeInstant.__init__
+      ~GeoTimeInstant.create_distant_future
+      ~GeoTimeInstant.create_distant_past
+      ~GeoTimeInstant.get_value
+      ~GeoTimeInstant.is_distant_future
+      ~GeoTimeInstant.is_distant_past
+      ~GeoTimeInstant.is_real
+   
+   
+
+   
+   
+   

@@ -1,0 +1,31 @@
+﻿pygplates.GpmlTopologicalSectionList
+====================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTopologicalSectionList
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTopologicalSectionList.__init__
+      ~GpmlTopologicalSectionList.append
+      ~GpmlTopologicalSectionList.count
+      ~GpmlTopologicalSectionList.extend
+      ~GpmlTopologicalSectionList.index
+      ~GpmlTopologicalSectionList.insert
+      ~GpmlTopologicalSectionList.pop
+      ~GpmlTopologicalSectionList.remove
+      ~GpmlTopologicalSectionList.reverse
+      ~GpmlTopologicalSectionList.sort
+   
+   
+
+   
+   
+   

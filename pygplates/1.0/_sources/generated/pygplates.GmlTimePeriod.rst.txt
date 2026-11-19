@@ -1,0 +1,31 @@
+﻿pygplates.GmlTimePeriod
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlTimePeriod
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlTimePeriod.__init__
+      ~GmlTimePeriod.accept_visitor
+      ~GmlTimePeriod.clone
+      ~GmlTimePeriod.contains
+      ~GmlTimePeriod.get_begin_time
+      ~GmlTimePeriod.get_end_time
+      ~GmlTimePeriod.get_geometry
+      ~GmlTimePeriod.get_value
+      ~GmlTimePeriod.set_begin_time
+      ~GmlTimePeriod.set_end_time
+   
+   
+
+   
+   
+   

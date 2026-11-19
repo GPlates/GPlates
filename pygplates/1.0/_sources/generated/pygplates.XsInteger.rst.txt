@@ -1,0 +1,28 @@
+﻿pygplates.XsInteger
+===================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: XsInteger
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~XsInteger.__init__
+      ~XsInteger.accept_visitor
+      ~XsInteger.clone
+      ~XsInteger.get_geometry
+      ~XsInteger.get_integer
+      ~XsInteger.get_value
+      ~XsInteger.set_integer
+   
+   
+
+   
+   
+   

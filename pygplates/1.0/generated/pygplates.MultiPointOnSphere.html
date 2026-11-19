@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.MultiPointOnSphere &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.PolylineOnSphere" href="pygplates.PolylineOnSphere.html" />
+    <link rel="prev" title="pygplates.PointOnSphere" href="pygplates.PointOnSphere.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PointOnSphere.html">pygplates.PointOnSphere</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.MultiPointOnSphere</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.MultiPointOnSphere"><code class="docutils literal notranslate"><span class="pre">MultiPointOnSphere</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PolylineOnSphere.html">pygplates.PolylineOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PolygonOnSphere.html">pygplates.PolygonOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GeometryOnSphere.html">pygplates.GeometryOnSphere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GreatCircleArc.html">pygplates.GreatCircleArc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.LatLonPoint.html">pygplates.LatLonPoint</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.MultiPointOnSphere</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.MultiPointOnSphere.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-multipointonsphere">
+<h1>pygplates.MultiPointOnSphere<a class="headerlink" href="#pygplates-multipointonsphere" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.MultiPointOnSphere">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">MultiPointOnSphere</span></span><a class="headerlink" href="#pygplates.MultiPointOnSphere" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a></p>
+<p>Represents a multi-point (collection of points) on the surface of the unit length sphere. Multi-points are equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>) comparable (but not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>). See <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> for an overview of equality in the presence of limited floating-point precision.</p>
+<p>A multi-point instance is iterable over its points:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">multi_point</span><span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>The following operations for accessing the points are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(mp)</span></code></p></td>
+<td><p>number of points in <em>mp</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">p</span> <span class="pre">in</span> <span class="pre">mp</span></code></p></td>
+<td><p>iterates over the points <em>p</em> of multi-point <em>mp</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">in</span> <span class="pre">mp</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>p</em> is equal to a point in <em>mp</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">mp</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>p</em> is equal to a point in <em>mp</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mp[i]</span></code></p></td>
+<td><p>the point of <em>mp</em> at index <em>i</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mp[i:j]</span></code></p></td>
+<td><p>slice of <em>mp</em> from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mp[i:j:k]</span></code></p></td>
+<td><p>slice of <em>mp</em> from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since a <em>MultiPointOnSphere</em> is <strong>immutable</strong> it contains no operations or methods that modify its state (such as adding or removing points).</p>
+</div>
+<p>There are also methods that return the sequence of points as (latitude,longitude) values and (x,y,z) values contained in lists and numpy arrays (<a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.to_lat_lon_list" title="pygplates.GeometryOnSphere.to_lat_lon_list"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GeometryOnSphere.to_lat_lon_list()</span></code></a>, <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.to_lat_lon_array" title="pygplates.GeometryOnSphere.to_lat_lon_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GeometryOnSphere.to_lat_lon_array()</span></code></a>, <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.to_xyz_list" title="pygplates.GeometryOnSphere.to_xyz_list"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GeometryOnSphere.to_xyz_list()</span></code></a> and <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.to_xyz_array" title="pygplates.GeometryOnSphere.to_xyz_array"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GeometryOnSphere.to_xyz_array()</span></code></a>).</p>
+<p>A <em>MultiPointOnSphere</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.MultiPointOnSphere.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.MultiPointOnSphere.__init__" title="Link to this definition"></a></dt>
+<dd><p>A <em>MultiPointOnSphere</em> object can be constructed in more than one way…</p>
+<dl>
+<dt>__init__(points)</dt><dd><p>Create a multi-point from a sequence of (x,y,z) or (latitude,longitude) points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param points<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).</p>
+</dd>
+<dt class="field-even">type points<span class="colon">:</span></dt>
+<dd class="field-even"><p>any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (float,float,float) or tuple (float,float)</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InvalidLatLonError if any <em>latitude</em> or <em>longitude</em> is invalid</p>
+</dd>
+<dt class="field-even">raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>InsufficientPointsForMultiPointConstructionError if point sequence is empty</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The sequence must contain at least one point, otherwise <em>InsufficientPointsForMultiPointConstructionError</em> will be raised.</p>
+</div>
+<p>The following example shows a few different ways to create a <a class="reference internal" href="#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">multi-point</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lat1</span><span class="p">,</span><span class="n">lon1</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lat2</span><span class="p">,</span><span class="n">lon2</span><span class="p">))</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lat3</span><span class="p">,</span><span class="n">lon3</span><span class="p">))</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">z1</span><span class="p">])</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x2</span><span class="p">,</span><span class="n">y2</span><span class="p">,</span><span class="n">z2</span><span class="p">])</span>
+<span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x3</span><span class="p">,</span><span class="n">y3</span><span class="p">,</span><span class="n">z3</span><span class="p">])</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you have latitude/longitude values but they are not a sequence of tuples or if the latitude/longitude order is swapped then the following examples demonstrate how you could restructure them:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Flat lat/lon array.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lon1</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lat3</span><span class="p">,</span> <span class="n">lon3</span><span class="p">])</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">[::</span><span class="mi">2</span><span class="p">],</span><span class="n">points</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]))</span>
+
+<span class="c1"># Flat lon/lat list (ie, different latitude/longitude order).</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lon3</span><span class="p">,</span> <span class="n">lat3</span><span class="p">]</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">],</span><span class="n">points</span><span class="p">[::</span><span class="mi">2</span><span class="p">]))</span>
+
+<span class="c1"># Separate lat/lon arrays.</span>
+<span class="n">lats</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lat3</span><span class="p">])</span>
+<span class="n">lons</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lon3</span><span class="p">])</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lats</span><span class="p">,</span><span class="n">lons</span><span class="p">))</span>
+
+<span class="c1"># Lon/lat list of tuples (ie, different latitude/longitude order).</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">),</span> <span class="p">(</span><span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">),</span> <span class="p">(</span><span class="n">lon3</span><span class="p">,</span> <span class="n">lat3</span><span class="p">)]</span>
+<span class="n">multi_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">([(</span><span class="n">lat</span><span class="p">,</span><span class="n">lon</span><span class="p">)</span> <span class="k">for</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd>
+<dt>__init__(geometry)</dt><dd><p>Create a multipoint from a <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param geometry<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The point, multi-point, polyline or polygon geometry to convert from.</p>
+</dd>
+<dt class="field-even">type geometry<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeometryOnSphere</span></code></a></p>
+</dd>
+</dl>
+<p>To create a MultiPointOnSphere from any geometry type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">multipoint</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>geometry</em> is a polygon then points from both its exterior and interior rings are added to the multipoint.</p>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.MultiPointOnSphere.__init__" title="pygplates.MultiPointOnSphere.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(...)</p></td>
+<td><p>A <em>MultiPointOnSphere</em> object can be constructed in more than one way...</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code>()</p></td>
+<td><p>Create a duplicate of this geometry (derived) instance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">distance</span></code>(geometry1, geometry2, ...)</p></td>
+<td><p>[<em>staticmethod</em>] Returns the (minimum) distance between two geometries (in radians).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.MultiPointOnSphere.get_centroid" title="pygplates.MultiPointOnSphere.get_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_centroid</span></code></a>()</p></td>
+<td><p>Returns the centroid of this multi-point.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_points</span></code>()</p></td>
+<td><p>Returns a <em>read-only</em> sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">points</span></code></a> in this geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_array</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as a numpy array of (latitude,longitude) pairs (in degrees).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as (latitude,longitude) tuples (in degrees).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_lat_lon_point_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">lat</span> <span class="pre">lon</span> <span class="pre">points</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_xyz_array</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as a numpy array of (x,y,z) triplets.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_xyz_list</span></code>()</p></td>
+<td><p>Returns the sequence of points, in this geometry, as (x,y,z) cartesian coordinate tuples.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.MultiPointOnSphere.get_centroid">
+<span class="sig-name descname"><span class="pre">get_centroid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.MultiPointOnSphere.get_centroid" title="Link to this definition"></a></dt>
+<dd><p>Returns the centroid of this multi-point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a></p>
+</dd>
+</dl>
+<p>The centroid is calculated as the sum of the points of the multi-point with the result normalized to a vector of unit length.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.PointOnSphere.html" class="btn btn-neutral float-left" title="pygplates.PointOnSphere" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.PolylineOnSphere.html" class="btn btn-neutral float-right" title="pygplates.PolylineOnSphere" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

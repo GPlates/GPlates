@@ -1,0 +1,44 @@
+﻿pygplates.PointOnSphere
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PointOnSphere
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PointOnSphere.__init__
+      ~PointOnSphere.clone
+      ~PointOnSphere.distance
+      ~PointOnSphere.get_centroid
+      ~PointOnSphere.get_points
+      ~PointOnSphere.get_x
+      ~PointOnSphere.get_y
+      ~PointOnSphere.get_z
+      ~PointOnSphere.to_lat_lon
+      ~PointOnSphere.to_lat_lon_array
+      ~PointOnSphere.to_lat_lon_list
+      ~PointOnSphere.to_lat_lon_point
+      ~PointOnSphere.to_lat_lon_point_list
+      ~PointOnSphere.to_xyz
+      ~PointOnSphere.to_xyz_array
+      ~PointOnSphere.to_xyz_list
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PointOnSphere.north_pole
+      ~PointOnSphere.south_pole
+   
+   

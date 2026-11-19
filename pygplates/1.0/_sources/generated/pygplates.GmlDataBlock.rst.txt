@@ -1,0 +1,29 @@
+﻿pygplates.GmlDataBlock
+======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlDataBlock
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlDataBlock.__init__
+      ~GmlDataBlock.accept_visitor
+      ~GmlDataBlock.clone
+      ~GmlDataBlock.get_geometry
+      ~GmlDataBlock.get_scalar_values
+      ~GmlDataBlock.get_value
+      ~GmlDataBlock.remove
+      ~GmlDataBlock.set
+   
+   
+
+   
+   
+   

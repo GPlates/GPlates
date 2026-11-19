@@ -1,0 +1,31 @@
+﻿pygplates.ReconstructionTree
+============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructionTree
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReconstructionTree.__init__
+      ~ReconstructionTree.get_anchor_plate_edges
+      ~ReconstructionTree.get_anchor_plate_id
+      ~ReconstructionTree.get_edge
+      ~ReconstructionTree.get_edges
+      ~ReconstructionTree.get_equivalent_stage_rotation
+      ~ReconstructionTree.get_equivalent_total_rotation
+      ~ReconstructionTree.get_reconstruction_time
+      ~ReconstructionTree.get_relative_stage_rotation
+      ~ReconstructionTree.get_relative_total_rotation
+   
+   
+
+   
+   
+   

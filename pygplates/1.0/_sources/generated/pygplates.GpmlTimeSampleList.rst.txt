@@ -1,0 +1,31 @@
+﻿pygplates.GpmlTimeSampleList
+============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTimeSampleList
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTimeSampleList.__init__
+      ~GpmlTimeSampleList.append
+      ~GpmlTimeSampleList.count
+      ~GpmlTimeSampleList.extend
+      ~GpmlTimeSampleList.index
+      ~GpmlTimeSampleList.insert
+      ~GpmlTimeSampleList.pop
+      ~GpmlTimeSampleList.remove
+      ~GpmlTimeSampleList.reverse
+      ~GpmlTimeSampleList.sort
+   
+   
+
+   
+   
+   

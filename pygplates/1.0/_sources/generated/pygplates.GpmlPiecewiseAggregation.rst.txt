@@ -1,0 +1,39 @@
+﻿pygplates.GpmlPiecewiseAggregation
+==================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlPiecewiseAggregation
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlPiecewiseAggregation.__init__
+      ~GpmlPiecewiseAggregation.accept_visitor
+      ~GpmlPiecewiseAggregation.append
+      ~GpmlPiecewiseAggregation.clone
+      ~GpmlPiecewiseAggregation.count
+      ~GpmlPiecewiseAggregation.extend
+      ~GpmlPiecewiseAggregation.get_geometry
+      ~GpmlPiecewiseAggregation.get_time_window_containing_time
+      ~GpmlPiecewiseAggregation.get_time_windows
+      ~GpmlPiecewiseAggregation.get_value
+      ~GpmlPiecewiseAggregation.get_value_type
+      ~GpmlPiecewiseAggregation.index
+      ~GpmlPiecewiseAggregation.insert
+      ~GpmlPiecewiseAggregation.pop
+      ~GpmlPiecewiseAggregation.remove
+      ~GpmlPiecewiseAggregation.reverse
+      ~GpmlPiecewiseAggregation.set_value
+      ~GpmlPiecewiseAggregation.sort
+   
+   
+
+   
+   
+   

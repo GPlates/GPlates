@@ -1,0 +1,6 @@
+﻿pygplates.find\_crossovers
+==========================
+
+.. currentmodule:: pygplates
+
+.. autofunction:: find_crossovers

@@ -1,0 +1,33 @@
+﻿pygplates.GreatCircleArc
+========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GreatCircleArc
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GreatCircleArc.__init__
+      ~GreatCircleArc.get_arc_direction
+      ~GreatCircleArc.get_arc_length
+      ~GreatCircleArc.get_arc_point
+      ~GreatCircleArc.get_end_point
+      ~GreatCircleArc.get_great_circle_normal
+      ~GreatCircleArc.get_rotation_axis
+      ~GreatCircleArc.get_rotation_axis_lat_lon
+      ~GreatCircleArc.get_start_point
+      ~GreatCircleArc.is_zero_length
+      ~GreatCircleArc.to_tessellated
+      ~GreatCircleArc.to_uniform_points
+   
+   
+
+   
+   
+   

@@ -1,0 +1,33 @@
+﻿pygplates.StrainRate
+====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: StrainRate
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~StrainRate.__init__
+      ~StrainRate.get_dilatation_rate
+      ~StrainRate.get_rate_of_deformation
+      ~StrainRate.get_strain_rate_style
+      ~StrainRate.get_total_strain_rate
+      ~StrainRate.get_velocity_spatial_gradient
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~StrainRate.zero
+   
+   

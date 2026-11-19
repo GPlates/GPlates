@@ -1,0 +1,30 @@
+﻿pygplates.ReconstructSnapshot
+=============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructSnapshot
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReconstructSnapshot.__init__
+      ~ReconstructSnapshot.export_reconstructed_geometries
+      ~ReconstructSnapshot.get_anchor_plate_id
+      ~ReconstructSnapshot.get_point_locations
+      ~ReconstructSnapshot.get_point_velocities
+      ~ReconstructSnapshot.get_reconstructed_features
+      ~ReconstructSnapshot.get_reconstructed_geometries
+      ~ReconstructSnapshot.get_reconstruction_time
+      ~ReconstructSnapshot.get_rotation_model
+   
+   
+
+   
+   
+   

@@ -1,0 +1,946 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.LocalCartesian &mdash; pygplates 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=78492a5e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.Vector3D" href="pygplates.Vector3D.html" />
+    <link rel="prev" title="pygplates.LatLonPoint" href="pygplates.LatLonPoint.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-and-strain">Velocity and strain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotation">Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate Partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#file-i-o">File I/O</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature">Feature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property">Feature property</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#feature-property-value">Feature property value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.LocalCartesian</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.LocalCartesian"><code class="docutils literal notranslate"><span class="pre">LocalCartesian</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Vector3D.html">pygplates.Vector3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#string">String</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.LocalCartesian</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.LocalCartesian.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-localcartesian">
+<h1>pygplates.LocalCartesian<a class="headerlink" href="#pygplates-localcartesian" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">LocalCartesian</span></span><a class="headerlink" href="#pygplates.LocalCartesian" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>A local cartesian coordinate system located at a point on the sphere.</p>
+<p>Conversions between global <em>geocentric</em> cartesian and local cartesian <em>North/East/Down</em> coordinates are supported.</p>
+<div class="line-block">
+<div class="line">Also the <em>spherical</em> coordinates equivalent of local cartesian coordinates is   supported as the triplet <em>(magnitude, azimuth, inclination)</em> that is related   to the North/East/Down coordinate frame in the following way.</div>
+<div class="line">For a 3D vector in the North/East/Down coordinate frame:</div>
+</div>
+<ul class="simple">
+<li><p><em>magnitude</em> is the length of the 3D vector,</p></li>
+<li><p><em>azimuth</em> is the angle (in radians) clockwise (East-wise) from North (in the range <span class="math notranslate nohighlight">\([0, 2\pi]\)</span>),</p></li>
+<li><p><em>inclination</em> is the angle (in radians) in the downward direction (eg, <span class="math notranslate nohighlight">\(\frac{\pi}{2}\)</span> if vector aligned with Down axis, <span class="math notranslate nohighlight">\(-\frac{\pi}{2}\)</span> if aligned with up direction and <span class="math notranslate nohighlight">\(0\)</span> if vector in tangent plane).</p></li>
+</ul>
+<p>Local cartesians are equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>) comparable (but not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">local_origin</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a local cartesian coordinate system at a point on the sphere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>local_origin</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)) – the origin of the local coordinate system</p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">(</span><span class="n">local_origin</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.__init__" title="pygplates.LocalCartesian.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(local_origin)</p></td>
+<td><p>Create a local cartesian coordinate system at a point on the sphere.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination" title="pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_from_geocentric_to_magnitude_azimuth_inclination</span></code></a>(...)</p></td>
+<td><p>[<em>staticmethod</em>] Converts a geocentric vector (or vectors) to spherical coordinates in a local North/East/Down coordinate system (or systems).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down" title="pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_from_geocentric_to_north_east_down</span></code></a>(...)</p></td>
+<td><p>[<em>staticmethod</em>] Converts a geocentric vector (or vectors) to a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric" title="pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_from_magnitude_azimuth_inclination_to_geocentric</span></code></a>(...)</p></td>
+<td><p>[<em>staticmethod</em>] Converts a local North/East/Down tuple (or tuples) of spherical coordinates to a cartesian geocentric vector (or vectors).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric" title="pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_from_north_east_down_to_geocentric</span></code></a>(...)</p></td>
+<td><p>[<em>staticmethod</em>] Converts a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems) to a geocentric vector (or vectors).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.from_geocentric_to_magnitude_azimuth_inclination" title="pygplates.LocalCartesian.from_geocentric_to_magnitude_azimuth_inclination"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_geocentric_to_magnitude_azimuth_inclination</span></code></a>(...)</p></td>
+<td><p>Converts a geocentric vector to a tuple of spherical coordinates in the local North/East/Down coordinate system.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.from_geocentric_to_north_east_down" title="pygplates.LocalCartesian.from_geocentric_to_north_east_down"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_geocentric_to_north_east_down</span></code></a>(...)</p></td>
+<td><p>Converts a geocentric vector to a local North/East/Down cartesian vector.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.from_magnitude_azimuth_inclination_to_geocentric" title="pygplates.LocalCartesian.from_magnitude_azimuth_inclination_to_geocentric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_magnitude_azimuth_inclination_to_geocentric</span></code></a>(...)</p></td>
+<td><p>Converts local spherical coordinates to a geocentric vector.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.from_north_east_down_to_geocentric" title="pygplates.LocalCartesian.from_north_east_down_to_geocentric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_north_east_down_to_geocentric</span></code></a>(...)</p></td>
+<td><p>Converts a local North/East/Down cartesian vector to a geocentric vector.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.get_down" title="pygplates.LocalCartesian.get_down"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_down</span></code></a>()</p></td>
+<td><p>Returns the Down coordinate axis.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.get_east" title="pygplates.LocalCartesian.get_east"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_east</span></code></a>()</p></td>
+<td><p>Returns the East coordinate axis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.LocalCartesian.get_north" title="pygplates.LocalCartesian.get_north"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_north</span></code></a>()</p></td>
+<td><p>Returns the North coordinate axis.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_from_geocentric_to_magnitude_azimuth_inclination</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Converts a geocentric vector (or vectors) to spherical coordinates in a local North/East/Down coordinate system (or systems).</p>
+<p>This function can be called in more than one way…</p>
+<dl>
+<dt>convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins, vectors)</dt><dd><p>Converts geocentric <em>vectors</em> to spherical coordinates in local North/East/Down coordinate systems located at <em>local_origins</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sequence of origins (points) of local cartesian systems.</p>
+</dd>
+<dt class="field-even">type local_origins<span class="colon">:</span></dt>
+<dd class="field-even"><p>any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param vectors<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the geocentric vectors</p>
+</dd>
+<dt class="field-even">type vectors<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any sequence of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a> or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of tuple</p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if the sequences <em>local_origins</em> and <em>vectors</em> have different lengths</p>
+</dd>
+</dl>
+<p>Convert geocentric vectors to local spherical coordinates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_origins</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">geocentric_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">local_coords</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+    <span class="n">local_origins</span><span class="p">,</span> <span class="n">geocentric_vectors</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, vector)</dt><dd><p>Converts a geocentric <em>vector</em> to a tuple of spherical coordinates in the local North/East/Down coordinate system located at <em>local_origin</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param vector<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the geocentric vector</p>
+</dd>
+<dt class="field-even">type vector<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, or sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+<p>Convert a geocentric vector to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">magnitude</span><span class="p">,</span> <span class="n">azimuth</span><span class="p">,</span> <span class="n">inclination</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">geocentric_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_geocentric_to_magnitude_azimuth_inclination(local_origin, x, y, z)</dt><dd><p>Converts the geocentric vector (x, y, z) to a tuple of spherical coordinates in the local North/East/Down coordinate system located at <em>local_origin</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>x</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>y</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param z<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>z</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type z<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+<p>Convert the geocentric vector (2, 1, 0) to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">magnitude</span><span class="p">,</span> <span class="n">azimuth</span><span class="p">,</span> <span class="n">inclination</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_from_geocentric_to_north_east_down</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Converts a geocentric vector (or vectors) to a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems).</p>
+<p>This function can be called in more than one way…</p>
+<dl>
+<dt>convert_from_geocentric_to_north_east_down(local_origins, vectors)</dt><dd><p>Converts a sequence of geocentric <em>vectors</em> to a sequence of cartesian vectors in local North/East/Down coordinate systems located at <em>local_origins</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sequence of origins (points) of local cartesian systems.</p>
+</dd>
+<dt class="field-even">type local_origins<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param vectors<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the geocentric vectors</p>
+</dd>
+<dt class="field-even">type vectors<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any sequence of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a> or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of local cartesian North/East/Down vectors</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if the sequences <em>local_origins</em> and <em>vectors</em> have different lengths</p>
+</dd>
+</dl>
+<p>Convert geocentric vectors to local cartesian vectors:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_origins</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">geocentric_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">local_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_north_east_down</span><span class="p">(</span>
+    <span class="n">local_origins</span><span class="p">,</span> <span class="n">geocentric_vectors</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_geocentric_to_north_east_down(local_origin, vector)</dt><dd><p>Converts a geocentric <em>vector</em> to a cartesian vector in the local North/East/Down coordinate system located at <em>local_origin</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param vector<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the geocentric vector</p>
+</dd>
+<dt class="field-even">type vector<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, or sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>local cartesian North/East/Down vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a geocentric vector to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_north_east_down</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">geocentric_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_geocentric_to_north_east_down(local_origin, x, y, z)</dt><dd><p>Converts the geocentric vector (x, y, z) to a cartesian vector in the local North/East/Down coordinate system located at <em>local_origin</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>x</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>y</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param z<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>z</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type z<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>local cartesian North/East/Down vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert the geocentric vector (2, 1, 0) to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_north_east_down</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_from_magnitude_azimuth_inclination_to_geocentric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Converts a local North/East/Down tuple (or tuples) of spherical coordinates to a cartesian geocentric vector (or vectors).</p>
+<p>This function can be called in more than one way…</p>
+<dl>
+<dt>convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins, local_coordinates)</dt><dd><p>Converts a sequence of local North/East/Down tuples of spherical coordinates located at <em>local_origins</em> to a sequence of geocentric vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sequence of origins (points) of local cartesian systems.</p>
+</dd>
+<dt class="field-even">type local_origins<span class="colon">:</span></dt>
+<dd class="field-even"><p>any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param local_coordinates<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sequence of local spherical coordinates (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">type local_coordinates<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any sequence of (float, float, float) tuples</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of geocentric vectors</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if the sequences <em>local_origins</em> and <em>local_coordinates</em> have different lengths</p>
+</dd>
+</dl>
+<p>Convert local spherical coordinates to geocentric vectors:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_origins</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">local_coords</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">geocentric_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_magnitude_azimuth_inclination_to_geocentric</span><span class="p">(</span>
+    <span class="n">local_origins</span><span class="p">,</span> <span class="n">local_coords</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, local_coordinate)</dt><dd><p>Converts a local North/East/Down tuple of spherical coordinates located at <em>local_origin</em> to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param local_coordinate<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the local spherical coordinates (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">type local_coordinate<span class="colon">:</span></dt>
+<dd class="field-even"><p>sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_magnitude_azimuth_inclination_to_geocentric</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_magnitude_azimuth_inclination_to_geocentric(local_origin, magnitude, azimuth, inclination)</dt><dd><p>Converts local North/East/Down spherical coordinates located at <em>local_origin</em> to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param magnitude<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the length of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type magnitude<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param azimuth<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the angle (in radians) clockwise (East-wise) from North (in the range <span class="math notranslate nohighlight">\([0, 2\pi]\)</span>)</p>
+</dd>
+<dt class="field-even">type azimuth<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param inclination<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the angle (in radians) in the downward direction (eg, <span class="math notranslate nohighlight">\(\frac{\pi}{2}\)</span> if vector aligned with Down axis, <span class="math notranslate nohighlight">\(-\frac{\pi}{2}\)</span> if aligned with up direction and <span class="math notranslate nohighlight">\(0\)</span> if vector in tangent plane)</p>
+</dd>
+<dt class="field-even">type inclination<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_magnitude_azimuth_inclination_to_geocentric</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_from_north_east_down_to_geocentric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric" title="Link to this definition"></a></dt>
+<dd><p>[<em>staticmethod</em>] Converts a cartesian vector (or vectors) in a local North/East/Down coordinate system (or systems) to a geocentric vector (or vectors).</p>
+<p>This function can be called in more than one way…</p>
+<dl>
+<dt>convert_from_north_east_down_to_geocentric(local_origins, vectors)</dt><dd><p>Converts a cartesian <em>vector</em> in the local North/East/Down coordinate system located at <em>local_origin</em> to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sequence of origins (points) of local cartesian systems.</p>
+</dd>
+<dt class="field-even">type local_origins<span class="colon">:</span></dt>
+<dd class="field-even"><p>any sequence of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param vectors<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the local cartesian vectors</p>
+</dd>
+<dt class="field-even">type vectors<span class="colon">:</span></dt>
+<dd class="field-even"><p>Any sequence of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a> or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of geocentric vectors</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if the sequences <em>local_origins</em> and <em>vectors</em> have different lengths</p>
+</dd>
+</dl>
+<p>Convert local cartesian vectors to geocentric vectors:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_origins</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">local_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">geocentric_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_north_east_down_to_geocentric</span><span class="p">(</span>
+    <span class="n">local_origins</span><span class="p">,</span> <span class="n">local_vectors</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_north_east_down_to_geocentric(local_origin, vector)</dt><dd><p>Converts a cartesian vector in the local North/East/Down coordinate system located at <em>local_origin</em> to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param vector<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the local cartesian vector</p>
+</dd>
+<dt class="field-even">type vector<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, or sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a local cartesian vector in a local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_north_east_down_to_geocentric</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">geocentric_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>convert_from_north_east_down_to_geocentric(local_origin, x, y, z)</dt><dd><p>Converts a cartesian vector (x, y, z) in the local North/East/Down coordinate system located at <em>local_origin</em> to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_origin<span class="colon">:</span></dt>
+<dd class="field-odd"><p>origin of local cartesian system.</p>
+</dd>
+<dt class="field-even">type local_origin<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointOnSphere</span></code></a> or <a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatLonPoint</span></code></a> or tuple (latitude,longitude), in degrees, or tuple (x,y,z)</p>
+</dd>
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>x</em> component of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>y</em> component of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param z<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>z</em> component of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type z<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert the local cartesian vector (2, 1, 0) in the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_north_east_down_to_geocentric</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.from_geocentric_to_magnitude_azimuth_inclination">
+<span class="sig-name descname"><span class="pre">from_geocentric_to_magnitude_azimuth_inclination</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.from_geocentric_to_magnitude_azimuth_inclination" title="Link to this definition"></a></dt>
+<dd><p>Converts a geocentric vector to a tuple of spherical coordinates in the local North/East/Down coordinate system.</p>
+<p>This method can be called in more than one way…</p>
+<dl>
+<dt>from_geocentric_to_magnitude_azimuth_inclination(vector)</dt><dd><p>Converts the geocentric <em>vector</em> to a local North/East/Down tuple of spherical coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param vector<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the geocentric vector</p>
+</dd>
+<dt class="field-even">type vector<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, or sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+<p>Convert a geocentric vector to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">magnitude</span><span class="p">,</span> <span class="n">azimuth</span><span class="p">,</span> <span class="n">inclination</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span><span class="n">geocentric_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>from_geocentric_to_magnitude_azimuth_inclination(x, y, z)</dt><dd><p>Converts the geocentric vector (x, y, z) to a local North/East/Down tuple of spherical coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>x</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>y</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param z<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>z</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type z<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple of (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple</p>
+</dd>
+</dl>
+<p>Convert the geocentric vector (2, 1, 0) to the local North/East/Down spherical coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">magnitude</span><span class="p">,</span> <span class="n">azimuth</span><span class="p">,</span> <span class="n">inclination</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.from_geocentric_to_north_east_down">
+<span class="sig-name descname"><span class="pre">from_geocentric_to_north_east_down</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.from_geocentric_to_north_east_down" title="Link to this definition"></a></dt>
+<dd><p>Converts a geocentric vector to a local North/East/Down cartesian vector.</p>
+<p>This method can be called in more than one way…</p>
+<dl>
+<dt>from_geocentric_to_north_east_down(vector)</dt><dd><p>Converts the geocentric <em>vector</em> to a local North/East/Down cartesian vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param vector<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the geocentric vector</p>
+</dd>
+<dt class="field-even">type vector<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, or sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>local cartesian North/East/Down vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a geocentric vector to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">local_vector</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_geocentric_to_north_east_down</span><span class="p">(</span><span class="n">geocentric_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>from_geocentric_to_north_east_down(x, y, z)</dt><dd><p>Converts the geocentric vector (x, y, z) to a local North/East/Down cartesian vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>x</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>y</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param z<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>z</em> component of the geocentric vector</p>
+</dd>
+<dt class="field-even">type z<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>local cartesian North/East/Down vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert the geocentric vector (2, 1, 0) to the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">local_vector</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_geocentric_to_north_east_down</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.from_magnitude_azimuth_inclination_to_geocentric">
+<span class="sig-name descname"><span class="pre">from_magnitude_azimuth_inclination_to_geocentric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.from_magnitude_azimuth_inclination_to_geocentric" title="Link to this definition"></a></dt>
+<dd><p>Converts local spherical coordinates to a geocentric vector.</p>
+<p>This method can be called in more than one way…</p>
+<dl>
+<dt>from_magnitude_azimuth_inclination_to_geocentric(local_coordinate)</dt><dd><p>Converts a local North/East/Down tuple of spherical coordinates to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param local_coordinate<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the local spherical coordinates (magnitude, azimuth, inclination)</p>
+</dd>
+<dt class="field-even">type local_coordinate<span class="colon">:</span></dt>
+<dd class="field-even"><p>sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_magnitude_azimuth_inclination_to_geocentric</span><span class="p">(</span>
+    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd>
+<dt>from_magnitude_azimuth_inclination_to_geocentric(magnitude, azimuth, inclination)</dt><dd><p>Converts local North/East/Down spherical coordinates to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param magnitude<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the length of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type magnitude<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param azimuth<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the angle (in radians) clockwise (East-wise) from North (in the range <span class="math notranslate nohighlight">\([0, 2\pi]\)</span>)</p>
+</dd>
+<dt class="field-even">type azimuth<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param inclination<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the angle (in radians) in the downward direction (eg, <span class="math notranslate nohighlight">\(\frac{\pi}{2}\)</span> if vector aligned with Down axis, <span class="math notranslate nohighlight">\(-\frac{\pi}{2}\)</span> if aligned with up direction and <span class="math notranslate nohighlight">\(0\)</span> if vector in tangent plane)</p>
+</dd>
+<dt class="field-even">type inclination<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a local vector of unit magnitude aligned with the local East axis to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_magnitude_azimuth_inclination_to_geocentric</span><span class="p">(</span>
+    <span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.from_north_east_down_to_geocentric">
+<span class="sig-name descname"><span class="pre">from_north_east_down_to_geocentric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.from_north_east_down_to_geocentric" title="Link to this definition"></a></dt>
+<dd><p>Converts a local North/East/Down cartesian vector to a geocentric vector.</p>
+<p>This method can be called in more than one way…</p>
+<dl>
+<dt>from_north_east_down_to_geocentric(vector)</dt><dd><p>Converts the local North/East/Down cartesian <em>vector</em> to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param vector<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the local cartesian vector</p>
+</dd>
+<dt class="field-even">type vector<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a>, or sequence (such as list or tuple) of (float,float,float)</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert a cartesian vector in the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_north_east_down_to_geocentric</span><span class="p">(</span><span class="n">local_cartesian_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt>from_north_east_down_to_geocentric(x, y, z)</dt><dd><p>Converts the local North/East/Down cartesian vector (x, y, z) to a geocentric vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">param x<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>x</em> component of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type x<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param y<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>y</em> component of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type y<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param z<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the <em>z</em> component of the local cartesian vector</p>
+</dd>
+<dt class="field-even">type z<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>geocentric vector</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>Convert the local cartesian vector (2, 1, 0) in the local North/East/Down coordinate system located at latitude/longitude (0, 0) on the globe to a geocentric vector:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">geocentric_vector</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">from_north_east_down_to_geocentric</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.get_down">
+<span class="sig-name descname"><span class="pre">get_down</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.get_down" title="Link to this definition"></a></dt>
+<dd><p>Returns the Down coordinate axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>The Down axis points at the centre of the globe. It has unit magnitude.</p>
+<p>Get the Down axis of the local cartesian system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">down</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">get_down</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.get_east">
+<span class="sig-name descname"><span class="pre">get_east</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.get_east" title="Link to this definition"></a></dt>
+<dd><p>Returns the East coordinate axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>The East axis is the tangential vector (to the unit globe) that is most Eastward pointing. It has unit magnitude.</p>
+<p>Get the East axis of the local cartesian system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">east</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">get_east</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.LocalCartesian.get_north">
+<span class="sig-name descname"><span class="pre">get_north</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.LocalCartesian.get_north" title="Link to this definition"></a></dt>
+<dd><p>Returns the North coordinate axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Vector3D</span></code></a></p>
+</dd>
+</dl>
+<p>The North axis is the tangential vector (to the unit globe) that is most Northward pointing. It has unit magnitude.</p>
+<p>Get the North axis of the local cartesian system located at latitude/longitude (0, 0) on the globe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">local_cartesian</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">north</span> <span class="o">=</span> <span class="n">local_cartesian</span><span class="o">.</span><span class="n">get_north</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.LatLonPoint.html" class="btn btn-neutral float-left" title="pygplates.LatLonPoint" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.Vector3D.html" class="btn btn-neutral float-right" title="pygplates.Vector3D" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2025 The University of Sydney, Australia
+(C) 2004-2025 California Institute of Technology
+(C) 2007-2025 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

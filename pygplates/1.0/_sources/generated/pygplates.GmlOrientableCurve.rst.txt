@@ -1,0 +1,28 @@
+﻿pygplates.GmlOrientableCurve
+============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlOrientableCurve
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlOrientableCurve.__init__
+      ~GmlOrientableCurve.accept_visitor
+      ~GmlOrientableCurve.clone
+      ~GmlOrientableCurve.get_base_curve
+      ~GmlOrientableCurve.get_geometry
+      ~GmlOrientableCurve.get_value
+      ~GmlOrientableCurve.set_base_curve
+   
+   
+
+   
+   
+   

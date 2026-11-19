@@ -1,0 +1,28 @@
+﻿pygplates.FeatureCollection
+===========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: FeatureCollection
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FeatureCollection.__init__
+      ~FeatureCollection.add
+      ~FeatureCollection.clone
+      ~FeatureCollection.get
+      ~FeatureCollection.read
+      ~FeatureCollection.remove
+      ~FeatureCollection.write
+   
+   
+
+   
+   
+   

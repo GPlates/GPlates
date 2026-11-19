@@ -1,0 +1,30 @@
+﻿pygplates.GeometryOnSphere
+==========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GeometryOnSphere
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GeometryOnSphere.__init__
+      ~GeometryOnSphere.clone
+      ~GeometryOnSphere.distance
+      ~GeometryOnSphere.get_points
+      ~GeometryOnSphere.to_lat_lon_array
+      ~GeometryOnSphere.to_lat_lon_list
+      ~GeometryOnSphere.to_lat_lon_point_list
+      ~GeometryOnSphere.to_xyz_array
+      ~GeometryOnSphere.to_xyz_list
+   
+   
+
+   
+   
+   

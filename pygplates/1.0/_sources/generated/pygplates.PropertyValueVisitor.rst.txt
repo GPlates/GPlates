@@ -1,0 +1,50 @@
+﻿pygplates.PropertyValueVisitor
+==============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PropertyValueVisitor
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PropertyValueVisitor.__init__
+      ~PropertyValueVisitor.visit_enumeration
+      ~PropertyValueVisitor.visit_gml_data_block
+      ~PropertyValueVisitor.visit_gml_line_string
+      ~PropertyValueVisitor.visit_gml_multi_point
+      ~PropertyValueVisitor.visit_gml_orientable_curve
+      ~PropertyValueVisitor.visit_gml_point
+      ~PropertyValueVisitor.visit_gml_polygon
+      ~PropertyValueVisitor.visit_gml_time_instant
+      ~PropertyValueVisitor.visit_gml_time_period
+      ~PropertyValueVisitor.visit_gpml_array
+      ~PropertyValueVisitor.visit_gpml_constant_value
+      ~PropertyValueVisitor.visit_gpml_finite_rotation
+      ~PropertyValueVisitor.visit_gpml_irregular_sampling
+      ~PropertyValueVisitor.visit_gpml_key_value_dictionary
+      ~PropertyValueVisitor.visit_gpml_old_plates_header
+      ~PropertyValueVisitor.visit_gpml_piecewise_aggregation
+      ~PropertyValueVisitor.visit_gpml_plate_id
+      ~PropertyValueVisitor.visit_gpml_polarity_chron_id
+      ~PropertyValueVisitor.visit_gpml_property_delegate
+      ~PropertyValueVisitor.visit_gpml_topological_line
+      ~PropertyValueVisitor.visit_gpml_topological_line_section
+      ~PropertyValueVisitor.visit_gpml_topological_network
+      ~PropertyValueVisitor.visit_gpml_topological_point
+      ~PropertyValueVisitor.visit_gpml_topological_polygon
+      ~PropertyValueVisitor.visit_xs_boolean
+      ~PropertyValueVisitor.visit_xs_double
+      ~PropertyValueVisitor.visit_xs_integer
+      ~PropertyValueVisitor.visit_xs_string
+   
+   
+
+   
+   
+   

@@ -1,0 +1,27 @@
+﻿pygplates.ResolvedTopologicalSection
+====================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ResolvedTopologicalSection
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ResolvedTopologicalSection.__init__
+      ~ResolvedTopologicalSection.get_feature
+      ~ResolvedTopologicalSection.get_shared_sub_segments
+      ~ResolvedTopologicalSection.get_topological_section
+      ~ResolvedTopologicalSection.get_topological_section_feature
+      ~ResolvedTopologicalSection.get_topological_section_geometry
+   
+   
+
+   
+   
+   

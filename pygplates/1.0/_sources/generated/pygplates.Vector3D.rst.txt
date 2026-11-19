@@ -1,0 +1,44 @@
+﻿pygplates.Vector3D
+==================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Vector3D
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Vector3D.__init__
+      ~Vector3D.angle_between
+      ~Vector3D.create_normalised
+      ~Vector3D.create_normalized
+      ~Vector3D.cross
+      ~Vector3D.dot
+      ~Vector3D.get_magnitude
+      ~Vector3D.get_x
+      ~Vector3D.get_y
+      ~Vector3D.get_z
+      ~Vector3D.is_zero_magnitude
+      ~Vector3D.to_normalised
+      ~Vector3D.to_normalized
+      ~Vector3D.to_xyz
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Vector3D.x_axis
+      ~Vector3D.y_axis
+      ~Vector3D.z_axis
+      ~Vector3D.zero
+   
+   

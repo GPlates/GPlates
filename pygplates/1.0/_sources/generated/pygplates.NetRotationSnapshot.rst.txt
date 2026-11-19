@@ -1,0 +1,25 @@
+﻿pygplates.NetRotationSnapshot
+=============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: NetRotationSnapshot
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NetRotationSnapshot.__init__
+      ~NetRotationSnapshot.get_net_rotation
+      ~NetRotationSnapshot.get_topological_snapshot
+      ~NetRotationSnapshot.get_total_net_rotation
+   
+   
+
+   
+   
+   
