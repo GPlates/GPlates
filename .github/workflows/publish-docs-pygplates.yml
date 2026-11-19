@@ -178,14 +178,13 @@ jobs:
 
       - name: Build docs
         # Without '--module-dir', 'build_docs.py' documents the installed wheel, with the pages from
-        # this checkout. Always from scratch. A fixed scratch directory, because Sphinx records it
-        # in '.buildinfo': in a random one, publishing the same release again would still change
-        # that file, and so commit, instead of finding nothing to publish.
-        run: >
-          python docs/pygplates/build_docs.py --output html
-          --scratch-dir "$RUNNER_TEMP/pygplates-docs"
+        # this checkout. Always from scratch.
+        run: python docs/pygplates/build_docs.py --output html
 
       - name: Upload docs
+        # Leaves out hidden files (the default), so Sphinx's '.buildinfo' is not published. It is
+        # the one file that records where the build ran (a temporary directory), so without it a
+        # rebuild of the same release is identical, and publishing it again changes nothing.
         uses: actions/upload-artifact@v4
         with:
           name: pygplates-docs-${{ needs.resolve.outputs.version }}
