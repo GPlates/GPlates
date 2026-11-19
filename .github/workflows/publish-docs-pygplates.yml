@@ -1,0 +1,235 @@
+# Publishes the documentation of a pyGPlates release to GitHub Pages, at
+# https://gplates.github.io/GPlates/pygplates/<major>.<minor>/, and points 'stable' at it if it is
+# the newest release series. (The 'dev' docs are published by 'build-test-pygplates.yml'. The
+# layout of the 'gh-pages' branch is described in 'docs/pygplates/publish_docs.py'.)
+#
+# The documentation is built from the wheel on PyPI rather than from a build tree, so it describes
+# the artifact users actually install, and doubles as a check that the published wheel imports.
+# The pages ('.rst' sources) come from the release's tag.
+#
+# Triggered by publishing a GitHub release, which is done by hand after the PyPI publish (see
+# 'pygplates/wheel/README.md'). Not a job in 'build-wheels.yml', so that a documentation failure
+# cannot turn a successful publishing run red, and the docs can be re-run on their own. Two traps:
+#
+# - A release event runs this file *as it is at the release's tag*, and takes 'publish_docs.py'
+#   and 'build_docs.py' from there too. So they must be on the release series branch before the
+#   tag is made, which means before the last candidate: a final release is its last candidate
+#   plus one commit ('pygplates/wheel/check_release_commit.py'). A fix made on 'main' afterwards
+#   reaches an existing release only through a dispatch, which runs this file as it is on the
+#   branch dispatched on.
+# - A release created with a workflow's own GITHUB_TOKEN would not trigger this (GitHub does not
+#   start workflows from events that token causes). The releases are created by a person.
+#
+# GPlates releases fire the same event; only 'PyGPlates-X.Y.Z' tags are documented, and release
+# candidates are skipped. A dispatch builds any release or candidate tag that has 'build_docs.py'
+# (not 1.0.0 - its documentation is a copy of the website's), and publishes only if asked to.
+# The HTML is always kept as a run artifact (7 days), so a dispatch with 'publish' unticked is how
+# this is rehearsed on a candidate. Development tags ('PyGPlates-*.dev*') are refused: they are
+# never on PyPI.
+
+name: Publish pyGPlates release docs
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to document, eg PyGPlates-1.1.0"
+        required: true
+        type: string
+      publish:
+        description: "Publish to gh-pages (final releases only); unticked, only upload the HTML"
+        required: false
+        type: boolean
+        default: false
+
+# Read-only unless a job says otherwise: the repository's default token can write, and only
+# 'publish' needs to.
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.resolve.outputs.build }}
+      publish: ${{ steps.resolve.outputs.publish }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+      series: ${{ steps.resolve.outputs.series }}
+
+    steps:
+      - name: Resolve the tag
+        id: resolve
+        # Passed through the environment rather than spliced into the script, since a tag name is
+        # arbitrary text.
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          EVENT: ${{ github.event_name }}
+          PUBLISH_INPUT: ${{ inputs.publish }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          build=false
+          publish=false
+          # A final release has nothing after X.Y.Z; a candidate has eg 'rc1' (PEP 440). Judged
+          # from the tag name, not the release's pre-release flag, which is set by hand. A
+          # development tag ('.devN') only records a dispatched build, which is never on PyPI.
+          if [[ "$TAG" == *.dev* ]]; then
+            if [[ "$EVENT" == release ]]; then
+              echo "::notice::$TAG is a development version; nothing to document."
+            else
+              echo "::error::$TAG is a development version, which is never on PyPI."
+              exit 1
+            fi
+          elif [[ "$TAG" =~ ^PyGPlates-(([0-9]+)\.([0-9]+)\.[0-9]+)([a-z0-9.]*)$ ]]; then
+            version="${TAG#PyGPlates-}"
+            series="${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+            final=$([[ -z "${BASH_REMATCH[4]}" ]] && echo true || echo false)
+            if [[ "$EVENT" == release ]]; then
+              if [[ "$final" == true ]]; then
+                build=true
+                publish=true
+              else
+                echo "::notice::$TAG is a pre-release; only final releases are documented."
+              fi
+            else
+              build=true
+              if [[ "$PUBLISH_INPUT" == true ]]; then
+                if [[ "$final" != true ]]; then
+                  echo "::error::$TAG is not a final release, so it cannot be published."
+                  exit 1
+                fi
+                publish=true
+              fi
+            fi
+          elif [[ "$EVENT" == release ]]; then
+            echo "::notice::$TAG is not a pyGPlates release; nothing to document."
+          else
+            echo "::error::'$TAG' is not a pyGPlates release tag (PyGPlates-X.Y.Z)."
+            exit 1
+          fi
+          # Only GPlates/GPlates publishes: a fork would otherwise publish to its own 'gh-pages'
+          # (and pushing a branch of that name switches GitHub Pages on there).
+          if [[ "$REPOSITORY" != GPlates/GPlates && "$publish" == true ]]; then
+            echo "::notice::Only GPlates/GPlates publishes, so $REPOSITORY only builds."
+            publish=false
+          fi
+          {
+            echo "build=$build"
+            echo "publish=$publish"
+            echo "tag=$TAG"
+            echo "version=$version"
+            echo "series=$series"
+          } >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG version=$version series=$series build=$build publish=$publish"
+
+  build:
+    needs: resolve
+    if: needs.resolve.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the tag
+        uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ needs.resolve.outputs.tag }}
+
+      - name: Check the tag can be built
+        env:
+          TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          if [[ ! -f docs/pygplates/build_docs.py ]]; then
+            echo "::error::$TAG predates 'build_docs.py', so it cannot be built here."
+            exit 1
+          fi
+
+      - name: Set up Python
+        # Any Python the wheels are built for will do.
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pyGPlates from PyPI
+        # The release is created after the PyPI publish, but PyPI's index can take a few minutes
+        # to serve a new version everywhere, so retry for a while before giving up. Wheels only:
+        # without '--only-binary', a missing wheel would make pip try to compile the sdist.
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if python -m pip install --no-cache-dir --only-binary=pygplates \
+                "pygplates==$VERSION"; then
+              exit 0
+            fi
+            if [[ $attempt -lt 10 ]]; then
+              echo "pygplates $VERSION not installable yet (attempt $attempt of 10); retrying."
+              sleep 30
+            fi
+          done
+          echo "::error::pygplates $VERSION could not be installed from PyPI. Was it published?"
+          exit 1
+
+      - name: Install Sphinx
+        # The same packages as 'env.docs.yml', from PyPI.
+        run: python -m pip install sphinx sphinx_rtd_theme
+
+      - name: Build docs
+        # Without '--module-dir', 'build_docs.py' documents the installed wheel, with the pages from
+        # this checkout. Always from scratch. A fixed scratch directory, because Sphinx records it
+        # in '.buildinfo': in a random one, publishing the same release again would still change
+        # that file, and so commit, instead of finding nothing to publish.
+        run: >
+          python docs/pygplates/build_docs.py --output html
+          --scratch-dir "$RUNNER_TEMP/pygplates-docs"
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: pygplates-docs-${{ needs.resolve.outputs.version }}
+          path: html
+          retention-days: 7
+          if-no-files-found: error
+
+  publish:
+    needs: [ resolve, build ]
+    if: needs.resolve.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      # The script comes from the ref this run is on (the tag, for a release event), as this
+      # file does.
+      - name: Check out the publishing script
+        uses: actions/checkout@v6
+        with:
+          path: source
+          sparse-checkout: docs/pygplates/publish_docs.py
+          sparse-checkout-cone-mode: false
+
+      - name: Check out gh-pages
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Download docs
+        uses: actions/download-artifact@v6
+        with:
+          name: pygplates-docs-${{ needs.resolve.outputs.version }}
+          path: html
+
+      - name: Publish
+        # Pushed with this workflow's own token. GitHub Pages then deploys it like any other push.
+        env:
+          SERIES: ${{ needs.resolve.outputs.series }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          git -C gh-pages config user.name "github-actions[bot]"
+          git -C gh-pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 source/docs/pygplates/publish_docs.py --html html --pages-dir gh-pages \
+            --target "$SERIES" --update-stable --source "$TAG"
