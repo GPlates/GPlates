@@ -128,6 +128,10 @@ merged back:
 - __patch__ branches, for a fix to a version that has already been released, are created from
   (and merged back into) a __release series__ branch.
 
+The `gh-pages` branch is not part of this model. It holds the generated pyGPlates documentation
+that [GitHub Pages](https://gplates.github.io/GPlates/pygplates/stable/) serves, and only CI
+writes to it.
+
 > __Note:__ This is no longer [gitflow](https://nvie.com/posts/a-successful-git-branching-model/).
 > It is the branching model that QGIS, GDAL, CGAL, LLVM and CPython use: development happens on
 > the default branch, and releases are tagged on permanent per-series branches. There is no

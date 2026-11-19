@@ -967,6 +967,13 @@ Rulesets*) are enforced on the server whatever the client does, so three protect
 - **There is no bypass list.** Everyone with write access is an administrator, so an
   administrator bypass would exempt everyone. For a rare legitimate exception, disable the
   ruleset, act, and enable it again.
+- **A fourth ruleset has nothing to do with versioning.** *Published documentation* blocks deleting
+  `gh-pages`, the generated branch GitHub Pages serves the pyGPlates documentation from (its
+  layout is described in `docs/pygplates/publish_docs.py`). Its `1.0/` is a copy of the pyGPlates
+  1.0 documentation the website served, and becomes the only live copy once the website deletes
+  its own. Rebuilding it would be real work, since the `PyGPlates-1.0.0` tag predates
+  `build_docs.py`. Force pushes are allowed, so that its history can be squashed if it grows too
+  large: every clone downloads it.
 
 Rules considered and not adopted:
 
