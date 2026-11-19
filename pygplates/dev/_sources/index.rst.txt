@@ -5,7 +5,7 @@
 
 .. _pygplates_index:
 
-PyGPlates |version| documentation
+PyGPlates |release| documentation
 =================================
 
 PyGPlates enables access to `GPlates <http://www.gplates.org>`_
