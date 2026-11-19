@@ -72,6 +72,7 @@ Changes since 1.0.0:
   * Linux wheels require glibc 2.28 or later (manylinux_2_28), instead of glibc 2.17 (manylinux2014).
   * Wheels on all platforms bundle the same PROJ (9.8.1) and GDAL (3.12.4) versions.
   * Requires NumPy 1.19 or later, and `pip` now enforces it: installing pyGPlates upgrades an older NumPy (previously the oldest NumPy that worked depended on the Python version, and an older one failed `import pygplates`).
+* Documentation: published for each release series at <https://gplates.github.io/GPlates/pygplates/> (eg, `1.1/`), with `stable/` for the latest release and `dev/` for the development version. The pyGPlates 1.0 documentation is there too, as `1.0/`.
 * Documentation: corrected the supported Python versions and platforms in *Getting started*, fixed the introductory examples (which raised `NameError`), and documented the Python console in GPlates.
 * Documentation: methods a class inherits (eg, `distance()` listed on the `PointOnSphere` page) link to their documentation in the base class (previously they were listed without a link).
 * Documentation: parameter and return types corrected where they disagreed with what the functions accept and return, and the type stub with them. For example: points can be given as any sequence of coordinates (eg, a list); arguments read once accept any iterable (eg, a generator); optional arguments accept `None`; and `Feature.set_shapefile_attribute()` returns a `GpmlKeyValueDictionary`.

@@ -200,6 +200,12 @@ index entries from `searchindex.js` while leaving the HTML identical. Delete
 `<build-dir>/docs/pygplates/_doctrees` and `generated/`, or pass `-E`. Removing or renaming a
 class also requires deleting its stale `generated/*.rst` or the build fails.
 
+**Published docs** are served by GitHub Pages from the generated `gh-pages` branch, at
+`https://gplates.github.io/GPlates/pygplates/`: `dev/` from each push to `main` that CI builds, and
+each release series when its GitHub release is published. Only CI writes to `gh-pages`. A pull request's Linux
+leg builds the docs too, so a docstring that makes Sphinx warn fails CI. How to re-publish, and
+why it works this way: `docs/pygplates/README.md`, *Publishing*.
+
 ## Code style
 
 There is no `.clang-format` or `.clang-tidy` in this repo, but the existing C++ is consistent and

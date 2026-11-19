@@ -455,7 +455,11 @@ The flow, end to end:
    attestation.
 6. Create the GitHub Release for the tag (`gh release create PyGPlates-<version>`, with
    `--prerelease` for a candidate). The releases page is where the getting-started docs send
-   people to find the latest release tag, and nothing creates the entry for them.
+   people to find the latest release tag, and nothing creates the entry for them. Publishing any
+   release also starts `publish-docs-pygplates.yml`. For a final release it publishes the
+   release's documentation from the wheels just uploaded (`docs/pygplates/README.md`,
+   *Publishing*), so check that run too; for a candidate it does nothing. Create the release only
+   after step 5, since that workflow installs the version from PyPI.
 
 The conda-forge package is updated afterwards, by hand and from the sdist this run published -
 see `pygplates/conda/README.md`.
