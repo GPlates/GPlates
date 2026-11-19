@@ -9,6 +9,10 @@
 # with CTest there: 'pygplates-test' runs pygplates/test/test.py with PYTHONPATH pointing at the
 # build directory, and 'pygplates-stub-test' checks the generated .pyi stub is up to date.
 #
+# The Linux leg also builds the Python API documentation (Sphinx, with warnings as errors), on
+# pull requests too. On 'main', the 'publish-dev-docs' job then publishes it to the 'gh-pages'
+# branch as the 'dev' docs; it is the only job here whose token can write to the repository.
+#
 # Compilation goes through 'sccache' so that a push only recompiles what actually changed. A full
 # build takes ~30-60 minutes depending on platform, and is essentially the entire cost of a run
 # (configure is seconds, the tests are seconds).
@@ -40,6 +44,11 @@ on:
       - '.claude/**'
       - 'COPYING'
   workflow_dispatch:
+
+# Read-only unless a job says otherwise: the repository's default token can write, and only
+# 'publish-dev-docs' needs to.
+permissions:
+  contents: read
 
 # Superseded runs are cancelled rather than left to finish (a build takes ~30-60 minutes).
 concurrency:
@@ -140,6 +149,14 @@ jobs:
         # first-class target, so one configuration works unchanged on all three platforms.
         run: conda install --yes sccache
 
+      - name: Install Sphinx (Linux)
+        # The documentation is built on one platform only: it comes from the docstrings, which are
+        # the same everywhere. This must come before 'Configure', because
+        # 'docs/pygplates/CMakeLists.txt' creates the 'docs-pygplates' target only if Sphinx can be
+        # imported at configure time.
+        if: matrix.name == 'Linux'
+        run: conda env update -n gplates -f env.docs.yml
+
       - name: Configure
         # No -DCMAKE_PREFIX_PATH or -DBoost_ROOT: the top-level CMakeLists.txt detects the active
         # conda environment from CONDA_PREFIX. The configure output should report
@@ -192,3 +209,82 @@ jobs:
         # '-C Release' names the configuration this tree was built with. The tests are registered
         # in every configuration, so on this single-config tree CTest would find them without it.
         run: ctest --test-dir build-pygplates -C Release --output-on-failure
+
+      - name: Build docs (Linux)
+        # Always from scratch (see the 'docs-pygplates' target). Sphinx runs with '-W', so a
+        # docstring that makes it warn fails this step - on pull requests too, which is the only
+        # check the docstrings' markup gets before they are published.
+        if: matrix.name == 'Linux'
+        run: cmake --build build-pygplates --target docs-pygplates
+
+      - name: Upload docs (Linux, main)
+        # Handed to the 'publish-dev-docs' job below, which is the only job allowed to write to
+        # the repository. Same condition as that job.
+        if: >-
+          matrix.name == 'Linux' && github.event_name != 'pull_request' &&
+          github.ref == 'refs/heads/main' && github.repository == 'GPlates/GPlates'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pygplates-docs-dev
+          path: build-pygplates/docs/pygplates/html
+          retention-days: 1
+          if-no-files-found: error
+
+  # Publishes the documentation built above as the 'dev' docs, at
+  # https://gplates.github.io/GPlates/pygplates/dev/ (the 'gh-pages' branch; its layout is
+  # described in 'docs/pygplates/publish_docs.py'). Only for 'main' (pushes, and dispatches to
+  # re-publish), and only in GPlates/GPlates: a fork tracking 'main' would otherwise publish to its
+  # own 'gh-pages' (and pushing a branch of that name switches GitHub Pages on there). It waits for
+  # every platform, so a push that breaks any of them publishes nothing.
+  publish-dev-docs:
+    needs: build-test
+    if: >-
+      github.event_name != 'pull_request' && github.ref == 'refs/heads/main' &&
+      github.repository == 'GPlates/GPlates'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out the publishing script
+        uses: actions/checkout@v6
+        with:
+          path: source
+          sparse-checkout: docs/pygplates/publish_docs.py
+          sparse-checkout-cone-mode: false
+
+      - name: Check out gh-pages
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Download docs
+        uses: actions/download-artifact@v6
+        with:
+          name: pygplates-docs-dev
+          path: html
+
+      - name: Publish
+        # Pushed with this workflow's own token. GitHub Pages then deploys it like any other push.
+        #
+        # A re-run publishes only if its commit is still the tip of 'main'. First attempts are kept
+        # in order by this workflow's concurrency group, which a newer push that builds (or a
+        # dispatch on 'main') joins, cancelling this run. But a re-run of an older run ("Re-run
+        # failed jobs", within the artifact's retention) would publish its older docs over newer
+        # ones. Not checked on a first attempt: a push that 'paths-ignore' filters out (Markdown
+        # only, say) moves the tip without starting a run, and would leave this commit's docs
+        # unpublished. A re-run refused that way is rare, and a dispatch on 'main' publishes.
+        run: |
+          if [[ "$GITHUB_RUN_ATTEMPT" -gt 1 ]]; then
+            tip=$(git -C gh-pages ls-remote origin refs/heads/main | cut -f1)
+            if [[ "$tip" != "$GITHUB_SHA" ]]; then
+              echo "::notice::main has moved on to ${tip::9}; not re-publishing ${GITHUB_SHA::9}."
+              exit 0
+            fi
+          fi
+          git -C gh-pages config user.name "github-actions[bot]"
+          git -C gh-pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 source/docs/pygplates/publish_docs.py --html html --pages-dir gh-pages \
+            --target dev --source "main at ${GITHUB_SHA::9}"

@@ -54,6 +54,104 @@ in parallel (`-j auto`) on Linux and macOS — Sphinx ignores `-j` on Windows an
 > matches are lost. Delete `<build-dir>/docs/pygplates/_doctrees` (and `generated/`) first, or
 > pass `-E`.
 
+## Publishing
+
+The documentation is published by GitHub Pages from the `gh-pages` branch, under
+<https://gplates.github.io/GPlates/pygplates/>:
+
+| Path | What | Published by |
+|---|---|---|
+| `dev/` | `main` | `build-test-pygplates.yml`, after each push to `main` that it builds (it skips a push that changes only Markdown files) and that passes its tests on all three platforms |
+| `<X.Y>/` | the newest release in the X.Y series | `publish-docs-pygplates.yml`, when the GitHub release of a final `PyGPlates-X.Y.Z` tag is published |
+| `stable` | a link to the newest release series | the same, when it publishes a newer series than the one `stable` points at |
+| `1.0/` | pyGPlates 1.0 | a copy, made once (see below) |
+
+The site's root redirects to <https://www.gplates.org/docs/>, the documentation hub, rather than
+being a second landing page. Only CI writes to `gh-pages`, always through `publish_docs.py`,
+which replaces one of these directories and nothing else (its docstring describes the branch, and
+why publishers retry rather than queue). It refuses an incremental build, a candidate or
+development build in a release directory, and an older release over a newer one.
+
+To publish again by hand, run the workflow from the Actions tab: `build-test-pygplates.yml` on
+`main` for `dev`, or `publish-docs-pygplates.yml` with the release's tag and *publish* ticked.
+With *publish* unticked, `publish-docs-pygplates.yml` only builds, and keeps the HTML as a run
+artifact: that is how to try it on a release candidate, which is never published.
+
+A pull request runs the `dev` build without publishing it, so a docstring that makes Sphinx warn
+fails the pull request.
+
+### Why it is published this way
+
+- **Releases are documented from the wheel on PyPI**, with the pages from the release's tag. The
+  documentation then describes the artifact users install (a build tree could differ in build
+  flags, Python version or optional dependencies), needs no compiler, and checks that the
+  published wheel imports. Not from the publishing run's own wheel artifacts, which would not
+  check what PyPI serves. `dev` comes from CI's build tree instead, since there are no development
+  wheels.
+- **The release documentation has a workflow of its own**, started by the GitHub release (which is
+  created after the PyPI publish), rather than being a job in `build-wheels.yml`. A documentation
+  failure then cannot turn a successful publishing run red, and the documentation can be re-run
+  on its own. The workflow file's comments list its traps.
+- **GitHub Pages, not Read the Docs.** Read the Docs builds in its own container, under time limits
+  too short to compile pyGPlates, so it could document released wheels but never `dev`.
+- **A `gh-pages` branch**, not a deployment from a workflow artifact: an artifact deployment
+  replaces the whole site, and the versions have to accumulate. Every clone downloads the branch.
+  A whole tree (about 420 files, 19 MB) adds about 6 MiB packed. A rebuild of the same version is
+  byte-identical, so publishing a release again adds almost nothing, but every `dev` publish
+  rewrites all the HTML pages, since each carries the exact version in its title, and adds about
+  0.1 MiB. The history can be squashed if it grows too large (the ruleset protecting the branch
+  allows force pushes; `docs/design/versioning/README.md`, section 13).
+- **This repository, not the website's.** Publishing into `GPlates/new-gplates-website`, which
+  served the documentation until 1.1, would have kept the `www.gplates.org/docs/pygplates/` URLs
+  that papers cite, with nothing to redirect. But it needs a credential for another repository (a
+  personal access token or a GitHub App), where publishing here uses the workflow's own token; it
+  commits generated HTML to a repository of over 100 MB and rebuilds the whole website for each
+  update; and `dev` would still have needed a second host. A repository of its own
+  (`GPlates/pygplates-docs`, say) would have dropped the `GPlates/` segment from the URL, at the
+  cost of a new repository and the same credential.
+- **`gplates.github.io/GPlates/pygplates/`, with no `docs.gplates.org`.** `www.gplates.org/docs/`
+  is the documentation hub, and already links out to `gplates.github.io` for GPlately and rgplates.
+  A second root would compete with it, and could never replace it: a custom domain belongs to one
+  repository's Pages site, and GPlately's and rgplates' are others. The `pygplates/` segment is
+  needed because this repository also builds GPlates, whose user manual is to be published beside
+  it as `user-manual/`, and without it `GPlates/1.1/` would read as GPlates 1.1. A custom domain
+  can still be added later without breaking a link, since GitHub redirects the `github.io` URLs
+  to it.
+- **`dev` and `stable`, but no `latest`.** On Read the Docs `latest` means the development branch,
+  which readers easily take for the newest release. And once two names for one tree are published,
+  neither can be withdrawn without breaking links. A `latest` link to `dev` can be added at any
+  time.
+- **No version switcher.** Read the Docs' version menu was the one thing given up by not using it,
+  and is not a reason to choose a host. Each version is reached by its URL (`pygplates/` itself
+  redirects to `stable/`).
+
+### The 1.0 documentation
+
+`1.0/` is a copy of the tree the website served at `www.gplates.org/docs/pygplates/` (from
+`GPlates/new-gplates-website`), not a rebuild: the `PyGPlates-1.0.0` tag predates `build_docs.py`.
+Its search index has no index entries, the mark of an incremental build; it is kept as 1.0 users
+have been reading it. Once the website's copy is deleted it is the only live
+one, which is why `gh-pages` is protected from deletion.
+
+On Windows, copy such a tree from a checkout with `core.autocrlf` off. With it on (the default
+there), the checkout converts every HTML file to CRLF line endings, and a `diff -r` against that
+same checkout still passes. Compare git tree hashes instead (`git rev-parse <commit>:<path>` on
+both sides).
+
+### The old URLs
+
+Until 1.1 the documentation was served unversioned at `www.gplates.org/docs/pygplates/`, and those
+URLs are in papers and in other projects' pages, in four shapes: the directory itself, top-level
+pages (often with a fragment), `generated/<name>.html` and `sample-code/<name>.html`. The website
+is to redirect each to the same path below `stable/`. It is itself a GitHub Pages site, which
+serves static files only, so it cannot answer with an HTTP redirect, only redirect in the browser
+with a script. So:
+
+- The path of a page below `stable/` is a published address. Renaming a page breaks old links
+  unless the page it replaces stays, as a redirect.
+- Anything that does not run JavaScript (intersphinx, a link checker) is not redirected. An
+  intersphinx mapping must name `https://gplates.github.io/GPlates/pygplates/stable/` itself.
+
 ## Docstring conventions
 
 The docstrings are hand-written in the C++ sources under `src/api/` and in the Python-side API

@@ -67,7 +67,9 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
 5. **Publish.** On approval the whole matrix uploads to PyPI with PEP 740 attestations. Then
    create the GitHub Release for the tag (`gh release create PyGPlates-<version>`, with
    `--prerelease` for a candidate): the releases page is where the getting-started docs send
-   people to find the latest release tag, and nothing creates the entry for them.
+   people to find the latest release tag, and nothing creates the entry for them. Publishing it
+   also starts `publish-docs-pygplates.yml`, which, for a final release, publishes its
+   documentation from PyPI (for a candidate it does nothing); check that run went green.
 6. **Move the targets on.** A tag changes what the next version on each branch is called, and
    the resolver refuses to configure until `VersionRelease.cmake` says so:
    - on the series branch, after the *release*, set the target to the next patch (`1.1.1` after
