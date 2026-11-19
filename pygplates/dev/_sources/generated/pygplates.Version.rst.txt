@@ -1,0 +1,31 @@
+﻿pygplates.Version
+=================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Version
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Version.__init__
+      ~Version.get_imported_version
+      ~Version.get_major
+      ~Version.get_minor
+      ~Version.get_patch
+      ~Version.get_prerelease_suffix
+      ~Version.get_release_suffix
+      ~Version.get_revision
+   
+   
+
+   
+   
+   
+   
+   

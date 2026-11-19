@@ -1,0 +1,37 @@
+﻿pygplates.GpmlArray
+===================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlArray
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlArray.__init__
+      ~GpmlArray.accept_visitor
+      ~GpmlArray.append
+      ~GpmlArray.clone
+      ~GpmlArray.count
+      ~GpmlArray.extend
+      ~GpmlArray.get_geometry
+      ~GpmlArray.get_value
+      ~GpmlArray.index
+      ~GpmlArray.insert
+      ~GpmlArray.pop
+      ~GpmlArray.remove
+      ~GpmlArray.reverse
+      ~GpmlArray.sort
+   
+   
+
+   
+   
+   
+   
+   

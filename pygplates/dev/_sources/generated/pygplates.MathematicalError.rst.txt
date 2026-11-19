@@ -1,0 +1,6 @@
+﻿pygplates.MathematicalError
+===========================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: MathematicalError

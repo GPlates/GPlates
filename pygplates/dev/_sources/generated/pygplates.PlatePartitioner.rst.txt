@@ -1,0 +1,27 @@
+﻿pygplates.PlatePartitioner
+==========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PlatePartitioner
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PlatePartitioner.__init__
+      ~PlatePartitioner.partition_features
+      ~PlatePartitioner.partition_geometry
+      ~PlatePartitioner.partition_point
+   
+   
+
+   
+   
+   
+   
+   

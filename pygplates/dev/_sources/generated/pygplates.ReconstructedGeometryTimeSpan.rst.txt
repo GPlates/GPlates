@@ -1,0 +1,35 @@
+﻿pygplates.ReconstructedGeometryTimeSpan
+=======================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructedGeometryTimeSpan
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReconstructedGeometryTimeSpan.__init__
+      ~ReconstructedGeometryTimeSpan.get_crustal_stretching_factors
+      ~ReconstructedGeometryTimeSpan.get_crustal_thicknesses
+      ~ReconstructedGeometryTimeSpan.get_crustal_thinning_factors
+      ~ReconstructedGeometryTimeSpan.get_geometry_points
+      ~ReconstructedGeometryTimeSpan.get_scalar_values
+      ~ReconstructedGeometryTimeSpan.get_strain_rates
+      ~ReconstructedGeometryTimeSpan.get_strains
+      ~ReconstructedGeometryTimeSpan.get_tectonic_subsidences
+      ~ReconstructedGeometryTimeSpan.get_time_span
+      ~ReconstructedGeometryTimeSpan.get_topology_point_locations
+      ~ReconstructedGeometryTimeSpan.get_velocities
+   
+   
+
+   
+   
+   
+   
+   

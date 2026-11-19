@@ -1,0 +1,8 @@
+﻿pygplates.StrainRateSmoothing
+=============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: StrainRateSmoothing
+   :no-members:
+   :no-show-inheritance:

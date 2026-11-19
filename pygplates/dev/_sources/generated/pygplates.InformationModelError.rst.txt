@@ -1,0 +1,6 @@
+﻿pygplates.InformationModelError
+===============================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: InformationModelError

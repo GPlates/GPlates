@@ -1,0 +1,321 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Load and save feature collections &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Create common feature types" href="pygplates_create_common_feature_types.html" />
+    <link rel="prev" title="Import geometries and assign plate IDs" href="pygplates_import_geometries_and_assign_plate_ids.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_import_geometries_and_assign_plate_ids.html">Import geometries and assign plate IDs</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Load and save feature collections</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-file-containing-a-subset-of-features-from-another-file">Create a file containing a subset of features from another file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-file-containing-features-from-multiple-files">Create a file containing features from multiple files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Load and save feature collections</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_load_and_save_feature_collections.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="load-and-save-feature-collections">
+<span id="pygplates-load-and-save-feature-collections"></span><h1>Load and save feature collections<a class="headerlink" href="#load-and-save-feature-collections" title="Link to this heading"></a></h1>
+<p>This example shows how to load feature data that is already in a file format that pyGPlates
+can load. If this is not the case then the feature data first needs to be
+<a class="reference internal" href="pygplates_import_geometries_and_assign_plate_ids.html#pygplates-import-geometries-and-assign-plate-ids"><span class="std std-ref">imported</span></a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_import_geometries_and_assign_plate_ids.html#pygplates-import-geometries-and-assign-plate-ids"><span class="std std-ref">Import geometries and assign plate IDs</span></a></p>
+</div>
+<p>This example also shows how to save feature data.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#create-a-file-containing-a-subset-of-features-from-another-file" id="id5">Create a file containing a subset of features from another file</a></p>
+<ul>
+<li><p><a class="reference internal" href="#data-files" id="id6">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id7">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id8">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-a-file-containing-features-from-multiple-files" id="id9">Create a file containing features from multiple files</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id10">Data files</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id11">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id4" id="id12">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id13">See also</a></p></li>
+</ul>
+</nav>
+<section id="create-a-file-containing-a-subset-of-features-from-another-file">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Create a file containing a subset of features from another file</a><a class="headerlink" href="#create-a-file-containing-a-subset-of-features-from-another-file" title="Link to this heading"></a></h2>
+<p>In this example we make a new GPML file containing only the coastlines that have a plate ID of 801 (Australia).</p>
+<section id="data-files">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">coastlines.gpml</span></code></dt><dd><p>Coastline features, each with a reconstruction plate ID. Those on plate 801 are written to the new file.
+The GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a> has such a file.</p>
+</dd>
+</dl>
+</section>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load the global coastline features.</span>
+<span class="n">input_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+
+<span class="c1"># Start with an empty list of coastline features on plate 801.</span>
+<span class="n">features_in_plate_801</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Iterate over all coastline features and add those on plate 801 to 'features_in_plate_801'.</span>
+<span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">input_feature_collection</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span> <span class="o">==</span> <span class="mi">801</span><span class="p">:</span>
+        <span class="n">features_in_plate_801</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+
+<span class="c1"># Write the coastline features for plate 801 to a new file.</span>
+<span class="n">output_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">features_in_plate_801</span><span class="p">)</span>
+<span class="n">output_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'coastlines_801.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>The general idea is to use <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> to both load and save
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a> from/to files.</p>
+<p>First we load a file containing GPlates coastline features into
+a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> from a file called <code class="docutils literal notranslate"><span class="pre">'coastlines.gpml'</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the global coastline features.</span>
+<span class="n">input_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Alternatively we could have used the <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.read" title="pygplates.FeatureCollection.read"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.read()</span></code></a> function as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>…however that is more complicated than necessary.</p>
+<div class="line-block">
+<div class="line">Next we use a Python <code class="docutils literal notranslate"><span class="pre">list</span></code> to contain the subset of coastline features that are on plate 801.</div>
+<div class="line">It’s easier to use a Python <code class="docutils literal notranslate"><span class="pre">list</span></code> to contain the subset of features we will write to the new file.</div>
+<div class="line">We could have used a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> instead, but it doesn’t really matter
+since we can easily create a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> from the Python <code class="docutils literal notranslate"><span class="pre">list</span></code> when
+we need to save to a file.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start with an empty list of coastline features on plate 801.</span>
+<span class="n">features_in_plate_801</span> <span class="o">=</span> <span class="p">[]</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Iterate over all the coastline features and only add those with plate ID 801 to the new list.</div>
+<div class="line">Note that a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> behaves like any sequence (eg, a Python <code class="docutils literal notranslate"><span class="pre">list</span></code>)
+and so we can iterate over it like we would any sequence using the syntax <code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">item</span> <span class="pre">in</span> <span class="pre">sequence:</span></code>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over all coastline features and add those on plate 801 to 'features_in_plate_801'.</span>
+<span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">input_feature_collection</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span> <span class="o">==</span> <span class="mi">801</span><span class="p">:</span>
+        <span class="n">features_in_plate_801</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">As mentioned above, when we want to save features to a file we need to create a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>
+(it accepts any Python sequence containing <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>). In our case
+the Python sequence is our <code class="docutils literal notranslate"><span class="pre">features_in_plate_801</span></code> list.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write the coastline features for plate 801 to a new file.</span>
+<span class="n">output_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">features_in_plate_801</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Now we can write the output feature collection to a new file.</div>
+<div class="line">Here we’re saving the coastline features for plate 801 to a file called <code class="docutils literal notranslate"><span class="pre">'coastlines_801.gpml'</span></code>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">output_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'coastlines_801.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="create-a-file-containing-features-from-multiple-files">
+<h2><a class="toc-backref" href="#id9" role="doc-backlink">Create a file containing features from multiple files</a><a class="headerlink" href="#create-a-file-containing-features-from-multiple-files" title="Link to this heading"></a></h2>
+<p>In this example we make a new GPML file containing ridges from one file and isochrons from another.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">Data files</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">ridges.gpml</span></code>, <code class="docutils literal notranslate"><span class="pre">isochrons.gpml</span></code></dt><dd><p>Any two files of features. Nothing in them is queried; their features are simply merged into one file.
+The GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a> has files of mid-ocean ridges and isochrons.</p>
+</dd>
+</dl>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Sample code</a><a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># The list of files to merge.</span>
+<span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'ridges.gpml'</span><span class="p">,</span> <span class="s1">'isochrons.gpml'</span><span class="p">]</span>
+
+<span class="c1"># The list of features from all input files.</span>
+<span class="n">merged_features</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Iterate over the input files and add their features to the merged list.</span>
+<span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">merged_features</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+
+<span class="c1"># Write the merged features to a file.</span>
+<span class="n">merged_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">merged_features</span><span class="p">)</span>
+<span class="n">merged_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'ridges_and_isochrons.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Details</a><a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<p>The general idea is to use <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> to both load and save
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a> from/to files.</p>
+<div class="line-block">
+<div class="line">Iterate over all the input files, read features from each file and add to a list of merged features.</div>
+<div class="line">Note that a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> behaves like any sequence (eg, a Python <code class="docutils literal notranslate"><span class="pre">list</span></code>)
+and so we can pass it to the <code class="docutils literal notranslate"><span class="pre">list.extend()</span></code> method of our <code class="docutils literal notranslate"><span class="pre">merged_features</span></code> Python <code class="docutils literal notranslate"><span class="pre">list</span></code> and it
+will iterate over our <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> sequence to retrieve
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a> and extend the <code class="docutils literal notranslate"><span class="pre">merged_features</span></code> list.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The list of features from all input files.</span>
+<span class="n">merged_features</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Iterate over the input files and add their features to the merged list.</span>
+<span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">merged_features</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Write the merged feature collection to a new file using <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write the merged features to a file.</span>
+<span class="n">merged_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">merged_features</span><span class="p">)</span>
+<span class="n">merged_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'ridges_and_isochrons.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id13" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>, <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.read" title="pygplates.FeatureCollection.read"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.read()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.write()</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_plate_id()</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_import_geometries_and_assign_plate_ids.html#pygplates-import-geometries-and-assign-plate-ids"><span class="std std-ref">Import geometries and assign plate IDs</span></a>, <a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-common-feature-types"><span class="std std-ref">Query common feature types</span></a>,
+<a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-common-feature-types"><span class="std std-ref">Create common feature types</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_import_geometries_and_assign_plate_ids.html" class="btn btn-neutral float-left" title="Import geometries and assign plate IDs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_create_common_feature_types.html" class="btn btn-neutral float-right" title="Create common feature types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

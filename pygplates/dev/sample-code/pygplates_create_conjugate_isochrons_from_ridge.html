@@ -1,0 +1,362 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create conjugate isochrons from a ridge &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Split an isochron into ridge and transform segments" href="pygplates_split_isochron_into_ridges_and_transforms.html" />
+    <link rel="prev" title="Find overriding plate of closest subducting line" href="pygplates_find_overriding_plate_of_closest_subducting_line.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Create conjugate isochrons from a ridge</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#details">Details</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced">Advanced</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_split_isochron_into_ridges_and_transforms.html">Split an isochron into ridge and transform segments</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Create conjugate isochrons from a ridge</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_create_conjugate_isochrons_from_ridge.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="create-conjugate-isochrons-from-a-ridge">
+<span id="pygplates-create-conjugate-isochrons-from-ridge"></span><h1>Create conjugate isochrons from a ridge<a class="headerlink" href="#create-conjugate-isochrons-from-a-ridge" title="Link to this heading"></a></h1>
+<p>This example creates a conjugate pair of isochrons from a mid-ocean ridge at each specified geological time in a series.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id2">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id3">Details</a></p></li>
+<li><p><a class="reference internal" href="#advanced" id="id4">Advanced</a></p></li>
+<li><p><a class="reference internal" href="#see-also" id="id5">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the left and right plates of the ridges, since
+each ridge is reconstructed to each isochron creation time and the isochrons are reverse
+reconstructed from there to present day.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ridges.gpml</span></code></dt><dd><p>Mid-ocean ridge features. Each must have left and right plate IDs, a half-stage reconstruction
+method (so that the ridge moves midway between its plates), a valid time period (the ridge’s times
+of appearance and disappearance) and geometry. A name and description are copied to the isochrons
+if present.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="sample-code">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the mid-ocean ridge features.</span>
+<span class="n">ridge_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'ridges.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The times at which to create isochrons.</span>
+<span class="n">isochron_creation_times</span> <span class="o">=</span> <span class="p">[</span><span class="mi">40</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># We'll store the created isochrons here - later we'll write it to a file.</span>
+<span class="n">isochron_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">()</span>
+
+<span class="c1"># Iterate over the ridge features.</span>
+<span class="k">for</span> <span class="n">ridge_feature</span> <span class="ow">in</span> <span class="n">ridge_features</span><span class="p">:</span>
+
+    <span class="c1"># Get the ridge left and right plate ids, and time of appearance.</span>
+    <span class="n">left_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_left_plate</span><span class="p">()</span>
+    <span class="n">right_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_right_plate</span><span class="p">()</span>
+    <span class="n">time_of_appearance</span><span class="p">,</span> <span class="n">time_of_disappearance</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">()</span>
+
+    <span class="c1"># Iterate over our list of creation times for the left/right isochrons.</span>
+    <span class="k">for</span> <span class="n">isochron_creation_time</span> <span class="ow">in</span> <span class="n">isochron_creation_times</span><span class="p">:</span>
+
+        <span class="c1"># If the ridge exists at the creation time (it has appeared and not yet disappeared)</span>
+        <span class="c1"># then we can create an isochron.</span>
+        <span class="k">if</span> <span class="n">time_of_disappearance</span> <span class="o">&lt;=</span> <span class="n">isochron_creation_time</span> <span class="o">&lt;</span> <span class="n">time_of_appearance</span><span class="p">:</span>
+
+            <span class="c1"># Reconstruct the mid-ocean ridge to isochron creation time.</span>
+            <span class="c1"># The ridge geometry will be in the same position as the left/right isochrons at that time.</span>
+            <span class="n">reconstructed_ridges</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span>
+                    <span class="n">ridge_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_creation_time</span><span class="p">)</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">()</span>
+
+            <span class="c1"># Get the isochron geometry from the ridge reconstruction.</span>
+            <span class="c1"># This is the geometry at 'isochron_creation_time' (not present day).</span>
+            <span class="n">isochron_geometry_at_creation_time</span> <span class="o">=</span> <span class="p">[</span><span class="n">reconstructed_ridge</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">reconstructed_ridge</span> <span class="ow">in</span> <span class="n">reconstructed_ridges</span><span class="p">]</span>
+
+            <span class="c1"># Create the left and right isochrons.</span>
+            <span class="c1"># Since they are conjugates they have swapped left and right plate IDs.</span>
+            <span class="c1"># And reverse reconstruct the mid-ocean ridge geometries to present day.</span>
+            <span class="n">left_isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+                    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">,</span>
+                    <span class="n">isochron_geometry_at_creation_time</span><span class="p">,</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+                    <span class="n">description</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_description</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+                    <span class="n">valid_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">isochron_creation_time</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="n">reconstruction_plate_id</span> <span class="o">=</span> <span class="n">left_plate_id</span><span class="p">,</span>
+                    <span class="n">conjugate_plate_id</span> <span class="o">=</span> <span class="n">right_plate_id</span><span class="p">,</span>
+                    <span class="n">reverse_reconstruct</span> <span class="o">=</span> <span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_creation_time</span><span class="p">))</span>
+            <span class="n">right_isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+                    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">,</span>
+                    <span class="n">isochron_geometry_at_creation_time</span><span class="p">,</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+                    <span class="n">description</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_description</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+                    <span class="n">valid_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">isochron_creation_time</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                    <span class="n">reconstruction_plate_id</span> <span class="o">=</span> <span class="n">right_plate_id</span><span class="p">,</span>
+                    <span class="n">conjugate_plate_id</span> <span class="o">=</span> <span class="n">left_plate_id</span><span class="p">,</span>
+                    <span class="n">reverse_reconstruct</span> <span class="o">=</span> <span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_creation_time</span><span class="p">))</span>
+
+            <span class="c1"># Add isochrons to feature collection.</span>
+            <span class="n">isochron_feature_collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">left_isochron_feature</span><span class="p">)</span>
+            <span class="n">isochron_feature_collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">right_isochron_feature</span><span class="p">)</span>
+
+<span class="c1"># Write the isochrons to a new file.</span>
+<span class="n">isochron_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'isochrons.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The ridge features are loaded into a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the mid-ocean ridge features.</span>
+<span class="n">ridge_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'ridges.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The plate IDs and time period are obtained using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_left_plate" title="pygplates.Feature.get_left_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_left_plate()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_right_plate" title="pygplates.Feature.get_right_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_right_plate()</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_valid_time()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the ridge left and right plate ids, and time of appearance.</span>
+<span class="n">left_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_left_plate</span><span class="p">()</span>
+<span class="n">right_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_right_plate</span><span class="p">()</span>
+<span class="n">time_of_appearance</span><span class="p">,</span> <span class="n">time_of_disappearance</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>An isochron is created only at times when the ridge exists: after it appears and before it
+disappears. Smaller time values are closer to present day (younger).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If the ridge exists at the creation time (it has appeared and not yet disappeared)</span>
+<span class="c1"># then we can create an isochron.</span>
+<span class="k">if</span> <span class="n">time_of_disappearance</span> <span class="o">&lt;=</span> <span class="n">isochron_creation_time</span> <span class="o">&lt;</span> <span class="n">time_of_appearance</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>The ridges are reconstructed to their locations at time ‘isochron_creation_time’ in a
+<a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the mid-ocean ridge to isochron creation time.</span>
+<span class="c1"># The ridge geometry will be in the same position as the left/right isochrons at that time.</span>
+<span class="n">reconstructed_ridges</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span>
+        <span class="n">ridge_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_creation_time</span><span class="p">)</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>A Python list comprehension is used to build a list of <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere</span></code></a> from a
+list of <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the isochron geometry from the ridge reconstruction.</span>
+<span class="c1"># This is the geometry at 'isochron_creation_time' (not present day).</span>
+<span class="n">isochron_geometry_at_creation_time</span> <span class="o">=</span> <span class="p">[</span><span class="n">reconstructed_ridge</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">reconstructed_ridge</span> <span class="ow">in</span> <span class="n">reconstructed_ridges</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">Isochron</a> features are created using
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">left_isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">,</span>
+        <span class="n">isochron_geometry_at_creation_time</span><span class="p">,</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+        <span class="n">description</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_description</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+        <span class="n">valid_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">isochron_creation_time</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+        <span class="n">reconstruction_plate_id</span> <span class="o">=</span> <span class="n">left_plate_id</span><span class="p">,</span>
+        <span class="n">conjugate_plate_id</span> <span class="o">=</span> <span class="n">right_plate_id</span><span class="p">,</span>
+        <span class="n">reverse_reconstruct</span> <span class="o">=</span> <span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_creation_time</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">reverse_reconstruct</span></code> parameter is needed because all <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>
+must store their geometry in present day coordinates which means <em>reverse</em> reconstructing from
+<code class="docutils literal notranslate"><span class="pre">isochron_creation_time</span></code> to present day using the rotation model.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The use of <code class="docutils literal notranslate"><span class="pre">None</span></code> in, for example, <code class="docutils literal notranslate"><span class="pre">ridge_feature.get_name(None)</span></code> results in a
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> property only getting created if the ridge feature has a name.</p>
+</div>
+<p>And finally the isochrons are saved to a new file using <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.write()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write the isochrons to a new file.</span>
+<span class="n">isochron_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'isochrons.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Advanced</a><a class="headerlink" href="#advanced" title="Link to this heading"></a></h2>
+<p>If we want to be a bit more robust then we can check that our ridge features are actually ridges and
+we can make sure they contain left/right plate IDs and a time of appearance/disappearance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+
+<span class="c1"># Iterate over the ridge features.</span>
+<span class="k">for</span> <span class="n">ridge_feature</span> <span class="ow">in</span> <span class="n">ridge_features</span><span class="p">:</span>
+
+    <span class="c1"># Ignore anything that's not a mid-ocean ridge.</span>
+    <span class="k">if</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">!=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_mid_ocean_ridge</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Get the ridge left and right plate ids, and time of appearance.</span>
+    <span class="c1"># We don't need to specify 'None', but if we do then it allows us to test if the ridge feature</span>
+    <span class="c1"># is missing plate IDs or begin/end time period.</span>
+    <span class="n">left_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_left_plate</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">right_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_right_plate</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">valid_time</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># Ignore mid-ocean ridges that don't have a left and right plate id and time of appearance.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">left_plate_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
+        <span class="n">right_plate_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
+        <span class="n">valid_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Extract time of appearance/disappearance from the tuple.</span>
+    <span class="n">time_of_appearance</span><span class="p">,</span> <span class="n">time_of_disappearance</span> <span class="o">=</span> <span class="n">valid_time</span>
+
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>By specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">left_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_left_plate</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">right_plate_id</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_right_plate</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">valid_time</span> <span class="o">=</span> <span class="n">ridge_feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">…we will get <code class="docutils literal notranslate"><span class="pre">None</span></code> returned to us if the feature property (eg, left plate ID) is missing
+in the ridge feature.</div>
+<div class="line">If we didn’t specify <code class="docutils literal notranslate"><span class="pre">None</span></code> then a default value would be returned if a property
+was missing. For <code class="docutils literal notranslate"><span class="pre">get_left_plate()</span></code> and <code class="docutils literal notranslate"><span class="pre">get_right_plate()</span></code> this is plate ID 0 and for
+<code class="docutils literal notranslate"><span class="pre">get_valid_time()</span></code> this is a time period from <em>distant past</em> to <em>distant future</em>.</div>
+</div>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_left_plate" title="pygplates.Feature.get_left_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_left_plate()</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_right_plate" title="pygplates.Feature.get_right_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_right_plate()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_valid_time()</span></code></a>, <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.write()</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-isochron-feature"><span class="std std-ref">Create an isochron feature from geometry at a past geological time</span></a>, <a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-mid-ocean-ridge-feature"><span class="std std-ref">Query a mid-ocean ridge feature</span></a>,
+<a class="reference internal" href="pygplates_split_isochron_into_ridges_and_transforms.html#pygplates-split-isochron-into-ridges-and-transforms"><span class="std std-ref">Split an isochron into ridge and transform segments</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_find_overriding_plate_of_closest_subducting_line.html" class="btn btn-neutral float-left" title="Find overriding plate of closest subducting line" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_split_isochron_into_ridges_and_transforms.html" class="btn btn-neutral float-right" title="Split an isochron into ridge and transform segments" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

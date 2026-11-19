@@ -1,0 +1,923 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Import geometries and assign plate IDs &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Load and save feature collections" href="pygplates_load_and_save_feature_collections.html" />
+    <link rel="prev" title="Sample code" href="../pygplates_sample_code.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Import geometries and assign plate IDs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#import-points-from-a-text-file-and-assign-plate-ids">Import <em>points</em> from a text file and assign plate IDs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#load-points-from-a-gmt-file-and-assign-plate-ids">Load <em>points</em> from a GMT file and assign plate IDs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-polylines-from-a-text-file-and-assign-plate-ids">Import <em>polylines</em> from a text file and assign plate IDs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#load-polylines-from-a-gmt-file-and-assign-plate-ids">Load <em>polylines</em> from a GMT file and assign plate IDs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_load_and_save_feature_collections.html">Load and save feature collections</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Import geometries and assign plate IDs</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_import_geometries_and_assign_plate_ids.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="import-geometries-and-assign-plate-ids">
+<span id="pygplates-import-geometries-and-assign-plate-ids"></span><h1>Import geometries and assign plate IDs<a class="headerlink" href="#import-geometries-and-assign-plate-ids" title="Link to this heading"></a></h1>
+<p>This example shows how to import points or polylines from a text file and assign plate IDs to them.
+The resulting feature data is then saved to a file format that pyGPlates can load directly.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Importing features is different than <a class="reference internal" href="pygplates_load_and_save_feature_collections.html#pygplates-load-and-save-feature-collections"><span class="std std-ref">loading</span></a> features.
+When feature data is not in a file format that pyGPlates can load then it needs to be imported into a
+GPlates-compatible file format. This usually involves more than just importing the geometry data.
+For example, plate IDs need to be assigned so that pyGPlates can reconstruct the feature data
+to geological times. And other feature metadata such as <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_name" title="pygplates.Feature.set_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_description" title="pygplates.Feature.set_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a> should also be assigned.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_load_and_save_feature_collections.html#pygplates-load-and-save-feature-collections"><span class="std std-ref">Load and save feature collections</span></a></p>
+</div>
+<div class="line-block">
+<div class="line">The first two examples import <em>points</em>.</div>
+<div class="line">The second two examples import <em>polylines</em>.</div>
+</div>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#import-points-from-a-text-file-and-assign-plate-ids" id="id18">Import <em>points</em> from a text file and assign plate IDs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#data-files" id="id19">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id20">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#input" id="id21">Input</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id22">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#load-points-from-a-gmt-file-and-assign-plate-ids" id="id23">Load <em>points</em> from a GMT file and assign plate IDs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id24">Data files</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id25">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#pygplates-import-points-gmt-input" id="id26">Input</a></p></li>
+<li><p><a class="reference internal" href="#id5" id="id27">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#import-polylines-from-a-text-file-and-assign-plate-ids" id="id28">Import <em>polylines</em> from a text file and assign plate IDs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id7" id="id29">Data files</a></p></li>
+<li><p><a class="reference internal" href="#id9" id="id30">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#pygplates-import-polylines-txt-input" id="id31">Input</a></p></li>
+<li><p><a class="reference internal" href="#id11" id="id32">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#load-polylines-from-a-gmt-file-and-assign-plate-ids" id="id33">Load <em>polylines</em> from a GMT file and assign plate IDs</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id12" id="id34">Data files</a></p></li>
+<li><p><a class="reference internal" href="#id14" id="id35">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#pygplates-import-polylines-gmt-input" id="id36">Input</a></p></li>
+<li><p><a class="reference internal" href="#id16" id="id37">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id38">See also</a></p></li>
+</ul>
+</nav>
+<section id="import-points-from-a-text-file-and-assign-plate-ids">
+<span id="pygplates-import-points-from-a-text-file-and-assign-plate-ids"></span><h2><a class="toc-backref" href="#id18" role="doc-backlink">Import <em>points</em> from a text file and assign plate IDs</a><a class="headerlink" href="#import-points-from-a-text-file-and-assign-plate-ids" title="Link to this heading"></a></h2>
+<p>This example:</p>
+<ul class="simple">
+<li><p>reads some point locations from a text file,</p></li>
+<li><p>assigns a plate ID and valid time period to each point, and</p></li>
+<li><p>writes the assigned points to a GPML file ready for use in <a class="reference external" href="http://www.gplates.org">GPlates</a>.</p></li>
+</ul>
+<section id="data-files">
+<h3><a class="toc-backref" href="#id19" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the static polygons.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">static_polygons.gpml</span></code></dt><dd><p>Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+copied to the points they contain. They should cover the globe at present day, so that
+every point is assigned a plate ID.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_points.txt</span></code></dt><dd><p>A text file with one point per line, as longitude then latitude. The
+format is shown under <a class="reference internal" href="#pygplates-import-points-txt-input"><span class="std std-ref">Input</span></a> below.</p>
+</dd>
+</dl>
+<p>Rotation files and static polygons are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id20" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># The static polygons file will be used to assign plate IDs and valid time periods.</span>
+<span class="n">static_polygons_filename</span> <span class="o">=</span> <span class="s1">'static_polygons.gpml'</span>
+
+<span class="c1"># Filename of the input points file that we will read.</span>
+<span class="n">input_points_filename</span> <span class="o">=</span> <span class="s1">'input_points.txt'</span>
+
+<span class="c1"># Filename of the output points file that we will write.</span>
+<span class="c1"># Note that it is a GPML file (has extension '.gpml').</span>
+<span class="c1"># This enables it to be read into GPlates.</span>
+<span class="n">output_points_filename</span> <span class="o">=</span> <span class="s1">'output_points.gpml'</span>
+
+<span class="c1"># Parse the input points text file containing a lon/lat point per line.</span>
+<span class="c1"># Longitude/latitude is the order that GMT files ('.xy', '.gmt') use.</span>
+<span class="c1"># Note that pyGPlates specifies points in the opposite (latitude/longitude) order.</span>
+<span class="n">input_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">input_points_filename</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_points_file</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line_number</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">input_points_file</span><span class="p">):</span>
+
+        <span class="c1"># Make line number 1-based instead of 0-based.</span>
+        <span class="n">line_number</span> <span class="o">=</span> <span class="n">line_number</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># Split the line into strings (separated by whitespace).</span>
+        <span class="n">line_string_list</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+        <span class="c1"># Need at least two strings per line (for latitude and longitude).</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Line </span><span class="si">{</span><span class="n">line_number</span><span class="si">}</span><span class="s1">: Ignoring point - line does not have at least two white-space separated strings.'</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Attempt to convert each string into a floating-point number.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Use GMT (lon/lat) order.</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Line </span><span class="si">{</span><span class="n">line_number</span><span class="si">}</span><span class="s1">: Ignoring point - cannot read lon/lat values.'</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Create a pyGPlates point from the latitude and longitude, and add it to our list of points.</span>
+        <span class="c1"># Note that pyGPlates uses the opposite (lat/lon) order to GMT (lon/lat).</span>
+        <span class="n">input_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">))</span>
+
+<span class="c1"># Create a feature for each point we read from the input file.</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">input_points</span><span class="p">:</span>
+
+    <span class="c1"># Create an unclassified feature.</span>
+    <span class="n">point_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span>
+
+    <span class="c1"># Set the feature's geometry to the input point read from the text file.</span>
+    <span class="n">point_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+
+    <span class="n">point_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">point_feature</span><span class="p">)</span>
+
+<span class="c1"># Use the static polygons to assign plate IDs and valid time periods.</span>
+<span class="c1"># Each point feature is partitioned into one of the static polygons and assigned its</span>
+<span class="c1"># reconstruction plate ID and valid time period.</span>
+<span class="n">assigned_point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">partition_into_plates</span><span class="p">(</span>
+    <span class="n">static_polygons_filename</span><span class="p">,</span>
+    <span class="n">rotation_model</span><span class="p">,</span>
+    <span class="n">point_features</span><span class="p">,</span>
+    <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">reconstruction_plate_id</span><span class="p">,</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">valid_time_period</span><span class="p">])</span>
+
+<span class="c1"># Write the assigned point features to the output GPML file (ready for use in GPlates).</span>
+<span class="n">assigned_point_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">assigned_point_features</span><span class="p">)</span>
+<span class="n">assigned_point_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_points_filename</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="input">
+<span id="pygplates-import-points-txt-input"></span><h3><a class="toc-backref" href="#id21" role="doc-backlink">Input</a><a class="headerlink" href="#input" title="Link to this heading"></a></h3>
+<p>An example input text file (in longitude/latitude order) looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="mf">79.747867</span>      <span class="o">-</span><span class="mf">1.444159</span>
+<span class="o">-</span><span class="mf">79.786712</span>      <span class="o">-</span><span class="mf">1.654002</span>
+<span class="o">-</span><span class="mf">79.872547</span>      <span class="o">-</span><span class="mf">2.221801</span>
+<span class="o">-</span><span class="mf">79.858122</span>      <span class="o">-</span><span class="mf">6.951201</span>
+<span class="o">-</span><span class="mf">78.850008</span>      <span class="o">-</span><span class="mf">9.359851</span>
+<span class="o">-</span><span class="mf">76.020448</span>      <span class="o">-</span><span class="mf">13.798207</span>
+<span class="o">-</span><span class="mf">75.549659</span>      <span class="o">-</span><span class="mf">14.315297</span>
+<span class="o">-</span><span class="mf">75.411320</span>      <span class="o">-</span><span class="mf">14.456342</span>
+<span class="o">-</span><span class="mf">74.335501</span>      <span class="o">-</span><span class="mf">15.543422</span>
+<span class="o">-</span><span class="mf">72.539796</span>      <span class="o">-</span><span class="mf">17.187214</span>
+<span class="o">-</span><span class="mf">71.922547</span>      <span class="o">-</span><span class="mf">17.773935</span>
+<span class="o">-</span><span class="mf">71.381735</span>      <span class="o">-</span><span class="mf">18.373316</span>
+<span class="o">-</span><span class="mf">70.979182</span>      <span class="o">-</span><span class="mf">18.850190</span>
+<span class="o">-</span><span class="mf">70.786266</span>      <span class="o">-</span><span class="mf">19.126329</span>
+<span class="o">-</span><span class="mf">70.571175</span>      <span class="o">-</span><span class="mf">19.417365</span>
+<span class="o">-</span><span class="mf">70.343507</span>      <span class="o">-</span><span class="mf">19.716224</span>
+<span class="o">-</span><span class="mf">70.280285</span>      <span class="o">-</span><span class="mf">19.858811</span>
+<span class="o">-</span><span class="mf">70.107565</span>      <span class="o">-</span><span class="mf">20.531859</span>
+<span class="o">-</span><span class="mf">70.059697</span>      <span class="o">-</span><span class="mf">22.248895</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id22" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The points will be read from an input text file and written to an output GPML file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The static polygons file will be used to assign plate IDs and valid time periods.</span>
+<span class="n">static_polygons_filename</span> <span class="o">=</span> <span class="s1">'static_polygons.gpml'</span>
+
+<span class="c1"># Filename of the input points file that we will read.</span>
+<span class="n">input_points_filename</span> <span class="o">=</span> <span class="s1">'input_points.txt'</span>
+
+<span class="c1"># Filename of the output points file that we will write.</span>
+<span class="c1"># Note that it is a GPML file (has extension '.gpml').</span>
+<span class="c1"># This enables it to be read into GPlates.</span>
+<span class="n">output_points_filename</span> <span class="o">=</span> <span class="s1">'output_points.gpml'</span>
+</pre></div>
+</div>
+<p>The input points file is opened and read line-by-line.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">input_points_filename</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_points_file</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line_number</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">input_points_file</span><span class="p">):</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Each line contains a longitude string and a latitude string (GMT order).</div>
+<div class="line">We attempt to convert them to floating-point numbers.</div>
+<div class="line">If that fails then we catch the <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> exception that Python raises and ignore that line in the file.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Attempt to convert each string into a floating-point number.</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Use GMT (lon/lat) order.</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Line </span><span class="si">{</span><span class="n">line_number</span><span class="si">}</span><span class="s1">: Ignoring point - cannot read lon/lat values.'</span><span class="p">)</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">An unclassified feature is created for each point we read from the input file.
+Leaving the feature type empty in <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.__init__" title="pygplates.Feature.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature()</span></code></a>
+defaults to a feature type of <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_unclassified_feature</span></code>.</div>
+<div class="line">Ideally we should pick a specific feature type such as
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:HotSpot">pygplates.FeatureType.gpml_hot_spot</a>,
+perhaps reading it from the input file (as an extra column).</div>
+<div class="line">And ideally we should also import extra metadata such as feature <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_name" title="pygplates.Feature.set_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>
+and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_description" title="pygplates.Feature.set_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an unclassified feature.</span>
+<span class="n">point_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The point geometry is set on the point feature using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_geometry()</span></code></a>.</div>
+<div class="line">If we don’t do this then the feature cannot be used in spatial calculations and
+will not display on the globe in GPlates.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the feature's geometry to the input point read from the text file.</span>
+<span class="n">point_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Each point feature is partitioned into one of the static polygons and assigned its
+reconstruction plate ID and valid time period using <a class="reference internal" href="../generated/pygplates.partition_into_plates.html#pygplates.partition_into_plates" title="pygplates.partition_into_plates"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.partition_into_plates()</span></code></a>.</div>
+<div class="line">The static polygons have global coverage at present day (the default reconstruction time
+for <a class="reference internal" href="../generated/pygplates.partition_into_plates.html#pygplates.partition_into_plates" title="pygplates.partition_into_plates"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.partition_into_plates()</span></code></a>) and should therefore partition all the input points.</div>
+<div class="line">We also explicitly specify the argument <em>properties_to_copy</em> to assign both the reconstruction plate
+ID and valid time period (the default is just to assign the reconstruction plate ID).</div>
+<div class="line">This page calls the function <a class="reference internal" href="../generated/pygplates.partition_into_plates.html#pygplates.partition_into_plates" title="pygplates.partition_into_plates"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.partition_into_plates()</span></code></a>, rather than creating a
+<a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner" title="pygplates.PlatePartitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner</span></code></a>, because it partitions only once. The function creates a
+partitioner, partitions the features with <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner.partition_features" title="pygplates.PlatePartitioner.partition_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner.partition_features()</span></code></a>
+and discards the partitioner. To partition more than one set of features with the same plates,
+create a <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner" title="pygplates.PlatePartitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner</span></code></a> once and use it for each set
+(<a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a> creates one for each time).</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use the static polygons to assign plate IDs and valid time periods.</span>
+<span class="c1"># Each point feature is partitioned into one of the static polygons and assigned its</span>
+<span class="c1"># reconstruction plate ID and valid time period.</span>
+<span class="n">assigned_point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">partition_into_plates</span><span class="p">(</span>
+    <span class="n">static_polygons_filename</span><span class="p">,</span>
+    <span class="n">rotation_model</span><span class="p">,</span>
+    <span class="n">point_features</span><span class="p">,</span>
+    <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">reconstruction_plate_id</span><span class="p">,</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">valid_time_period</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Finally we put the list of assigned features into a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> so that
+we can write them out to a file using <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.write()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write the assigned point features to the output GPML file (ready for use in GPlates).</span>
+<span class="n">assigned_point_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">assigned_point_features</span><span class="p">)</span>
+<span class="n">assigned_point_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_points_filename</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="load-points-from-a-gmt-file-and-assign-plate-ids">
+<span id="pygplates-import-points-from-a-gmt-file-and-assign-plate-ids"></span><h2><a class="toc-backref" href="#id23" role="doc-backlink">Load <em>points</em> from a GMT file and assign plate IDs</a><a class="headerlink" href="#load-points-from-a-gmt-file-and-assign-plate-ids" title="Link to this heading"></a></h2>
+<p>This example is similiar to <a class="reference internal" href="#pygplates-import-points-from-a-text-file-and-assign-plate-ids"><span class="std std-ref">Import points from a text file and assign plate IDs</span></a> except it
+takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id24" role="doc-backlink">Data files</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the static polygons.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">static_polygons.gpml</span></code></dt><dd><p>Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+copied to the points they contain. They should cover the globe at present day, so that
+every point is assigned a plate ID.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_points.gmt</span></code></dt><dd><p>A GMT format file of points, in longitude/latitude order. The format is shown under
+<a class="reference internal" href="#pygplates-import-points-gmt-input"><span class="std std-ref">Input</span></a> below.</p>
+</dd>
+</dl>
+<p>Rotation files and static polygons are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id25" role="doc-backlink">Sample code</a><a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># The static polygons file will be used to assign plate IDs and valid time periods.</span>
+<span class="n">static_polygons_filename</span> <span class="o">=</span> <span class="s1">'static_polygons.gpml'</span>
+
+<span class="c1"># Filename of the output points file that we will write.</span>
+<span class="n">output_points_filename</span> <span class="o">=</span> <span class="s1">'output_points.gpml'</span>
+
+<span class="c1"># Load a GMT file (instead of manually reading a '.txt' file line-by-line).</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'input_points.gmt'</span><span class="p">)</span>
+
+<span class="c1"># Use the static polygons to assign plate IDs and valid time periods.</span>
+<span class="c1"># Each point feature is partitioned into one of the static polygons and assigned its</span>
+<span class="c1"># reconstruction plate ID and valid time period.</span>
+<span class="n">assigned_point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">partition_into_plates</span><span class="p">(</span>
+    <span class="n">static_polygons_filename</span><span class="p">,</span>
+    <span class="n">rotation_model</span><span class="p">,</span>
+    <span class="n">point_features</span><span class="p">,</span>
+    <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">reconstruction_plate_id</span><span class="p">,</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">valid_time_period</span><span class="p">])</span>
+
+<span class="c1"># Write the assigned point features to the output GPML file (ready for use in GPlates).</span>
+<span class="n">assigned_point_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">assigned_point_features</span><span class="p">)</span>
+<span class="n">assigned_point_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_points_filename</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pygplates-import-points-gmt-input">
+<span id="id4"></span><h3><a class="toc-backref" href="#id26" role="doc-backlink">Input</a><a class="headerlink" href="#pygplates-import-points-gmt-input" title="Link to this heading"></a></h3>
+<p>An example input text file (in longitude/latitude order) looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="mf">79.747867</span>      <span class="o">-</span><span class="mf">1.444159</span>
+<span class="o">-</span><span class="mf">79.786712</span>      <span class="o">-</span><span class="mf">1.654002</span>
+<span class="o">-</span><span class="mf">79.872547</span>      <span class="o">-</span><span class="mf">2.221801</span>
+<span class="o">-</span><span class="mf">79.858122</span>      <span class="o">-</span><span class="mf">6.951201</span>
+<span class="o">-</span><span class="mf">78.850008</span>      <span class="o">-</span><span class="mf">9.359851</span>
+<span class="o">-</span><span class="mf">76.020448</span>      <span class="o">-</span><span class="mf">13.798207</span>
+<span class="o">-</span><span class="mf">75.549659</span>      <span class="o">-</span><span class="mf">14.315297</span>
+<span class="o">-</span><span class="mf">75.411320</span>      <span class="o">-</span><span class="mf">14.456342</span>
+<span class="o">-</span><span class="mf">74.335501</span>      <span class="o">-</span><span class="mf">15.543422</span>
+<span class="o">-</span><span class="mf">72.539796</span>      <span class="o">-</span><span class="mf">17.187214</span>
+<span class="o">-</span><span class="mf">71.922547</span>      <span class="o">-</span><span class="mf">17.773935</span>
+<span class="o">-</span><span class="mf">71.381735</span>      <span class="o">-</span><span class="mf">18.373316</span>
+<span class="o">-</span><span class="mf">70.979182</span>      <span class="o">-</span><span class="mf">18.850190</span>
+<span class="o">-</span><span class="mf">70.786266</span>      <span class="o">-</span><span class="mf">19.126329</span>
+<span class="o">-</span><span class="mf">70.571175</span>      <span class="o">-</span><span class="mf">19.417365</span>
+<span class="o">-</span><span class="mf">70.343507</span>      <span class="o">-</span><span class="mf">19.716224</span>
+<span class="o">-</span><span class="mf">70.280285</span>      <span class="o">-</span><span class="mf">19.858811</span>
+<span class="o">-</span><span class="mf">70.107565</span>      <span class="o">-</span><span class="mf">20.531859</span>
+<span class="o">-</span><span class="mf">70.059697</span>      <span class="o">-</span><span class="mf">22.248895</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3><a class="toc-backref" href="#id27" role="doc-backlink">Details</a><a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">Since <a class="reference external" href="http://www.gplates.org">GPlates</a> can directly load GMT <code class="docutils literal notranslate"><span class="pre">'.gmt'</span></code> files, an alternative is to
+change the filename extension, of your text file, to <code class="docutils literal notranslate"><span class="pre">'.gmt'</span></code>. The feature metadata will be missing
+from your text file so only the geometry data will get loaded, but this achieves the same effect
+as the above example.</div>
+<div class="line">As with the previous example, there can be more than two numbers per line, but only the first two
+are used (as longitude and latitude) - note that if you were to load your <code class="docutils literal notranslate"><span class="pre">'.gmt'</span></code> file into GPlates
+the extra data would cause it to give a warning about flattening 2.5D to 2D.</div>
+<div class="line">Note that, as with the previous example, the data should be in GMT (longitude/latitude) order.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load a GMT file (instead of manually reading a '.txt' file line-by-line).</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'input_points.gmt'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The rest of the sample code is similar to <a class="reference internal" href="#pygplates-import-points-from-a-text-file-and-assign-plate-ids"><span class="std std-ref">Import points from a text file and assign plate IDs</span></a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates-import-points-from-a-text-file-and-assign-plate-ids"><span class="std std-ref">Import points from a text file and assign plate IDs</span></a></p>
+</div>
+</section>
+</section>
+<section id="import-polylines-from-a-text-file-and-assign-plate-ids">
+<span id="pygplates-import-polylines-from-a-text-file-and-assign-plate-ids"></span><h2><a class="toc-backref" href="#id28" role="doc-backlink">Import <em>polylines</em> from a text file and assign plate IDs</a><a class="headerlink" href="#import-polylines-from-a-text-file-and-assign-plate-ids" title="Link to this heading"></a></h2>
+<p>This example is similiar to <a class="reference internal" href="#pygplates-import-points-from-a-text-file-and-assign-plate-ids"><span class="std std-ref">Import points from a text file and assign plate IDs</span></a> except
+it imports <em>polylines</em> instead of <em>points</em>.</p>
+<section id="id7">
+<h3><a class="toc-backref" href="#id29" role="doc-backlink">Data files</a><a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the static polygons.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">static_polygons.gpml</span></code></dt><dd><p>Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+copied to the polylines they contain. They should cover the globe at present day, so that
+every polyline is assigned a plate ID.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_polylines.txt</span></code></dt><dd><p>A text file with one point per line, as longitude then latitude, with a line beginning with <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> separating one polyline from the next. The
+format is shown under <a class="reference internal" href="#pygplates-import-polylines-txt-input"><span class="std std-ref">Input</span></a> below.</p>
+</dd>
+</dl>
+<p>Rotation files and static polygons are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="id9">
+<h3><a class="toc-backref" href="#id30" role="doc-backlink">Sample code</a><a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># A function that create a polyline feature from some points and adds to a list of features.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_polyline_feature_from_points</span><span class="p">(</span><span class="n">polyline_features</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">line_number</span><span class="p">):</span>
+
+    <span class="c1"># If have no points then nothing to do.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">points</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Need at least two points for a polyline.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">polyline</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+        <span class="n">polyline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span> <span class="c1"># 'unclassified' feature</span>
+        <span class="n">polyline_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">polyline</span><span class="p">)</span>
+
+        <span class="n">polyline_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">polyline_feature</span><span class="p">)</span>
+
+    <span class="c1"># If only one point then emit warning.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Line </span><span class="si">{</span><span class="n">line_number</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s1">: Ignoring polyline - polyline has only one point.'</span><span class="p">)</span>
+
+    <span class="c1"># Clear points list for next feature.</span>
+    <span class="c1"># Clear the list in-place so that all references to the list see an empty list.</span>
+    <span class="k">del</span> <span class="n">points</span><span class="p">[:]</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># The static polygons file will be used to assign plate IDs and valid time periods.</span>
+<span class="n">static_polygons_filename</span> <span class="o">=</span> <span class="s1">'static_polygons.gpml'</span>
+
+<span class="c1"># Filename of the input polylines file that we will read.</span>
+<span class="n">input_polylines_filename</span> <span class="o">=</span> <span class="s1">'input_polylines.txt'</span>
+
+<span class="c1"># Filename of the output polylines file that we will write.</span>
+<span class="c1"># Note that it is a GPML file (has extension '.gpml').</span>
+<span class="c1"># This enables it to be read into GPlates.</span>
+<span class="n">output_polylines_filename</span> <span class="o">=</span> <span class="s1">'output_polylines.gpml'</span>
+
+<span class="c1"># Parse the input polylines text file containing groups of lon/lat points per line.</span>
+<span class="c1"># Longitude/latitude is the order that GMT files ('.xy', '.gmt') use.</span>
+<span class="c1"># Note that pyGPlates specifies points in the opposite (latitude/longitude) order.</span>
+<span class="n">polyline_features</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">polyline_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">input_polylines_filename</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_polylines_file</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line_number</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">input_polylines_file</span><span class="p">):</span>
+
+        <span class="c1"># Make line number 1-based instead of 0-based.</span>
+        <span class="n">line_number</span> <span class="o">=</span> <span class="n">line_number</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># See if line begins with '&gt;'.</span>
+        <span class="c1"># This is was separates groups of points into polylines.</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'&gt;'</span><span class="p">):</span>
+
+            <span class="c1"># Generate the previous polyline feature if we have two or more points.</span>
+            <span class="n">add_polyline_feature_from_points</span><span class="p">(</span><span class="n">polyline_features</span><span class="p">,</span> <span class="n">polyline_points</span><span class="p">,</span> <span class="n">line_number</span><span class="p">)</span>
+
+            <span class="c1"># Skip to next line.</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Split the line into strings (separated by whitespace).</span>
+        <span class="n">line_string_list</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+        <span class="c1"># Need at least two strings per line (for latitude and longitude).</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Line </span><span class="si">{</span><span class="n">line_number</span><span class="si">}</span><span class="s1">: Ignoring point - line does not have at least two white-space separated strings.'</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Attempt to convert each string into a floating-point number.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Use GMT (lon/lat) order.</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Line </span><span class="si">{</span><span class="n">line_number</span><span class="si">}</span><span class="s1">: Ignoring point - cannot read lon/lat values.'</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Create a pyGPlates point from the latitude and longitude, and add it to our list of points.</span>
+        <span class="c1"># Note that pyGPlates uses the opposite (lat/lon) order to GMT (lon/lat).</span>
+        <span class="n">polyline_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">))</span>
+
+    <span class="c1"># If we have any points leftover then generate the last polyline feature.</span>
+    <span class="c1"># This happens if last line does not start with '&gt;'.</span>
+    <span class="k">if</span> <span class="n">polyline_points</span><span class="p">:</span>
+        <span class="n">add_polyline_feature_from_points</span><span class="p">(</span><span class="n">polyline_features</span><span class="p">,</span> <span class="n">polyline_points</span><span class="p">,</span> <span class="n">line_number</span><span class="p">)</span>
+
+<span class="c1"># Use the static polygons to assign plate IDs and valid time periods.</span>
+<span class="c1"># Each polyline feature is partitioned into one or more of the static polygons and assigned their</span>
+<span class="c1"># reconstruction plate IDs and valid time periods.</span>
+<span class="n">assigned_polyline_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">partition_into_plates</span><span class="p">(</span>
+    <span class="n">static_polygons_filename</span><span class="p">,</span>
+    <span class="n">rotation_model</span><span class="p">,</span>
+    <span class="n">polyline_features</span><span class="p">,</span>
+    <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">reconstruction_plate_id</span><span class="p">,</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">valid_time_period</span><span class="p">])</span>
+
+<span class="c1"># Write the assigned polyline features to the output GPML file (ready for use in GPlates).</span>
+<span class="n">assigned_polyline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">assigned_polyline_features</span><span class="p">)</span>
+<span class="n">assigned_polyline_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_polylines_filename</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pygplates-import-polylines-txt-input">
+<span id="id10"></span><h3><a class="toc-backref" href="#id31" role="doc-backlink">Input</a><a class="headerlink" href="#pygplates-import-polylines-txt-input" title="Link to this heading"></a></h3>
+<p>An example input text file (in longitude/latitude order) containing three polylines looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;</span>
+  <span class="o">-</span><span class="mf">79.747867</span>      <span class="o">-</span><span class="mf">1.444159</span>
+  <span class="o">-</span><span class="mf">79.786712</span>      <span class="o">-</span><span class="mf">1.654002</span>
+  <span class="o">-</span><span class="mf">79.872547</span>      <span class="o">-</span><span class="mf">2.221801</span>
+  <span class="o">-</span><span class="mf">79.858122</span>      <span class="o">-</span><span class="mf">6.951201</span>
+  <span class="o">-</span><span class="mf">78.850008</span>      <span class="o">-</span><span class="mf">9.359851</span>
+  <span class="o">-</span><span class="mf">76.020448</span>      <span class="o">-</span><span class="mf">13.798207</span>
+<span class="o">&gt;</span>
+  <span class="o">-</span><span class="mf">75.549659</span>      <span class="o">-</span><span class="mf">14.315297</span>
+  <span class="o">-</span><span class="mf">75.411320</span>      <span class="o">-</span><span class="mf">14.456342</span>
+  <span class="o">-</span><span class="mf">74.335501</span>      <span class="o">-</span><span class="mf">15.543422</span>
+  <span class="o">-</span><span class="mf">72.539796</span>      <span class="o">-</span><span class="mf">17.187214</span>
+  <span class="o">-</span><span class="mf">71.922547</span>      <span class="o">-</span><span class="mf">17.773935</span>
+  <span class="o">-</span><span class="mf">71.381735</span>      <span class="o">-</span><span class="mf">18.373316</span>
+  <span class="o">-</span><span class="mf">70.979182</span>      <span class="o">-</span><span class="mf">18.850190</span>
+  <span class="o">-</span><span class="mf">70.786266</span>      <span class="o">-</span><span class="mf">19.126329</span>
+<span class="o">&gt;</span>
+  <span class="o">-</span><span class="mf">70.571175</span>      <span class="o">-</span><span class="mf">19.417365</span>
+  <span class="o">-</span><span class="mf">70.343507</span>      <span class="o">-</span><span class="mf">19.716224</span>
+  <span class="o">-</span><span class="mf">70.280285</span>      <span class="o">-</span><span class="mf">19.858811</span>
+  <span class="o">-</span><span class="mf">70.107565</span>      <span class="o">-</span><span class="mf">20.531859</span>
+  <span class="o">-</span><span class="mf">70.059697</span>      <span class="o">-</span><span class="mf">22.248895</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> symbol is used to group points into polylines.</p>
+</div>
+</section>
+<section id="id11">
+<h3><a class="toc-backref" href="#id32" role="doc-backlink">Details</a><a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The polylines will be read from an input text file and written to an output GPML file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The static polygons file will be used to assign plate IDs and valid time periods.</span>
+<span class="n">static_polygons_filename</span> <span class="o">=</span> <span class="s1">'static_polygons.gpml'</span>
+
+<span class="c1"># Filename of the input polylines file that we will read.</span>
+<span class="n">input_polylines_filename</span> <span class="o">=</span> <span class="s1">'input_polylines.txt'</span>
+
+<span class="c1"># Filename of the output polylines file that we will write.</span>
+<span class="c1"># Note that it is a GPML file (has extension '.gpml').</span>
+<span class="c1"># This enables it to be read into GPlates.</span>
+<span class="n">output_polylines_filename</span> <span class="o">=</span> <span class="s1">'output_polylines.gpml'</span>
+</pre></div>
+</div>
+<p>The input polylines file is opened and read line-by-line.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">input_polylines_filename</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_polylines_file</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line_number</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">input_polylines_file</span><span class="p">):</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">If a line begins with a <code class="docutils literal notranslate"><span class="pre">'&gt;'</span></code> character then it separates those points in lines before it
+into one polyline and those points in lines after it into another polyline.</div>
+<div class="line">Here the points in prior lines are used to create a new polyline feature.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># See if line begins with '&gt;'.</span>
+<span class="c1"># This is was separates groups of points into polylines.</span>
+<span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'&gt;'</span><span class="p">):</span>
+
+    <span class="c1"># Generate the previous polyline feature if we have two or more points.</span>
+    <span class="n">add_polyline_feature_from_points</span><span class="p">(</span><span class="n">polyline_features</span><span class="p">,</span> <span class="n">polyline_points</span><span class="p">,</span> <span class="n">line_number</span><span class="p">)</span>
+
+    <span class="c1"># Skip to next line.</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Each line contains a longitude string and a latitude string (GMT order).</div>
+<div class="line">We attempt to convert them to floating-point numbers.</div>
+<div class="line">If that fails then we catch the <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> exception that Python raises and ignore that line in the file.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Attempt to convert each string into a floating-point number.</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Use GMT (lon/lat) order.</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">line_string_list</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Line </span><span class="si">{</span><span class="n">line_number</span><span class="si">}</span><span class="s1">: Ignoring point - cannot read lon/lat values.'</span><span class="p">)</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>Keep track of the points for the current polyline so we can create the polyline once we’ve
+reached the last point (of the current polyline).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a pyGPlates point from the latitude and longitude, and add it to our list of points.</span>
+<span class="c1"># Note that pyGPlates uses the opposite (lat/lon) order to GMT (lon/lat).</span>
+<span class="n">polyline_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Then function <code class="docutils literal notranslate"><span class="pre">add_polyline_feature_from_points</span></code> creates a polyline feature from a list
+of points and adds it to a list of polyline features.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">add_polyline_feature_from_points</span><span class="p">(</span><span class="n">polyline_features</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">line_number</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>If there are at least two points (required for a polyline) then a <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere</span></code></a>
+geometry is created from the points.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Need at least two points for a polyline.</span>
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+    <span class="n">polyline</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">An unclassified feature is created for each polyline we read from the input file.
+Leaving the feature type empty in <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.__init__" title="pygplates.Feature.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature()</span></code></a>
+defaults to a feature type of <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_unclassified_feature</span></code>.</div>
+<div class="line">Ideally we should pick a specific feature type such as
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">pygplates.FeatureType.gpml_subduction_zone</a>.</div>
+<div class="line">And ideally we should also import extra metadata such as feature <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_name" title="pygplates.Feature.set_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>
+and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_description" title="pygplates.Feature.set_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">polyline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span> <span class="c1"># 'unclassified' feature</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The polyline geometry is set on the polyline feature using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_geometry()</span></code></a>.</div>
+<div class="line">If we don’t do this then the feature cannot be used in spatial calculations and
+will not display on the globe in GPlates.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">polyline_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">polyline</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Each polyline feature is partitioned into one or more of the static polygons and assigned their
+reconstruction plate IDs and valid time periods using <a class="reference internal" href="../generated/pygplates.partition_into_plates.html#pygplates.partition_into_plates" title="pygplates.partition_into_plates"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.partition_into_plates()</span></code></a>.</div>
+<div class="line">Note that the default argument for the <em>partition_method</em> parameter is <em>pygplates.PartitionMethod.split_into_plates</em>
+which results in two polylines being generated (returned) when one polyline intersects two static polygons (plates).</div>
+<div class="line">The static polygons have global coverage at present day (the default reconstruction time
+for <a class="reference internal" href="../generated/pygplates.partition_into_plates.html#pygplates.partition_into_plates" title="pygplates.partition_into_plates"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.partition_into_plates()</span></code></a>) and should therefore partition all the input polylines.</div>
+<div class="line">We also explicitly specify the argument <em>properties_to_copy</em> to assign both the reconstruction plate
+ID and valid time period (the default is just to assign the reconstruction plate ID).</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use the static polygons to assign plate IDs and valid time periods.</span>
+<span class="c1"># Each polyline feature is partitioned into one or more of the static polygons and assigned their</span>
+<span class="c1"># reconstruction plate IDs and valid time periods.</span>
+<span class="n">assigned_polyline_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">partition_into_plates</span><span class="p">(</span>
+    <span class="n">static_polygons_filename</span><span class="p">,</span>
+    <span class="n">rotation_model</span><span class="p">,</span>
+    <span class="n">polyline_features</span><span class="p">,</span>
+    <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">reconstruction_plate_id</span><span class="p">,</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">valid_time_period</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Finally we put the list of assigned features into a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> so that
+we can write them out to a file using <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.write()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write the assigned polyline features to the output GPML file (ready for use in GPlates).</span>
+<span class="n">assigned_polyline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">assigned_polyline_features</span><span class="p">)</span>
+<span class="n">assigned_polyline_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_polylines_filename</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="load-polylines-from-a-gmt-file-and-assign-plate-ids">
+<span id="pygplates-import-polylines-from-a-gmt-file-and-assign-plate-ids"></span><h2><a class="toc-backref" href="#id33" role="doc-backlink">Load <em>polylines</em> from a GMT file and assign plate IDs</a><a class="headerlink" href="#load-polylines-from-a-gmt-file-and-assign-plate-ids" title="Link to this heading"></a></h2>
+<p>This example is similiar to <a class="reference internal" href="#pygplates-import-polylines-from-a-text-file-and-assign-plate-ids"><span class="std std-ref">Import polylines from a text file and assign plate IDs</span></a> except it
+takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.</p>
+<section id="id12">
+<h3><a class="toc-backref" href="#id34" role="doc-backlink">Data files</a><a class="headerlink" href="#id12" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the static polygons.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">static_polygons.gpml</span></code></dt><dd><p>Static polygon features, each with a reconstruction plate ID and a valid time period, which are
+copied to the polylines they contain. They should cover the globe at present day, so that
+every polyline is assigned a plate ID.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">input_polylines.gmt</span></code></dt><dd><p>A GMT format file of polylines, in longitude/latitude order. The format is shown under
+<a class="reference internal" href="#pygplates-import-polylines-gmt-input"><span class="std std-ref">Input</span></a> below.</p>
+</dd>
+</dl>
+<p>Rotation files and static polygons are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="id14">
+<h3><a class="toc-backref" href="#id35" role="doc-backlink">Sample code</a><a class="headerlink" href="#id14" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># The static polygons file will be used to assign plate IDs and valid time periods.</span>
+<span class="n">static_polygons_filename</span> <span class="o">=</span> <span class="s1">'static_polygons.gpml'</span>
+
+<span class="c1"># Filename of the output polylines file that we will write.</span>
+<span class="n">output_polylines_filename</span> <span class="o">=</span> <span class="s1">'output_polylines.gpml'</span>
+
+<span class="c1"># Load a GMT file (instead of manually reading a '.txt' file line-by-line).</span>
+<span class="n">polyline_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'input_polylines.gmt'</span><span class="p">)</span>
+
+<span class="c1"># Use the static polygons to assign plate IDs and valid time periods.</span>
+<span class="c1"># Each polyline feature is partitioned into one or more of the static polygons and assigned their</span>
+<span class="c1"># reconstruction plate IDs and valid time periods.</span>
+<span class="n">assigned_polyline_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">partition_into_plates</span><span class="p">(</span>
+    <span class="n">static_polygons_filename</span><span class="p">,</span>
+    <span class="n">rotation_model</span><span class="p">,</span>
+    <span class="n">polyline_features</span><span class="p">,</span>
+    <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">reconstruction_plate_id</span><span class="p">,</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionProperty</span><span class="o">.</span><span class="n">valid_time_period</span><span class="p">])</span>
+
+<span class="c1"># Write the assigned polyline features to the output GPML file (ready for use in GPlates).</span>
+<span class="n">assigned_polyline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">assigned_polyline_features</span><span class="p">)</span>
+<span class="n">assigned_polyline_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_polylines_filename</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pygplates-import-polylines-gmt-input">
+<span id="id15"></span><h3><a class="toc-backref" href="#id36" role="doc-backlink">Input</a><a class="headerlink" href="#pygplates-import-polylines-gmt-input" title="Link to this heading"></a></h3>
+<p>An example input text file (in longitude/latitude order) containing three polylines looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;</span>
+  <span class="o">-</span><span class="mf">79.747867</span>      <span class="o">-</span><span class="mf">1.444159</span>
+  <span class="o">-</span><span class="mf">79.786712</span>      <span class="o">-</span><span class="mf">1.654002</span>
+  <span class="o">-</span><span class="mf">79.872547</span>      <span class="o">-</span><span class="mf">2.221801</span>
+  <span class="o">-</span><span class="mf">79.858122</span>      <span class="o">-</span><span class="mf">6.951201</span>
+  <span class="o">-</span><span class="mf">78.850008</span>      <span class="o">-</span><span class="mf">9.359851</span>
+  <span class="o">-</span><span class="mf">76.020448</span>      <span class="o">-</span><span class="mf">13.798207</span>
+<span class="o">&gt;</span>
+  <span class="o">-</span><span class="mf">75.549659</span>      <span class="o">-</span><span class="mf">14.315297</span>
+  <span class="o">-</span><span class="mf">75.411320</span>      <span class="o">-</span><span class="mf">14.456342</span>
+  <span class="o">-</span><span class="mf">74.335501</span>      <span class="o">-</span><span class="mf">15.543422</span>
+  <span class="o">-</span><span class="mf">72.539796</span>      <span class="o">-</span><span class="mf">17.187214</span>
+  <span class="o">-</span><span class="mf">71.922547</span>      <span class="o">-</span><span class="mf">17.773935</span>
+  <span class="o">-</span><span class="mf">71.381735</span>      <span class="o">-</span><span class="mf">18.373316</span>
+  <span class="o">-</span><span class="mf">70.979182</span>      <span class="o">-</span><span class="mf">18.850190</span>
+  <span class="o">-</span><span class="mf">70.786266</span>      <span class="o">-</span><span class="mf">19.126329</span>
+<span class="o">&gt;</span>
+  <span class="o">-</span><span class="mf">70.571175</span>      <span class="o">-</span><span class="mf">19.417365</span>
+  <span class="o">-</span><span class="mf">70.343507</span>      <span class="o">-</span><span class="mf">19.716224</span>
+  <span class="o">-</span><span class="mf">70.280285</span>      <span class="o">-</span><span class="mf">19.858811</span>
+  <span class="o">-</span><span class="mf">70.107565</span>      <span class="o">-</span><span class="mf">20.531859</span>
+  <span class="o">-</span><span class="mf">70.059697</span>      <span class="o">-</span><span class="mf">22.248895</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> symbol is used by GMT to group points into polylines.</p>
+</div>
+</section>
+<section id="id16">
+<h3><a class="toc-backref" href="#id37" role="doc-backlink">Details</a><a class="headerlink" href="#id16" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">Since <a class="reference external" href="http://www.gplates.org">GPlates</a> can directly load GMT <code class="docutils literal notranslate"><span class="pre">'.gmt'</span></code> files, an alternative is to
+change the filename extension, of your text file, to <code class="docutils literal notranslate"><span class="pre">'.gmt'</span></code>. The feature metadata will be missing
+from your text file so only the geometry data will get loaded, but this achieves the same effect
+as the above example.</div>
+<div class="line">As with the previous example, there can be more than two numbers per line, but only the first two
+are used (as longitude and latitude) - note that if you were to load your <code class="docutils literal notranslate"><span class="pre">'.gmt'</span></code> file into GPlates
+the extra data would cause it to give a warning about flattening 2.5D to 2D.</div>
+<div class="line">Note that, as with the previous example, the data should be in GMT (longitude/latitude) order.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load a GMT file (instead of manually reading a '.txt' file line-by-line).</span>
+<span class="n">polyline_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'input_polylines.gmt'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The rest of the sample code is similar to <a class="reference internal" href="#pygplates-import-polylines-from-a-text-file-and-assign-plate-ids"><span class="std std-ref">Import polylines from a text file and assign plate IDs</span></a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates-import-polylines-from-a-text-file-and-assign-plate-ids"><span class="std std-ref">Import polylines from a text file and assign plate IDs</span></a></p>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id38" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.partition_into_plates.html#pygplates.partition_into_plates" title="pygplates.partition_into_plates"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.partition_into_plates()</span></code></a>, <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner" title="pygplates.PlatePartitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_geometry()</span></code></a>, <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>, <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeatureCollection.write()</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_load_and_save_feature_collections.html#pygplates-load-and-save-feature-collections"><span class="std std-ref">Load and save feature collections</span></a>, <a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-common-feature-types"><span class="std std-ref">Create common feature types</span></a>,
+<a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../pygplates_sample_code.html" class="btn btn-neutral float-left" title="Sample code" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_load_and_save_feature_collections.html" class="btn btn-neutral float-right" title="Load and save feature collections" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

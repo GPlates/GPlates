@@ -1,0 +1,35 @@
+﻿pygplates.ResolveTopologyParameters
+===================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ResolveTopologyParameters
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ResolveTopologyParameters.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+   
+   
+   .. autosummary::
+   
+      ~ResolveTopologyParameters.enable_strain_rate_clamping
+      ~ResolveTopologyParameters.max_clamped_strain_rate
+      ~ResolveTopologyParameters.rift_edge_length_threshold_degrees
+      ~ResolveTopologyParameters.rift_exponential_stretching_constant
+      ~ResolveTopologyParameters.rift_strain_rate_resolution
+      ~ResolveTopologyParameters.strain_rate_smoothing
+   
+   
+   

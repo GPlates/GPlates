@@ -1,0 +1,42 @@
+﻿pygplates.Strain
+================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Strain
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Strain.__init__
+      ~Strain.accumulate
+      ~Strain.get_deformation_gradient
+      ~Strain.get_dilatation
+      ~Strain.get_principal_strain
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+   
+   
+   
+   .. list-table::
+      :class: autosummary longtable
+      :widths: auto
+   
+      * - :py:obj:`identity <pygplates.Strain.identity>`
+        - The identity strain (no deformation).
+   
+   .. py:attribute:: identity
+      :type: Strain
+
+      The identity strain (no deformation).
+   
+   

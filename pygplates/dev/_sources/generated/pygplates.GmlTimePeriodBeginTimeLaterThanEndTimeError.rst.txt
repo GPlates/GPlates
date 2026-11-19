@@ -1,0 +1,6 @@
+﻿pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError
+=====================================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: GmlTimePeriodBeginTimeLaterThanEndTimeError

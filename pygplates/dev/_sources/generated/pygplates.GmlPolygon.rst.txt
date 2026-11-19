@@ -1,0 +1,30 @@
+﻿pygplates.GmlPolygon
+====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GmlPolygon
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GmlPolygon.__init__
+      ~GmlPolygon.accept_visitor
+      ~GmlPolygon.clone
+      ~GmlPolygon.get_geometry
+      ~GmlPolygon.get_polygon
+      ~GmlPolygon.get_value
+      ~GmlPolygon.set_polygon
+   
+   
+
+   
+   
+   
+   
+   

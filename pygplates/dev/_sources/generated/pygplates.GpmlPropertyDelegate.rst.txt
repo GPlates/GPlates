@@ -1,0 +1,31 @@
+﻿pygplates.GpmlPropertyDelegate
+==============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlPropertyDelegate
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlPropertyDelegate.__init__
+      ~GpmlPropertyDelegate.accept_visitor
+      ~GpmlPropertyDelegate.clone
+      ~GpmlPropertyDelegate.get_feature_id
+      ~GpmlPropertyDelegate.get_geometry
+      ~GpmlPropertyDelegate.get_property_name
+      ~GpmlPropertyDelegate.get_property_type
+      ~GpmlPropertyDelegate.get_value
+   
+   
+
+   
+   
+   
+   
+   

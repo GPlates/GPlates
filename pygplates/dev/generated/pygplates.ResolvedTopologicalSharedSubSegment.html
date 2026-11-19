@@ -1,0 +1,819 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.ResolvedTopologicalSharedSubSegment &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.NetworkTriangulation" href="pygplates.NetworkTriangulation.html" />
+    <link rel="prev" title="pygplates.ResolvedTopologicalSection" href="pygplates.ResolvedTopologicalSection.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalModel.html">pygplates.TopologicalModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalSnapshot.html">pygplates.TopologicalSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html">pygplates.ReconstructedGeometryTimeSpan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologyPointLocation.html">pygplates.TopologyPointLocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolveTopologyParameters.html">pygplates.ResolveTopologyParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.resolve_topologies.html">pygplates.resolve_topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html">pygplates.ResolvedTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html">pygplates.ResolvedTopologicalBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html">pygplates.ResolvedTopologicalNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionGeometry.html">pygplates.ReconstructionGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html">pygplates.ResolvedTopologicalSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSection.html">pygplates.ResolvedTopologicalSection</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.ResolvedTopologicalSharedSubSegment</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment"><code class="docutils literal notranslate"><span class="pre">ResolvedTopologicalSharedSubSegment</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetworkTriangulation.html">pygplates.NetworkTriangulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.ResolvedTopologicalSharedSubSegment</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.ResolvedTopologicalSharedSubSegment.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-resolvedtopologicalsharedsubsegment">
+<h1>pygplates.ResolvedTopologicalSharedSubSegment<a class="headerlink" href="#pygplates-resolvedtopologicalsharedsubsegment" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">ResolvedTopologicalSharedSubSegment</span></span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>The shared subset of vertices of a reconstructed topological section that uniquely contribute to the <em>boundaries</em> of one or more resolved topologies.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">Only <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a> have <em>boundaries</em> and hence will share <em>ResolvedTopologicalSharedSubSegment</em> instances.</div>
+<div class="line"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalLine</span></code></a> is excluded since it does not have a <em>boundary</em>.</div>
+</div>
+</div>
+<p><a class="reference internal" href="pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalModel</span></code></a>, <a class="reference internal" href="pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalSnapshot</span></code></a> or <a class="reference internal" href="pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_topologies()</span></code></a> can be used to generate resolved topology <em>boundaries</em> (<a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a>) and the shared <em>ResolvedTopologicalSharedSubSegment</em> instances.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">Each <em>ResolvedTopologicalSharedSubSegment</em> instance can be shared by one or more resolved topologies.</div>
+<div class="line">In contrast, a <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment" title="pygplates.ResolvedTopologicalSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalSubSegment</span></code></a> instance belongs to a <em>single</em> resolved topology.</div>
+</div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.__init__" title="Link to this definition"></a></dt>
+<dd><p>Raises an exception
+This class cannot be instantiated from Python</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.__init__" title="pygplates.ResolvedTopologicalSharedSubSegment.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>Raises an exception This class cannot be instantiated from Python</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_feature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_feature</span></code></a>()</p></td>
+<td><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_topological_section_feature()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_geometry</span></code></a>()</p></td>
+<td><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_geometry()</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates" title="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_overriding_and_subducting_plates</span></code></a>(...)</p></td>
+<td><p>Returns the overriding and subducting plates at this subduction zone.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate" title="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_overriding_plate</span></code></a>(...)</p></td>
+<td><p>Returns the overriding plate (or network) at this subduction zone.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_feature</span></code></a>()</p></td>
+<td><p>Returns a feature containing the resolved sub-segment geometry.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry</span></code></a>()</p></td>
+<td><p>Returns the geometry containing the shared sub-segment vertices.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_features" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry_point_features</span></code></a>()</p></td>
+<td><p>Returns the source feature associated with each point in the <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_velocities" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_velocities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry_point_velocities</span></code></a>(...)</p></td>
+<td><p>Returns the velocities of the <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry_points</span></code></a>()</p></td>
+<td><p>Returns the points of the <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sharing_resolved_topologies</span></code></a>()</p></td>
+<td><p>Returns a list of resolved topologies sharing this sub-segment.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sharing_resolved_topology_geometry_reversal_flags</span></code></a>()</p></td>
+<td><p>Returns a list of flags indicating whether a copy of the sub-segment geometry was reversed when contributing to each resolved topology sharing this sub-segment.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sharing_resolved_topology_on_left_flags</span></code></a>()</p></td>
+<td><p>Returns a list of flags indicating whether each resolved topology (sharing this sub-segment) is on left of this sub-segment.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sub_segments" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sub_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_sub_segments</span></code></a>()</p></td>
+<td><p>If this sub-segment is from a topological line <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section"><code class="xref py py-meth docutils literal notranslate"><span class="pre">section</span></code></a> then return the child <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment" title="pygplates.ResolvedTopologicalSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">sub-segments</span></code></a> of the topological line contributing to this sub-segment, otherwise return <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate" title="pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_subducting_plate</span></code></a>(...)</p></td>
+<td><p>Returns the subducting plate (or network) at this subduction zone.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_topological_section</span></code></a>()</p></td>
+<td><p>Returns the topological section that the shared sub-segment was obtained from.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_topological_section_feature</span></code></a>()</p></td>
+<td><p>Returns the feature referenced by the topological section.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_topological_section_geometry</span></code></a>()</p></td>
+<td><p>Returns the topological section <em>geometry</em> that the shared sub-segment was obtained from.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_feature">
+<span class="sig-name descname"><span class="pre">get_feature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_feature" title="Link to this definition"></a></dt>
+<dd><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_topological_section_feature()</span></code></a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<div class="line-block">
+<div class="line">The geometry in the feature is <strong>present day</strong> geometry - it is NOT reconstructed like <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_geometry()</span></code></a> is.</div>
+<div class="line">See <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_feature()</span></code></a> for a <strong>resolved</strong> feature containing reconstructed geometry.</div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_geometry">
+<span class="sig-name descname"><span class="pre">get_geometry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_geometry" title="Link to this definition"></a></dt>
+<dd><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_geometry()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates">
+<span class="sig-name descname"><span class="pre">get_overriding_and_subducting_plates</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">return_subduction_polarity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">enforce_single_plates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates" title="Link to this definition"></a></dt>
+<dd><p>Returns the overriding and subducting plates at this subduction zone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>return_subduction_polarity</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to also return the subduction polarity (defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+<li><p><strong>enforce_single_plates</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to require a <em>single</em> overriding plate/network and a <em>single</em> subducting plate/network (defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a 2-tuple containing the overriding and subducting resolved
+<a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">boundaries</span></code></a>/<a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">networks</span></code></a>,
+or a 3-tuple that also contains the subduction polarity (‘Left’ or ‘Right’) if
+<em>return_subduction_polarity</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the subduction polarity is not ‘Left’ or ‘Right’
+(or doesn’t exist), or <code class="docutils literal notranslate"><span class="pre">None</span></code> if <em>enforce_single_plates</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and there is not exactly one overriding plate or
+one overriding network or one overriding plate and network attached to this sub-segment, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if
+<em>enforce_single_plates</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and there is not exactly one subducting plate or one subducting network or one
+subducting plate and network attached to this sub-segment</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a> | <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a> | None, <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a> | <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a> | None], or         <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a> | <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a> | None, <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a> | <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a> | None, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>], or None</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If there is an overriding plate and an overriding network attached to this sub-segment then the
+overriding network is returned (since networks overlay plates). The same applies to <em>subducting</em> plates and networks.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>enforce_single_plates</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, then <code class="docutils literal notranslate"><span class="pre">None</span></code> could be returned for the overriding plate/network (if none are found), and
+if more than one overriding plate (or more than one overriding network) is found then it is arbitrary which overriding plate (or network)
+is returned. The same applies to <em>subducting</em> plates and networks. This also means it’s possible that <code class="docutils literal notranslate"><span class="pre">None</span></code> could be returned for
+<em>both</em> the overriding and subducting plates.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method does not require the feature type (of this sub-segment) to be <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_subduction_zone</span></code>.
+It only requires a <code class="docutils literal notranslate"><span class="pre">pygplates.PropertyName.gpml_subduction_polarity</span></code> feature property.</p>
+</div>
+<p>To find the overriding and subducting plate IDs of all subduction zone lines:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Resolve our topological plate polygons (and deforming networks) to the current 'time'.</span>
+<span class="c1"># We generate both the resolved topology boundaries and the boundary sections between them.</span>
+<span class="n">resolved_topologies</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">shared_boundary_sections</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">resolve_topologies</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">resolved_topologies</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">shared_boundary_sections</span><span class="p">)</span>
+
+<span class="c1"># Iterate over the shared boundary sections of all resolved topologies.</span>
+<span class="k">for</span> <span class="n">shared_boundary_section</span> <span class="ow">in</span> <span class="n">shared_boundary_sections</span><span class="p">:</span>
+
+    <span class="c1"># Skip sections that are not subduction zones.</span>
+    <span class="k">if</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">!=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Iterate over the shared sub-segments of the current subducting line.</span>
+    <span class="c1"># These are the parts of the subducting line that actually contribute to topological boundaries.</span>
+    <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
+
+        <span class="c1"># Get the overriding and subducting resolved plates/networks on either side of the current shared sub-segment.</span>
+        <span class="n">overriding_and_subducting_plates</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_overriding_and_subducting_plates</span><span class="p">(</span>
+                <span class="n">return_subduction_polarity</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">overriding_and_subducting_plates</span><span class="p">:</span>
+            <span class="n">overriding_plate</span><span class="p">,</span> <span class="n">subducting_plate</span><span class="p">,</span> <span class="n">subduction_polarity</span> <span class="o">=</span> <span class="n">overriding_and_subducting_plates</span>
+            <span class="n">overriding_plate_id</span> <span class="o">=</span> <span class="n">overriding_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+            <span class="n">subducting_plate_id</span> <span class="o">=</span> <span class="n">subducting_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate" title="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_overriding_plate()</span></code></a> and <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate" title="pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_subducting_plate()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.23.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.50: </span></p>
+<ul class="simple">
+<li><p>Allow one overriding plate and one overriding network (latter is then returned).</p></li>
+<li><p>Allow one subducting plate and one subducting network (latter is then returned).</p></li>
+<li><p>Added <em>enforce_single_plates</em> argument.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate">
+<span class="sig-name descname"><span class="pre">get_overriding_plate</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">return_subduction_polarity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">enforce_single_plate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate" title="Link to this definition"></a></dt>
+<dd><p>Returns the overriding plate (or network) at this subduction zone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>return_subduction_polarity</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to also return the subduction polarity</p></li>
+<li><p><strong>enforce_single_plate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to require a <em>single</em> overriding plate/network (defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>overriding resolved <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">boundary</span></code></a>/<a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">network</span></code></a>,
+or a 2-tuple that also contains the subduction polarity (‘Left’ or ‘Right’) if <em>return_subduction_polarity</em>
+is <code class="docutils literal notranslate"><span class="pre">True</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the subduction polarity is not ‘Left’ or ‘Right’ (or doesn’t exist), or <code class="docutils literal notranslate"><span class="pre">None</span></code> if
+<em>enforce_single_plate</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and there is not exactly one overriding plate or one overriding network or
+one overriding plate and network attached to this sub-segment</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a>, or <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a>, or <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a> | <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a> | None, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>], or None</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If there is an overriding plate and an overriding network attached to this sub-segment then the
+overriding network is returned (since networks overlay plates).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>enforce_single_plate</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, then <code class="docutils literal notranslate"><span class="pre">None</span></code> could be returned for the overriding plate/network (if none are found), and
+if more than one overriding plate (or more than one overriding network) is found then it is arbitrary which overriding plate (or network)
+is returned. This means if <em>return_subduction_polarity</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then it’s possible a 2-tuple is returned with <code class="docutils literal notranslate"><span class="pre">None</span></code> for the
+overriding plate and a valid value for the subduction polarity.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The number of <em>subducting</em> plates and networks is not considered (only overriding plates/networks are considered). In other words,
+if <em>enforce_single_plate</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, it is <em>not</em> required to have exactly one subducting plate or one subducting network or one
+subducting plate and network attached to this sub-segment.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method does not require the feature type (of this sub-segment) to be <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_subduction_zone</span></code>.
+It only requires a <code class="docutils literal notranslate"><span class="pre">pygplates.PropertyName.gpml_subduction_polarity</span></code> feature property.</p>
+</div>
+<p>To find the plate ID of each overriding plate attached to each subduction zone line sub-segment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Resolve our topological plate polygons (and deforming networks) to the current 'time'.</span>
+<span class="c1"># We generate both the resolved topology boundaries and the boundary sections between them.</span>
+<span class="n">resolved_topologies</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">shared_boundary_sections</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">resolve_topologies</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">resolved_topologies</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">shared_boundary_sections</span><span class="p">)</span>
+
+<span class="c1"># Iterate over the shared boundary sections of all resolved topologies.</span>
+<span class="k">for</span> <span class="n">shared_boundary_section</span> <span class="ow">in</span> <span class="n">shared_boundary_sections</span><span class="p">:</span>
+
+    <span class="c1"># Skip sections that are not subduction zones.</span>
+    <span class="k">if</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">!=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Iterate over the shared sub-segments of the current subducting line.</span>
+    <span class="c1"># These are the parts of the subducting line that actually contribute to topological boundaries.</span>
+    <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
+
+        <span class="c1"># Get the overriding resolved plate/network of the current shared sub-segment.</span>
+        <span class="n">overriding_plate_and_polarity</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_overriding_plate</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">overriding_plate_and_polarity</span><span class="p">:</span>
+            <span class="n">overriding_plate</span><span class="p">,</span> <span class="n">subduction_polarity</span> <span class="o">=</span> <span class="n">overriding_plate_and_polarity</span>
+            <span class="n">overriding_plate_id</span> <span class="o">=</span> <span class="n">overriding_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate" title="pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_subducting_plate()</span></code></a> and <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates" title="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_overriding_and_subducting_plates()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature">
+<span class="sig-name descname"><span class="pre">get_resolved_feature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature" title="Link to this definition"></a></dt>
+<dd><p>Returns a feature containing the resolved sub-segment geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a></p>
+</dd>
+</dl>
+<p>The returned feature contains the <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">The returned feature does <strong>not</strong> contain present-day geometry as is typical of most GPlates features.</div>
+<div class="line">In this way the returned feature is similar to a GPlates reconstruction export.</div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned feature should not be <a class="reference internal" href="pygplates.reverse_reconstruct.html#pygplates.reverse_reconstruct" title="pygplates.reverse_reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reverse</span> <span class="pre">reconstructed</span></code></a> to present day because the topological section might be a <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalLine</span></code></a> which is a topology and topologies are resolved (not reconstructed).</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_topological_section_feature()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="Link to this definition"></a></dt>
+<dd><p>Returns the geometry containing the shared sub-segment vertices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere">PolylineOnSphere</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These are the <em>unreversed</em> vertices. They are in the same order as the geometry of <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_topological_section_geometry()</span></code></a>. If you need a reversed version of this resolved geometry (eg, due to <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sharing_resolved_topology_geometry_reversal_flags()</span></code></a> returning <code class="docutils literal notranslate"><span class="pre">True</span></code> for a particular topology) then you can use <code class="docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere(sub_segment.get_resolved_geometry()[::-1])</span></code>.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sharing_resolved_topology_geometry_reversal_flags()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_features">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry_point_features</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_features" title="Link to this definition"></a></dt>
+<dd><p>Returns the source feature associated with each point in the <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a></p>
+</dd>
+</dl>
+<p>The motion of each point in the resolved geometry is determined by its source feature. And the source features are the building blocks from which topologies are assembled and resolved.</p>
+<p>To associate each source feature with its point (in a sub-segment):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">points</span> <span class="o">=</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry_points</span><span class="p">()</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry_point_features</span><span class="p">()</span>
+
+<span class="n">points_and_features</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">point_features</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">points_and_features</span><span class="p">:</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_velocities" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_geometry_point_velocities()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_velocities">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry_point_velocities</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">velocity_delta_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityUnits.kms_per_my</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">earth_radius_in_kms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_point_velocities" title="Link to this definition"></a></dt>
+<dd><p>Returns the velocities of the <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>velocity_delta_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time delta used to calculate velocities (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<a class="reference internal" href="pygplates.VelocityDeltaTimeType.html#pygplates.VelocityDeltaTimeType" title="pygplates.VelocityDeltaTimeType"><em>VelocityDeltaTimeType</em></a>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>velocity_units</strong> (<a class="reference internal" href="pygplates.VelocityUnits.html#pygplates.VelocityUnits" title="pygplates.VelocityUnits"><em>VelocityUnits</em></a>) – whether to return velocities as <em>kilometres per million years</em> or <em>centimetres per year</em> (defaults to <em>kilometres per million years</em>)</p></li>
+<li><p><strong>earth_radius_in_kms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – the radius of the Earth in <em>kilometres</em> (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D">Vector3D</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>velocity_delta_time</em> is negative or zero.</p>
+</dd>
+</dl>
+<p>To associate each velocity with its point (in a sub-segment):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">points</span> <span class="o">=</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry_points</span><span class="p">()</span>
+<span class="n">point_velocities</span> <span class="o">=</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry_point_velocities</span><span class="p">()</span>
+
+<span class="n">points_and_velocities</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">point_velocities</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">velocity</span> <span class="ow">in</span> <span class="n">points_and_velocities</span><span class="p">:</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry_points</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry_points" title="Link to this definition"></a></dt>
+<dd><p>Returns the points of the <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere">PointOnSphere</a></p>
+</dd>
+</dl>
+<p>This method is <em>essentially</em> equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_resolved_geometry_points</span><span class="p">(</span><span class="n">resolved_topological_shared_sub_segment</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">resolved_topological_shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GeometryOnSphere.get_points()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies">
+<span class="sig-name descname"><span class="pre">get_sharing_resolved_topologies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="Link to this definition"></a></dt>
+<dd><p>Returns a list of resolved topologies sharing this sub-segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a> | <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a>]</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">The resolved topologies (that share this sub-segment) can be <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a>.</div>
+<div class="line"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalLine</span></code></a> is excluded since it does not have a <em>boundary</em>.</div>
+</div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sharing_resolved_topology_geometry_reversal_flags()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags">
+<span class="sig-name descname"><span class="pre">get_sharing_resolved_topology_geometry_reversal_flags</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags" title="Link to this definition"></a></dt>
+<dd><p>Returns a list of flags indicating whether a copy of the sub-segment geometry was reversed when contributing to each resolved topology sharing this sub-segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment.was_geometry_reversed_in_topology" title="pygplates.ResolvedTopologicalSubSegment.was_geometry_reversed_in_topology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ResolvedTopologicalSubSegment.was_geometry_reversed_in_topology()</span></code></a></p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned list is in the same order (and has the same number of elements) as the list of sharing resolved topologies returned in <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sharing_resolved_topologies()</span></code></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sharing_resolved_topologies</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topologies</span><span class="p">()</span>
+<span class="n">geometry_reversal_flags</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topology_geometry_reversal_flags</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sharing_resolved_topologies</span><span class="p">)):</span>
+    <span class="n">sharing_resolved_topology</span> <span class="o">=</span> <span class="n">sharing_resolved_topologies</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">geometry_reversal_flag</span> <span class="o">=</span> <span class="n">geometry_reversal_flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sharing_resolved_topologies()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags">
+<span class="sig-name descname"><span class="pre">get_sharing_resolved_topology_on_left_flags</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags" title="Link to this definition"></a></dt>
+<dd><p>Returns a list of flags indicating whether each resolved topology (sharing this sub-segment) is on left of this sub-segment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+</dd>
+</dl>
+<p>The direction of this sub-segment (from which the <em>left</em> side can be determined) follows the order of points from the start to the end of the sub-segment. These are the <em>unreversed</em> points returned by <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_geometry()</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned list is in the same order (and has the same number of elements) as the list of sharing resolved topologies returned in <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sharing_resolved_topologies()</span></code></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sharing_resolved_topologies</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topologies</span><span class="p">()</span>
+<span class="n">topology_on_left_flags</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topology_on_left_flags</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sharing_resolved_topologies</span><span class="p">)):</span>
+    <span class="n">sharing_resolved_topology</span> <span class="o">=</span> <span class="n">sharing_resolved_topologies</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">topology_on_left_flag</span> <span class="o">=</span> <span class="n">topology_on_left_flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_sharing_resolved_topologies()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.47.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_sub_segments">
+<span class="sig-name descname"><span class="pre">get_sub_segments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sub_segments" title="Link to this definition"></a></dt>
+<dd><p>If this sub-segment is from a topological line <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section"><code class="xref py py-meth docutils literal notranslate"><span class="pre">section</span></code></a> then return the child <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment" title="pygplates.ResolvedTopologicalSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">sub-segments</span></code></a> of the topological line contributing to this sub-segment, otherwise return <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment" title="pygplates.ResolvedTopologicalSubSegment">ResolvedTopologicalSubSegment</a>, or None</p>
+</dd>
+</dl>
+<p>To see if a shared sub-segment is from a topological line and then iterate over its child sub-segments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">child_sub_segments_of_topological_line_shared_sub_segment</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sub_segments</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">child_sub_segments_of_topological_line_shared_sub_segment</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">child_sub_segment</span> <span class="ow">in</span> <span class="n">child_sub_segments_of_topological_line_shared_sub_segment</span><span class="p">:</span>
+        <span class="n">child_sub_segment_geometry</span> <span class="o">=</span> <span class="n">child_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span>
+        <span class="n">child_sub_segment_plate_id</span> <span class="o">=</span> <span class="n">child_sub_segment</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">sub_segment_geometry</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span>
+    <span class="n">sub_segment_plate_id</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each child sub-segment has its own <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment.was_geometry_reversed_in_topology" title="pygplates.ResolvedTopologicalSubSegment.was_geometry_reversed_in_topology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reverse</span> <span class="pre">flag</span></code></a> indicating whether it was reversed when contributing to this shared sub-segment. And this shared sub-segment also has a <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_geometry_reversal_flags"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reverse</span> <span class="pre">flag</span></code></a>, for each final boundary topology that shares it, which determines whether this shared sub-segment was reversed when contributing to each final boundary topology. So whether a child sub-segment was effectively reversed when contributing to a final boundary topology depends on both reverse flags (of the child sub-segment and this shared sub-segment). For example, if the child sub-segment was reversed in this shared sub-segment, and this shared sub-segment was reversed in a final boundary, then the child sub-segment was not reversed in that final boundary.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.22.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate">
+<span class="sig-name descname"><span class="pre">get_subducting_plate</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">return_subduction_polarity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">enforce_single_plate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_subducting_plate" title="Link to this definition"></a></dt>
+<dd><p>Returns the subducting plate (or network) at this subduction zone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>return_subduction_polarity</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to also return the subduction polarity</p></li>
+<li><p><strong>enforce_single_plate</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to require a <em>single</em> subducting plate/network (defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>subducting resolved <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">boundary</span></code></a>/<a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">network</span></code></a>,
+or a 2-tuple that also contains the subduction polarity (‘Left’ or ‘Right’) if <em>return_subduction_polarity</em>
+is <code class="docutils literal notranslate"><span class="pre">True</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the subduction polarity is not ‘Left’ or ‘Right’ (or doesn’t exist), or <code class="docutils literal notranslate"><span class="pre">None</span></code> if
+<em>enforce_single_plate</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> and there is not exactly one subducting plate or one subducting network or
+one subducting plate and network attached to this sub-segment</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a>, or <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a>, or <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary">ResolvedTopologicalBoundary</a> | <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork">ResolvedTopologicalNetwork</a> | None, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a>], or None</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If there is a subducting plate and a subducting network attached to this sub-segment then the
+subducting network is returned (since networks overlay plates).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>enforce_single_plate</em> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, then <code class="docutils literal notranslate"><span class="pre">None</span></code> could be returned for the subducting plate/network (if none are found), and
+if more than one subducting plate (or more than one subducting network) is found then it is arbitrary which subducting plate (or network)
+is returned. This means if <em>return_subduction_polarity</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then it’s possible a 2-tuple is returned with <code class="docutils literal notranslate"><span class="pre">None</span></code> for the
+subducting plate and a valid value for the subduction polarity.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The number of <em>overriding</em> plates and networks is not considered (only subducting plates/networks are considered). In other words,
+if <em>enforce_single_plate</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, it is <em>not</em> required to have exactly one overriding plate or one overriding network or one
+overriding plate and network attached to this sub-segment.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method does not require the feature type (of this sub-segment) to be <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_subduction_zone</span></code>.
+It only requires a <code class="docutils literal notranslate"><span class="pre">pygplates.PropertyName.gpml_subduction_polarity</span></code> feature property.</p>
+</div>
+<p>To find the plate ID of each subducting plate attached to each subduction zone line sub-segment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Resolve our topological plate polygons (and deforming networks) to the current 'time'.</span>
+<span class="c1"># We generate both the resolved topology boundaries and the boundary sections between them.</span>
+<span class="n">resolved_topologies</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">shared_boundary_sections</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">resolve_topologies</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">resolved_topologies</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">shared_boundary_sections</span><span class="p">)</span>
+
+<span class="c1"># Iterate over the shared boundary sections of all resolved topologies.</span>
+<span class="k">for</span> <span class="n">shared_boundary_section</span> <span class="ow">in</span> <span class="n">shared_boundary_sections</span><span class="p">:</span>
+
+    <span class="c1"># Skip sections that are not subduction zones.</span>
+    <span class="k">if</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">!=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">:</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Iterate over the shared sub-segments of the current subducting line.</span>
+    <span class="c1"># These are the parts of the subducting line that actually contribute to topological boundaries.</span>
+    <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
+
+        <span class="c1"># Get the subducting resolved plate/network of the current shared sub-segment.</span>
+        <span class="n">subducting_plate_and_polarity</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_subducting_plate</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">subducting_plate_and_polarity</span><span class="p">:</span>
+            <span class="n">subducting_plate</span><span class="p">,</span> <span class="n">subduction_polarity</span> <span class="o">=</span> <span class="n">subducting_plate_and_polarity</span>
+            <span class="n">subducting_plate_id</span> <span class="o">=</span> <span class="n">subducting_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate" title="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_overriding_plate()</span></code></a> and <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates" title="pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_and_subducting_plates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_overriding_and_subducting_plates()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.30.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.50: </span></p>
+<ul class="simple">
+<li><p>Allow one subducting plate and one subducting network (latter is then returned).</p></li>
+<li><p>Added <em>enforce_single_plate</em> argument.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section">
+<span class="sig-name descname"><span class="pre">get_topological_section</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section" title="Link to this definition"></a></dt>
+<dd><p>Returns the topological section that the shared sub-segment was obtained from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry">ReconstructionGeometry</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This represents the <strong>entire</strong> geometry of the topological section, not just the part that contributes to the shared sub-segment.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">This topological section can be either a <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedFeatureGeometry</span></code></a> or a <a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalLine</span></code></a>.</div>
+<div class="line">The resolved topologies that share the topological section can be <a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> and <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a>.</div>
+</div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_topological_section_feature()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature">
+<span class="sig-name descname"><span class="pre">get_topological_section_feature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_feature" title="Link to this definition"></a></dt>
+<dd><p>Returns the feature referenced by the topological section.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The geometry in the returned feature represents the <strong>entire</strong> geometry of the topological section, not just the part that contributes to the shared sub-segment.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<div class="line-block">
+<div class="line">The geometry in the feature is <strong>present day</strong> geometry - it is NOT reconstructed like <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_topological_section_geometry()</span></code></a> is.</div>
+<div class="line">See <a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature" title="pygplates.ResolvedTopologicalSharedSubSegment.get_resolved_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_feature()</span></code></a> for a <strong>resolved</strong> feature containing reconstructed geometry.</div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry">
+<span class="sig-name descname"><span class="pre">get_topological_section_geometry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section_geometry" title="Link to this definition"></a></dt>
+<dd><p>Returns the topological section <em>geometry</em> that the shared sub-segment was obtained from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere">PolylineOnSphere</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the <strong>entire</strong> geometry of the topological section, not just the part that contributes to the shared sub-segment.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section" title="pygplates.ResolvedTopologicalSharedSubSegment.get_topological_section"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_topological_section()</span></code></a></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ResolvedTopologicalSection.html" class="btn btn-neutral float-left" title="pygplates.ResolvedTopologicalSection" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.NetworkTriangulation.html" class="btn btn-neutral float-right" title="pygplates.NetworkTriangulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

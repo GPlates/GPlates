@@ -1,0 +1,39 @@
+﻿pygplates.PolylineOnSphere
+==========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PolylineOnSphere
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PolylineOnSphere.__init__
+      ~PolylineOnSphere.clone
+      ~PolylineOnSphere.distance
+      ~PolylineOnSphere.get_arc_length
+      ~PolylineOnSphere.get_centroid
+      ~PolylineOnSphere.get_points
+      ~PolylineOnSphere.get_segments
+      ~PolylineOnSphere.join
+      ~PolylineOnSphere.rotation_interpolate
+      ~PolylineOnSphere.to_lat_lon_array
+      ~PolylineOnSphere.to_lat_lon_list
+      ~PolylineOnSphere.to_lat_lon_point_list
+      ~PolylineOnSphere.to_tessellated
+      ~PolylineOnSphere.to_uniform_points
+      ~PolylineOnSphere.to_xyz_array
+      ~PolylineOnSphere.to_xyz_list
+   
+   
+
+   
+   
+   
+   
+   

@@ -1,0 +1,8 @@
+﻿pygplates.CoverageReturn
+========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: CoverageReturn
+   :no-members:
+   :no-show-inheritance:

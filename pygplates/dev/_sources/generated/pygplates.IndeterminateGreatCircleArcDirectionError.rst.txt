@@ -1,0 +1,6 @@
+﻿pygplates.IndeterminateGreatCircleArcDirectionError
+===================================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: IndeterminateGreatCircleArcDirectionError

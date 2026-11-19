@@ -1,0 +1,54 @@
+﻿pygplates.GpmlOldPlatesHeader
+=============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlOldPlatesHeader
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlOldPlatesHeader.__init__
+      ~GpmlOldPlatesHeader.accept_visitor
+      ~GpmlOldPlatesHeader.clone
+      ~GpmlOldPlatesHeader.get_age_of_appearance
+      ~GpmlOldPlatesHeader.get_age_of_disappearance
+      ~GpmlOldPlatesHeader.get_colour_code
+      ~GpmlOldPlatesHeader.get_conjugate_plate_id_number
+      ~GpmlOldPlatesHeader.get_data_type_code
+      ~GpmlOldPlatesHeader.get_data_type_code_number
+      ~GpmlOldPlatesHeader.get_data_type_code_number_additional
+      ~GpmlOldPlatesHeader.get_geographic_description
+      ~GpmlOldPlatesHeader.get_geometry
+      ~GpmlOldPlatesHeader.get_number_of_points
+      ~GpmlOldPlatesHeader.get_plate_id_number
+      ~GpmlOldPlatesHeader.get_reference_number
+      ~GpmlOldPlatesHeader.get_region_number
+      ~GpmlOldPlatesHeader.get_string_number
+      ~GpmlOldPlatesHeader.get_value
+      ~GpmlOldPlatesHeader.set_age_of_appearance
+      ~GpmlOldPlatesHeader.set_age_of_disappearance
+      ~GpmlOldPlatesHeader.set_colour_code
+      ~GpmlOldPlatesHeader.set_conjugate_plate_id_number
+      ~GpmlOldPlatesHeader.set_data_type_code
+      ~GpmlOldPlatesHeader.set_data_type_code_number
+      ~GpmlOldPlatesHeader.set_data_type_code_number_additional
+      ~GpmlOldPlatesHeader.set_geographic_description
+      ~GpmlOldPlatesHeader.set_number_of_points
+      ~GpmlOldPlatesHeader.set_plate_id_number
+      ~GpmlOldPlatesHeader.set_reference_number
+      ~GpmlOldPlatesHeader.set_region_number
+      ~GpmlOldPlatesHeader.set_string_number
+   
+   
+
+   
+   
+   
+   
+   

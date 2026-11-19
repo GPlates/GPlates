@@ -1,0 +1,6 @@
+﻿pygplates.GeometryTypeError
+===========================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: GeometryTypeError

@@ -1,0 +1,8 @@
+﻿pygplates.PolygonOnSphereOrientation
+====================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PolygonOnSphereOrientation
+   :no-members:
+   :no-show-inheritance:

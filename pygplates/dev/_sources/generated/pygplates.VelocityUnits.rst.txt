@@ -1,0 +1,8 @@
+﻿pygplates.VelocityUnits
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: VelocityUnits
+   :no-members:
+   :no-show-inheritance:

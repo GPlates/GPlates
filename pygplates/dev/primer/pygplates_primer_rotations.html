@@ -1,0 +1,391 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rotations &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Topologies" href="pygplates_primer_topologies.html" />
+    <link rel="prev" title="Primer" href="../pygplates_primer.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_primer.html">Primer</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Rotations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#plate-reconstruction-hierarchy">Plate reconstruction hierarchy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#working-with-finite-rotations">Working with finite rotations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#composing-finite-rotations">Composing finite rotations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plate-circuit-paths">Plate circuit paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#equivalent-total-rotation">Equivalent total rotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relative-total-rotation">Relative total rotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#equivalent-stage-rotation">Equivalent stage rotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#relative-stage-rotation">Relative stage rotation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pygplates_primer_topologies.html">Topologies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygplates_primer_deformation.html">Deformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_primer.html">Primer</a></li>
+      <li class="breadcrumb-item active">Rotations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/primer/pygplates_primer_rotations.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="rotations">
+<span id="pygplates-primer-rotations"></span><h1>Rotations<a class="headerlink" href="#rotations" title="Link to this heading"></a></h1>
+<p>This section covers plate rotations in pyGPlates.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#plate-reconstruction-hierarchy" id="id1">Plate reconstruction hierarchy</a></p></li>
+<li><p><a class="reference internal" href="#working-with-finite-rotations" id="id2">Working with finite rotations</a></p>
+<ul>
+<li><p><a class="reference internal" href="#composing-finite-rotations" id="id3">Composing finite rotations</a></p></li>
+<li><p><a class="reference internal" href="#plate-circuit-paths" id="id4">Plate circuit paths</a></p></li>
+<li><p><a class="reference internal" href="#equivalent-total-rotation" id="id5">Equivalent total rotation</a></p></li>
+<li><p><a class="reference internal" href="#relative-total-rotation" id="id6">Relative total rotation</a></p></li>
+<li><p><a class="reference internal" href="#equivalent-stage-rotation" id="id7">Equivalent stage rotation</a></p></li>
+<li><p><a class="reference internal" href="#relative-stage-rotation" id="id8">Relative stage rotation</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="plate-reconstruction-hierarchy">
+<span id="pygplates-primer-plate-reconstruction-hierarchy"></span><h2><a class="toc-backref" href="#id1" role="doc-backlink">Plate reconstruction hierarchy</a><a class="headerlink" href="#plate-reconstruction-hierarchy" title="Link to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference external" href="http://www.gplates.org/publications.html">Next-generation plate-tectonic reconstructions using GPlates</a>
+contains a good introduction to plate reconstruction hierarchies.</p>
+</div>
+<p>A plate-reconstruction hierarchy consists of a tree of total reconstruction poles at an instant in geological time.</p>
+<p>Plate motions are described in terms of relative rotations between pairs of plates.
+Every plate in the model moves relative to some other plate where, within each
+of these plate pairs, one plate is considered the <em>moving</em> plate relative to the
+other <em>fixed</em> plate. That <em>fixed</em> plate, in turn, moves relative to another plate
+thus forming a tree-like structure known as the <em>reconstruction tree</em>.
+Each of these <em>relative</em> rotations is an <em>edge</em> in the tree.</p>
+<p>The following diagram shows a subset of the hierarchy of relative rotations used in GPlates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>             <span class="mi">000</span>
+              <span class="o">|</span>
+              <span class="o">|</span>  <span class="n">finite</span> <span class="n">rotation</span> <span class="p">(</span><span class="mi">001</span> <span class="n">rel</span><span class="o">.</span> <span class="mi">000</span><span class="p">)</span>
+              <span class="o">|</span>
+             <span class="mi">001</span>
+              <span class="o">|</span>
+              <span class="o">|</span>  <span class="n">finite</span> <span class="n">rotation</span> <span class="p">(</span><span class="mi">701</span> <span class="n">rel</span><span class="o">.</span> <span class="mi">001</span><span class="p">)</span>
+              <span class="o">|</span>
+             <span class="mi">701</span><span class="p">(</span><span class="n">AFR</span><span class="p">)</span>
+             <span class="o">/|</span>\
+            <span class="o">/</span> <span class="o">|</span> \  <span class="n">finite</span> <span class="n">rotation</span> <span class="p">(</span><span class="mi">802</span> <span class="n">rel</span><span class="o">.</span> <span class="mi">701</span><span class="p">)</span>
+           <span class="o">/</span>  <span class="o">|</span>  \
+        <span class="mi">201</span>  <span class="mi">702</span>  <span class="mi">802</span><span class="p">(</span><span class="n">ANT</span><span class="p">)</span>
+         <span class="o">/</span>   <span class="o">/</span> \    \
+        <span class="o">/</span>   <span class="o">/</span>   \    \  <span class="n">finite</span> <span class="n">rotation</span> <span class="p">(</span><span class="mi">801</span> <span class="n">rel</span><span class="o">.</span> <span class="mi">802</span><span class="p">)</span>
+       <span class="o">/</span>   <span class="o">/</span>     \    \
+    <span class="mi">202</span>  <span class="mi">704</span>     <span class="mi">705</span>  <span class="mi">801</span><span class="p">(</span><span class="n">AUS</span><span class="p">)</span>
+    <span class="o">/</span> \
+   <span class="o">/</span>   \
+  <span class="o">/</span>     \
+<span class="mi">290</span>     <span class="mi">291</span>
+</pre></div>
+</div>
+<p>…where <em>000</em> is the anchored plate (the top of the reconstruction tree).
+The edge <em>802 rel. 701</em> contains the rotation of <em>802</em> (the moving plate in the pair) relative to
+<em>701</em> (the fixed plate in the pair).</p>
+<p>An <em>equivalent</em> rotation is the rotation of a plate relative to the <em>anchored</em> plate.
+So the equivalent rotation of plate <em>802</em> is the composition of relative rotations along the
+plate circuit <em>edge</em> path from anchored plate <em>000</em> to plate <em>802</em>.</p>
+<p>A <em>relative</em> rotation is the rotation of one plate relative to <em>another</em> plate
+(as opposed to the <em>anchored</em> plate). Note that, like <em>equivalent</em> rotations,
+the plate circuit <em>edge</em> path can consist of one or more edges.
+For example, the rotation of plate <em>801</em> relative to plate <em>291</em> follows an <em>edge</em>
+path that goes via plates <em>202</em>, <em>201</em>, <em>701</em> and <em>802</em>. However it should be noted
+that if the edge between <em>001</em> and <em>701</em> did not exist then, even though a path
+would still exist between <em>291</em> and <em>801</em>, the <em>relative</em> rotation (and <em>equivalent</em>
+rotations of <em>291</em> and <em>801</em> for that matter) would be an <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.represents_identity_rotation" title="pygplates.FiniteRotation.represents_identity_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">identity</span> <span class="pre">rotation</span></code></a>. This is because the sub-tree
+below <em>001</em> would not get built into the reconstruction tree and hence all plates
+in the sub-tree would be missing. This can happen when the rotation sequence
+for a moving/fixed plate pair (eg, <em>701</em>/<em>101</em>) does not span a large enough time
+period. You can work around this situation by setting the anchor plate to the relative plate
+(eg, <em>291</em> in the above example).</p>
+<p>A <em>total</em> rotation is a rotation at a time in the past relative to <em>present day</em> (0Ma).
+In other words <em>from</em> present day <em>to</em> a past time.</p>
+<p>A <em>stage</em> rotation is a rotation at a time in the past relative to <em>another</em> time
+in the past.</p>
+</section>
+<section id="working-with-finite-rotations">
+<span id="pygplates-primer-working-with-finite-rotations"></span><h2><a class="toc-backref" href="#id2" role="doc-backlink">Working with finite rotations</a><a class="headerlink" href="#working-with-finite-rotations" title="Link to this heading"></a></h2>
+<p>A finite rotation represents the motion of a plate (relative to another plate) on the surface of the
+globe over a period of geological time.</p>
+<p>In pyGPlates, finite rotations are represented by <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FiniteRotation</span></code></a>.</p>
+<p>In the following sections we will first cover some rotation maths and then derive the four
+fundamental finite rotation categories:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#pygplates-primer-equivalent-total-rotation"><span class="std std-ref">Equivalent total rotation</span></a></p></li>
+<li><p><a class="reference internal" href="#pygplates-primer-relative-total-rotation"><span class="std std-ref">Relative total rotation</span></a></p></li>
+<li><p><a class="reference internal" href="#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">Equivalent stage rotation</span></a></p></li>
+<li><p><a class="reference internal" href="#pygplates-primer-relative-stage-rotation"><span class="std std-ref">Relative stage rotation</span></a></p></li>
+</ul>
+<p>In pyGPlates, these can be obtained from a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<section id="composing-finite-rotations">
+<span id="pygplates-primer-composing-finite-rotations"></span><h3><a class="toc-backref" href="#id3" role="doc-backlink">Composing finite rotations</a><a class="headerlink" href="#composing-finite-rotations" title="Link to this heading"></a></h3>
+<p>In the following examples a composed rotation <span class="math notranslate nohighlight">\(R2 \times R1\)</span> means the rotation <span class="math notranslate nohighlight">\(R1\)</span>
+is the first rotation to be applied followed by the rotation <span class="math notranslate nohighlight">\(R2\)</span> such that a geometry is
+rotated in the following way:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{geometry\_final} &amp;= R2 \times(R1 \times \text{geometry\_initial}) \\
+                      &amp;= R2 \times R1 \times \text{geometry\_initial}\end{split}\]</div>
+<p>…which is the equivalent of…</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{geometry\_intermediate} &amp;= R1 \times \text{geometry\_initial} \\
+\text{geometry\_final} &amp;= R2 \times \text{geometry\_intermediate} \\
+                      &amp;= R2 \times (R1 \times \text{geometry\_initial}) \\
+                      &amp;= R2 \times R1 \times \text{geometry\_initial}\end{split}\]</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Rotations are <em>not</em> commutative (<span class="math notranslate nohighlight">\(R2 \times R1 \neq R1 \times R2\)</span>)</p>
+</div>
+<p>The composed rotation <span class="math notranslate nohighlight">\(R2 \times R1\)</span> can be written in pyGPlates as either:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">R2</span> <span class="o">*</span> <span class="n">R1</span>
+</pre></div>
+</div>
+<p>…or…</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">R2</span><span class="p">,</span> <span class="n">R1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For example, the above geometry rotation can be written as either:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geometry_final</span> <span class="o">=</span> <span class="n">R2</span> <span class="o">*</span> <span class="n">R1</span> <span class="o">*</span> <span class="n">geometry_initial</span>
+</pre></div>
+</div>
+<p>…or…</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">geometry_final</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="o">.</span><span class="n">compose</span><span class="p">(</span><span class="n">R2</span><span class="p">,</span> <span class="n">R1</span><span class="p">)</span> <span class="o">*</span> <span class="n">geometry_initial</span>
+</pre></div>
+</div>
+</section>
+<section id="plate-circuit-paths">
+<span id="pygplates-primer-plate-circuit-paths"></span><h3><a class="toc-backref" href="#id4" role="doc-backlink">Plate circuit paths</a><a class="headerlink" href="#plate-circuit-paths" title="Link to this heading"></a></h3>
+<p>The rotation from present day (0Ma) to the <em>geological time</em> <span class="math notranslate nohighlight">\(t_{2}\)</span> (via time <span class="math notranslate nohighlight">\(t_{1}\)</span>) is given by:</p>
+<div class="math notranslate nohighlight">
+\[R(0 \rightarrow t_{2}) = R(t_{1} \rightarrow t_{2}) \times R(0 \rightarrow t_{1})\]</div>
+<p>…or by post-multiplying both sides by <span class="math notranslate nohighlight">\(R(t_{1} \rightarrow 0)\)</span>, and then swapping sides, this becomes…</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R(0 \rightarrow t_{2}) \times R(t_{1} \rightarrow 0) &amp;= R(t_{1} \rightarrow t_{2}) \times R(0 \rightarrow t_{1}) \times R(t_{1} \rightarrow 0) \\
+R(0 \rightarrow t_{2}) \times R(t_{1} \rightarrow 0) &amp;= R(t_{1} \rightarrow t_{2}) \\
+R(t_{1} \rightarrow t_{2}) &amp;= R(0 \rightarrow t_{2}) \times R(t_{1} \rightarrow 0)\end{split}\]</div>
+<p>The <em>plate circuit path</em> rotation from anchor plate <span class="math notranslate nohighlight">\(P_{A}\)</span> to moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> (via fixed plate <span class="math notranslate nohighlight">\(P_{F}\)</span>) is given by:</p>
+<div class="math notranslate nohighlight">
+\[R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})\]</div>
+<p>…or by pre-multiplying both sides by <span class="math notranslate nohighlight">\(R(P_{F} \rightarrow P_{A})\)</span> this becomes…</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R(P_{F} \rightarrow P_{A}) \times R(P_{A} \rightarrow P_{M}) &amp;= R(P_{F} \rightarrow P_{A}) \times R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M}) \\
+R(P_{F} \rightarrow P_{A}) \times R(P_{A} \rightarrow P_{M}) &amp;= R(P_{F} \rightarrow P_{M}) \\
+R(P_{F} \rightarrow P_{M}) &amp;= R(P_{F} \rightarrow P_{A}) \times R(P_{A} \rightarrow P_{M})\end{split}\]</div>
+<p>Note that the rotations for relative times and for relative plates have the opposite order of each other !</p>
+<p>In other words:</p>
+<ul>
+<li><p>For times <span class="math notranslate nohighlight">\(0 \rightarrow t_{1} \rightarrow t_{2}\)</span> you apply the <span class="math notranslate nohighlight">\(0 \rightarrow t_{1}\)</span> rotation first followed by the <span class="math notranslate nohighlight">\(t_{1} \rightarrow t_{2}\)</span> rotation:</p>
+<div class="math notranslate nohighlight">
+\[R(0 \rightarrow t_{2})  = R(t_{1} \rightarrow t_{2}) \times R(0 \rightarrow t_{1})\]</div>
+</li>
+<li><p>For plate circuit <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{F} \rightarrow P_{M}\)</span> you apply the <span class="math notranslate nohighlight">\(P_{F} \rightarrow P_{M}\)</span> rotation first followed by the <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{F}\)</span> rotation:</p>
+<div class="math notranslate nohighlight">
+\[R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})\]</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is not <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{F}\)</span> followed by <span class="math notranslate nohighlight">\(P_{F} \rightarrow P_{M}\)</span> as you might expect (looking at the time example).</p>
+</div>
+</li>
+</ul>
+<p>This is probably best explained by the difference between thinking in terms of the grand fixed
+coordinate system and local coordinate system (see <a class="reference external" href="http://glprogramming.com/red/chapter03.html#name2">http://glprogramming.com/red/chapter03.html#name2</a>).
+Essentially, in the plate circuit <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{F} \rightarrow P_{M}\)</span>, the <span class="math notranslate nohighlight">\(P_{F} \rightarrow P_{M}\)</span> rotation can be thought of as a rotation
+within the local coordinate system of <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{F}\)</span>. In other words <span class="math notranslate nohighlight">\(P_{F} \rightarrow P_{M}\)</span> is not a rotation that
+occurs relative to the global spin axis but a rotation relative to the local coordinate system
+of plate <span class="math notranslate nohighlight">\(P_{F}\)</span> <em>after</em> it has been rotated relative to the anchor plate <span class="math notranslate nohighlight">\(P_{A}\)</span>.</p>
+<p>For the times <span class="math notranslate nohighlight">\(0 \rightarrow t_{1} \rightarrow t_{2}\)</span> this local/relative coordinate system concept does not apply.</p>
+<p>Note that a rotation must be relative to present day (0Ma) before it can be separated into a (plate circuit) chain of moving/fixed plate pairs.
+Hence <span class="math notranslate nohighlight">\(R(t_{1} \rightarrow t_{2},P_{A} \rightarrow P_{C}) \neq R(t_{1} \rightarrow t_{2},P_{A} \rightarrow P_{B}) \times R(t_{1} \rightarrow t_{2},P_{B} \rightarrow P_{C})\)</span>
+demonstrates this mistake.</p>
+<p>The following shows the correct way to separate <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{C}\)</span> into the (plate circuit) chain of moving/fixed plate pairs <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{B}\)</span> and <span class="math notranslate nohighlight">\(P_{B} \rightarrow P_{C}\)</span>…</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R(t_{1} \rightarrow t_{2},P_{A} \rightarrow P_{C}) \\
+&amp; = R(0 \rightarrow t_{2},P_{A} \rightarrow P_{C}) \times R(t_{1} \rightarrow 0,P_{A} \rightarrow P_{C}) \\
+&amp; = R(0 \rightarrow t_{2},P_{A} \rightarrow P_{C}) \times R(0 \rightarrow t_{1},P_{A} \rightarrow P_{C})^{-1} \\
+&amp;   \text{// Now that all times are relative to 0Ma we can split } P_{A} \rightarrow P_{C} \text{ into } P_{A} \rightarrow P_{B} \rightarrow P_{C} \text{ ...} \\
+&amp; = R(0 \rightarrow t_{2},P_{A} \rightarrow P_{B}) \times R(0 \rightarrow t_{2},P_{B} \rightarrow P_{C}) \times [R(0 \rightarrow t_{1},P_{A} \rightarrow P_{B}) \times R(0 \rightarrow t_{1},P_{B} \rightarrow P_{C})]^{-1} \\
+&amp; = R(0 \rightarrow t_{2},P_{A} \rightarrow P_{B}) \times R(0 \rightarrow t_{2},P_{B} \rightarrow P_{C}) \times R(0 \rightarrow t_{1},P_{B} \rightarrow P_{C})^{-1} \times R(0 \rightarrow t_{1},P_{A} \rightarrow P_{B})^{-1}\end{split}\]</div>
+<p>…where <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{B} \rightarrow P_{C}\)</span> means <span class="math notranslate nohighlight">\(P_{B} \rightarrow P_{C}\)</span> is the rotation of <span class="math notranslate nohighlight">\(P_{C}\)</span> relative to <span class="math notranslate nohighlight">\(P_{B}\)</span> and <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{B}\)</span> is
+the rotation of <span class="math notranslate nohighlight">\(P_{B}\)</span> relative to <span class="math notranslate nohighlight">\(P_{A}\)</span>. The need for rotation <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{C}\)</span> to be relative
+to present day (0Ma) before it can be split into <span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{B}\)</span> and <span class="math notranslate nohighlight">\(P_{B} \rightarrow P_{C}\)</span> is because
+<span class="math notranslate nohighlight">\(P_{A} \rightarrow P_{B}\)</span> and <span class="math notranslate nohighlight">\(P_{B} \rightarrow P_{C}\)</span> are defined (in the rotation file) as total reconstruction
+poles which are always relative to present day.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">The inverse of rotation <span class="math notranslate nohighlight">\(R\)</span> is denoted <span class="math notranslate nohighlight">\(R^{-1}\)</span>.</div>
+<div class="line">Such that <span class="math notranslate nohighlight">\(R \times R^{-1} = R^{-1} \times R = I\)</span> where <span class="math notranslate nohighlight">\(I\)</span> is the <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.represents_identity_rotation" title="pygplates.FiniteRotation.represents_identity_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">identify</span> <span class="pre">rotation</span></code></a>.</div>
+</div>
+</div>
+</section>
+<section id="equivalent-total-rotation">
+<span id="pygplates-primer-equivalent-total-rotation"></span><h3><a class="toc-backref" href="#id5" role="doc-backlink">Equivalent total rotation</a><a class="headerlink" href="#equivalent-total-rotation" title="Link to this heading"></a></h3>
+<p>The equivalent total rotation of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> relative to anchor plate <span class="math notranslate nohighlight">\(P_{A}\)</span>, and
+from present day time <span class="math notranslate nohighlight">\(0\)</span> to time <span class="math notranslate nohighlight">\(t_{to}\)</span> is:</p>
+<div class="math notranslate nohighlight">
+\[R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M})\]</div>
+<p>In pyGPlates, the equivalent total rotation can be obtained <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a> as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">equivalent_total_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">moving_plate</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="relative-total-rotation">
+<span id="pygplates-primer-relative-total-rotation"></span><h3><a class="toc-backref" href="#id6" role="doc-backlink">Relative total rotation</a><a class="headerlink" href="#relative-total-rotation" title="Link to this heading"></a></h3>
+<p>The relative total rotation of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> relative to fixed plate <span class="math notranslate nohighlight">\(P_{F}\)</span>, and
+from present day time <span class="math notranslate nohighlight">\(0\)</span> to time <span class="math notranslate nohighlight">\(t_{to}\)</span> is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R(0 \rightarrow t_{to},P_{F} \rightarrow P_{M}) \\
+&amp;  = R(0 \rightarrow t_{to},P_{F} \rightarrow P_{A}) \times R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \\
+&amp;  = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F})^{-1} \times R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M})\end{split}\]</div>
+<p>…where <span class="math notranslate nohighlight">\(P_{A}\)</span> is the anchor plate.</p>
+<p>In pyGPlates, the relative total rotation can be obtained from <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a> as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">relative_total_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">moving_plate</span><span class="p">,</span> <span class="n">fixed_plate_id</span><span class="o">=</span><span class="n">fixed_plate</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="equivalent-stage-rotation">
+<span id="pygplates-primer-equivalent-stage-rotation"></span><h3><a class="toc-backref" href="#id7" role="doc-backlink">Equivalent stage rotation</a><a class="headerlink" href="#equivalent-stage-rotation" title="Link to this heading"></a></h3>
+<p>The equivalent stage rotation of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> relative to anchor plate <span class="math notranslate nohighlight">\(P_{A}\)</span>, and
+from time <span class="math notranslate nohighlight">\(t_{from}\)</span> to time <span class="math notranslate nohighlight">\(t_{to}\)</span> is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R(t_{from} \rightarrow t_{to},P_{A} \rightarrow P_{M}) \\
+&amp;  = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times R(t_{from} \rightarrow 0,P_{A} \rightarrow P_{M}) \\
+&amp;  = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{M})^{-1}\end{split}\]</div>
+<p>In pyGPlates, the equivalent stage rotation can be obtained <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a> as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">moving_plate</span><span class="p">,</span> <span class="n">from_time</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="relative-stage-rotation">
+<span id="pygplates-primer-relative-stage-rotation"></span><h3><a class="toc-backref" href="#id8" role="doc-backlink">Relative stage rotation</a><a class="headerlink" href="#relative-stage-rotation" title="Link to this heading"></a></h3>
+<p>The relative stage rotation of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> relative to fixed plate <span class="math notranslate nohighlight">\(P_{F}\)</span>, and
+from time <span class="math notranslate nohighlight">\(t_{from}\)</span> to time <span class="math notranslate nohighlight">\(t_{to}\)</span> is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \\
+&amp;  = R(0 \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(t_{from} \rightarrow 0,P_{F} \rightarrow P_{M}) \\
+&amp;  = R(0 \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1} \\
+&amp;  = R(0 \rightarrow t_{to},P_{F} \rightarrow P_{A}) \times R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times [R(0 \rightarrow t_{from},P_{F} \rightarrow P_{A}) \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{M})]^{-1} \\
+&amp;  = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F})^{-1} \times R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times [R(0 \rightarrow t_{from},P_{A} \rightarrow P_{F})^{-1} \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{M})]^{-1} \\
+&amp;  = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F})^{-1} \times R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{M})^{-1} \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{F})\end{split}\]</div>
+<p>…where <span class="math notranslate nohighlight">\(P_{A}\)</span> is the anchor plate.</p>
+<p>In pyGPlates, the relative stage rotation can be obtained <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a> as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">relative_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">moving_plate</span><span class="p">,</span> <span class="n">from_time</span><span class="p">,</span> <span class="n">fixed_plate</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../pygplates_primer.html" class="btn btn-neutral float-left" title="Primer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_primer_topologies.html" class="btn btn-neutral float-right" title="Topologies" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

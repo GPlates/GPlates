@@ -1,0 +1,416 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deformation &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sample code" href="../pygplates_sample_code.html" />
+    <link rel="prev" title="Topologies" href="pygplates_primer_topologies.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_primer.html">Primer</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pygplates_primer_rotations.html">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pygplates_primer_topologies.html">Topologies</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Deformation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#topological-network">Topological network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rigid-blocks">Rigid blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#network-triangulation">Network triangulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#strain-rates-in-triangulation">Strain rates in triangulation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#strain-rate-clamping">Strain rate clamping</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#strain-rate-smoothing">Strain rate smoothing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#exponential-rift-stretching-profile">Exponential rift stretching profile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#rift-left-right-plate-ids">Rift left/right plate IDs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rift-exponential-stretching-constant">Rift exponential stretching constant</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rift-strain-rate-resolution">Rift strain rate resolution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rift-edge-length-threshold">Rift edge length threshold</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_primer.html">Primer</a></li>
+      <li class="breadcrumb-item active">Deformation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/primer/pygplates_primer_deformation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="deformation">
+<span id="pygplates-primer-deformation"></span><h1>Deformation<a class="headerlink" href="#deformation" title="Link to this heading"></a></h1>
+<p>This section covers deformation in pyGPlates.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#topological-network" id="id2">Topological network</a></p></li>
+<li><p><a class="reference internal" href="#rigid-blocks" id="id3">Rigid blocks</a></p></li>
+<li><p><a class="reference internal" href="#network-triangulation" id="id4">Network triangulation</a></p></li>
+<li><p><a class="reference internal" href="#strain-rates-in-triangulation" id="id5">Strain rates in triangulation</a></p>
+<ul>
+<li><p><a class="reference internal" href="#strain-rate-clamping" id="id6">Strain rate clamping</a></p></li>
+<li><p><a class="reference internal" href="#strain-rate-smoothing" id="id7">Strain rate smoothing</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#exponential-rift-stretching-profile" id="id8">Exponential rift stretching profile</a></p>
+<ul>
+<li><p><a class="reference internal" href="#rift-left-right-plate-ids" id="id9">Rift left/right plate IDs</a></p></li>
+<li><p><a class="reference internal" href="#rift-exponential-stretching-constant" id="id10">Rift exponential stretching constant</a></p></li>
+<li><p><a class="reference internal" href="#rift-strain-rate-resolution" id="id11">Rift strain rate resolution</a></p></li>
+<li><p><a class="reference internal" href="#rift-edge-length-threshold" id="id12">Rift edge length threshold</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="topological-network">
+<span id="pygplates-primer-topological-network"></span><h2><a class="toc-backref" href="#id2" role="doc-backlink">Topological network</a><a class="headerlink" href="#topological-network" title="Link to this heading"></a></h2>
+<p>To model deformation, a topological network must first be created. This consists of a boundary polygon
+(resolved by intersecting boundary line segments, similar to topological closed plate polygons), optional interior rigid blocks,
+individual deforming points, and a triangulation (with vertices from boundary, rigid blocks and deforming points).</p>
+<figure class="align-default" id="id1">
+<img alt="../_images/DeformingNetworkDiagram.png" src="../_images/DeformingNetworkDiagram.png" />
+<figcaption>
+<p><span class="caption-text">On the left are the elements that make up a topological network.
+On the right is the resolving of these elements at a reconstruction time to form a resolved topological network.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>More information on topological networks in GPlates/pyGPlates can be found in the following paper:</p>
+<ul class="simple">
+<li><p>Michael Gurnis, Ting Yang, John Cannon, Mark Turner, Simon Williams, Nicolas Flament, R. Dietmar Müller, 2018,
+<a class="reference external" href="https://doi.org/10.1016/j.cageo.2018.04.007">Global tectonic reconstructions with continuously deforming and evolving rigid plates</a>,
+<strong>Computers &amp; Geosciences,</strong> 116, 32-41, doi: 10.1016/j.cageo.2018.04.007</p></li>
+</ul>
+</section>
+<section id="rigid-blocks">
+<span id="pygplates-primer-rigid-blocks"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink">Rigid blocks</a><a class="headerlink" href="#rigid-blocks" title="Link to this heading"></a></h2>
+<p>A topological network can <em>optionally</em> have interior islands that are rigid.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Any <a class="reference internal" href="../generated/pygplates.GpmlTopologicalSection.html#pygplates.GpmlTopologicalSection.create_network_interior" title="pygplates.GpmlTopologicalSection.create_network_interior"><code class="xref py py-meth docutils literal notranslate"><span class="pre">interior</span> <span class="pre">geometry</span> <span class="pre">of</span> <span class="pre">a</span> <span class="pre">network</span></code></a> that is a <em>polygon</em> is considered a rigid block.
+And the <em>interior</em> rings (if any) of a rigid block polygon are ignored (ie, only the exterior ring applies).</p>
+</div>
+<p>Each rigid block is represented by a <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a>, and is obtained from a <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork</span></code></a> with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rigid_blocks</span> <span class="o">=</span> <span class="n">resolved_topological_network</span><span class="o">.</span><span class="n">get_rigid_blocks</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>For example, you can get the plate ID and boundary polygon of each interior rigid block (if any):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">rigid_block</span> <span class="ow">in</span> <span class="n">rigid_blocks</span><span class="p">:</span>
+    <span class="n">rigid_block_plate_id</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+    <span class="n">rigid_block_boundary</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="network-triangulation">
+<span id="pygplates-primer-network-triangulation"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink">Network triangulation</a><a class="headerlink" href="#network-triangulation" title="Link to this heading"></a></h2>
+<p>The network triangulation of a <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a> is the Delaunay triangulation of vertices
+obtained from the network’s boundary (polygon) and any interior rigid blocks (polygons) and any interior geometries (points or lines).</p>
+<p>The Delaunay triangulation is a triangulation of the <em>convex hull</em> of its vertices. So it includes triangles <em>outside</em> the network boundary
+(and also includes triangles <em>inside</em> any interior rigid blocks). However, the deforming region of a network is defined to be <em>inside</em> the
+network’s boundary polygon (but <em>outside</em> its interior rigid block polygons, if any). Hence the triangulation contains triangles that are <em>outside</em>
+the deforming region. Therefore each triangle has a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.is_in_deforming_region" title="pygplates.NetworkTriangulation.Triangle.is_in_deforming_region"><code class="xref py py-attr docutils literal notranslate"><span class="pre">flag</span></code></a> indicating whether
+it is inside the deforming region (if it’s centroid is in the deforming region) or not. These triangles in the deforming region of a network triangulation
+are referred to as the <em>deforming triangulation</em>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Delaunay triangulation is not a <em>constrained</em> triangulation. This means the edges of some Delaunay triangles can cross over network boundary edges or
+interior block edges, rather than be constrained to follow them. However the flagging of Delaunay triangles (as deforming or non-deforming) deals with this
+quite effectively for current topological network datasets.</p>
+</div>
+<p>The <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.is_in_deforming_region" title="pygplates.NetworkTriangulation.Triangle.is_in_deforming_region"><code class="xref py py-attr docutils literal notranslate"><span class="pre">deforming</span></code></a> triangles in a network triangulation do not overlap any
+<a class="reference internal" href="#pygplates-primer-rigid-blocks"><span class="std std-ref">interior rigid blocks</span></a> (other than the above-mentioned note about <em>constrained</em> triangulations).
+In other words, the <em>deforming</em> triangles (in the network triangulation) represent the <em>deforming</em> region of a
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a> and the rigid blocks (if any) represent the <em>rigid</em> regions.</p>
+<p>A network triangulation is represented by a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation" title="pygplates.NetworkTriangulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation</span></code></a>, and is obtained from a <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork</span></code></a> with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">network_triangulation</span> <span class="o">=</span> <span class="n">resolved_topological_network</span><span class="o">.</span><span class="n">get_network_triangulation</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>It consists of a sequence of vertices and a sequence of triangles. Each vertex is represented by a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex" title="pygplates.NetworkTriangulation.Vertex"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Vertex</span></code></a> and contains a position,
+a velocity, and a strain rate, and a list of incident vertices and incident triangles. Each triangle is represented by a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Triangle</span></code></a>
+and contains a flag indicating whether it’s deforming or not, and contains a strain rate, and references three vertices and three adjacent triangles.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">triangles</span> <span class="o">=</span> <span class="n">network_triangulation</span><span class="o">.</span><span class="n">get_triangles</span><span class="p">()</span>
+<span class="n">vertices</span> <span class="o">=</span> <span class="n">network_triangulation</span><span class="o">.</span><span class="n">get_vertices</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="n">triangles</span><span class="p">:</span>
+   <span class="n">triangle_is_in_deforming_region</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">is_in_deforming_region</span>
+   <span class="n">triangle_strain_rate</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">strain_rate</span>
+
+   <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+      <span class="n">triangle_vertex</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">get_vertex</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+      <span class="n">adjacent_triangle</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">get_adjacent_triangle</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">adjacent_triangle</span><span class="p">:</span>  <span class="c1"># if not at a triangulation boundary</span>
+         <span class="o">...</span>
+
+<span class="k">for</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="n">vertices</span><span class="p">:</span>
+   <span class="n">vertex_position</span> <span class="o">=</span> <span class="n">vertex</span><span class="o">.</span><span class="n">position</span>
+   <span class="n">vertex_strain_rate</span> <span class="o">=</span> <span class="n">vertex</span><span class="o">.</span><span class="n">strain_rate</span>
+   <span class="n">vertex_velocity</span> <span class="o">=</span> <span class="n">vertex</span><span class="o">.</span><span class="n">get_velocity</span><span class="p">()</span>  <span class="c1"># a function optionally accepting various velocity calculation parameters</span>
+
+   <span class="k">for</span> <span class="n">incident_vertex</span> <span class="ow">in</span> <span class="n">vertex</span><span class="o">.</span><span class="n">get_incident_vertices</span><span class="p">():</span>
+      <span class="o">...</span>
+   <span class="k">for</span> <span class="n">incident_triangle</span> <span class="ow">in</span> <span class="n">vertex</span><span class="o">.</span><span class="n">get_incident_triangles</span><span class="p">():</span>
+      <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="strain-rates-in-triangulation">
+<span id="pygplates-primer-strain-rates-in-triangulation"></span><h2><a class="toc-backref" href="#id5" role="doc-backlink">Strain rates in triangulation</a><a class="headerlink" href="#strain-rates-in-triangulation" title="Link to this heading"></a></h2>
+<p>Each <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">triangle</span></code></a> in a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation" title="pygplates.NetworkTriangulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">network</span> <span class="pre">triangulation</span></code></a> is assigned a <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span></code></a>
+that is <em>constant</em> across the triangle (and is zero if the triangle is <em>not</em> <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.is_in_deforming_region" title="pygplates.NetworkTriangulation.Triangle.is_in_deforming_region"><code class="xref py py-attr docutils literal notranslate"><span class="pre">deforming</span></code></a>).
+Furthermore, the strain rate of each triangle can optionally be <a class="reference internal" href="#pygplates-primer-strain-rate-clamping"><span class="std std-ref">clamped to a maximum strain rate</span></a>.
+Then each <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex" title="pygplates.NetworkTriangulation.Vertex"><code class="xref py py-class docutils literal notranslate"><span class="pre">vertex</span></code></a> in the triangulation is assigned a strain rate that is an area-weighted average of the (potentially clamped) strain rates
+from <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.is_in_deforming_region" title="pygplates.NetworkTriangulation.Triangle.is_in_deforming_region"><code class="xref py py-attr docutils literal notranslate"><span class="pre">deforming</span></code></a> triangles incident to the vertex.</p>
+<p>Finally, the strain rate that is queried at an <em>arbitrary</em> location (within the deforming triangulation) is either assigned the strain rate of the triangle containing that location,
+or calculated by interpolating the strain rates of nearby vertices if <a class="reference internal" href="#pygplates-primer-strain-rate-smoothing"><span class="std std-ref">strain rates are smoothed</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Both strain rate <a class="reference internal" href="#pygplates-primer-strain-rate-clamping"><span class="std std-ref">clamping</span></a> and <a class="reference internal" href="#pygplates-primer-strain-rate-smoothing"><span class="std std-ref">smoothing</span></a> affect strain <em>rate</em> queries
+(such as <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_strain_rates" title="pygplates.ReconstructedGeometryTimeSpan.get_strain_rates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_strain_rates()</span></code></a>). They also affects <em>strain</em> queries (such as <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_strains" title="pygplates.ReconstructedGeometryTimeSpan.get_strains"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_strains()</span></code></a>),
+since strain is <a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain.accumulate" title="pygplates.Strain.accumulate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">accumulated</span></code></a> from strain rate.</p>
+</div>
+<section id="strain-rate-clamping">
+<span id="pygplates-primer-strain-rate-clamping"></span><h3><a class="toc-backref" href="#id6" role="doc-backlink">Strain rate clamping</a><a class="headerlink" href="#strain-rate-clamping" title="Link to this heading"></a></h3>
+<p>Strain rates can optionally be clamped to a maximum strain rate to avoid excessive or spurious extension/compression in some triangles of a deforming triangulation.
+This can happen in some topological networks depending on how they were built.</p>
+<p>It is the <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_total_strain_rate" title="pygplates.StrainRate.get_total_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">total</span> <span class="pre">strain</span> <span class="pre">rate</span></code></a> that is clamped, since it includes both the normal and shear components of deformation.
+When a strain rate is clamped, all components of its tensor (specifically its <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_velocity_spatial_gradient" title="pygplates.StrainRate.get_velocity_spatial_gradient"><code class="xref py py-class docutils literal notranslate"><span class="pre">spatial</span> <span class="pre">gradients</span> <span class="pre">of</span> <span class="pre">velocity</span> <span class="pre">tensor</span></code></a>)
+are scaled equally to ensure its total strain rate equals the maximum total strain rate.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Clamping the total strain rate also limits quantities derived from strain rate such as crustal thinning and tectonic subsidence.</p>
+</div>
+<p>Strain rate clamping is determined by <a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.enable_strain_rate_clamping" title="pygplates.ResolveTopologyParameters.enable_strain_rate_clamping"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters.enable_strain_rate_clamping</span></code></a> when topological networks are resolved at a reconstruction time
+(using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a> or <a class="reference internal" href="../generated/pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.resolve_topologies()</span></code></a>).
+And the maximum strain rate is <a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.max_clamped_strain_rate" title="pygplates.ResolveTopologyParameters.max_clamped_strain_rate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters.max_clamped_strain_rate</span></code></a>.
+For example, to enable strain rate clamping (which is disabled by default) for a topological model, but keep the default maximum strain rate:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span>
+   <span class="s1">'topologies.gpml'</span><span class="p">,</span>
+   <span class="s1">'rotations.rot'</span><span class="p">,</span>
+   <span class="n">default_resolve_topology_parameters</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ResolveTopologyParameters</span><span class="p">(</span>
+      <span class="n">enable_strain_rate_clamping</span> <span class="o">=</span> <span class="kc">True</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="strain-rate-smoothing">
+<span id="pygplates-primer-strain-rate-smoothing"></span><h3><a class="toc-backref" href="#id7" role="doc-backlink">Strain rate smoothing</a><a class="headerlink" href="#strain-rate-smoothing" title="Link to this heading"></a></h3>
+<p>Strain rates can optionally be smoothed to help reduce the faceted (piecewise constant) strain rate across a deforming triangulation (due to each triangle having a <em>constant</em> strain rate across its face).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Smoothing the strain rate also affects quantities derived from strain rate such as crustal thinning and tectonic subsidence.</p>
+</div>
+<p>The strain rate at an arbitrary location within a deforming triangulation is affected by the smoothing value:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pygplates.StrainRateSmoothing.none</span></code> - No smoothing. The strain rate is equal to the (constant) strain rate of the <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">triangle</span></code></a> containing the query location.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pygplates.StrainRateSmoothing.barycentric</span></code> - Use linear interpolation of the strain rates of the 3 <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex" title="pygplates.NetworkTriangulation.Vertex"><code class="xref py py-class docutils literal notranslate"><span class="pre">vertices</span></code></a> of the
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">triangle</span></code></a> containing the query location.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pygplates.StrainRateSmoothing.natural_neighbour</span></code> - Use natural neighbour interpolation of the strain rates of triangulation <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex" title="pygplates.NetworkTriangulation.Vertex"><code class="xref py py-class docutils literal notranslate"><span class="pre">vertices</span></code></a> near the query location.</p></li>
+</ul>
+<p>Strain rate smoothing is determined by <a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.strain_rate_smoothing" title="pygplates.ResolveTopologyParameters.strain_rate_smoothing"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters.strain_rate_smoothing</span></code></a> when topological networks are resolved at a reconstruction time
+(using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a> or <a class="reference internal" href="../generated/pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.resolve_topologies()</span></code></a>).
+For example, to disable strain rate smoothing (which is natural neighbour smoothing by default) for a topological model:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span>
+   <span class="s1">'topologies.gpml'</span><span class="p">,</span>
+   <span class="s1">'rotations.rot'</span><span class="p">,</span>
+   <span class="n">default_resolve_topology_parameters</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ResolveTopologyParameters</span><span class="p">(</span>
+      <span class="n">strain_rate_smoothing</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">StrainRateSmoothing</span><span class="o">.</span><span class="n">none</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="exponential-rift-stretching-profile">
+<span id="pygplates-primer-exponential-rift-stretching-profile"></span><h2><a class="toc-backref" href="#id8" role="doc-backlink">Exponential rift stretching profile</a><a class="headerlink" href="#exponential-rift-stretching-profile" title="Link to this heading"></a></h2>
+<p>A rift is typically modeled using two topological networks, one on each side of the rift axis. Each side of the rift axis typically has a single row of triangles (between the un-stretched side and the rift axis).
+As a result, the strain rate at any location within the rift will essentially be <em>constant</em>, even when the <a class="reference internal" href="#pygplates-primer-strain-rate-smoothing"><span class="std std-ref">strain rates are smoothed</span></a>.
+This is because triangulation vertices, along both the un-stretched boundary line and the rift axis, will effectively end up with the strain rate of the triangles (which is constant across each triangle).</p>
+<p>To avoid the problem of <em>constant</em> stretching across the rift, an <em>exponential</em> rift stretching profile can be activated by adding rift left/right plate ID properties to a topological network feature.</p>
+<p>Internally the exponential strain rate profile is implemented by automatically adding more points to the interior of a deforming triangulation and distributing the velocities
+at these points such that the strain rate varies exponentially (along the stretching direction) from the un-stretched side of the rift towards the rift axis.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This works reasonably well for regular rifts (like AFR-SAM), but not as well for oblique rifts (like AUS-ANT).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The exponential rift stretching profile affects quantities derived from strain rate such as crustal thinning and tectonic subsidence.</p>
+</div>
+<section id="rift-left-right-plate-ids">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Rift left/right plate IDs</a><a class="headerlink" href="#rift-left-right-plate-ids" title="Link to this heading"></a></h3>
+<p>An <em>exponential</em> rift stretching profile is activated by adding a <code class="docutils literal notranslate"><span class="pre">gpml:riftLeftPlate</span></code>/<code class="docutils literal notranslate"><span class="pre">gpml:riftRightPlate</span></code> pair of conjugate plate ID properties to a topological network <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a>.
+This can be done, for example, by using the <em>rift_parameters</em> argument of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_topological_network_feature" title="pygplates.Feature.create_topological_network_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_topological_network_feature()</span></code></a>.
+The presence of these plate IDs triggers the internal generation of an exponential strain rate rift profile when the topological networks are resolved at a reconstruction time
+(using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a> or <a class="reference internal" href="../generated/pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.resolve_topologies()</span></code></a>).</p>
+<p>For example, to create a rift between Africa and South America:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SAM_rift_network</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalNetwork</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="n">SAM_rift_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_topological_network_feature</span><span class="p">(</span>
+    <span class="n">SAM_rift_network</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'SAM rift'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="mi">145</span><span class="p">,</span> <span class="mi">115</span><span class="p">),</span>
+    <span class="n">rift_parameters</span><span class="o">=</span><span class="p">(</span><span class="mi">201</span><span class="p">,</span> <span class="mi">701</span><span class="p">))</span>
+<span class="n">SAM_rift_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+
+<span class="n">AFR_rift_network</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalNetwork</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="n">AFR_rift_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_topological_network_feature</span><span class="p">(</span>
+    <span class="n">AFR_rift_network</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'AFR rift'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="mi">145</span><span class="p">,</span> <span class="mi">115</span><span class="p">),</span>
+    <span class="n">rift_parameters</span><span class="o">=</span><span class="p">(</span><span class="mi">201</span><span class="p">,</span> <span class="mi">701</span><span class="p">))</span>
+<span class="n">AFR_rift_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the rift left/right plate ID properties are not present in a topological network feature then it is <em>not</em> considered a <em>rift</em>.</p>
+</div>
+<p>There are also three other parameters, in addition to the rift left/right plate IDs, that are optional and can either be set individually in each a topological network feature
+(eg, using the <em>rift_parameters</em> argument of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_topological_network_feature" title="pygplates.Feature.create_topological_network_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_topological_network_feature()</span></code></a>) or as default values for all topological network features
+(using <a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters" title="pygplates.ResolveTopologyParameters"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters</span></code></a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If these parameters are set in both places, then the feature properties have precedence.</p>
+</div>
+<p>When set on a topological network feature they become feature properties named:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gpml:riftExponentialStretchingConstant</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gpml:riftStrainRateResolutionLog10</span></code> (note that this is <span class="math notranslate nohighlight">\(\log_{10}\)</span> of the rift strain rate resolution)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gpml:riftEdgeLengthThresholdDegrees</span></code></p></li>
+</ul>
+<p>…and for features missing these properties these parameters are instead obtained from <a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters" title="pygplates.ResolveTopologyParameters"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters</span></code></a> attributes:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.rift_exponential_stretching_constant" title="pygplates.ResolveTopologyParameters.rift_exponential_stretching_constant"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters.rift_exponential_stretching_constant</span></code></a></p></li>
+<li><p><a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.rift_strain_rate_resolution" title="pygplates.ResolveTopologyParameters.rift_strain_rate_resolution"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters.rift_strain_rate_resolution</span></code></a></p></li>
+<li><p><a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.rift_edge_length_threshold_degrees" title="pygplates.ResolveTopologyParameters.rift_edge_length_threshold_degrees"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters.rift_edge_length_threshold_degrees</span></code></a></p></li>
+</ul>
+<p>…when the topological networks are resolved at a reconstruction time
+(using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a> or <a class="reference internal" href="../generated/pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.resolve_topologies()</span></code></a>).</p>
+<p>The default values (in <a class="reference internal" href="../generated/pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.__init__" title="pygplates.ResolveTopologyParameters.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyParameters()</span></code></a>) should be fine
+for resolving rift features that do not contain the associated rift feature properties. But you can change the defaults as needed.
+For example, new default values can be specified for a topological model:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span>
+   <span class="s1">'topologies.gpml'</span><span class="p">,</span>
+   <span class="s1">'rotations.rot'</span><span class="p">,</span>
+   <span class="n">default_resolve_topology_parameters</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ResolveTopologyParameters</span><span class="p">(</span>
+      <span class="n">rift_exponential_stretching_constant</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span>  <span class="c1"># default is 1.0</span>
+      <span class="n">rift_strain_rate_resolution</span> <span class="o">=</span> <span class="mf">1e-16</span><span class="p">,</span>         <span class="c1"># default is 5e-17</span>
+      <span class="n">rift_edge_length_threshold_degrees</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">))</span>   <span class="c1"># default is 0.1</span>
+</pre></div>
+</div>
+</section>
+<section id="rift-exponential-stretching-constant">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">Rift exponential stretching constant</a><a class="headerlink" href="#rift-exponential-stretching-constant" title="Link to this heading"></a></h3>
+<p>The strain rate in the rift stretching direction varies exponentially from the un-stretched side of the rift towards the rift axis.
+The spatial variation in strain rate is:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[strain\_rate(x) = strain\_rate \times e^{C x} \frac{C}{e^C - 1}\]</div>
+</div></blockquote>
+<p>…where <span class="math notranslate nohighlight">\(strain\_rate\)</span> is the un-subdivided, original (constant) strain rate, <span class="math notranslate nohighlight">\(C\)</span> is the <em>rift exponential stretching constant</em>
+and <span class="math notranslate nohighlight">\(x = 0\)</span> at the un-stretched side and <span class="math notranslate nohighlight">\(x = 1\)</span> at the stretched point. Therefore <span class="math notranslate nohighlight">\(strain\_rate(0) &lt; strain\_rate &lt; strain\_rate(1)\)</span>.
+For example, when <span class="math notranslate nohighlight">\(C = 1.0\)</span> then <span class="math notranslate nohighlight">\(strain\_rate(0) = 0.58 \times strain\_rate\)</span> and <span class="math notranslate nohighlight">\(strain\_rate(1) = 1.58 \times strain\_rate\)</span>.</p>
+</section>
+<section id="rift-strain-rate-resolution">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Rift strain rate resolution</a><a class="headerlink" href="#rift-strain-rate-resolution" title="Link to this heading"></a></h3>
+<p>The <em>rift strain rate resolution</em> controls how accurately the actual strain rate curve (across rift profile) matches the exponential curve (in units of <span class="math notranslate nohighlight">\(second^{-1}\)</span>).
+Rift edges in the network triangulation are sub-divided until the strain rate matches the exponential curve (within this tolerance).</p>
+</section>
+<section id="rift-edge-length-threshold">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Rift edge length threshold</a><a class="headerlink" href="#rift-edge-length-threshold" title="Link to this heading"></a></h3>
+<p>Rift edges in network triangulation shorter than the <em>rift edge length threshold</em> (in degrees) will not be further sub-divided.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_primer_topologies.html" class="btn btn-neutral float-left" title="Topologies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../pygplates_sample_code.html" class="btn btn-neutral float-right" title="Sample code" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

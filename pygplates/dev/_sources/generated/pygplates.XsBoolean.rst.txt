@@ -1,0 +1,30 @@
+﻿pygplates.XsBoolean
+===================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: XsBoolean
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~XsBoolean.__init__
+      ~XsBoolean.accept_visitor
+      ~XsBoolean.clone
+      ~XsBoolean.get_boolean
+      ~XsBoolean.get_geometry
+      ~XsBoolean.get_value
+      ~XsBoolean.set_boolean
+   
+   
+
+   
+   
+   
+   
+   

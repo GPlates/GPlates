@@ -1,0 +1,8 @@
+﻿pygplates.PropertyReturn
+========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PropertyReturn
+   :no-members:
+   :no-show-inheritance:

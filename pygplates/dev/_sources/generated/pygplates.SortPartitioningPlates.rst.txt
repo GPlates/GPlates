@@ -1,0 +1,8 @@
+﻿pygplates.SortPartitioningPlates
+================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: SortPartitioningPlates
+   :no-members:
+   :no-show-inheritance:

@@ -1,0 +1,30 @@
+﻿pygplates.GpmlFiniteRotation
+============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlFiniteRotation
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlFiniteRotation.__init__
+      ~GpmlFiniteRotation.accept_visitor
+      ~GpmlFiniteRotation.clone
+      ~GpmlFiniteRotation.get_finite_rotation
+      ~GpmlFiniteRotation.get_geometry
+      ~GpmlFiniteRotation.get_value
+      ~GpmlFiniteRotation.set_finite_rotation
+   
+   
+
+   
+   
+   
+   
+   

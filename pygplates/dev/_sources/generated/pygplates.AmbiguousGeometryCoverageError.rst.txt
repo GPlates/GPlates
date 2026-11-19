@@ -1,0 +1,6 @@
+﻿pygplates.AmbiguousGeometryCoverageError
+========================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: AmbiguousGeometryCoverageError

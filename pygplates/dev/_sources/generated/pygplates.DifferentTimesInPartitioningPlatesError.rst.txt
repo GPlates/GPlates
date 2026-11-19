@@ -1,0 +1,6 @@
+﻿pygplates.DifferentTimesInPartitioningPlatesError
+=================================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: DifferentTimesInPartitioningPlatesError

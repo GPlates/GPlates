@@ -1,0 +1,394 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hierarchy of plate rotations &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Plate circuits to anchored plate" href="pygplates_plate_circuits_to_anchored_plate.html" />
+    <link rel="prev" title="Reconstruct flowline features" href="pygplates_reconstruct_flowline_features.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Hierarchy of plate rotations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#details">Details</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#output">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_plate_circuits_to_anchored_plate.html">Plate circuits to anchored plate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_modify_reconstruction_pole.html">Modify a reconstruction pole</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Hierarchy of plate rotations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_plate_rotation_hierarchy.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="hierarchy-of-plate-rotations">
+<span id="pygplates-plate-rotation-hierarchy"></span><h1>Hierarchy of plate rotations<a class="headerlink" href="#hierarchy-of-plate-rotations" title="Link to this heading"></a></h1>
+<p>This example traverses the <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">plate rotation hierarchy</span></a>
+(for a particular reconstruction time) and prints the equivalent and relative total rotations at each plate.</p>
+<p>The output of this example is similar to the output of the <code class="docutils literal notranslate"><span class="pre">Total</span> <span class="pre">Reconstruction</span> <span class="pre">Poles</span></code> dialog
+(under the <code class="docutils literal notranslate"><span class="pre">Reconstruction</span> <span class="pre">Tree</span></code> tab) in <a class="reference external" href="http://www.gplates.org">GPlates</a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_plate_circuits_to_anchored_plate.html#pygplates-plate-circuits-to-anchored-plate"><span class="std std-ref">Plate circuits to anchored plate</span></a></p>
+</div>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id2">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id3">Details</a></p></li>
+<li><p><a class="reference internal" href="#output" id="id4">Output</a></p></li>
+<li><p><a class="reference internal" href="#see-also" id="id5">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. Rotation files are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</dd>
+</dl>
+</section>
+<section id="sample-code">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># A function to traverse the sub-tree rooted at a particular plate (the moving plate of 'edge').</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">traverse_sub_tree</span><span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">depth</span><span class="p">):</span>
+
+    <span class="n">relative_total_rotation</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_relative_total_rotation</span><span class="p">()</span>
+    <span class="n">relative_pole_latitude</span><span class="p">,</span> <span class="n">relative_pole_longitude</span><span class="p">,</span> <span class="n">relative_angle_degrees</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">relative_total_rotation</span><span class="o">.</span><span class="n">get_lat_lon_euler_pole_and_angle_degrees</span><span class="p">())</span>
+
+    <span class="n">equivalent_total_rotation</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_equivalent_total_rotation</span><span class="p">()</span>
+    <span class="n">equivalent_pole_latitude</span><span class="p">,</span> <span class="n">equivalent_pole_longitude</span><span class="p">,</span> <span class="n">equivalent_angle_degrees</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">equivalent_total_rotation</span><span class="o">.</span><span class="n">get_lat_lon_euler_pole_and_angle_degrees</span><span class="p">())</span>
+
+    <span class="n">prefix_padding</span> <span class="o">=</span> <span class="s1">' '</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">depth</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">prefix_padding</span><span class="si">}</span><span class="s1">Plate ID: </span><span class="si">{</span><span class="n">edge</span><span class="o">.</span><span class="n">get_moving_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">, Fixed Plate ID: </span><span class="si">{</span><span class="n">edge</span><span class="o">.</span><span class="n">get_fixed_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">:'</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">prefix_padding</span><span class="si">}</span><span class="s1">  Rotation rel. fixed (parent) plate: '</span>
+          <span class="sa">f</span><span class="s1">'lat: </span><span class="si">{</span><span class="n">relative_pole_latitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, lon: </span><span class="si">{</span><span class="n">relative_pole_longitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">:, angle:</span><span class="si">{</span><span class="n">relative_angle_degrees</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">prefix_padding</span><span class="si">}</span><span class="s1">  Equivalent rotation rel. anchored plate: '</span>
+          <span class="sa">f</span><span class="s1">'lat: </span><span class="si">{</span><span class="n">equivalent_pole_latitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, lon: </span><span class="si">{</span><span class="n">equivalent_pole_longitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">:, angle:</span><span class="si">{</span><span class="n">equivalent_angle_degrees</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="c1"># Blank line.</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="c1"># Recurse into the children sub-trees.</span>
+    <span class="k">for</span> <span class="n">child_edge</span> <span class="ow">in</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_child_edges</span><span class="p">():</span>
+        <span class="n">traverse_sub_tree</span><span class="p">(</span><span class="n">child_edge</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># The reconstruction time (Ma) of the plate hierarchy we're interested in.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">60</span>
+
+<span class="c1"># Get the reconstruction tree.</span>
+<span class="n">reconstruction_tree</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+
+<span class="c1"># Get the edges of the reconstruction tree emanating from its root (anchor) plate.</span>
+<span class="n">anchor_plate_edges</span> <span class="o">=</span> <span class="n">reconstruction_tree</span><span class="o">.</span><span class="n">get_anchor_plate_edges</span><span class="p">()</span>
+
+<span class="c1"># Iterate over the anchor plate edges and traverse the sub-tree of each edge.</span>
+<span class="k">for</span> <span class="n">anchor_plate_edge</span> <span class="ow">in</span> <span class="n">anchor_plate_edges</span><span class="p">:</span>
+    <span class="n">traverse_sub_tree</span><span class="p">(</span><span class="n">anchor_plate_edge</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">plate rotation hierarchy</span></a>
+is encapsulated in a <a class="reference internal" href="../generated/pygplates.ReconstructionTree.html#pygplates.ReconstructionTree" title="pygplates.ReconstructionTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">tree</span></code></a> which we obtain
+from the <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">rotation</span> <span class="pre">model</span></code></a> using
+<a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_reconstruction_tree" title="pygplates.RotationModel.get_reconstruction_tree"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_reconstruction_tree()</span></code></a> and the desired reconstruction time.</div>
+<div class="line">The hierarchy can change from one reconstruction time to the next depending on how the rotations
+are arranged in the rotation file(s).</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the reconstruction tree.</span>
+<span class="n">reconstruction_tree</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">An edge in a <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">plate rotation hierarchy</span></a>
+represents the rotation of a moving plate relative to a fixed plate. These edges are arranged in
+a tree-like structure (hierarchy) rooted at the anchor plate (usually plate ID zero).</div>
+<div class="line">The anchor plate edges represent those edges emanating from the anchor plate and are obtained
+using <a class="reference internal" href="../generated/pygplates.ReconstructionTree.html#pygplates.ReconstructionTree.get_anchor_plate_edges" title="pygplates.ReconstructionTree.get_anchor_plate_edges"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructionTree.get_anchor_plate_edges()</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the edges of the reconstruction tree emanating from its root (anchor) plate.</span>
+<span class="n">anchor_plate_edges</span> <span class="o">=</span> <span class="n">reconstruction_tree</span><span class="o">.</span><span class="n">get_anchor_plate_edges</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The anchor plate edges have different moving plate IDs but all have the same fixed plate ID (which is the anchor plate).</div>
+<div class="line">In this way the moving plate of each anchor plate edge is a sub-tree of the entire reconstruction tree.</div>
+<div class="line">Here we traverse the sub-trees corresponding to those anchor plate edges.</div>
+<div class="line">Note that the reconstruction tree <code class="docutils literal notranslate"><span class="pre">depth</span></code> starts at zero.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over the anchor plate edges and traverse the sub-tree of each edge.</span>
+<span class="k">for</span> <span class="n">anchor_plate_edge</span> <span class="ow">in</span> <span class="n">anchor_plate_edges</span><span class="p">:</span>
+    <span class="n">traverse_sub_tree</span><span class="p">(</span><span class="n">anchor_plate_edge</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">A function is defined that traverses the sub-tree rooted at the moving plate of an edge in the reconstruction tree.</div>
+<div class="line">One reason for implementing this as a function is we need to call it recursively (a recursive function
+calls itself) and this is more difficult to achieve without using a function.</div>
+<div class="line">The <code class="docutils literal notranslate"><span class="pre">depth</span></code> argument represents the depth into the reconstruction tree (from the anchored plate) and
+is used purely to control the amount of indentation used in the <code class="docutils literal notranslate"><span class="pre">print</span></code> statements.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">traverse_sub_tree</span><span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">depth</span><span class="p">):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Get the <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-relative-total-rotation"><span class="std std-ref">relative</span></a> and
+<a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-total-rotation"><span class="std std-ref">equivalent</span></a> total rotations of an edge
+in the reconstruction tree using <a class="reference internal" href="../generated/pygplates.ReconstructionTreeEdge.html#pygplates.ReconstructionTreeEdge.get_relative_total_rotation" title="pygplates.ReconstructionTreeEdge.get_relative_total_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructionTreeEdge.get_relative_total_rotation()</span></code></a>
+and <a class="reference internal" href="../generated/pygplates.ReconstructionTreeEdge.html#pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation" title="pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation()</span></code></a>.</div>
+<div class="line">The relative rotation is the total rotation of the edge’s moving plate relative to its fixed plate.</div>
+<div class="line">The equivalent total rotation is the total rotation of the edge’s moving plate relative to anchored plate.</div>
+<div class="line">A <em>total</em> rotation means a rotation at the reconstruction time relative to <em>present day</em> (0Ma).</div>
+<div class="line">The pole and angle of each rotation is obtained using
+<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees" title="pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees()</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">relative_total_rotation</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_relative_total_rotation</span><span class="p">()</span>
+<span class="n">relative_pole_latitude</span><span class="p">,</span> <span class="n">relative_pole_longitude</span><span class="p">,</span> <span class="n">relative_angle_degrees</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">relative_total_rotation</span><span class="o">.</span><span class="n">get_lat_lon_euler_pole_and_angle_degrees</span><span class="p">())</span>
+
+<span class="n">equivalent_total_rotation</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_equivalent_total_rotation</span><span class="p">()</span>
+<span class="n">equivalent_pole_latitude</span><span class="p">,</span> <span class="n">equivalent_pole_longitude</span><span class="p">,</span> <span class="n">equivalent_angle_degrees</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">equivalent_total_rotation</span><span class="o">.</span><span class="n">get_lat_lon_euler_pole_and_angle_degrees</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Print the relative and equivalent total rotations of the moving plate of the reconstruction tree edge.</div>
+<div class="line">The level of indentation is controlled with <code class="docutils literal notranslate"><span class="pre">prefix_padding</span></code> which is proportional to the traversal depth.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">prefix_padding</span> <span class="o">=</span> <span class="s1">' '</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">depth</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">prefix_padding</span><span class="si">}</span><span class="s1">Plate ID: </span><span class="si">{</span><span class="n">edge</span><span class="o">.</span><span class="n">get_moving_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">, Fixed Plate ID: </span><span class="si">{</span><span class="n">edge</span><span class="o">.</span><span class="n">get_fixed_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">:'</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">prefix_padding</span><span class="si">}</span><span class="s1">  Rotation rel. fixed (parent) plate: '</span>
+      <span class="sa">f</span><span class="s1">'lat: </span><span class="si">{</span><span class="n">relative_pole_latitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, lon: </span><span class="si">{</span><span class="n">relative_pole_longitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">:, angle:</span><span class="si">{</span><span class="n">relative_angle_degrees</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">prefix_padding</span><span class="si">}</span><span class="s1">  Equivalent rotation rel. anchored plate: '</span>
+      <span class="sa">f</span><span class="s1">'lat: </span><span class="si">{</span><span class="n">equivalent_pole_latitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, lon: </span><span class="si">{</span><span class="n">equivalent_pole_longitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">:, angle:</span><span class="si">{</span><span class="n">equivalent_angle_degrees</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+<span class="c1"># Blank line.</span>
+<span class="nb">print</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Just as the anchored plate has one or more anchored plate edges emanating from it,
+the moving plate of a reconstruction tree edge has one or more child edges emanating from it.
+These are obtained using <a class="reference internal" href="../generated/pygplates.ReconstructionTreeEdge.html#pygplates.ReconstructionTreeEdge.get_child_edges" title="pygplates.ReconstructionTreeEdge.get_child_edges"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructionTreeEdge.get_child_edges()</span></code></a>.</div>
+<div class="line">Note that by calling the <code class="docutils literal notranslate"><span class="pre">traverse_sub_tree</span></code> function we are calling the same function we are
+already in. This recursive descent enables us to visit all edges and plates in the sub-tree.</div>
+<div class="line">The reconstruction tree <code class="docutils literal notranslate"><span class="pre">depth</span></code> is incremented with each recursive call.</div>
+<div class="line">The recursion stops when an edge has no child edges. This means that no other plate moves
+relative to the (moving) plate of that edge.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Recurse into the children sub-trees.</span>
+<span class="k">for</span> <span class="n">child_edge</span> <span class="ow">in</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_child_edges</span><span class="p">():</span>
+    <span class="n">traverse_sub_tree</span><span class="p">(</span><span class="n">child_edge</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="output">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Output</a><a class="headerlink" href="#output" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">0</span><span class="p">:</span>
+  <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+  <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+
+  <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">701</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">23.730000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">42.140000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">12.530000</span>
+    <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">23.730000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">42.140000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">12.530000</span>
+
+    <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">201</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">701</span><span class="p">:</span>
+      <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">62.238025</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">32.673047</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">23.349295</span>
+      <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">77.493750</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">57.067142</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">15.711412</span>
+
+      <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">202</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">201</span><span class="p">:</span>
+        <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+        <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">77.493750</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">57.067142</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">15.711412</span>
+
+        <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">290</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">202</span><span class="p">:</span>
+          <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+          <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">77.493750</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">57.067142</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">15.711412</span>
+
+      <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">203</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">201</span><span class="p">:</span>
+        <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+        <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">77.493750</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">57.067142</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">15.711412</span>
+
+      <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">225</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">201</span><span class="p">:</span>
+        <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.520000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">62.240000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">9.500000</span>
+        <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">59.149009</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">33.687205</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">17.238928</span>
+
+        <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">226</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">225</span><span class="p">:</span>
+          <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+          <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">59.149009</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">33.687205</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">17.238928</span>
+
+    <span class="o">...</span>
+
+    <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">802</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">701</span><span class="p">:</span>
+      <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">10.617614</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="o">-</span><span class="mf">47.371326</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">10.778033</span>
+      <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">62.066424</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">9.485588</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">3.331182</span>
+
+      <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">511</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">802</span><span class="p">:</span>
+        <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">11.359510</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">16.375417</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">41.965910</span>
+        <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">14.473724</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">14.865304</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">44.136911</span>
+
+        <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">501</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">511</span><span class="p">:</span>
+          <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="o">-</span><span class="mf">5.200000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">74.300000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">5.930000</span>
+          <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">18.734696</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">8.570162</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">41.677784</span>
+
+          <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">502</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">501</span><span class="p">:</span>
+            <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+            <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">18.734696</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">8.570162</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">41.677784</span>
+
+          <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">510</span><span class="p">,</span> <span class="n">Fixed</span> <span class="n">Plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">501</span><span class="p">:</span>
+            <span class="n">Rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">fixed</span> <span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">90.000000</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">0.000000</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="mf">0.000000</span>
+            <span class="n">Equivalent</span> <span class="n">rotation</span> <span class="n">rel</span><span class="o">.</span> <span class="n">anchored</span> <span class="n">plate</span><span class="p">:</span> <span class="n">lat</span><span class="p">:</span> <span class="mf">18.734696</span><span class="p">,</span> <span class="n">lon</span><span class="p">:</span> <span class="mf">8.570162</span><span class="p">:,</span> <span class="n">angle</span><span class="p">:</span><span class="o">-</span><span class="mf">41.677784</span>
+
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>…where <code class="docutils literal notranslate"><span class="pre">lat:</span> <span class="pre">90.000000,</span> <span class="pre">lon:</span> <span class="pre">0.000000:,</span> <span class="pre">angle:0.000000</span></code> is the default representation that
+<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees" title="pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees()</span></code></a> returns for an
+<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.represents_identity_rotation" title="pygplates.FiniteRotation.represents_identity_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">identity</span> <span class="pre">rotation</span></code></a> (zero rotation angle).</p>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">Plate reconstruction hierarchy</span></a>, <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-total-rotation"><span class="std std-ref">Equivalent total rotation</span></a>,
+<a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-relative-total-rotation"><span class="std std-ref">Relative total rotation</span></a></p></li>
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_reconstruction_tree" title="pygplates.RotationModel.get_reconstruction_tree"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_reconstruction_tree()</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructionTree.html#pygplates.ReconstructionTree.get_anchor_plate_edges" title="pygplates.ReconstructionTree.get_anchor_plate_edges"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructionTree.get_anchor_plate_edges()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructionTreeEdge.html#pygplates.ReconstructionTreeEdge.get_child_edges" title="pygplates.ReconstructionTreeEdge.get_child_edges"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructionTreeEdge.get_child_edges()</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_plate_circuits_to_anchored_plate.html#pygplates-plate-circuits-to-anchored-plate"><span class="std std-ref">Plate circuits to anchored plate</span></a>, <a class="reference internal" href="pygplates_modify_reconstruction_pole.html#pygplates-modify-reconstruction-pole"><span class="std std-ref">Modify a reconstruction pole</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_reconstruct_flowline_features.html" class="btn btn-neutral float-left" title="Reconstruct flowline features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_plate_circuits_to_anchored_plate.html" class="btn btn-neutral float-right" title="Plate circuits to anchored plate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

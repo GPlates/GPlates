@@ -1,0 +1,6 @@
+﻿pygplates.IndeterminateGreatCircleArcNormalError
+================================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: IndeterminateGreatCircleArcNormalError

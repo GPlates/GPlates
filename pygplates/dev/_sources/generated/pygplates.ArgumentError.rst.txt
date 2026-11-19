@@ -1,0 +1,6 @@
+﻿pygplates.ArgumentError
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: ArgumentError

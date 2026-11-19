@@ -1,0 +1,6 @@
+﻿pygplates.IndeterminateResultError
+==================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: IndeterminateResultError

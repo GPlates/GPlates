@@ -1,0 +1,6 @@
+﻿pygplates.UnableToNormaliseZeroVectorError
+==========================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: UnableToNormaliseZeroVectorError

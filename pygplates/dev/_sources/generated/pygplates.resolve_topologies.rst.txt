@@ -1,0 +1,6 @@
+﻿pygplates.resolve\_topologies
+=============================
+
+.. currentmodule:: pygplates
+
+.. autofunction:: resolve_topologies

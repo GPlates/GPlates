@@ -1,0 +1,316 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculate velocities by plate ID &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Calculate velocities in dynamic plates" href="pygplates_calculate_velocities_in_dynamic_plates.html" />
+    <link rel="prev" title="Reconstruct crustal thickness and tectonic subsidence" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Calculate velocities by plate ID</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#details">Details</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Calculate velocities by plate ID</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_calculate_velocities_by_plate_id.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="calculate-velocities-by-plate-id">
+<span id="pygplates-calculate-velocities-by-plate-id"></span><h1>Calculate velocities by plate ID<a class="headerlink" href="#calculate-velocities-by-plate-id" title="Link to this heading"></a></h1>
+<p>This example calculates velocities at all points in geometries of a collection of features
+using the plate IDs of those features and a rotation model.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id2">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id3">Details</a></p></li>
+<li><p><a class="reference internal" href="#see-also" id="id4">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the features in <code class="docutils literal notranslate"><span class="pre">features.gpml</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">features.gpml</span></code></dt><dd><p>Features of any type, each with a reconstruction plate ID and one or more geometries. The
+velocities are calculated at the points of the geometries, reconstructed to 10Ma.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="sample-code">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
+<span class="c1"># Calling them 'domain' features since using them as input to velocities (but can be any type of feature).</span>
+<span class="n">domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'features.gpml'</span><span class="p">)</span>
+
+<span class="c1"># Calculate velocities at 10Ma using a delta time interval of 1Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># All reconstructed geometry points and associated (magnitude, azimuth, inclination) velocities.</span>
+<span class="n">all_reconstructed_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">all_velocities</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Iterate over all geometries in all domain features and calculate velocities at each of their points.</span>
+<span class="k">for</span> <span class="n">domain_feature</span> <span class="ow">in</span> <span class="n">domain_features</span><span class="p">:</span>
+
+    <span class="c1"># We need the feature's plate ID to get the equivalent stage rotation of that tectonic plate.</span>
+    <span class="n">domain_plate_id</span> <span class="o">=</span> <span class="n">domain_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+
+    <span class="c1"># Get the rotation of plate 'domain_plate_id' from present day (0Ma) to 'reconstruction_time'.</span>
+    <span class="n">equivalent_total_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">,</span> <span class="n">domain_plate_id</span><span class="p">)</span>
+
+    <span class="c1"># Get the rotation of plate 'domain_plate_id' from 'reconstruction_time + delta_time' to 'reconstruction_time'.</span>
+    <span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span>
+            <span class="n">reconstruction_time</span><span class="p">,</span> <span class="n">domain_plate_id</span><span class="p">,</span> <span class="n">reconstruction_time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
+
+    <span class="c1"># A feature usually has a single geometry but it could have more - iterate over them all.</span>
+    <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="c1"># Reconstruct the geometry to 'reconstruction_time'.</span>
+        <span class="n">reconstructed_geometry</span> <span class="o">=</span> <span class="n">equivalent_total_rotation</span> <span class="o">*</span> <span class="n">geometry</span>
+        <span class="n">reconstructed_points</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+
+        <span class="c1"># Calculate velocities at the reconstructed geometry points.</span>
+        <span class="c1"># This is from 'reconstruction_time + delta_time' to 'reconstruction_time' on plate 'domain_plate_id'.</span>
+        <span class="n">velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span><span class="n">reconstructed_points</span><span class="p">,</span> <span class="n">equivalent_stage_rotation</span><span class="p">,</span> <span class="n">delta_time</span><span class="p">)</span>
+
+        <span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+        <span class="n">velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+                <span class="n">reconstructed_points</span><span class="p">,</span> <span class="n">velocity_vectors</span><span class="p">)</span>
+
+        <span class="c1"># Append results for the current geometry to the final results.</span>
+        <span class="n">all_reconstructed_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reconstructed_points</span><span class="p">)</span>
+        <span class="n">all_velocities</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The features to calculate velocities at are loaded into a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>.
+They can be any <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> of feature as long as they have a
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a>
+(and of course some <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometry</span></code></a>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
+<span class="c1"># Calling them 'domain' features since using them as input to velocities (but can be any type of feature).</span>
+<span class="n">domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'features.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The velocities are calculated at geometries reconstructed to their 10Ma positions.</div>
+<div class="line">And the velocities are calculated over a 1My interval from 11Ma to 10Ma.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocities at 10Ma using a delta time interval of 1Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> enables us to calculate both the rotation from present day to 10Ma
+of a particular tectonic plate relative to the anchor plate (which is zero because <em>rotation_model</em>
+was created without specifying a default anchor plate):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the rotation of plate 'domain_plate_id' from present day (0Ma) to 'reconstruction_time'.</span>
+<span class="n">equivalent_total_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">,</span> <span class="n">domain_plate_id</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>…and the <em>stage</em> rotation from 11Ma to 10Ma:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the rotation of plate 'domain_plate_id' from 'reconstruction_time + delta_time' to 'reconstruction_time'.</span>
+<span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span>
+        <span class="n">reconstruction_time</span><span class="p">,</span> <span class="n">domain_plate_id</span><span class="p">,</span> <span class="n">reconstruction_time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">A <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a> usually contains a single geometry property but sometimes it contains more.</div>
+<div class="line">This is why we use <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a> instead of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a>.</div>
+<div class="line">Actually <code class="docutils literal notranslate"><span class="pre">domain_feature.get_geometries()</span></code> is just a convenient alternative to
+<code class="docutils literal notranslate"><span class="pre">domain_feature.get_geometry(property_return=PropertyReturn.all)</span></code>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A feature usually has a single geometry but it could have more - iterate over them all.</span>
+<span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">geometries</span></code></a> extracted from <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>
+are in present day coordinates and need to be reconstructed to their 10Ma positions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the geometry to 'reconstruction_time'.</span>
+<span class="n">reconstructed_geometry</span> <span class="o">=</span> <span class="n">equivalent_total_rotation</span> <span class="o">*</span> <span class="n">geometry</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The (reconstructed) geometry could be a <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a>, <a class="reference internal" href="../generated/pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.MultiPointOnSphere</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere</span></code></a> or <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere</span></code></a>.</div>
+<div class="line">We convert it into a list of <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a> to calculate velocities at using
+<a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">reconstructed_points</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The velocities are <a class="reference internal" href="../generated/pygplates.calculate_velocities.html#pygplates.calculate_velocities" title="pygplates.calculate_velocities"><code class="xref py py-func docutils literal notranslate"><span class="pre">calculated</span></code></a> at the reconstructed geometry positions (10Ma) using the stage rotation.</div>
+<div class="line">This returns a list of <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Vector3D</span></code></a> (one global cartesian velocity vector per geometry point).</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocities at the reconstructed geometry points.</span>
+<span class="c1"># This is from 'reconstruction_time + delta_time' to 'reconstruction_time' on plate 'domain_plate_id'.</span>
+<span class="n">velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span><span class="n">reconstructed_points</span><span class="p">,</span> <span class="n">equivalent_stage_rotation</span><span class="p">,</span> <span class="n">delta_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">If the velocities need to be in local (magnitude, azimuth, inclination) coordinates then the global
+cartesian vectors can be converted using <a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination" title="pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination()</span></code></a>.</div>
+<div class="line">Note that each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code> determines a separate local coordinate system.
+For example, the velocity <em>azimuth</em> is relative to North as viewed from a particular point position.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+<span class="n">velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+        <span class="n">reconstructed_points</span><span class="p">,</span> <span class="n">velocity_vectors</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Finally we add the reconstructed points and velocities to two large lists for <em>all</em> features.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Append results for the current geometry to the final results.</span>
+<span class="n">all_reconstructed_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">reconstructed_points</span><span class="p">)</span>
+<span class="n">all_velocities</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-total-rotation"><span class="std std-ref">Equivalent total rotation</span></a>, <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">Equivalent stage rotation</span></a></p></li>
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a>, <a class="reference internal" href="../generated/pygplates.calculate_velocities.html#pygplates.calculate_velocities" title="pygplates.calculate_velocities"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.calculate_velocities()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian" title="pygplates.LocalCartesian"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.LocalCartesian</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a>, <a class="reference internal" href="pygplates_reconstruct_regular_features.html#pygplates-reconstruct-regular-features"><span class="std std-ref">Reconstruct regular features</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html" class="btn btn-neutral float-left" title="Reconstruct crustal thickness and tectonic subsidence" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_calculate_velocities_in_dynamic_plates.html" class="btn btn-neutral float-right" title="Calculate velocities in dynamic plates" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+﻿pygplates.PolylineConversion
+============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PolylineConversion
+   :no-members:
+   :no-show-inheritance:

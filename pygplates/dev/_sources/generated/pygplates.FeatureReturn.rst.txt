@@ -1,0 +1,8 @@
+﻿pygplates.FeatureReturn
+=======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: FeatureReturn
+   :no-members:
+   :no-show-inheritance:

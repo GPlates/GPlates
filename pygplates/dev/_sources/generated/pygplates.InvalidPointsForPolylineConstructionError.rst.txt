@@ -1,0 +1,6 @@
+﻿pygplates.InvalidPointsForPolylineConstructionError
+===================================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: InvalidPointsForPolylineConstructionError

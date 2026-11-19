@@ -1,0 +1,33 @@
+﻿pygplates.GpmlPropertyDelegateList
+==================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlPropertyDelegateList
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlPropertyDelegateList.__init__
+      ~GpmlPropertyDelegateList.append
+      ~GpmlPropertyDelegateList.count
+      ~GpmlPropertyDelegateList.extend
+      ~GpmlPropertyDelegateList.index
+      ~GpmlPropertyDelegateList.insert
+      ~GpmlPropertyDelegateList.pop
+      ~GpmlPropertyDelegateList.remove
+      ~GpmlPropertyDelegateList.reverse
+      ~GpmlPropertyDelegateList.sort
+   
+   
+
+   
+   
+   
+   
+   

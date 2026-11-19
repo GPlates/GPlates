@@ -1,0 +1,600 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.ResolvedTopologicalBoundary &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.ResolvedTopologicalNetwork" href="pygplates.ResolvedTopologicalNetwork.html" />
+    <link rel="prev" title="pygplates.ResolvedTopologicalLine" href="pygplates.ResolvedTopologicalLine.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalModel.html">pygplates.TopologicalModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalSnapshot.html">pygplates.TopologicalSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html">pygplates.ReconstructedGeometryTimeSpan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologyPointLocation.html">pygplates.TopologyPointLocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolveTopologyParameters.html">pygplates.ResolveTopologyParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.resolve_topologies.html">pygplates.resolve_topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html">pygplates.ResolvedTopologicalLine</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.ResolvedTopologicalBoundary</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary"><code class="docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html">pygplates.ResolvedTopologicalNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionGeometry.html">pygplates.ReconstructionGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html">pygplates.ResolvedTopologicalSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSection.html">pygplates.ResolvedTopologicalSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html">pygplates.ResolvedTopologicalSharedSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetworkTriangulation.html">pygplates.NetworkTriangulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.ResolvedTopologicalBoundary</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.ResolvedTopologicalBoundary.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-resolvedtopologicalboundary">
+<h1>pygplates.ResolvedTopologicalBoundary<a class="headerlink" href="#pygplates-resolvedtopologicalboundary" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">ResolvedTopologicalBoundary</span></span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry" title="pygplates.ReconstructionGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a></p>
+<p>The geometry of a topological <em>boundary</em> feature resolved to a geological time.</p>
+<p><a class="reference internal" href="pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalModel</span></code></a>, <a class="reference internal" href="pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalSnapshot</span></code></a> or <a class="reference internal" href="pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_topologies()</span></code></a> can be used to generate <em>ResolvedTopologicalBoundary</em> instances.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.__init__" title="Link to this definition"></a></dt>
+<dd><p>Raises an exception
+This class cannot be instantiated from Python</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.__init__" title="pygplates.ResolvedTopologicalBoundary.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>Raises an exception This class cannot be instantiated from Python</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments" title="pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_boundary_sub_segments</span></code></a>()</p></td>
+<td><p>Returns the <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment" title="pygplates.ResolvedTopologicalSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">sub-segments</span></code></a> that make up the boundary of this resolved topological boundary.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_feature" title="pygplates.ResolvedTopologicalBoundary.get_feature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_feature</span></code></a>()</p></td>
+<td><p>Returns the feature associated with this <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_geometry_sub_segments" title="pygplates.ResolvedTopologicalBoundary.get_geometry_sub_segments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_geometry_sub_segments</span></code></a>()</p></td>
+<td><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments" title="pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_boundary_sub_segments()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_point_location" title="pygplates.ResolvedTopologicalBoundary.get_point_location"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_location</span></code></a>(point)</p></td>
+<td><p>Determines whether the specified point lies within this resolved topological boundary.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_point_strain_rate" title="pygplates.ResolvedTopologicalBoundary.get_point_strain_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_strain_rate</span></code></a>(point)</p></td>
+<td><p>Returns zero strain rate (if the specified point lies within this resolved topological boundary).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_point_velocity" title="pygplates.ResolvedTopologicalBoundary.get_point_velocity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_velocity</span></code></a>(point, ...)</p></td>
+<td><p>Returns the velocity of the specified point (if it lies within this resolved topological boundary).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_property" title="pygplates.ResolvedTopologicalBoundary.get_property"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_property</span></code></a>()</p></td>
+<td><p>Returns the feature property containing the topological boundary property associated with this <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstruction_time</span></code></a>()</p></td>
+<td><p>Returns the reconstruction time that this instance was created at.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_boundary</span></code></a>()</p></td>
+<td><p>Returns the resolved boundary geometry.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_feature" title="pygplates.ResolvedTopologicalBoundary.get_resolved_feature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_feature</span></code></a>()</p></td>
+<td><p>Returns a feature containing the resolved boundary geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry</span></code></a>()</p></td>
+<td><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_boundary()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_features" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry_point_features</span></code></a>()</p></td>
+<td><p>Returns the source feature associated with each point in the <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_velocities" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_velocities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry_point_velocities</span></code></a>(...)</p></td>
+<td><p>Returns the velocities of the <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolved_geometry_points</span></code></a>()</p></td>
+<td><p>Returns the points of the <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.reconstruct_point" title="pygplates.ResolvedTopologicalBoundary.reconstruct_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reconstruct_point</span></code></a>(point, reconstruction_time)</p></td>
+<td><p>Incrementally reconstruct the specified point (if it lies within this resolved topological boundary) to the specified reconstruction time.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments">
+<span class="sig-name descname"><span class="pre">get_boundary_sub_segments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments" title="Link to this definition"></a></dt>
+<dd><p>Returns the <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment" title="pygplates.ResolvedTopologicalSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">sub-segments</span></code></a> that make up the boundary of this resolved topological boundary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html#pygplates.ResolvedTopologicalSubSegment" title="pygplates.ResolvedTopologicalSubSegment">ResolvedTopologicalSubSegment</a></p>
+</dd>
+</dl>
+<p>To get a list of the <em>unreversed</em> boundary sub-segment geometries:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sub_segment_geometries</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">sub_segment</span> <span class="ow">in</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_boundary_sub_segments</span><span class="p">():</span>
+    <span class="n">sub_segment_geometries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>To get a list of sub-segment geometries with points in the same order as this topological boundary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sub_segment_geometries</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">sub_segment</span> <span class="ow">in</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_boundary_sub_segments</span><span class="p">():</span>
+    <span class="n">sub_segment_geometry</span> <span class="o">=</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">was_geometry_reversed_in_topology</span><span class="p">():</span>
+        <span class="c1"># Create a new sub-segment polyline with points in reverse order.</span>
+        <span class="n">sub_segment_geometry</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span><span class="n">sub_segment_geometry</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">sub_segment_geometries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_segment_geometry</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The following is essentially equivalent to <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_boundary()</span></code></a> (except rubber banding points, if any, between adjacent sub-segments are included below but not in <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_boundary()</span></code></a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_resolved_boundary</span><span class="p">(</span><span class="n">resolved_topological_boundary</span><span class="p">):</span>
+
+    <span class="n">resolved_boundary_points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">sub_segment</span> <span class="ow">in</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_boundary_sub_segments</span><span class="p">():</span>
+        <span class="n">sub_segment_points</span> <span class="o">=</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sub_segment</span><span class="o">.</span><span class="n">was_geometry_reversed_in_topology</span><span class="p">():</span>
+            <span class="c1"># Reverse the sub-segment points.</span>
+            <span class="n">sub_segment_points</span> <span class="o">=</span> <span class="n">sub_segment_points</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">resolved_boundary_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sub_segment_points</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">(</span><span class="n">resolved_boundary_points</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_feature">
+<span class="sig-name descname"><span class="pre">get_feature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_feature" title="Link to this definition"></a></dt>
+<dd><p>Returns the feature associated with this <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned feature is what was used to generate this <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> via <a class="reference internal" href="pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalModel</span></code></a>, <a class="reference internal" href="pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalSnapshot</span></code></a> or <a class="reference internal" href="pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_topologies()</span></code></a>.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_feature" title="pygplates.ResolvedTopologicalBoundary.get_resolved_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_feature()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_geometry_sub_segments">
+<span class="sig-name descname"><span class="pre">get_geometry_sub_segments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_geometry_sub_segments" title="Link to this definition"></a></dt>
+<dd><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments" title="pygplates.ResolvedTopologicalBoundary.get_boundary_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_boundary_sub_segments()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_point_location">
+<span class="sig-name descname"><span class="pre">get_point_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_point_location" title="Link to this definition"></a></dt>
+<dd><p>Determines whether the specified point lies within this resolved topological boundary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em>, or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em>) – the point to be tested</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation">TopologyPointLocation</a></p>
+</dd>
+</dl>
+<p>If the point lies within this resolved topological boundary then <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_boundary" title="pygplates.TopologyPointLocation.located_in_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TopologyPointLocation.located_in_resolved_boundary()</span></code></a> will return this resolved topological boundary, otherwise it will return <code class="docutils literal notranslate"><span class="pre">None</span></code> (in addition to <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.not_located_in_resolved_topology" title="pygplates.TopologyPointLocation.not_located_in_resolved_topology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TopologyPointLocation.not_located_in_resolved_topology()</span></code></a> returning <code class="docutils literal notranslate"><span class="pre">True</span></code>).</p>
+<p>To test if a (latitude, longitude) point is inside a resolved topological boundary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_point_location</span><span class="p">((</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">))</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">():</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network" title="pygplates.TopologyPointLocation.located_in_resolved_network"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TopologyPointLocation.located_in_resolved_network()</span></code></a> will always return <code class="docutils literal notranslate"><span class="pre">None</span></code> since this is a rigid plate (not a network). <a class="reference internal" href="pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologyPointLocation</span></code></a> is just returned for consistency with <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_point_location" title="pygplates.ResolvedTopologicalNetwork.get_point_location"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork.get_point_location()</span></code></a>.</p>
+</div>
+<p>This method is <em>essentially</em> equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_point_location</span><span class="p">(</span><span class="n">resolved_topological_boundary</span><span class="p">,</span> <span class="n">point</span><span class="p">):</span>
+    <span class="c1"># See if point is located within the resolved topological boundary polygon.</span>
+    <span class="k">if</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_boundary</span><span class="p">()</span><span class="o">.</span><span class="n">is_point_in_polygon</span><span class="p">(</span><span class="n">point</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">resolved_topological_boundary</span>
+
+    <span class="c1"># Point is *not* located in the resolved topological boundary.</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.49.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_point_strain_rate">
+<span class="sig-name descname"><span class="pre">get_point_strain_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_point_strain_rate" title="Link to this definition"></a></dt>
+<dd><p>Returns zero strain rate (if the specified point lies within this resolved topological boundary).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em>, or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em>) – the point to calculate strain rate at</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate">StrainRate</a> or None</p>
+</dd>
+</dl>
+<p>If the point lies within this resolved topological boundary then <code class="docutils literal notranslate"><span class="pre">pygplates.StrainRate.zero</span></code> will be returned (since this is a <em>rigid</em> plate), otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code> will be returned (to indicate the <em>point</em> is outside this resolved topological boundary).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is only provided for consistency with <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_point_strain_rate" title="pygplates.ResolvedTopologicalNetwork.get_point_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork.get_point_strain_rate()</span></code></a>.</p>
+</div>
+<p>This method is <em>essentially</em> equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_point_strain_rate</span><span class="p">(</span><span class="n">resolved_topological_boundary</span><span class="p">,</span> <span class="n">point</span><span class="p">):</span>
+    <span class="c1"># See if point is located within the resolved topological boundary.</span>
+    <span class="k">if</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_boundary</span><span class="p">()</span><span class="o">.</span><span class="n">is_point_in_polygon</span><span class="p">(</span><span class="n">point</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">StrainRate</span><span class="o">.</span><span class="n">zero</span>
+
+    <span class="c1"># Point is *not* located in the resolved topological boundary.</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.49.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_point_velocity">
+<span class="sig-name descname"><span class="pre">get_point_velocity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityUnits.kms_per_my</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">earth_radius_in_kms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_point_velocity" title="Link to this definition"></a></dt>
+<dd><p>Returns the velocity of the specified point (if it lies within this resolved topological boundary).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em>, or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em>) – the point to calculate velocity at</p></li>
+<li><p><strong>velocity_delta_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time delta used to calculate velocity (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<a class="reference internal" href="pygplates.VelocityDeltaTimeType.html#pygplates.VelocityDeltaTimeType" title="pygplates.VelocityDeltaTimeType"><em>VelocityDeltaTimeType</em></a>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>velocity_units</strong> (<a class="reference internal" href="pygplates.VelocityUnits.html#pygplates.VelocityUnits" title="pygplates.VelocityUnits"><em>VelocityUnits</em></a>) – whether to return velocity as <em>kilometres per million years</em> or <em>centimetres per year</em> (defaults to <em>kilometres per million years</em>)</p></li>
+<li><p><strong>earth_radius_in_kms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – the radius of the Earth in <em>kilometres</em> (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D">Vector3D</a> or None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>velocity_delta_time</em> is negative or zero.</p>
+</dd>
+</dl>
+<p>If the point lies within this resolved topological boundary then a velocity vector will be returned, otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code> will be returned.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If this resolved topological boundary does <em>not</em> have a reconstruction plate ID then <code class="docutils literal notranslate"><span class="pre">0</span></code> will be used.</p>
+</div>
+<p>To calculate the velocity of a (latitude, longitude) point (if it is inside a resolved topological boundary):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">point_velocity</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_point_velocity</span><span class="p">((</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">point_velocity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<p>This method is <em>essentially</em> equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_point_velocity</span><span class="p">(</span><span class="n">resolved_topological_boundary</span><span class="p">,</span> <span class="n">point</span><span class="p">):</span>
+    <span class="c1"># See if point is located within the resolved topological boundary polygon.</span>
+    <span class="k">if</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_boundary</span><span class="p">()</span><span class="o">.</span><span class="n">is_point_in_polygon</span><span class="p">(</span><span class="n">point</span><span class="p">):</span>
+        <span class="c1"># Get the reconstruction plate ID of this resolved topological boundary.</span>
+        <span class="c1"># If it doesn't have one then zero will be used instead.</span>
+        <span class="n">plate_id</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+        <span class="n">velocity</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># calculate velocity using 'point' and 'plate_id'</span>
+        <span class="k">return</span> <span class="n">velocity</span>
+
+    <span class="c1"># Point is *not* located in the resolved topological boundary.</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.49.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_property">
+<span class="sig-name descname"><span class="pre">get_property</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_property" title="Link to this definition"></a></dt>
+<dd><p>Returns the feature property containing the topological boundary property associated with this <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Property.html#pygplates.Property" title="pygplates.Property">Property</a></p>
+</dd>
+</dl>
+<p>This is the <a class="reference internal" href="pygplates.Property.html#pygplates.Property" title="pygplates.Property"><code class="xref py py-class docutils literal notranslate"><span class="pre">Property</span></code></a> that the <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_boundary()</span></code></a> and <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_geometry()</span></code></a> are obtained from.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary">
+<span class="sig-name descname"><span class="pre">get_resolved_boundary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="Link to this definition"></a></dt>
+<dd><p>Returns the resolved boundary geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere">PolygonOnSphere</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_resolved_feature">
+<span class="sig-name descname"><span class="pre">get_resolved_feature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_feature" title="Link to this definition"></a></dt>
+<dd><p>Returns a feature containing the resolved boundary geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a></p>
+</dd>
+</dl>
+<p>The returned feature contains the static <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span></code></a>. Unlike <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_feature" title="pygplates.ResolvedTopologicalBoundary.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_feature()</span></code></a> it cannot be used to generate a <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a> via <a class="reference internal" href="pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalModel</span></code></a>, <a class="reference internal" href="pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalSnapshot</span></code></a> or <a class="reference internal" href="pygplates.resolve_topologies.html#pygplates.resolve_topologies" title="pygplates.resolve_topologies"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_topologies()</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="line-block">
+<div class="line">The returned feature does <strong>not</strong> contain present-day geometry as is typical of most GPlates features.</div>
+<div class="line">In this way the returned feature is similar to a GPlates reconstruction export.</div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned feature should not be <a class="reference internal" href="pygplates.reverse_reconstruct.html#pygplates.reverse_reconstruct" title="pygplates.reverse_reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reverse</span> <span class="pre">reconstructed</span></code></a> to present day because topologies are resolved (not reconstructed).</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_feature" title="pygplates.ResolvedTopologicalBoundary.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_feature()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry" title="Link to this definition"></a></dt>
+<dd><p>Same as <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_boundary()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_features">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry_point_features</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_features" title="Link to this definition"></a></dt>
+<dd><p>Returns the source feature associated with each point in the <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a></p>
+</dd>
+</dl>
+<p>The motion of each point in the resolved geometry is determined by its source feature. And the source features are the building blocks from which topologies are assembled and resolved.</p>
+<p>To associate each source feature with its point (in a resolved topological boundary):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">points</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_geometry_points</span><span class="p">()</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_geometry_point_features</span><span class="p">()</span>
+
+<span class="n">points_and_features</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">point_features</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">points_and_features</span><span class="p">:</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_velocities" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_resolved_geometry_point_velocities()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_velocities">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry_point_velocities</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">velocity_delta_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityUnits.kms_per_my</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">earth_radius_in_kms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_point_velocities" title="Link to this definition"></a></dt>
+<dd><p>Returns the velocities of the <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span> <span class="pre">points</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>velocity_delta_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time delta used to calculate velocities (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<a class="reference internal" href="pygplates.VelocityDeltaTimeType.html#pygplates.VelocityDeltaTimeType" title="pygplates.VelocityDeltaTimeType"><em>VelocityDeltaTimeType</em></a>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>velocity_units</strong> (<a class="reference internal" href="pygplates.VelocityUnits.html#pygplates.VelocityUnits" title="pygplates.VelocityUnits"><em>VelocityUnits</em></a>) – whether to return velocities as <em>kilometres per million years</em> or <em>centimetres per year</em> (defaults to <em>kilometres per million years</em>)</p></li>
+<li><p><strong>earth_radius_in_kms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – the radius of the Earth in <em>kilometres</em> (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D">Vector3D</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>velocity_delta_time</em> is negative or zero.</p>
+</dd>
+</dl>
+<p>To associate each velocity with its point (in a resolved topological boundary):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">points</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_geometry_points</span><span class="p">()</span>
+<span class="n">point_velocities</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_geometry_point_velocities</span><span class="p">()</span>
+
+<span class="n">points_and_velocities</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">point_velocities</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">velocity</span> <span class="ow">in</span> <span class="n">points_and_velocities</span><span class="p">:</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points">
+<span class="sig-name descname"><span class="pre">get_resolved_geometry_points</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry_points" title="Link to this definition"></a></dt>
+<dd><p>Returns the points of the <a class="reference internal" href="#pygplates.ResolvedTopologicalBoundary.get_resolved_geometry" title="pygplates.ResolvedTopologicalBoundary.get_resolved_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">geometry</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere">PointOnSphere</a></p>
+</dd>
+</dl>
+<p>This method is <em>essentially</em> equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_resolved_geometry_points</span><span class="p">(</span><span class="n">resolved_topological_boundary</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GeometryOnSphere.get_points()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ResolvedTopologicalBoundary.reconstruct_point">
+<span class="sig-name descname"><span class="pre">reconstruct_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconstruction_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ResolvedTopologicalBoundary.reconstruct_point" title="Link to this definition"></a></dt>
+<dd><p>Incrementally reconstruct the specified point (if it lies within this resolved topological boundary) to the specified reconstruction time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em>, or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em>) – The point to reconstruct. It is the position at the <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">time</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a>.</p></li>
+<li><p><strong>reconstruction_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – The time to reconstruct <em>to</em>. This can be older or younger than the <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">time</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere">PointOnSphere</a> or None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruction_time</em> is distant-past (<code class="docutils literal notranslate"><span class="pre">float('inf')</span></code>) or distant-future (<code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code>).</p>
+</dd>
+</dl>
+<p>If the point lies within this resolved topological boundary then it is reconstructed <strong>from</strong> the <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">time</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a> <strong>to</strong> the specified reconstruction time, and the reconstructed point is returned (otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code> will be returned).</p>
+<p>The specified reconstruction time can be older or younger than the <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">time</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a>. If it’s <em>older</em> then the point is reconstructed <em>backward</em> in time, and if it’s <em>younger</em> then the point is reconstructed <em>forward</em> in time.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The reconstruction involves calculating a stage rotation (using the reconstruction plate ID of this resolved topological boundary) from the <a class="reference internal" href="pygplates.ReconstructionGeometry.html#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">time</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a> to <em>reconstruction_time</em>. So ideally a small time increment (such as 1 Myr) should be used since the plate boundaries and rotations typically change over small time intervals.</p>
+</div>
+<p>To reconstruct a point located at (latitude, longitude) to a new position at a time 1 Myr older than the current time (if point is inside a resolved topological boundary):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstructed_point</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">reconstruct_point</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">),</span>
+        <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_reconstruction_time</span><span class="p">()</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">reconstructed_point</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<p>This method is <em>essentially</em> equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">reconstruct_point</span><span class="p">(</span><span class="n">resolved_topological_boundary</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">):</span>
+    <span class="c1"># See if point is located within the resolved topological boundary polygon.</span>
+    <span class="k">if</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_resolved_boundary</span><span class="p">()</span><span class="o">.</span><span class="n">is_point_in_polygon</span><span class="p">(</span><span class="n">point</span><span class="p">):</span>
+        <span class="c1"># Get the reconstruction plate ID of this resolved topological boundary.</span>
+        <span class="c1"># If it doesn't have one then zero will be used instead.</span>
+        <span class="n">plate_id</span> <span class="o">=</span> <span class="n">resolved_topological_boundary</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+        <span class="c1"># Rigidly rotate 'point' using 'plate_id' and stage rotation</span>
+        <span class="c1"># from resolved time to 'reconstruction_time'.</span>
+        <span class="n">reconstructed_point</span> <span class="o">=</span> <span class="o">...</span>
+        <span class="k">return</span> <span class="n">reconstructed_point</span>
+
+    <span class="c1"># Point is *not* located in the resolved topological boundary.</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ResolvedTopologicalLine.html" class="btn btn-neutral float-left" title="pygplates.ResolvedTopologicalLine" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.ResolvedTopologicalNetwork.html" class="btn btn-neutral float-right" title="pygplates.ResolvedTopologicalNetwork" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

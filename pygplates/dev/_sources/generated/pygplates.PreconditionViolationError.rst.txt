@@ -1,0 +1,6 @@
+﻿pygplates.PreconditionViolationError
+====================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: PreconditionViolationError

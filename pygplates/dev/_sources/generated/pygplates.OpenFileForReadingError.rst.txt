@@ -1,0 +1,6 @@
+﻿pygplates.OpenFileForReadingError
+=================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: OpenFileForReadingError

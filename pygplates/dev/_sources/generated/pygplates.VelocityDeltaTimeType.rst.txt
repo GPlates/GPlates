@@ -1,0 +1,8 @@
+﻿pygplates.VelocityDeltaTimeType
+===============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: VelocityDeltaTimeType
+   :no-members:
+   :no-show-inheritance:

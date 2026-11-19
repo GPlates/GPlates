@@ -1,0 +1,67 @@
+﻿pygplates.ScalarType
+====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ScalarType
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ScalarType.__init__
+      ~ScalarType.create_from_qualified_string
+      ~ScalarType.create_gml
+      ~ScalarType.create_gpml
+      ~ScalarType.create_xsi
+      ~ScalarType.get_name
+      ~ScalarType.get_namespace
+      ~ScalarType.get_namespace_alias
+      ~ScalarType.to_qualified_string
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+   
+   
+   
+   .. list-table::
+      :class: autosummary longtable
+      :widths: auto
+   
+      * - :py:obj:`gpml_crustal_stretching_factor <pygplates.ScalarType.gpml_crustal_stretching_factor>`
+        - The ``gpml:CrustalStretchingFactor`` scalar type: the crustal stretching factor (see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).
+      * - :py:obj:`gpml_crustal_thickness <pygplates.ScalarType.gpml_crustal_thickness>`
+        - The ``gpml:CrustalThickness`` scalar type: the crustal thickness, in kms (see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).
+      * - :py:obj:`gpml_crustal_thinning_factor <pygplates.ScalarType.gpml_crustal_thinning_factor>`
+        - The ``gpml:CrustalThinningFactor`` scalar type: the crustal thinning factor (see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).
+      * - :py:obj:`gpml_tectonic_subsidence <pygplates.ScalarType.gpml_tectonic_subsidence>`
+        - The ``gpml:TectonicSubsidence`` scalar type: the tectonic subsidence, in kms (see :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence`).
+   
+   .. py:attribute:: gpml_crustal_stretching_factor
+      :type: ScalarType
+
+      The ``gpml:CrustalStretchingFactor`` scalar type: the crustal stretching factor (see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).
+   
+   .. py:attribute:: gpml_crustal_thickness
+      :type: ScalarType
+
+      The ``gpml:CrustalThickness`` scalar type: the crustal thickness, in kms (see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).
+   
+   .. py:attribute:: gpml_crustal_thinning_factor
+      :type: ScalarType
+
+      The ``gpml:CrustalThinningFactor`` scalar type: the crustal thinning factor (see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`).
+   
+   .. py:attribute:: gpml_tectonic_subsidence
+      :type: ScalarType
+
+      The ``gpml:TectonicSubsidence`` scalar type: the tectonic subsidence, in kms (see :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence`).
+   
+   

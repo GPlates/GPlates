@@ -1,0 +1,410 @@
+﻿pygplates.PropertyName
+======================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PropertyName
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PropertyName.__init__
+      ~PropertyName.create_from_qualified_string
+      ~PropertyName.create_gml
+      ~PropertyName.create_gpml
+      ~PropertyName.create_xsi
+      ~PropertyName.get_name
+      ~PropertyName.get_namespace
+      ~PropertyName.get_namespace_alias
+      ~PropertyName.to_qualified_string
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+   
+   
+   
+   .. list-table::
+      :class: autosummary longtable
+      :widths: auto
+   
+      * - :py:obj:`gml_description <pygplates.PropertyName.gml_description>`
+        - The name of the `gml:description <http://www.gplates.org/docs/gpgim/#gml:description>`__ property.
+      * - :py:obj:`gml_name <pygplates.PropertyName.gml_name>`
+        - The name of the `gml:name <http://www.gplates.org/docs/gpgim/#gml:name>`__ property.
+      * - :py:obj:`gml_valid_time <pygplates.PropertyName.gml_valid_time>`
+        - The name of the `gml:validTime <http://www.gplates.org/docs/gpgim/#gml:validTime>`__ property.
+      * - :py:obj:`gpml_absolute_reference_frame <pygplates.PropertyName.gpml_absolute_reference_frame>`
+        - The name of the `gpml:absoluteReferenceFrame <http://www.gplates.org/docs/gpgim/#gpml:absoluteReferenceFrame>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_average_age <pygplates.PropertyName.gpml_average_age>`
+        - The name of the `gpml:averageAge <http://www.gplates.org/docs/gpgim/#gpml:averageAge>`__ property.
+      * - :py:obj:`gpml_average_declination <pygplates.PropertyName.gpml_average_declination>`
+        - The name of the `gpml:averageDeclination <http://www.gplates.org/docs/gpgim/#gpml:averageDeclination>`__ property.
+      * - :py:obj:`gpml_average_inclination <pygplates.PropertyName.gpml_average_inclination>`
+        - The name of the `gpml:averageInclination <http://www.gplates.org/docs/gpgim/#gpml:averageInclination>`__ property.
+      * - :py:obj:`gpml_average_sample_site_position <pygplates.PropertyName.gpml_average_sample_site_position>`
+        - The name of the `gpml:averageSampleSitePosition <http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition>`__ geometry property.
+      * - :py:obj:`gpml_boundary <pygplates.PropertyName.gpml_boundary>`
+        - The name of the `gpml:boundary <http://www.gplates.org/docs/gpgim/#gpml:boundary>`__ geometry property.
+      * - :py:obj:`gpml_center_line_of <pygplates.PropertyName.gpml_center_line_of>`
+        - The name of the `gpml:centerLineOf <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`__ geometry property.
+      * - :py:obj:`gpml_conjugate_plate_id <pygplates.PropertyName.gpml_conjugate_plate_id>`
+        - The name of the `gpml:conjugatePlateId <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`__ property.
+      * - :py:obj:`gpml_crust <pygplates.PropertyName.gpml_crust>`
+        - The name of the `gpml:crust <http://www.gplates.org/docs/gpgim/#gpml:crust>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_dip_side <pygplates.PropertyName.gpml_dip_side>`
+        - The name of the `gpml:dipSide <http://www.gplates.org/docs/gpgim/#gpml:dipSide>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_dip_slip <pygplates.PropertyName.gpml_dip_slip>`
+        - The name of the `gpml:dipSlip <http://www.gplates.org/docs/gpgim/#gpml:dipSlip>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_edge <pygplates.PropertyName.gpml_edge>`
+        - The name of the `gpml:edge <http://www.gplates.org/docs/gpgim/#gpml:edge>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_error_bounds <pygplates.PropertyName.gpml_error_bounds>`
+        - The name of the `gpml:errorBounds <http://www.gplates.org/docs/gpgim/#gpml:errorBounds>`__ geometry property.
+      * - :py:obj:`gpml_fixed_reference_frame <pygplates.PropertyName.gpml_fixed_reference_frame>`
+        - The name of the `gpml:fixedReferenceFrame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`__ property.
+      * - :py:obj:`gpml_fold_annotation <pygplates.PropertyName.gpml_fold_annotation>`
+        - The name of the `gpml:foldAnnotation <http://www.gplates.org/docs/gpgim/#gpml:foldAnnotation>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_geometry_import_time <pygplates.PropertyName.gpml_geometry_import_time>`
+        - The name of the `gpml:geometryImportTime <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`__ property.
+      * - :py:obj:`gpml_left_plate <pygplates.PropertyName.gpml_left_plate>`
+        - The name of the `gpml:leftPlate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`__ property.
+      * - :py:obj:`gpml_motion <pygplates.PropertyName.gpml_motion>`
+        - The name of the `gpml:motion <http://www.gplates.org/docs/gpgim/#gpml:motion>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_moving_reference_frame <pygplates.PropertyName.gpml_moving_reference_frame>`
+        - The name of the `gpml:movingReferenceFrame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`__ property.
+      * - :py:obj:`gpml_multi_position <pygplates.PropertyName.gpml_multi_position>`
+        - The name of the `gpml:multiPosition <http://www.gplates.org/docs/gpgim/#gpml:multiPosition>`__ geometry property.
+      * - :py:obj:`gpml_network <pygplates.PropertyName.gpml_network>`
+        - The name of the `gpml:network <http://www.gplates.org/docs/gpgim/#gpml:network>`__ geometry property.
+      * - :py:obj:`gpml_outline_of <pygplates.PropertyName.gpml_outline_of>`
+        - The name of the `gpml:outlineOf <http://www.gplates.org/docs/gpgim/#gpml:outlineOf>`__ geometry property.
+      * - :py:obj:`gpml_polarity_chron_id <pygplates.PropertyName.gpml_polarity_chron_id>`
+        - The name of the `gpml:polarityChronId <http://www.gplates.org/docs/gpgim/#gpml:polarityChronId>`__ property.
+      * - :py:obj:`gpml_polarity_chron_offset <pygplates.PropertyName.gpml_polarity_chron_offset>`
+        - The name of the `gpml:polarityChronOffset <http://www.gplates.org/docs/gpgim/#gpml:polarityChronOffset>`__ property.
+      * - :py:obj:`gpml_polarity_chron_orientation <pygplates.PropertyName.gpml_polarity_chron_orientation>`
+        - The name of the `gpml:polarityChronOrientation <http://www.gplates.org/docs/gpgim/#gpml:polarityChronOrientation>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_pole_a95 <pygplates.PropertyName.gpml_pole_a95>`
+        - The name of the `gpml:poleA95 <http://www.gplates.org/docs/gpgim/#gpml:poleA95>`__ property.
+      * - :py:obj:`gpml_pole_dm <pygplates.PropertyName.gpml_pole_dm>`
+        - The name of the `gpml:poleDm <http://www.gplates.org/docs/gpgim/#gpml:poleDm>`__ property.
+      * - :py:obj:`gpml_pole_dp <pygplates.PropertyName.gpml_pole_dp>`
+        - The name of the `gpml:poleDp <http://www.gplates.org/docs/gpgim/#gpml:poleDp>`__ property.
+      * - :py:obj:`gpml_pole_position <pygplates.PropertyName.gpml_pole_position>`
+        - The name of the `gpml:polePosition <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`__ geometry property.
+      * - :py:obj:`gpml_position <pygplates.PropertyName.gpml_position>`
+        - The name of the `gpml:position <http://www.gplates.org/docs/gpgim/#gpml:position>`__ geometry property.
+      * - :py:obj:`gpml_primary_slip_component <pygplates.PropertyName.gpml_primary_slip_component>`
+        - The name of the `gpml:primarySlipComponent <http://www.gplates.org/docs/gpgim/#gpml:primarySlipComponent>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_quality <pygplates.PropertyName.gpml_quality>`
+        - The name of the `gpml:quality <http://www.gplates.org/docs/gpgim/#gpml:quality>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_reconstruction_method <pygplates.PropertyName.gpml_reconstruction_method>`
+        - The name of the `gpml:reconstructionMethod <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_reconstruction_plate_id <pygplates.PropertyName.gpml_reconstruction_plate_id>`
+        - The name of the `gpml:reconstructionPlateId <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`__ property.
+      * - :py:obj:`gpml_relative_plate <pygplates.PropertyName.gpml_relative_plate>`
+        - The name of the `gpml:relativePlate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`__ property.
+      * - :py:obj:`gpml_rift_edgeLength_threshold_degrees <pygplates.PropertyName.gpml_rift_edgeLength_threshold_degrees>`
+        - Deprecated: the old name of :attr:`gpml_rift_edge_length_threshold_degrees`, the name of the ``gpml:riftEdgeLengthThresholdDegrees`` property.
+      * - :py:obj:`gpml_rift_edge_length_threshold_degrees <pygplates.PropertyName.gpml_rift_edge_length_threshold_degrees>`
+        - The name of the `gpml:riftEdgeLengthThresholdDegrees <http://www.gplates.org/docs/gpgim/#gpml:riftEdgeLengthThresholdDegrees>`__ property.
+      * - :py:obj:`gpml_rift_exponential_stretching_constant <pygplates.PropertyName.gpml_rift_exponential_stretching_constant>`
+        - The name of the `gpml:riftExponentialStretchingConstant <http://www.gplates.org/docs/gpgim/#gpml:riftExponentialStretchingConstant>`__ property.
+      * - :py:obj:`gpml_rift_left_plate <pygplates.PropertyName.gpml_rift_left_plate>`
+        - The name of the `gpml:riftLeftPlate <http://www.gplates.org/docs/gpgim/#gpml:riftLeftPlate>`__ property.
+      * - :py:obj:`gpml_rift_right_plate <pygplates.PropertyName.gpml_rift_right_plate>`
+        - The name of the `gpml:riftRightPlate <http://www.gplates.org/docs/gpgim/#gpml:riftRightPlate>`__ property.
+      * - :py:obj:`gpml_rift_strain_rate_resolution_log10 <pygplates.PropertyName.gpml_rift_strain_rate_resolution_log10>`
+        - The name of the `gpml:riftStrainRateResolutionLog10 <http://www.gplates.org/docs/gpgim/#gpml:riftStrainRateResolutionLog10>`__ property.
+      * - :py:obj:`gpml_right_plate <pygplates.PropertyName.gpml_right_plate>`
+        - The name of the `gpml:rightPlate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`__ property.
+      * - :py:obj:`gpml_seed_points <pygplates.PropertyName.gpml_seed_points>`
+        - The name of the `gpml:seedPoints <http://www.gplates.org/docs/gpgim/#gpml:seedPoints>`__ geometry property.
+      * - :py:obj:`gpml_shapefile_attributes <pygplates.PropertyName.gpml_shapefile_attributes>`
+        - The name of the `gpml:shapefileAttributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`__ property.
+      * - :py:obj:`gpml_side <pygplates.PropertyName.gpml_side>`
+        - The name of the `gpml:side <http://www.gplates.org/docs/gpgim/#gpml:side>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_strike_slip <pygplates.PropertyName.gpml_strike_slip>`
+        - The name of the `gpml:strikeSlip <http://www.gplates.org/docs/gpgim/#gpml:strikeSlip>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_subduction_polarity <pygplates.PropertyName.gpml_subduction_polarity>`
+        - The name of the `gpml:subductionPolarity <http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity>`__ :class:`enumeration<Enumeration>` property.
+      * - :py:obj:`gpml_times <pygplates.PropertyName.gpml_times>`
+        - The name of the `gpml:times <http://www.gplates.org/docs/gpgim/#gpml:times>`__ property.
+      * - :py:obj:`gpml_total_reconstruction_pole <pygplates.PropertyName.gpml_total_reconstruction_pole>`
+        - The name of the `gpml:totalReconstructionPole <http://www.gplates.org/docs/gpgim/#gpml:totalReconstructionPole>`__ property.
+      * - :py:obj:`gpml_unclassified_geometry <pygplates.PropertyName.gpml_unclassified_geometry>`
+        - The name of the `gpml:unclassifiedGeometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`__ geometry property.
+   
+   .. py:attribute:: gml_description
+      :type: PropertyName
+
+      The name of the `gml:description <http://www.gplates.org/docs/gpgim/#gml:description>`__ property.
+   
+   .. py:attribute:: gml_name
+      :type: PropertyName
+
+      The name of the `gml:name <http://www.gplates.org/docs/gpgim/#gml:name>`__ property.
+   
+   .. py:attribute:: gml_valid_time
+      :type: PropertyName
+
+      The name of the `gml:validTime <http://www.gplates.org/docs/gpgim/#gml:validTime>`__ property.
+   
+   .. py:attribute:: gpml_absolute_reference_frame
+      :type: PropertyName
+
+      The name of the `gpml:absoluteReferenceFrame <http://www.gplates.org/docs/gpgim/#gpml:absoluteReferenceFrame>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_average_age
+      :type: PropertyName
+
+      The name of the `gpml:averageAge <http://www.gplates.org/docs/gpgim/#gpml:averageAge>`__ property.
+   
+   .. py:attribute:: gpml_average_declination
+      :type: PropertyName
+
+      The name of the `gpml:averageDeclination <http://www.gplates.org/docs/gpgim/#gpml:averageDeclination>`__ property.
+   
+   .. py:attribute:: gpml_average_inclination
+      :type: PropertyName
+
+      The name of the `gpml:averageInclination <http://www.gplates.org/docs/gpgim/#gpml:averageInclination>`__ property.
+   
+   .. py:attribute:: gpml_average_sample_site_position
+      :type: PropertyName
+
+      The name of the `gpml:averageSampleSitePosition <http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition>`__ geometry property.
+   
+   .. py:attribute:: gpml_boundary
+      :type: PropertyName
+
+      The name of the `gpml:boundary <http://www.gplates.org/docs/gpgim/#gpml:boundary>`__ geometry property.
+   
+   .. py:attribute:: gpml_center_line_of
+      :type: PropertyName
+
+      The name of the `gpml:centerLineOf <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`__ geometry property.
+   
+   .. py:attribute:: gpml_conjugate_plate_id
+      :type: PropertyName
+
+      The name of the `gpml:conjugatePlateId <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`__ property.
+   
+   .. py:attribute:: gpml_crust
+      :type: PropertyName
+
+      The name of the `gpml:crust <http://www.gplates.org/docs/gpgim/#gpml:crust>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_dip_side
+      :type: PropertyName
+
+      The name of the `gpml:dipSide <http://www.gplates.org/docs/gpgim/#gpml:dipSide>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_dip_slip
+      :type: PropertyName
+
+      The name of the `gpml:dipSlip <http://www.gplates.org/docs/gpgim/#gpml:dipSlip>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_edge
+      :type: PropertyName
+
+      The name of the `gpml:edge <http://www.gplates.org/docs/gpgim/#gpml:edge>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_error_bounds
+      :type: PropertyName
+
+      The name of the `gpml:errorBounds <http://www.gplates.org/docs/gpgim/#gpml:errorBounds>`__ geometry property.
+   
+   .. py:attribute:: gpml_fixed_reference_frame
+      :type: PropertyName
+
+      The name of the `gpml:fixedReferenceFrame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`__ property.
+   
+   .. py:attribute:: gpml_fold_annotation
+      :type: PropertyName
+
+      The name of the `gpml:foldAnnotation <http://www.gplates.org/docs/gpgim/#gpml:foldAnnotation>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_geometry_import_time
+      :type: PropertyName
+
+      The name of the `gpml:geometryImportTime <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`__ property.
+   
+   .. py:attribute:: gpml_left_plate
+      :type: PropertyName
+
+      The name of the `gpml:leftPlate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`__ property.
+   
+   .. py:attribute:: gpml_motion
+      :type: PropertyName
+
+      The name of the `gpml:motion <http://www.gplates.org/docs/gpgim/#gpml:motion>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_moving_reference_frame
+      :type: PropertyName
+
+      The name of the `gpml:movingReferenceFrame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`__ property.
+   
+   .. py:attribute:: gpml_multi_position
+      :type: PropertyName
+
+      The name of the `gpml:multiPosition <http://www.gplates.org/docs/gpgim/#gpml:multiPosition>`__ geometry property.
+   
+   .. py:attribute:: gpml_network
+      :type: PropertyName
+
+      The name of the `gpml:network <http://www.gplates.org/docs/gpgim/#gpml:network>`__ geometry property.
+   
+   .. py:attribute:: gpml_outline_of
+      :type: PropertyName
+
+      The name of the `gpml:outlineOf <http://www.gplates.org/docs/gpgim/#gpml:outlineOf>`__ geometry property.
+   
+   .. py:attribute:: gpml_polarity_chron_id
+      :type: PropertyName
+
+      The name of the `gpml:polarityChronId <http://www.gplates.org/docs/gpgim/#gpml:polarityChronId>`__ property.
+   
+   .. py:attribute:: gpml_polarity_chron_offset
+      :type: PropertyName
+
+      The name of the `gpml:polarityChronOffset <http://www.gplates.org/docs/gpgim/#gpml:polarityChronOffset>`__ property.
+   
+   .. py:attribute:: gpml_polarity_chron_orientation
+      :type: PropertyName
+
+      The name of the `gpml:polarityChronOrientation <http://www.gplates.org/docs/gpgim/#gpml:polarityChronOrientation>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_pole_a95
+      :type: PropertyName
+
+      The name of the `gpml:poleA95 <http://www.gplates.org/docs/gpgim/#gpml:poleA95>`__ property.
+   
+   .. py:attribute:: gpml_pole_dm
+      :type: PropertyName
+
+      The name of the `gpml:poleDm <http://www.gplates.org/docs/gpgim/#gpml:poleDm>`__ property.
+   
+   .. py:attribute:: gpml_pole_dp
+      :type: PropertyName
+
+      The name of the `gpml:poleDp <http://www.gplates.org/docs/gpgim/#gpml:poleDp>`__ property.
+   
+   .. py:attribute:: gpml_pole_position
+      :type: PropertyName
+
+      The name of the `gpml:polePosition <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`__ geometry property.
+   
+   .. py:attribute:: gpml_position
+      :type: PropertyName
+
+      The name of the `gpml:position <http://www.gplates.org/docs/gpgim/#gpml:position>`__ geometry property.
+   
+   .. py:attribute:: gpml_primary_slip_component
+      :type: PropertyName
+
+      The name of the `gpml:primarySlipComponent <http://www.gplates.org/docs/gpgim/#gpml:primarySlipComponent>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_quality
+      :type: PropertyName
+
+      The name of the `gpml:quality <http://www.gplates.org/docs/gpgim/#gpml:quality>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_reconstruction_method
+      :type: PropertyName
+
+      The name of the `gpml:reconstructionMethod <http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_reconstruction_plate_id
+      :type: PropertyName
+
+      The name of the `gpml:reconstructionPlateId <http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId>`__ property.
+   
+   .. py:attribute:: gpml_relative_plate
+      :type: PropertyName
+
+      The name of the `gpml:relativePlate <http://www.gplates.org/docs/gpgim/#gpml:relativePlate>`__ property.
+   
+   .. py:attribute:: gpml_rift_edgeLength_threshold_degrees
+      :type: PropertyName
+
+      Deprecated: the old name of :attr:`gpml_rift_edge_length_threshold_degrees`, the name of the ``gpml:riftEdgeLengthThresholdDegrees`` property.
+   
+   .. py:attribute:: gpml_rift_edge_length_threshold_degrees
+      :type: PropertyName
+
+      The name of the `gpml:riftEdgeLengthThresholdDegrees <http://www.gplates.org/docs/gpgim/#gpml:riftEdgeLengthThresholdDegrees>`__ property.
+   
+   .. py:attribute:: gpml_rift_exponential_stretching_constant
+      :type: PropertyName
+
+      The name of the `gpml:riftExponentialStretchingConstant <http://www.gplates.org/docs/gpgim/#gpml:riftExponentialStretchingConstant>`__ property.
+   
+   .. py:attribute:: gpml_rift_left_plate
+      :type: PropertyName
+
+      The name of the `gpml:riftLeftPlate <http://www.gplates.org/docs/gpgim/#gpml:riftLeftPlate>`__ property.
+   
+   .. py:attribute:: gpml_rift_right_plate
+      :type: PropertyName
+
+      The name of the `gpml:riftRightPlate <http://www.gplates.org/docs/gpgim/#gpml:riftRightPlate>`__ property.
+   
+   .. py:attribute:: gpml_rift_strain_rate_resolution_log10
+      :type: PropertyName
+
+      The name of the `gpml:riftStrainRateResolutionLog10 <http://www.gplates.org/docs/gpgim/#gpml:riftStrainRateResolutionLog10>`__ property.
+   
+   .. py:attribute:: gpml_right_plate
+      :type: PropertyName
+
+      The name of the `gpml:rightPlate <http://www.gplates.org/docs/gpgim/#gpml:rightPlate>`__ property.
+   
+   .. py:attribute:: gpml_seed_points
+      :type: PropertyName
+
+      The name of the `gpml:seedPoints <http://www.gplates.org/docs/gpgim/#gpml:seedPoints>`__ geometry property.
+   
+   .. py:attribute:: gpml_shapefile_attributes
+      :type: PropertyName
+
+      The name of the `gpml:shapefileAttributes <http://www.gplates.org/docs/gpgim/#gpml:shapefileAttributes>`__ property.
+   
+   .. py:attribute:: gpml_side
+      :type: PropertyName
+
+      The name of the `gpml:side <http://www.gplates.org/docs/gpgim/#gpml:side>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_strike_slip
+      :type: PropertyName
+
+      The name of the `gpml:strikeSlip <http://www.gplates.org/docs/gpgim/#gpml:strikeSlip>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_subduction_polarity
+      :type: PropertyName
+
+      The name of the `gpml:subductionPolarity <http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity>`__ :class:`enumeration<Enumeration>` property.
+   
+   .. py:attribute:: gpml_times
+      :type: PropertyName
+
+      The name of the `gpml:times <http://www.gplates.org/docs/gpgim/#gpml:times>`__ property.
+   
+   .. py:attribute:: gpml_total_reconstruction_pole
+      :type: PropertyName
+
+      The name of the `gpml:totalReconstructionPole <http://www.gplates.org/docs/gpgim/#gpml:totalReconstructionPole>`__ property.
+   
+   .. py:attribute:: gpml_unclassified_geometry
+      :type: PropertyName
+
+      The name of the `gpml:unclassifiedGeometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`__ geometry property.
+   
+   

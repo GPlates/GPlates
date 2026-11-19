@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.GmlTimePeriod &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.GpmlArray" href="pygplates.GpmlArray.html" />
+    <link rel="prev" title="pygplates.GmlTimeInstant" href="pygplates.GmlTimeInstant.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Enumeration.html">pygplates.Enumeration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlDataBlock.html">pygplates.GmlDataBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlLineString.html">pygplates.GmlLineString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlMultiPoint.html">pygplates.GmlMultiPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlOrientableCurve.html">pygplates.GmlOrientableCurve</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlPoint.html">pygplates.GmlPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlPolygon.html">pygplates.GmlPolygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlTimeInstant.html">pygplates.GmlTimeInstant</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.GmlTimePeriod</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.GmlTimePeriod"><code class="docutils literal notranslate"><span class="pre">GmlTimePeriod</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlArray.html">pygplates.GpmlArray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlFiniteRotation.html">pygplates.GpmlFiniteRotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlKeyValueDictionary.html">pygplates.GpmlKeyValueDictionary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlOldPlatesHeader.html">pygplates.GpmlOldPlatesHeader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPlateId.html">pygplates.GpmlPlateId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPolarityChronId.html">pygplates.GpmlPolarityChronId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsBoolean.html">pygplates.XsBoolean</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsDouble.html">pygplates.XsDouble</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsInteger.html">pygplates.XsInteger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsString.html">pygplates.XsString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalLine.html">pygplates.GpmlTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalPolygon.html">pygplates.GpmlTopologicalPolygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalNetwork.html">pygplates.GpmlTopologicalNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalSection.html">pygplates.GpmlTopologicalSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalSectionList.html">pygplates.GpmlTopologicalSectionList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalPoint.html">pygplates.GpmlTopologicalPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html">pygplates.GpmlTopologicalLineSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPropertyDelegate.html">pygplates.GpmlPropertyDelegate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPropertyDelegateList.html">pygplates.GpmlPropertyDelegateList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlConstantValue.html">pygplates.GpmlConstantValue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlIrregularSampling.html">pygplates.GpmlIrregularSampling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPiecewiseAggregation.html">pygplates.GpmlPiecewiseAggregation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeSample.html">pygplates.GpmlTimeSample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeSampleList.html">pygplates.GpmlTimeSampleList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeWindow.html">pygplates.GpmlTimeWindow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeWindowList.html">pygplates.GpmlTimeWindowList</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.GmlTimePeriod</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.GmlTimePeriod.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-gmltimeperiod">
+<h1>pygplates.GmlTimePeriod<a class="headerlink" href="#pygplates-gmltimeperiod" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.GmlTimePeriod">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">GmlTimePeriod</span></span><a class="headerlink" href="#pygplates.GmlTimePeriod" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyValue</span></code></a></p>
+<p>A property value representing a period in geological time (time of appearance to time of disappearance).</p>
+<p>A <em>GmlTimePeriod</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GmlTimePeriod.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">begin_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GmlTimePeriod.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a property value representing a specific time period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>begin_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the begin time (time of appearance)</p></li>
+<li><p><strong>end_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the end time (time of disappearance)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError.html#pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError" title="pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError"><strong>GmlTimePeriodBeginTimeLaterThanEndTimeError</strong></a> – if begin time is later than end time</p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time_period</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GmlTimePeriod</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_past</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GmlTimePeriod.__init__" title="pygplates.GmlTimePeriod.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(begin_time, end_time)</p></td>
+<td><p>Create a property value representing a specific time period.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.accept_visitor" title="pygplates.PropertyValue.accept_visitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_visitor</span></code></a>(visitor)</p></td>
+<td><p>Accept a property value visitor so that it can visit this property value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.clone" title="pygplates.PropertyValue.clone"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code></a>()</p></td>
+<td><p>Create a duplicate of this property value (derived) instance, including a recursive copy of any nested property values that this instance might contain.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GmlTimePeriod.contains" title="pygplates.GmlTimePeriod.contains"><code class="xref py py-obj docutils literal notranslate"><span class="pre">contains</span></code></a>(time_position)</p></td>
+<td><p>Determine if a time lies within this time period.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GmlTimePeriod.get_begin_time" title="pygplates.GmlTimePeriod.get_begin_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_begin_time</span></code></a>()</p></td>
+<td><p>Returns the begin time position (time of appearance) of this property value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GmlTimePeriod.get_end_time" title="pygplates.GmlTimePeriod.get_end_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_end_time</span></code></a>()</p></td>
+<td><p>Returns the end time position (time of disappearance) of this property value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.get_geometry" title="pygplates.PropertyValue.get_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_geometry</span></code></a>()</p></td>
+<td><p>Extracts the <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">geometry</span></code></a> if this property value contains a geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.get_value" title="pygplates.PropertyValue.get_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_value</span></code></a>([time=0])</p></td>
+<td><p>Extracts the value, of this possibly time-dependent property value, at the reconstruction <em>time</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GmlTimePeriod.set_begin_time" title="pygplates.GmlTimePeriod.set_begin_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_begin_time</span></code></a>(time_position)</p></td>
+<td><p>Sets the begin time position (time of appearance) of this property value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GmlTimePeriod.set_end_time" title="pygplates.GmlTimePeriod.set_end_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_end_time</span></code></a>(time_position)</p></td>
+<td><p>Sets the end time position (time of disappearance) of this property value.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GmlTimePeriod.contains">
+<span class="sig-name descname"><span class="pre">contains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_position</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GmlTimePeriod.contains" title="Link to this definition"></a></dt>
+<dd><p>Determine if a time lies within this time period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time_position</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the time position to test</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>time_position</em> is considered to lie <em>within</em> a time period if it coincides with the <a class="reference internal" href="#pygplates.GmlTimePeriod.get_begin_time" title="pygplates.GmlTimePeriod.get_begin_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">begin</span></code></a> or <a class="reference internal" href="#pygplates.GmlTimePeriod.get_end_time" title="pygplates.GmlTimePeriod.get_end_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">end</span></code></a> time.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GmlTimePeriod.get_begin_time">
+<span class="sig-name descname"><span class="pre">get_begin_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GmlTimePeriod.get_begin_time" title="Link to this definition"></a></dt>
+<dd><p>Returns the begin time position (time of appearance) of this property value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+<p>You can use <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a> with the returned <code class="docutils literal notranslate"><span class="pre">float</span></code> to check for <em>distant past</em> or <em>distant future</em> for example. See <a class="reference internal" href="pygplates.GmlTimeInstant.html#pygplates.GmlTimeInstant.get_time" title="pygplates.GmlTimeInstant.get_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GmlTimeInstant.get_time()</span></code></a> for more details.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GmlTimePeriod.get_end_time">
+<span class="sig-name descname"><span class="pre">get_end_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GmlTimePeriod.get_end_time" title="Link to this definition"></a></dt>
+<dd><p>Returns the end time position (time of disappearance) of this property value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+<p>You can use <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a> with the returned <code class="docutils literal notranslate"><span class="pre">float</span></code> to check for <em>distant past</em> or <em>distant future</em> for example. See <a class="reference internal" href="pygplates.GmlTimeInstant.html#pygplates.GmlTimeInstant.get_time" title="pygplates.GmlTimeInstant.get_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GmlTimeInstant.get_time()</span></code></a> for more details.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GmlTimePeriod.set_begin_time">
+<span class="sig-name descname"><span class="pre">set_begin_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_position</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GmlTimePeriod.set_begin_time" title="Link to this definition"></a></dt>
+<dd><p>Sets the begin time position (time of appearance) of this property value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time_position</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the begin time position (time of appearance)</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError.html#pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError" title="pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError"><strong>GmlTimePeriodBeginTimeLaterThanEndTimeError</strong></a> – if begin time is later than end time</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GmlTimePeriod.set_end_time">
+<span class="sig-name descname"><span class="pre">set_end_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_position</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GmlTimePeriod.set_end_time" title="Link to this definition"></a></dt>
+<dd><p>Sets the end time position (time of disappearance) of this property value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time_position</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the end time position (time of disappearance)</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError.html#pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError" title="pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError"><strong>GmlTimePeriodBeginTimeLaterThanEndTimeError</strong></a> – if begin time is later than end time</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.GmlTimeInstant.html" class="btn btn-neutral float-left" title="pygplates.GmlTimeInstant" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.GpmlArray.html" class="btn btn-neutral float-right" title="pygplates.GpmlArray" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

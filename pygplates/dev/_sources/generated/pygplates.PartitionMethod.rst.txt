@@ -1,0 +1,8 @@
+﻿pygplates.PartitionMethod
+=========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PartitionMethod
+   :no-members:
+   :no-show-inheritance:

@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.NetRotation &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.PlatePartitioner" href="pygplates.PlatePartitioner.html" />
+    <link rel="prev" title="pygplates.NetRotationSnapshot" href="pygplates.NetRotationSnapshot.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.calculate_velocities.html">pygplates.calculate_velocities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PlateBoundaryStatistic.html">pygplates.PlateBoundaryStatistic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.StrainRate.html">pygplates.StrainRate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Strain.html">pygplates.Strain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetRotationModel.html">pygplates.NetRotationModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetRotationSnapshot.html">pygplates.NetRotationSnapshot</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.NetRotation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.NetRotation"><code class="docutils literal notranslate"><span class="pre">NetRotation</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.NetRotation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.NetRotation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-netrotation">
+<h1>pygplates.NetRotation<a class="headerlink" href="#pygplates-netrotation" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.NetRotation">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">NetRotation</span></span><a class="headerlink" href="#pygplates.NetRotation" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>Net rotation of regional or global crust.</p>
+<p>NetRotations support addition <code class="docutils literal notranslate"><span class="pre">net_rotation</span> <span class="pre">=</span> <span class="pre">net_rotation1</span> <span class="pre">+</span> <span class="pre">net_rotation2</span></code> and <code class="docutils literal notranslate"><span class="pre">net_rotation</span> <span class="pre">+=</span> <span class="pre">other_net_rotation</span></code>.</p>
+<p>NetRotations are <em>not</em> equality (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>) comparable (will raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> when compared) and are not hashable (cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>). This stems from the fact that two NetRotations can have equivalent finite rotations but can cover different <a class="reference internal" href="#pygplates.NetRotation.get_area" title="pygplates.NetRotation.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">areas</span></code></a>.</p>
+<p>A <em>NetRotation</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.43.</span></p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.__init__" title="Link to this definition"></a></dt>
+<dd><p>Creates a zero net rotation.</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.NetRotation.__init__" title="pygplates.NetRotation.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>()</p></td>
+<td><p>Creates a zero net rotation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector" title="pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_finite_rotation_to_rotation_rate_vector</span></code></a>(...)</p></td>
+<td><p>Convert a <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a> over a time interval to a rotation rate vector (with magnitude in radians per Myr).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation" title="pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_rotation_rate_vector_to_finite_rotation</span></code></a>(...)</p></td>
+<td><p>Convert a rotation rate vector (with magnitude in radians per Myr) to a <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a> over a time interval.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.NetRotation.create_sample_from_finite_rotation" title="pygplates.NetRotation.create_sample_from_finite_rotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_sample_from_finite_rotation</span></code></a>(point, ...)</p></td>
+<td><p>Creates a net rotation contribution from a finite rotation at a point sample.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.NetRotation.create_sample_from_rotation_rate" title="pygplates.NetRotation.create_sample_from_rotation_rate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_sample_from_rotation_rate</span></code></a>(point, ...)</p></td>
+<td><p>Creates a net rotation contribution from a rotation rate vector at a point sample.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.NetRotation.get_area" title="pygplates.NetRotation.get_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_area</span></code></a>()</p></td>
+<td><p>Return the sample area covered by the <a class="reference internal" href="pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.__init__" title="pygplates.NetRotationSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">point</span> <span class="pre">samples</span></code></a> used to calculate this net rotation, in steradians (square radians).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.NetRotation.get_finite_rotation" title="pygplates.NetRotation.get_finite_rotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_finite_rotation</span></code></a>()</p></td>
+<td><p>Return the net rotation as a finite rotation (over a time interval of 1Myr).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.NetRotation.get_rotation_rate_vector" title="pygplates.NetRotation.get_rotation_rate_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rotation_rate_vector</span></code></a>()</p></td>
+<td><p>Return the net rotation as a rotation rate vector with a magnitude of radians per Myr.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">convert_finite_rotation_to_rotation_rate_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">finite_rotation</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">time_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector" title="Link to this definition"></a></dt>
+<dd><p>Convert a <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a> over a time interval to a rotation rate vector (with magnitude in radians per Myr).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>finite_rotation</strong> (<a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><em>FiniteRotation</em></a>) – The finite rotation over the specified time interval.</p></li>
+<li><p><strong>time_interval</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time interval of the specified finite rotation (defaults to 1Myr).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>time_interval</em> is not positive and finite</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D">Vector3D</a></p>
+</dd>
+</dl>
+<p>To convert a finite rotation over 10Myr to a rotation rate vector (in radians per Myr):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">net_rotation_rate_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="o">.</span><span class="n">convert_finite_rotation_to_rotation_rate_vector</span><span class="p">(</span><span class="n">net_finite_rotation_over_10myr</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">convert_rotation_rate_vector_to_finite_rotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rotation_rate_vector</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">time_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation" title="Link to this definition"></a></dt>
+<dd><p>Convert a rotation rate vector (with magnitude in radians per Myr) to a <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a> over a time interval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rotation_rate_vector</strong> (<a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><em>Vector3D</em></a>) – The rotation rate vector (with magnitude in radians per Myr).</p></li>
+<li><p><strong>time_interval</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time interval of the returned finite rotation (defaults to 1Myr).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>time_interval</em> is not positive and finite</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation">FiniteRotation</a></p>
+</dd>
+</dl>
+<p>To convert a rotation rate vector (in radians per Myr) to a finite rotation over 10Myr (ie, having the same pole but with an angle multiplied by 10):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">net_finite_rotation_over_10myr</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="o">.</span><span class="n">convert_rotation_rate_vector_to_finite_rotation</span><span class="p">(</span><span class="n">net_rotation_rate_vector</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.create_sample_from_finite_rotation">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create_sample_from_finite_rotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finite_rotation</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">time_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.create_sample_from_finite_rotation" title="Link to this definition"></a></dt>
+<dd><p>Creates a net rotation contribution from a finite rotation at a point sample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em>, or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em>) – The point that contributes to net rotation.</p></li>
+<li><p><strong>sample_area</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The surface area around the point in steradians (square radians).</p></li>
+<li><p><strong>finite_rotation</strong> (<a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><em>FiniteRotation</em></a>) – The finite rotation over the specified time interval.</p></li>
+<li><p><strong>time_interval</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time interval of the specified finite rotation (defaults to 1Myr).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>time_interval</em> is not positive and finite</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pygplates.NetRotation" title="pygplates.NetRotation">NetRotation</a></p>
+</dd>
+</dl>
+<p>In this contrived example we calculate the net rotation of a single plate. This is just for demonstration purposes in case you wanted to do your own intersections of point samples with plates (otherwise it’s easier to just use <a class="reference internal" href="pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot" title="pygplates.NetRotationSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">NetRotationSnapshot</span></code></a> which does all this for you).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Let's assume you have a plate and know its finite rotation (over 1Myr), and you have a list of</span>
+<span class="c1"># (lat, lon) tuples which are those points on a uniform lat-lon grid that are inside the plate.</span>
+<span class="n">plate_finite_rotation</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">lat_lon_tuples_inside_plate</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+<span class="n">lat_lon_grid_spacing_in_degrees</span> <span class="o">=</span> <span class="o">...</span>
+<span class="n">lat_lon_grid_spacing_in_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat_lon_grid_spacing_in_degrees</span><span class="p">)</span>
+
+<span class="c1"># We'll accumulate net rotation over the point samples inside the plate.</span>
+<span class="n">plate_net_rotation_accumulator</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="p">()</span>  <span class="c1"># start with zero net rotation</span>
+
+<span class="k">for</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="ow">in</span> <span class="n">lat_lon_tuples_inside_plate</span><span class="p">:</span>
+    <span class="c1"># The cosine is because points near the North/South poles are closer together</span>
+    <span class="c1"># (latitude parallel small circle radius).</span>
+    <span class="n">sample_area_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat</span><span class="p">))</span> <span class="o">*</span> <span class="n">lat_lon_grid_spacing_in_radians</span> <span class="o">*</span> <span class="n">lat_lon_grid_spacing_in_radians</span>
+    <span class="n">plate_net_rotation_accumulator</span> <span class="o">+=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="o">.</span><span class="n">create_sample_from_finite_rotation</span><span class="p">(</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">LatLonPoint</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">),</span> <span class="n">sample_area_radians</span><span class="p">,</span> <span class="n">plate_finite_rotation</span><span class="p">)</span>
+
+<span class="n">plate_net_rotation</span> <span class="o">=</span> <span class="n">plate_net_rotation_accumulator</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.create_sample_from_rotation_rate">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create_sample_from_rotation_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_rate_vector</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.create_sample_from_rotation_rate" title="Link to this definition"></a></dt>
+<dd><p>Creates a net rotation contribution from a rotation rate vector at a point sample.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em>, or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em>) – The point that contributes to net rotation.</p></li>
+<li><p><strong>sample_area</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The surface area around the point in steradians (square radians).</p></li>
+<li><p><strong>rotation_rate_vector</strong> (<a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><em>Vector3D</em></a>) – The rotation rate vector (with magnitude in radians per Myr).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.NetRotation" title="pygplates.NetRotation">NetRotation</a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.NetRotation.create_sample_from_finite_rotation" title="pygplates.NetRotation.create_sample_from_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_sample_from_finite_rotation()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.get_area">
+<span class="sig-name descname"><span class="pre">get_area</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.get_area" title="Link to this definition"></a></dt>
+<dd><p>Return the sample area covered by the <a class="reference internal" href="pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.__init__" title="pygplates.NetRotationSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">point</span> <span class="pre">samples</span></code></a> used to calculate this net rotation, in steradians (square radians).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+<p>For example, if this is the net rotation for a single topological plate then the returned area would be the sum of the sample areas of those sample points in the <a class="reference internal" href="pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.__init__" title="pygplates.NetRotationSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">point</span> <span class="pre">distribution</span></code></a> that fell within the polygon boundary of the topological plate.</p>
+<p>To convert from steradians (square radians) to square kms multiply, by the square of the <a class="reference internal" href="pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">Earth's</span> <span class="pre">radius</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">area_in_square_kms</span> <span class="o">=</span> <span class="n">net_rotation</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The accuracy of this area depends on how many <a class="reference internal" href="pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.__init__" title="pygplates.NetRotationSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">point</span> <span class="pre">samples</span></code></a> were used to calculate net rotation. If you need an accurate area then it’s better to explicitly calculate the <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">polygon</span> <span class="pre">area</span></code></a> of the topology (or topologies) that contributed to this net rotation.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.get_finite_rotation">
+<span class="sig-name descname"><span class="pre">get_finite_rotation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.get_finite_rotation" title="Link to this definition"></a></dt>
+<dd><p>Return the net rotation as a finite rotation (over a time interval of 1Myr).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation">FiniteRotation</a></p>
+</dd>
+</dl>
+<p>Returns <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation.create_identity_rotation" title="pygplates.FiniteRotation.create_identity_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">identity</span> <span class="pre">rotation</span></code></a> if the net rotation is zero.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotation.get_rotation_rate_vector">
+<span class="sig-name descname"><span class="pre">get_rotation_rate_vector</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotation.get_rotation_rate_vector" title="Link to this definition"></a></dt>
+<dd><p>Return the net rotation as a rotation rate vector with a magnitude of radians per Myr.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D">Vector3D</a></p>
+</dd>
+</dl>
+<p>Returns <a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">zero</span> <span class="pre">vector</span></code></a> if the net rotation is zero.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.NetRotationSnapshot.html" class="btn btn-neutral float-left" title="pygplates.NetRotationSnapshot" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.PlatePartitioner.html" class="btn btn-neutral float-right" title="pygplates.PlatePartitioner" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

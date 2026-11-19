@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find nearest reconstructed feature to a point &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Find reconstructed features overlapping a polygon" href="pygplates_find_features_overlapping_a_polygon.html" />
+    <link rel="prev" title="Calculate net rotation" href="pygplates_calculate_net_rotation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Find nearest reconstructed feature to a point</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#details">Details</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced">Advanced</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_features_overlapping_a_polygon.html">Find reconstructed features overlapping a polygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Find nearest reconstructed feature to a point</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_find_nearest_feature_to_a_point.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="find-nearest-reconstructed-feature-to-a-point">
+<span id="pygplates-find-nearest-feature-to-a-point"></span><h1>Find nearest reconstructed feature to a point<a class="headerlink" href="#find-nearest-reconstructed-feature-to-a-point" title="Link to this heading"></a></h1>
+<p>This example iterates over a collection of reconstructed features and finds the feature that is nearest to a point.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id2">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id3">Details</a></p></li>
+<li><p><a class="reference internal" href="#advanced" id="id4">Advanced</a></p></li>
+<li><p><a class="reference internal" href="#see-also" id="id5">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the features in <code class="docutils literal notranslate"><span class="pre">features.gpml</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">features.gpml</span></code></dt><dd><p>Reconstructable features, each with a reconstruction plate ID and one or more geometries.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="sample-code">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load some features.</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'features.gpml'</span><span class="p">)</span>
+
+<span class="c1"># Reconstruct features to 10Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="c1"># All features have their distance calculated relative to this point.</span>
+<span class="n">point_latitude</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">point_longitude</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">point_latitude</span><span class="p">,</span> <span class="n">point_longitude</span><span class="p">)</span>
+
+<span class="c1"># Reconstruct the features to 10Ma.</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
+<span class="n">reconstructed_features</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_features</span><span class="p">()</span>
+
+<span class="c1"># The minimum distance to all features and the nearest feature.</span>
+<span class="n">min_distance_to_all_features</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">nearest_feature</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="c1"># Iterate over all reconstructed features.</span>
+<span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">feature_reconstructed_geometries</span> <span class="ow">in</span> <span class="n">reconstructed_features</span><span class="p">:</span>
+
+    <span class="c1"># Iterate over all reconstructed geometries of the current feature.</span>
+    <span class="k">for</span> <span class="n">feature_reconstructed_geometry</span> <span class="ow">in</span> <span class="n">feature_reconstructed_geometries</span><span class="p">:</span>
+
+        <span class="c1"># Get the minimum distance from point to the current reconstructed geometry.</span>
+        <span class="n">min_distance_to_feature</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span>
+                <span class="n">feature_reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">(),</span>
+                <span class="n">min_distance_to_all_features</span><span class="p">)</span>
+
+        <span class="c1"># If the current geometry is nearer than all previous geometries then</span>
+        <span class="c1"># its associated feature is the nearest feature so far.</span>
+        <span class="k">if</span> <span class="n">min_distance_to_feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">min_distance_to_all_features</span> <span class="o">=</span> <span class="n">min_distance_to_feature</span>
+            <span class="n">nearest_feature</span> <span class="o">=</span> <span class="n">feature</span>
+
+<span class="k">if</span> <span class="n">nearest_feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'The nearest feature, to point </span><span class="si">{</span><span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span><span class="si">}</span><span class="s1">, has feature ID </span><span class="si">{</span><span class="n">nearest_feature</span><span class="o">.</span><span class="n">get_feature_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> '</span>
+          <span class="sa">f</span><span class="s1">'and a minimum distance of </span><span class="si">{</span><span class="n">min_distance_to_all_features</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">kms'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The reconstructable features are loaded into a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load some features.</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'features.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The features are reconstructed to their 10Ma positions.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct features to 10Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The test point has zero latitude and zero longitude.</div>
+<div class="line">All features are tested to see which one is closest to this <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">point</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># All features have their distance calculated relative to this point.</span>
+<span class="n">point_latitude</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">point_longitude</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">point_latitude</span><span class="p">,</span> <span class="n">point_longitude</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">All features are reconstructed to 10Ma in a <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>.</div>
+<div class="line">We ask the snapshot for its <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_features" title="pygplates.ReconstructSnapshot.get_reconstructed_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">features</span></code></a>
+(rather than its reconstructed geometries) so that our
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometries</span></code></a>
+are grouped with their <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a>. This isn’t strictly necessary
+in this particular example though.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the features to 10Ma.</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
+<span class="n">reconstructed_features</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_features</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Initially we don’t have a minimum distance of the point to all features.</div>
+<div class="line">This value is also used as the threshold to the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a>
+method and initially this will be <code class="docutils literal notranslate"><span class="pre">None</span></code> which means no threshold.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The minimum distance to all features and the nearest feature.</span>
+<span class="n">min_distance_to_all_features</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">nearest_feature</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p>Each item in the <em>reconstructed_features</em> list is a tuple containing a feature and its associated
+reconstructed geometries.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over all reconstructed features.</span>
+<span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">feature_reconstructed_geometries</span> <span class="ow">in</span> <span class="n">reconstructed_features</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>A feature can have more than one geometry and hence will have more than one <em>reconstructed</em> geometry.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over all reconstructed geometries of the current feature.</span>
+<span class="k">for</span> <span class="n">feature_reconstructed_geometry</span> <span class="ow">in</span> <span class="n">feature_reconstructed_geometries</span><span class="p">:</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Calculate the minimum distance from the point to a reconstructed feature geometry using the point’s <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method.</div>
+<div class="line"><em>min_distance_to_all_features</em> is specified as the distance threshold since we’re only interested
+in geometries that are nearer than the closest geometry encountered so far.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the minimum distance from point to the current reconstructed geometry.</span>
+<span class="n">min_distance_to_feature</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span>
+        <span class="n">feature_reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">(),</span>
+        <span class="n">min_distance_to_all_features</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">If <code class="docutils literal notranslate"><span class="pre">None</span></code> was returned then the distance was greater than <em>min_distance_to_all_features</em>.</div>
+<div class="line">So a valid returned value means the current geometry is the nearest geometry encountered so far.</div>
+<div class="line">In this case we record the nearest feature and the new minimum distance.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If the current geometry is nearer than all previous geometries then</span>
+<span class="c1"># its associated feature is the nearest feature so far.</span>
+<span class="k">if</span> <span class="n">min_distance_to_feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">min_distance_to_all_features</span> <span class="o">=</span> <span class="n">min_distance_to_feature</span>
+    <span class="n">nearest_feature</span> <span class="o">=</span> <span class="n">feature</span>
+</pre></div>
+</div>
+<p>Once we’ve tested all features (if any were in the file) we print out the nearest feature and its
+(minimum) distance to the point.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">nearest_feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'The nearest feature, to point </span><span class="si">{</span><span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span><span class="si">}</span><span class="s1">, has feature ID </span><span class="si">{</span><span class="n">nearest_feature</span><span class="o">.</span><span class="n">get_feature_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> '</span>
+          <span class="sa">f</span><span class="s1">'and a minimum distance of </span><span class="si">{</span><span class="n">min_distance_to_all_features</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">kms'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Advanced</a><a class="headerlink" href="#advanced" title="Link to this heading"></a></h2>
+<p>If we also want to find the nearest position on the nearest feature then we can specify
+<code class="docutils literal notranslate"><span class="pre">return_closest_positions</span></code> as <code class="docutils literal notranslate"><span class="pre">True</span></code> when calculating the geometry distance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nearest_point_on_nearest_feature</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="o">...</span>
+
+<span class="n">min_distance_to_feature_and_closest_positions</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span>
+        <span class="n">feature_reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">(),</span>
+        <span class="n">min_distance_to_all_features</span><span class="p">,</span>
+        <span class="n">return_closest_positions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">When <code class="docutils literal notranslate"><span class="pre">return_closest_positions</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a>
+method returns a 3-tuple of (distance, closest point on the geometry it’s called on, closest point on the other geometry).</div>
+<div class="line">If the geometry distance is below the threshold then we can extract that tuple into its individual elements.</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">min_distance_to_feature_and_closest_positions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">min_distance_to_all_features</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">nearest_point_on_nearest_feature</span> <span class="o">=</span> <span class="n">min_distance_to_feature_and_closest_positions</span>
+    <span class="n">nearest_feature</span> <span class="o">=</span> <span class="n">feature</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">…where the <code class="docutils literal notranslate"><span class="pre">_</span></code> is just a placeholder to ignore the second element of the tuple returned
+by the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method.</div>
+<div class="line">We ignore it because it’s the closest distance to the test point which is just the test point itself.
+And we are only interested in the closest point on the feature’s geometry.</div>
+</div>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_features" title="pygplates.ReconstructSnapshot.get_reconstructed_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_reconstructed_features()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.distance()</span></code></a>, <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_find_features_overlapping_a_polygon.html#pygplates-find-features-overlapping-a-polygon"><span class="std std-ref">Find reconstructed features overlapping a polygon</span></a>,
+<a class="reference internal" href="pygplates_find_overriding_plate_of_closest_subducting_line.html#pygplates-find-overriding-plate-of-closest-subducting-line"><span class="std std-ref">Find overriding plate of closest subducting line</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_calculate_net_rotation.html" class="btn btn-neutral float-left" title="Calculate net rotation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_find_features_overlapping_a_polygon.html" class="btn btn-neutral float-right" title="Find reconstructed features overlapping a polygon" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+﻿pygplates.AssertionFailureError
+===============================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: AssertionFailureError

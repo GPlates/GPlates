@@ -1,0 +1,163 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Primer &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Rotations" href="primer/pygplates_primer_rotations.html" />
+    <link rel="prev" title="Getting started" href="pygplates_getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Primer</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_rotations.html">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_topologies.html">Topologies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_deformation.html">Deformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Primer</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pygplates_primer.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="primer">
+<span id="pygplates-primer"></span><h1>Primer<a class="headerlink" href="#primer" title="Link to this heading"></a></h1>
+<p>This document covers the main areas of pyGPlates functionality, and some plate tectonic foundations.</p>
+<p>Each page of the Primer covers one area, and can be read on its own:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="primer/pygplates_primer_rotations.html#pygplates-primer-rotations"><span class="std std-ref">Rotations</span></a> explains how plates move relative to each other through a
+hierarchy of plate IDs, and derives the equivalent and relative, total and stage rotations
+that a <a class="reference internal" href="generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> answers queries with.</p></li>
+<li><p><a class="reference internal" href="primer/pygplates_primer_topologies.html#pygplates-primer-topologies"><span class="std std-ref">Topologies</span></a> covers topological plate boundaries and networks: resolving
+them through time, calculating plate boundary statistics along them, and reconstructing
+geometries through them (including velocities, strains and scalar values along the way).</p></li>
+<li><p><a class="reference internal" href="primer/pygplates_primer_deformation.html#pygplates-primer-deformation"><span class="std std-ref">Deformation</span></a> explains how a topological network models deformation, from
+its boundary, rigid blocks and triangulation to the strain rates within it and the exponential
+stretching profile of rifts.</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="primer/pygplates_primer_rotations.html">Rotations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_rotations.html#plate-reconstruction-hierarchy">Plate reconstruction hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_rotations.html#working-with-finite-rotations">Working with finite rotations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="primer/pygplates_primer_topologies.html">Topologies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_topologies.html#topological-model">Topological model</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="primer/pygplates_primer_deformation.html">Deformation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_deformation.html#topological-network">Topological network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_deformation.html#rigid-blocks">Rigid blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_deformation.html#network-triangulation">Network triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_deformation.html#strain-rates-in-triangulation">Strain rates in triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="primer/pygplates_primer_deformation.html#exponential-rift-stretching-profile">Exponential rift stretching profile</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<script src="_static/primer_anchors.js"></script>
+<script>
+  (function () {
+    var anchor = window.location.hash.slice(1);
+    if (anchor && window.PRIMER_ANCHORS && PRIMER_ANCHORS.hasOwnProperty(anchor)) {
+      window.location.replace(PRIMER_ANCHORS[anchor] + window.location.hash);
+    }
+  })();
+</script></section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_getting_started.html" class="btn btn-neutral float-left" title="Getting started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="primer/pygplates_primer_rotations.html" class="btn btn-neutral float-right" title="Rotations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

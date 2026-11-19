@@ -1,0 +1,1496 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create common feature types &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Query common feature types" href="pygplates_query_common_feature_types.html" />
+    <link rel="prev" title="Load and save feature collections" href="pygplates_load_and_save_feature_collections.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Create common feature types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-coastline-feature-from-present-day-geometry">Create a <em>coastline</em> feature from present-day geometry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-an-isochron-feature-from-geometry-at-a-past-geological-time">Create an <em>isochron</em> feature from geometry at a past geological time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-mid-ocean-ridge-feature-from-geometry-at-a-past-geological-time">Create a <em>mid-ocean ridge</em> feature from geometry at a past geological time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-subduction-zone-feature-from-present-day-geometry">Create a <em>subduction zone</em> feature from present-day geometry</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-virtual-geomagnetic-pole-feature">Create a <em>virtual geomagnetic pole</em> feature</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-motion-path-feature">Create a <em>motion path</em> feature</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-flowline-feature">Create a <em>flowline</em> feature</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-total-reconstruction-sequence-rotation-feature">Create a <em>total reconstruction sequence</em> (rotation) feature</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_query_common_feature_types.html">Query common feature types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_create_topological_features.html">Create topological features</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Create common feature types</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_create_common_feature_types.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="create-common-feature-types">
+<span id="pygplates-create-common-feature-types"></span><h1>Create common feature types<a class="headerlink" href="#create-common-feature-types" title="Link to this heading"></a></h1>
+<div class="line-block">
+<div class="line">This example shows how to create various <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">types</span></code></a> of
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>.</div>
+<div class="line">This is similar to <a class="reference internal" href="pygplates_import_geometries_and_assign_plate_ids.html#pygplates-import-geometries-and-assign-plate-ids"><span class="std std-ref">importing</span></a>
+except here we are more interested in creating different <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">types</span></code></a> of features
+as opposed to creating the generic <em>unclassified</em> feature type (<code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_unclassified_feature</span></code>).</div>
+</div>
+<div class="line-block">
+<div class="line">Each feature type is created in two ways. The sample code uses the <code class="docutils literal notranslate"><span class="pre">create_...</span></code> function of
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a> for that type. The alternate sample code creates an empty feature of the type
+and sets its properties one by one.</div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-common-feature-types"><span class="std std-ref">Query common feature types</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_create_topological_features.html#pygplates-create-topological-features"><span class="std std-ref">Create topological features</span></a></p>
+</div>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#create-a-coastline-feature-from-present-day-geometry" id="id37">Create a <em>coastline</em> feature from present-day geometry</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sample-code" id="id38">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#alternate-sample-code" id="id39">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id40">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-an-isochron-feature-from-geometry-at-a-past-geological-time" id="id41">Create an <em>isochron</em> feature from geometry at a past geological time</a></p>
+<ul>
+<li><p><a class="reference internal" href="#data-files" id="id42">Data files</a></p></li>
+<li><p><a class="reference internal" href="#id4" id="id43">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id5" id="id44">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#id6" id="id45">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-a-mid-ocean-ridge-feature-from-geometry-at-a-past-geological-time" id="id46">Create a <em>mid-ocean ridge</em> feature from geometry at a past geological time</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id7" id="id47">Data files</a></p></li>
+<li><p><a class="reference internal" href="#id9" id="id48">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id10" id="id49">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#id11" id="id50">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-a-subduction-zone-feature-from-present-day-geometry" id="id51">Create a <em>subduction zone</em> feature from present-day geometry</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id14" id="id52">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id15" id="id53">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#id16" id="id54">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-a-virtual-geomagnetic-pole-feature" id="id55">Create a <em>virtual geomagnetic pole</em> feature</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id18" id="id56">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id19" id="id57">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#id20" id="id58">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-a-motion-path-feature" id="id59">Create a <em>motion path</em> feature</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id24" id="id60">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id25" id="id61">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#id26" id="id62">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-a-flowline-feature" id="id63">Create a <em>flowline</em> feature</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id29" id="id64">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id30" id="id65">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#id31" id="id66">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#create-a-total-reconstruction-sequence-rotation-feature" id="id67">Create a <em>total reconstruction sequence</em> (rotation) feature</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id33" id="id68">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id34" id="id69">Alternate sample code</a></p></li>
+<li><p><a class="reference internal" href="#id35" id="id70">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id71">See also</a></p></li>
+</ul>
+</nav>
+<section id="create-a-coastline-feature-from-present-day-geometry">
+<span id="pygplates-create-coastline-feature"></span><h2><a class="toc-backref" href="#id37" role="doc-backlink">Create a <em>coastline</em> feature from present-day geometry</a><a class="headerlink" href="#create-a-coastline-feature-from-present-day-geometry" title="Link to this heading"></a></h2>
+<p>In this example we create a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">coastline</a> from
+<em>present day</em> geometry and save it to a file.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a></p>
+</div>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id38" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Start with an empty list of coastline features.</span>
+<span class="n">coastline_features</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Create a polyline geometry from lat/lon points for the present day location of part of the</span>
+<span class="c1"># Eastern Panama coastline.</span>
+<span class="n">eastern_panama_present_day_coastline_geometry</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">0.635538</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.402139</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">0.392500</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.500444</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.051750</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.079222</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.370111</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.049944</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.118972</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.998333</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.170306</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.948361</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.763083</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.099222</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.981833</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.650750</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.900000</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.649472</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.068417</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.430556</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.080250</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.177028</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.216111</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.061472</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.041000</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.014306</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.063750</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.928500</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.082389</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.982583</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.144583</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.897694</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.222414</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.932823</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># Create a coastline feature from the coastline geometry, name, valid time period and plate ID.</span>
+<span class="n">eastern_panama_coastline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_coastline</span><span class="p">,</span>
+    <span class="n">eastern_panama_present_day_coastline_geometry</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'Eastern Panama, Central America'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">)</span>
+
+<span class="n">coastline_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eastern_panama_coastline_feature</span><span class="p">)</span>
+
+<span class="c1"># Add more coastline features.</span>
+<span class="c1"># ...</span>
+
+<span class="c1"># Write the coastline features to a file.</span>
+<span class="n">coastline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">coastline_features</span><span class="p">)</span>
+<span class="n">coastline_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="alternate-sample-code">
+<h3><a class="toc-backref" href="#id39" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#alternate-sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Start with an empty list of coastline features.</span>
+<span class="n">coastline_features</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Create a polyline geometry from lat/lon points for the present day location of part of the</span>
+<span class="c1"># Eastern Panama coastline.</span>
+<span class="n">eastern_panama_present_day_coastline_geometry</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">0.635538</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.402139</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">0.392500</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.500444</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.051750</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.079222</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.370111</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.049944</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.118972</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.998333</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.170306</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.948361</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.763083</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.099222</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.981833</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.650750</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.900000</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.649472</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.068417</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.430556</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.080250</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.177028</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.216111</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.061472</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.041000</span><span class="p">,</span> <span class="o">-</span><span class="mf">79.014306</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.063750</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.928500</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.082389</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.982583</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.144583</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.897694</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">1.222414</span><span class="p">,</span> <span class="o">-</span><span class="mf">78.932823</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># Create a coastline feature from the coastline geometry, name, valid time period and plate ID.</span>
+<span class="n">eastern_panama_coastline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_coastline</span><span class="p">)</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">eastern_panama_present_day_coastline_geometry</span><span class="p">)</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'Eastern Panama, Central America'</span><span class="p">)</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">())</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+
+<span class="n">coastline_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eastern_panama_coastline_feature</span><span class="p">)</span>
+
+<span class="c1"># Add more coastline features.</span>
+<span class="c1"># ...</span>
+
+<span class="c1"># Write the coastline features to a file.</span>
+<span class="n">coastline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">coastline_features</span><span class="p">)</span>
+<span class="n">coastline_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id40" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">A <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere</span></code></a> geometry is created from a sequence (in our case a <code class="docutils literal notranslate"><span class="pre">list</span></code>)
+of (latitude, longitude) tuples. This is possible because when the polyline
+<a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.__init__" title="pygplates.PolylineOnSphere.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> receives a sequence of 2-tuples
+it interprets them as (latitude, longitude) coordinates of the points that make up the polyline.</div>
+<div class="line">This particular polyline represents the location of part of the Eastern Panama coastline at <em>present day</em> (0Ma).</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">eastern_panama_present_day_coastline_geometry</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">0.635538</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.402139</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">0.392500</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.500444</span><span class="p">),</span>
+        <span class="p">(</span> <span class="mf">0.051750</span><span class="p">,</span> <span class="o">-</span><span class="mf">80.079222</span><span class="p">),</span>
+        <span class="o">...</span>
+    <span class="p">])</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Here we create a coastline feature (a feature of type <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_coastline</span></code>)
+using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a> function.</div>
+<div class="line">We give the <cite>pygplates.Feature.create_reconstructable_feature</cite> function a <em>present day</em> geometry,
+a name, a valid time period and a reconstruction plate ID. The valid time period ends in the
+<a class="reference internal" href="../generated/pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.create_distant_future" title="pygplates.GeoTimeInstant.create_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">future</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a coastline feature from the coastline geometry, name, valid time period and plate ID.</span>
+<span class="n">eastern_panama_coastline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_coastline</span><span class="p">,</span>
+    <span class="n">eastern_panama_present_day_coastline_geometry</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'Eastern Panama, Central America'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Advanced</strong></p>
+<div class="line-block">
+<div class="line">The <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a> function creates a feature with a
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> that falls in the category of
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature">reconstructable features</a>.</div>
+<div class="line">If a feature type falls in this category then we know it supports the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gml:name">gml:name</a>,
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gml:description">gml:description</a>,
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gml:validTime">gml:validTime</a> and
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId">gpml:reconstructionPlateId</a>
+properties required by the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a> function.</div>
+<div class="line">There are multiple <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">types</span></code></a> that fall into this category. These can
+be seen by looking at the <code class="docutils literal notranslate"><span class="pre">Inherited</span> <span class="pre">by</span> <span class="pre">features</span></code> sub-section of
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature">gpml:ReconstructableFeature</a>.
+One of the inherited feature types is <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TangibleFeature">gpml:TangibleFeature</a>
+which in turn has a list of <code class="docutils literal notranslate"><span class="pre">Inherited</span> <span class="pre">by</span> <span class="pre">features</span></code> - one of which is
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">gpml:Coastline</a>. This means that a
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">gpml:Coastline</a> feature type inherits (indirectly)
+from a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:ReconstructableFeature">gpml:ReconstructableFeature</a>.
+When a feature type inherits another feature type it essentially means it supports the same
+properties.</div>
+<div class="line">So a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">gpml:Coastline</a> feature type is one
+of many feature types than can be used with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>.</div>
+</div>
+</div>
+<p>We then save the coastline feature(s) to a file as described in <a class="reference internal" href="pygplates_load_and_save_feature_collections.html#pygplates-load-and-save-feature-collections"><span class="std std-ref">Load and save feature collections</span></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write the coastline features to a file.</span>
+<span class="n">coastline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">coastline_features</span><span class="p">)</span>
+<span class="n">coastline_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the alternate sample code, instead of using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>
+function, we first create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">pygplates.FeatureType.gpml_coastline</a>
+feature and then set its properties one by one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a coastline feature from the coastline geometry, name, valid time period and plate ID.</span>
+<span class="n">eastern_panama_coastline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_coastline</span><span class="p">)</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">eastern_panama_present_day_coastline_geometry</span><span class="p">)</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'Eastern Panama, Central America'</span><span class="p">)</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">())</span>
+<span class="n">eastern_panama_coastline_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="create-an-isochron-feature-from-geometry-at-a-past-geological-time">
+<span id="pygplates-create-isochron-feature"></span><h2><a class="toc-backref" href="#id41" role="doc-backlink">Create an <em>isochron</em> feature from geometry at a past geological time</a><a class="headerlink" href="#create-an-isochron-feature-from-geometry-at-a-past-geological-time" title="Link to this heading"></a></h2>
+<p>In this example we create an <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">isochron</a> from
+geometry that represents its location at a past geological time (not present day).</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-isochron-feature"><span class="std std-ref">Query an isochron feature</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_create_conjugate_isochrons_from_ridge.html#pygplates-create-conjugate-isochrons-from-ridge"><span class="std std-ref">Create conjugate isochrons from a ridge</span></a></p>
+</div>
+<section id="data-files">
+<h3><a class="toc-backref" href="#id42" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h3>
+<p>Both scripts read the same file:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It is used to reverse reconstruct the isochron geometry from 40.1Ma to present
+day, so it must contain rotations for the isochron’s plate (201) at that time.</p>
+</dd>
+</dl>
+<p>Rotation files are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="id4">
+<h3><a class="toc-backref" href="#id43" role="doc-backlink">Sample code</a><a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load a rotation model from a rotation file.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Create a polyline geometry from lat/lon points for the isochron location at 40.1 Ma.</span>
+<span class="n">isochron_time_of_appearance</span> <span class="o">=</span> <span class="mf">40.1</span>
+<span class="n">isochron_geometry_at_time_of_appearance</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.635356</span><span class="p">,</span>  <span class="mf">0.765764</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.162269</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.953176</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.916700</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.522021</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.658576</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.936703</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">58.639846</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.849338</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">58.404889</span><span class="p">,</span> <span class="o">-</span><span class="mf">6.060713</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">59.390700</span><span class="p">,</span> <span class="o">-</span><span class="mf">6.877544</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">59.048499</span><span class="p">,</span> <span class="o">-</span><span class="mf">8.573530</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># Create the isochron feature.</span>
+<span class="n">isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">,</span>
+    <span class="n">isochron_geometry_at_time_of_appearance</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'SOUTH AMERICAN ANTARCTIC RIDGE, SOUTH AMERICA-ANTARCTICA ANOMALY 18 IS'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="n">isochron_time_of_appearance</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+    <span class="n">conjugate_plate_id</span><span class="o">=</span><span class="mi">802</span><span class="p">,</span>
+    <span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day...</span>
+    <span class="n">reverse_reconstruct</span><span class="o">=</span><span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_time_of_appearance</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="id5">
+<h3><a class="toc-backref" href="#id44" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load a rotation model from a rotation file.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Create a polyline geometry from lat/lon points for the isochron location at 40.1 Ma.</span>
+<span class="n">isochron_time_of_appearance</span> <span class="o">=</span> <span class="mf">40.1</span>
+<span class="n">isochron_geometry_at_time_of_appearance</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.635356</span><span class="p">,</span>  <span class="mf">0.765764</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.162269</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.953176</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.916700</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.522021</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.658576</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.936703</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">58.639846</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.849338</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">58.404889</span><span class="p">,</span> <span class="o">-</span><span class="mf">6.060713</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">59.390700</span><span class="p">,</span> <span class="o">-</span><span class="mf">6.877544</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">59.048499</span><span class="p">,</span> <span class="o">-</span><span class="mf">8.573530</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># Create the isochron feature.</span>
+<span class="n">isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">isochron_geometry_at_time_of_appearance</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'SOUTH AMERICAN ANTARCTIC RIDGE, SOUTH AMERICA-ANTARCTICA ANOMALY 18 IS'</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">isochron_time_of_appearance</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">())</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_conjugate_plate_id</span><span class="p">(</span><span class="mi">802</span><span class="p">)</span>
+
+<span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day.</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">reverse_reconstruct</span><span class="p">(</span><span class="n">isochron_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_time_of_appearance</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h3><a class="toc-backref" href="#id45" role="doc-backlink">Details</a><a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">A <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere</span></code></a> geometry is created from a sequence (in our case a <code class="docutils literal notranslate"><span class="pre">list</span></code>)
+of (latitude, longitude) tuples. This is possible because when the polyline
+<a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.__init__" title="pygplates.PolylineOnSphere.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> receives a sequence of 2-tuples
+it interprets them as (latitude, longitude) coordinates of the points that make up the polyline.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">isochron_geometry_at_time_of_appearance</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.635356</span><span class="p">,</span>  <span class="mf">0.765764</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.162269</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.953176</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.916700</span><span class="p">,</span> <span class="o">-</span><span class="mf">2.522021</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">57.658576</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.936703</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">58.639846</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.849338</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">58.404889</span><span class="p">,</span> <span class="o">-</span><span class="mf">6.060713</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">59.390700</span><span class="p">,</span> <span class="o">-</span><span class="mf">6.877544</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">59.048499</span><span class="p">,</span> <span class="o">-</span><span class="mf">8.573530</span><span class="p">)</span>
+    <span class="p">])</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The isochron geometry is not present-day geometry so the created isochron feature
+will need to be reverse reconstructed to present day (using either the
+<em>reverse_reconstruct</em> parameter or <a class="reference internal" href="../generated/pygplates.reverse_reconstruct.html#pygplates.reverse_reconstruct" title="pygplates.reverse_reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.reverse_reconstruct()</span></code></a>) before the feature can
+be reconstructed to an arbitrary reconstruction time. This is because a feature is not
+complete until its geometry is <em>present day</em> geometry.</div>
+<div class="line">Here we create an isochron feature (a feature of type <code class="docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_isochron</span></code>)
+using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a> function.</div>
+<div class="line">The <em>reverse_reconstruct</em> parameter is a <code class="docutils literal notranslate"><span class="pre">tuple</span></code> containing a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">rotation</span> <span class="pre">model</span></code></a>
+and the time-of-appearance of the isochron (the time representing the geometry).</div>
+<div class="line">We give the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a> function a geometry at
+its time of appearance, the time of appearance (and rotation model), a name, a valid time period,
+a reconstruction plate ID and a conjugate plate ID. The valid time period ends in the
+<a class="reference internal" href="../generated/pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.create_distant_future" title="pygplates.GeoTimeInstant.create_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">future</span></code></a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the isochron feature.</span>
+<span class="n">isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">,</span>
+    <span class="n">isochron_geometry_at_time_of_appearance</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'SOUTH AMERICAN ANTARCTIC RIDGE, SOUTH AMERICA-ANTARCTICA ANOMALY 18 IS'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="n">isochron_time_of_appearance</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+    <span class="n">conjugate_plate_id</span><span class="o">=</span><span class="mi">802</span><span class="p">,</span>
+    <span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day...</span>
+    <span class="n">reverse_reconstruct</span><span class="o">=</span><span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_time_of_appearance</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>An alternative to the <em>reverse_reconstruct</em> parameter is to call the <a class="reference internal" href="../generated/pygplates.reverse_reconstruct.html#pygplates.reverse_reconstruct" title="pygplates.reverse_reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.reverse_reconstruct()</span></code></a> function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">,</span>
+    <span class="n">isochron_geometry_at_time_of_appearance</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'SOUTH AMERICAN ANTARCTIC RIDGE, SOUTH AMERICA-ANTARCTICA ANOMALY 18 IS'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="n">isochron_time_of_appearance</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+    <span class="n">conjugate_plate_id</span><span class="o">=</span><span class="mi">802</span><span class="p">)</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">reverse_reconstruct</span><span class="p">(</span><span class="n">isochron_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_time_of_appearance</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the alternate sample code, instead of using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>
+function, we first create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">pygplates.FeatureType.gpml_isochron</a>
+feature and then set its properties one by one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the isochron feature.</span>
+<span class="n">isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">isochron_geometry_at_time_of_appearance</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'SOUTH AMERICAN ANTARCTIC RIDGE, SOUTH AMERICA-ANTARCTICA ANOMALY 18 IS'</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">isochron_time_of_appearance</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">())</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_conjugate_plate_id</span><span class="p">(</span><span class="mi">802</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The isochron geometry is not present-day geometry so the created isochron feature
+will need to be reverse reconstructed to present day before the feature can
+be reconstructed to an arbitrary reconstruction time. This is because a feature is not
+complete until its geometry is <em>present day</em> geometry.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day.</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">reverse_reconstruct</span><span class="p">(</span><span class="n">isochron_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_time_of_appearance</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><a class="reference internal" href="../generated/pygplates.reverse_reconstruct.html#pygplates.reverse_reconstruct" title="pygplates.reverse_reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.reverse_reconstruct()</span></code></a> is called <em>after</em> the properties have
+been set on the feature. This is necessary because reverse reconstruction looks at these
+properties to determine how to reverse reconstruct.</p>
+</div>
+<p>An alternative is to reverse-reconstruct when <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setting</span> <span class="pre">the</span> <span class="pre">geometry</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">isochron_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'SOUTH AMERICAN ANTARCTIC RIDGE, SOUTH AMERICA-ANTARCTICA ANOMALY 18 IS'</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">isochron_time_of_appearance</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">())</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_conjugate_plate_id</span><span class="p">(</span><span class="mi">802</span><span class="p">)</span>
+
+<span class="n">isochron_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span>
+    <span class="n">isochron_geometry_at_time_of_appearance</span><span class="p">,</span>
+    <span class="n">reverse_reconstruct</span><span class="o">=</span><span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">isochron_time_of_appearance</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_geometry()</span></code></a> is called <em>after</em> the properties have
+been set on the feature. Again this is necessary because reverse reconstruction looks at these
+properties to determine how to reverse reconstruct.</p>
+</div>
+</section>
+</section>
+<section id="create-a-mid-ocean-ridge-feature-from-geometry-at-a-past-geological-time">
+<span id="pygplates-create-mid-ocean-ridge-feature"></span><h2><a class="toc-backref" href="#id46" role="doc-backlink">Create a <em>mid-ocean ridge</em> feature from geometry at a past geological time</a><a class="headerlink" href="#create-a-mid-ocean-ridge-feature-from-geometry-at-a-past-geological-time" title="Link to this heading"></a></h2>
+<p>This example is similar to <a class="reference internal" href="#pygplates-create-isochron-feature"><span class="std std-ref">Create an isochron feature from geometry at a past geological time</span></a> except we are creating
+a type of <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TectonicSection">tectonic section</a> known as a
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">mid-ocean ridge</a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-mid-ocean-ridge-feature"><span class="std std-ref">Query a mid-ocean ridge feature</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates-create-isochron-feature"><span class="std std-ref">Create an isochron feature from geometry at a past geological time</span></a></p>
+</div>
+<section id="id7">
+<h3><a class="toc-backref" href="#id47" role="doc-backlink">Data files</a><a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<p>Both scripts read the same file:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It is used to reverse reconstruct the ridge geometry from 55.9Ma to present day
+using a half-stage rotation, so it must contain rotations for the ridge’s left and right plates
+(201 and 701) at that time.</p>
+</dd>
+</dl>
+<p>Rotation files are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="id9">
+<h3><a class="toc-backref" href="#id48" role="doc-backlink">Sample code</a><a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load a rotation model from a rotation file.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Create the mid-ocean ridge feature using geometry at a past geological time.</span>
+<span class="n">time_of_appearance</span> <span class="o">=</span> <span class="mf">55.9</span>
+<span class="n">time_of_disappearance</span> <span class="o">=</span> <span class="mi">48</span>
+<span class="n">geometry_at_time_of_appearance</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">27.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.0</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">30.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">32.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">14.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">35.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">15.5</span><span class="p">)</span>
+    <span class="p">])</span>
+<span class="n">mid_ocean_ridge_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_tectonic_section</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_mid_ocean_ridge</span><span class="p">,</span>
+    <span class="n">geometry_at_time_of_appearance</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'SOUTH ATLANTIC, SOUTH AMERICA-AFRICA'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="n">time_of_appearance</span><span class="p">,</span> <span class="n">time_of_disappearance</span><span class="p">),</span>
+    <span class="n">left_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+    <span class="n">right_plate</span><span class="o">=</span><span class="mi">701</span><span class="p">,</span>
+    <span class="n">reconstruction_method</span><span class="o">=</span><span class="s1">'HalfStageRotationVersion3'</span><span class="p">,</span>
+    <span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day...</span>
+    <span class="n">reverse_reconstruct</span><span class="o">=</span><span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">time_of_appearance</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="id10">
+<h3><a class="toc-backref" href="#id49" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#id10" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load a rotation model from a rotation file.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Create the mid-ocean ridge feature using geometry at a past geological time.</span>
+<span class="n">time_of_appearance</span> <span class="o">=</span> <span class="mf">55.9</span>
+<span class="n">time_of_disappearance</span> <span class="o">=</span> <span class="mi">48</span>
+<span class="n">geometry_at_time_of_appearance</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">27.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.0</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">30.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">32.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">14.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">35.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">15.5</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="n">mid_ocean_ridge_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_mid_ocean_ridge</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">geometry_at_time_of_appearance</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'SOUTH ATLANTIC, SOUTH AMERICA-AFRICA'</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">time_of_appearance</span><span class="p">,</span> <span class="n">time_of_disappearance</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_left_plate</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_right_plate</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_reconstruction_method</span><span class="p">(</span><span class="s1">'HalfStageRotationVersion3'</span><span class="p">)</span>
+
+<span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day.</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">reverse_reconstruct</span><span class="p">(</span><span class="n">mid_ocean_ridge_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time_of_appearance</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id11">
+<h3><a class="toc-backref" href="#id50" role="doc-backlink">Details</a><a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">This is similar to <a class="reference internal" href="#pygplates-create-isochron-feature"><span class="std std-ref">Create an isochron feature from geometry at a past geological time</span></a> except we use
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_tectonic_section" title="pygplates.Feature.create_tectonic_section"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_tectonic_section()</span></code></a> since a
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">mid-ocean ridge</a> feature is a type of
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TectonicSection">tectonic section</a>.</div>
+<div class="line">This allows us to specify the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:leftPlate">left</a> and
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rightPlate">right</a> plates as well as a half-stage
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod">reconstruction method</a>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the mid-ocean ridge feature using geometry at a past geological time.</span>
+<span class="n">time_of_appearance</span> <span class="o">=</span> <span class="mf">55.9</span>
+<span class="n">time_of_disappearance</span> <span class="o">=</span> <span class="mi">48</span>
+<span class="n">geometry_at_time_of_appearance</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">27.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.0</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">30.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">32.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">14.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">35.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">15.5</span><span class="p">)</span>
+    <span class="p">])</span>
+<span class="n">mid_ocean_ridge_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_tectonic_section</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_mid_ocean_ridge</span><span class="p">,</span>
+    <span class="n">geometry_at_time_of_appearance</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'SOUTH ATLANTIC, SOUTH AMERICA-AFRICA'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="n">time_of_appearance</span><span class="p">,</span> <span class="n">time_of_disappearance</span><span class="p">),</span>
+    <span class="n">left_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+    <span class="n">right_plate</span><span class="o">=</span><span class="mi">701</span><span class="p">,</span>
+    <span class="n">reconstruction_method</span><span class="o">=</span><span class="s1">'HalfStageRotationVersion3'</span><span class="p">,</span>
+    <span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day...</span>
+    <span class="n">reverse_reconstruct</span><span class="o">=</span><span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">time_of_appearance</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The alternate sample code is similar to the alternate sample code in <a class="reference internal" href="#pygplates-create-isochron-feature"><span class="std std-ref">Create an isochron feature from geometry at a past geological time</span></a>. Here we
+create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">pygplates.FeatureType.gpml_mid_ocean_ridge</a>
+feature and then set its properties one by one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mid_ocean_ridge_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_mid_ocean_ridge</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">geometry_at_time_of_appearance</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'SOUTH ATLANTIC, SOUTH AMERICA-AFRICA'</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="n">time_of_appearance</span><span class="p">,</span> <span class="n">time_of_disappearance</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_left_plate</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_right_plate</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+<span class="n">mid_ocean_ridge_feature</span><span class="o">.</span><span class="n">set_reconstruction_method</span><span class="p">(</span><span class="s1">'HalfStageRotationVersion3'</span><span class="p">)</span>
+
+<span class="c1"># The specified geometry is not present day so it needs to be reverse-reconstructed to present day.</span>
+<span class="n">pygplates</span><span class="o">.</span><span class="n">reverse_reconstruct</span><span class="p">(</span><span class="n">mid_ocean_ridge_feature</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time_of_appearance</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><a class="reference internal" href="../generated/pygplates.reverse_reconstruct.html#pygplates.reverse_reconstruct" title="pygplates.reverse_reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.reverse_reconstruct()</span></code></a> is called <em>after</em> the properties have
+been set on the feature. This is necessary because reverse reconstruction looks at these
+properties to determine how to reverse reconstruct.</p>
+</div>
+</section>
+</section>
+<section id="create-a-subduction-zone-feature-from-present-day-geometry">
+<span id="pygplates-create-subduction-zone-feature"></span><h2><a class="toc-backref" href="#id51" role="doc-backlink">Create a <em>subduction zone</em> feature from present-day geometry</a><a class="headerlink" href="#create-a-subduction-zone-feature-from-present-day-geometry" title="Link to this heading"></a></h2>
+<p>This example is similar to <a class="reference internal" href="#pygplates-create-coastline-feature"><span class="std std-ref">Create a coastline feature from present-day geometry</span></a> except we are also setting
+an enumeration property on a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">subduction zone</a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-subduction-zone-feature"><span class="std std-ref">Query a subduction zone feature</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates-create-coastline-feature"><span class="std std-ref">Create a coastline feature from present-day geometry</span></a></p>
+</div>
+<section id="id14">
+<h3><a class="toc-backref" href="#id52" role="doc-backlink">Sample code</a><a class="headerlink" href="#id14" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create the subduction zone feature.</span>
+<span class="n">present_day_geometry</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">18.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">23.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.2</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">28.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.8</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">33.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">72.8</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">38.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">74.5</span><span class="p">)</span>
+    <span class="p">])</span>
+<span class="n">subduction_zone_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">,</span>
+    <span class="n">present_day_geometry</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'South America trench'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">)</span>
+
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_enumeration</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_subduction_polarity</span><span class="p">,</span>
+    <span class="s1">'Right'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id15">
+<h3><a class="toc-backref" href="#id53" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#id15" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create the subduction zone feature.</span>
+<span class="n">present_day_geometry</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">18.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">23.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.2</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">28.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.8</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">33.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">72.8</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">38.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">74.5</span><span class="p">)</span>
+    <span class="p">])</span>
+<span class="n">subduction_zone_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">present_day_geometry</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'South America trench'</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">())</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_enumeration</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_subduction_polarity</span><span class="p">,</span> <span class="s1">'Right'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id16">
+<h3><a class="toc-backref" href="#id54" role="doc-backlink">Details</a><a class="headerlink" href="#id16" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">This is similar to <a class="reference internal" href="#pygplates-create-coastline-feature"><span class="std std-ref">Create a coastline feature from present-day geometry</span></a> except we also use
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_enumeration" title="pygplates.Feature.set_enumeration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_enumeration()</span></code></a> to set the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity">subduction polarity</a> to <code class="docutils literal notranslate"><span class="pre">'Right'</span></code>
+on our <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">subduction zone</a> feature.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the subduction zone feature.</span>
+<span class="n">present_day_geometry</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolylineOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">18.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">23.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.2</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">28.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">71.8</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">33.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">72.8</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">38.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">74.5</span><span class="p">)</span>
+    <span class="p">])</span>
+<span class="n">subduction_zone_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">,</span>
+    <span class="n">present_day_geometry</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'South America trench'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">)</span>
+
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_enumeration</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_subduction_polarity</span><span class="p">,</span>
+    <span class="s1">'Right'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a> has the <em>other_properties</em>
+argument for such cases, but it is usually more difficult - especially when there is a
+convenient function like <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_enumeration" title="pygplates.Feature.set_enumeration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_enumeration()</span></code></a> available. For example, to
+use the <em>other_properties</em> argument would have looked like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">subduction_zone_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">,</span>
+    <span class="n">present_day_geometry</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'South America trench'</span><span class="p">,</span>
+    <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()),</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+    <span class="n">other_properties</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_subduction_polarity</span><span class="p">,</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">Enumeration</span><span class="p">(</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">EnumerationType</span><span class="o">.</span><span class="n">create_gpml</span><span class="p">(</span><span class="s1">'SubductionPolarityEnumeration'</span><span class="p">),</span>
+            <span class="s1">'Right'</span><span class="p">))])</span>
+</pre></div>
+</div>
+</div>
+<p>In the alternate sample code, instead of using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>
+function, we first create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">pygplates.FeatureType.gpml_subduction_zone</a>
+feature and then set its properties one by one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">subduction_zone_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">present_day_geometry</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'South America trench'</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">())</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">subduction_zone_feature</span><span class="o">.</span><span class="n">set_enumeration</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_subduction_polarity</span><span class="p">,</span> <span class="s1">'Right'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="create-a-virtual-geomagnetic-pole-feature">
+<span id="pygplates-create-virtual-geomagnetic-pole-feature"></span><h2><a class="toc-backref" href="#id55" role="doc-backlink">Create a <em>virtual geomagnetic pole</em> feature</a><a class="headerlink" href="#create-a-virtual-geomagnetic-pole-feature" title="Link to this heading"></a></h2>
+<p>This example is similar to <a class="reference internal" href="#pygplates-create-coastline-feature"><span class="std std-ref">Create a coastline feature from present-day geometry</span></a> except we are also setting
+some floating-point values on a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a> feature.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-virtual-geomagnetic-pole-feature"><span class="std std-ref">Query a virtual geomagnetic pole feature</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates-create-coastline-feature"><span class="std std-ref">Create a coastline feature from present-day geometry</span></a></p>
+</div>
+<section id="id18">
+<h3><a class="toc-backref" href="#id56" role="doc-backlink">Sample code</a><a class="headerlink" href="#id18" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># The pole position and the average sample site position.</span>
+<span class="n">pole_position</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="mf">86.3</span><span class="p">,</span> <span class="mf">168.02</span><span class="p">)</span>
+<span class="n">average_sample_site_position</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">-</span><span class="mf">2.91</span><span class="p">,</span> <span class="o">-</span><span class="mf">9.59</span><span class="p">)</span>
+
+<span class="c1"># Create the virtual geomagnetic pole feature.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_virtual_geomagnetic_pole</span><span class="p">,</span>
+    <span class="n">pole_position</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)'</span><span class="p">,</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+
+<span class="c1"># Set the average sample site position.</span>
+<span class="c1"># We need to specify its property name otherwise it defaults to the pole position and overwrites it.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span>
+    <span class="n">average_sample_site_position</span><span class="p">,</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_sample_site_position</span><span class="p">)</span>
+
+<span class="c1"># Set the average inclination/declination.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_inclination</span><span class="p">,</span>
+    <span class="mf">180.16</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_declination</span><span class="p">,</span>
+    <span class="mf">13.04</span><span class="p">)</span>
+
+<span class="c1"># Set the pole position uncertainty and the average age.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_pole_a95</span><span class="p">,</span>
+    <span class="mf">3.05</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_age</span><span class="p">,</span>
+    <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id19">
+<h3><a class="toc-backref" href="#id57" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#id19" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># The pole position and the average sample site position.</span>
+<span class="n">pole_position</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="mf">86.3</span><span class="p">,</span> <span class="mf">168.02</span><span class="p">)</span>
+<span class="n">average_sample_site_position</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">-</span><span class="mf">2.91</span><span class="p">,</span> <span class="o">-</span><span class="mf">9.59</span><span class="p">)</span>
+
+<span class="c1"># Create the virtual geomagnetic pole feature.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_virtual_geomagnetic_pole</span><span class="p">)</span>
+
+<span class="c1"># Set the name and reconstruction plate ID.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)'</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+
+<span class="c1"># Set the average inclination/declination.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_inclination</span><span class="p">,</span>
+    <span class="mf">180.16</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_declination</span><span class="p">,</span>
+    <span class="mf">13.04</span><span class="p">)</span>
+
+<span class="c1"># Set the pole position uncertainty and the average age.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_pole_a95</span><span class="p">,</span>
+    <span class="mf">3.05</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_age</span><span class="p">,</span>
+    <span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Set the two geometries.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">pole_position</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span>
+    <span class="n">average_sample_site_position</span><span class="p">,</span>
+    <span class="c1"># We need to specify its property name otherwise it defaults to the pole position and overwrites it...</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_sample_site_position</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id20">
+<h3><a class="toc-backref" href="#id58" role="doc-backlink">Details</a><a class="headerlink" href="#id20" title="Link to this heading"></a></h3>
+<p>A <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a> feature
+contains two geometries. One is the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:polePosition">position of the virtual geomagnetic pole</a>
+and the other is the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition">average sample site position</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The pole position and the average sample site position.</span>
+<span class="n">pole_position</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="mf">86.3</span><span class="p">,</span> <span class="mf">168.02</span><span class="p">)</span>
+<span class="n">average_sample_site_position</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">-</span><span class="mf">2.91</span><span class="p">,</span> <span class="o">-</span><span class="mf">9.59</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">We create a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a>
+feature using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a> function.</div>
+<div class="line">The geometry we specify is the pole position (not the average sample site position). This is
+because the default geometry for <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a>
+(see the <code class="docutils literal notranslate"><span class="pre">Default</span> <span class="pre">Geometry</span> <span class="pre">Property</span></code> label) is <code class="docutils literal notranslate"><span class="pre">gpml:polePosition</span></code>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the virtual geomagnetic pole feature.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_reconstructable_feature</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_virtual_geomagnetic_pole</span><span class="p">,</span>
+    <span class="n">pole_position</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)'</span><span class="p">,</span>
+    <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">We need to set the average sample site position separately since it is not the default geometry.</div>
+<div class="line">We also need to specify its property name otherwise <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_geometry()</span></code></a> defaults
+to the pole position and overwrites the geometry we’ve already set for it.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the average sample site position.</span>
+<span class="c1"># We need to specify its property name otherwise it defaults to the pole position and overwrites it.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span>
+    <span class="n">average_sample_site_position</span><span class="p">,</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_sample_site_position</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Next we set some floating-point numbers using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_double" title="pygplates.Feature.set_double"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_double()</span></code></a>.</div>
+<div class="line">You can see from the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole model</a> that
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageInclination">gpml:averageInclination</a>,
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageDeclination">gpml:averageDeclination</a>,
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:poleA95">gpml:poleA95</a> and
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageAge">gpml:averageAge</a>
+are all of type <a class="reference external" href="http://www.gplates.org/docs/gpgim/#xsi:double">double</a> which is for floating-point numbers.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the average inclination/declination.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_inclination</span><span class="p">,</span>
+    <span class="mf">180.16</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_declination</span><span class="p">,</span>
+    <span class="mf">13.04</span><span class="p">)</span>
+
+<span class="c1"># Set the pole position uncertainty and the average age.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_pole_a95</span><span class="p">,</span>
+    <span class="mf">3.05</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_age</span><span class="p">,</span>
+    <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the alternate sample code, instead of using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>
+function, we first create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">pygplates.FeatureType.gpml_virtual_geomagnetic_pole</a>
+feature and then set its properties one by one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the virtual geomagnetic pole feature.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_virtual_geomagnetic_pole</span><span class="p">)</span>
+
+<span class="c1"># Set the name and reconstruction plate ID.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'RM:-10 -  10Ma N= 10 (Dp col.) Lat Range: 29.2 to -78.17 (Dm col.)'</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+
+<span class="c1"># Set the average inclination/declination.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_inclination</span><span class="p">,</span>
+    <span class="mf">180.16</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_declination</span><span class="p">,</span>
+    <span class="mf">13.04</span><span class="p">)</span>
+
+<span class="c1"># Set the pole position uncertainty and the average age.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_pole_a95</span><span class="p">,</span>
+    <span class="mf">3.05</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_double</span><span class="p">(</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_age</span><span class="p">,</span>
+    <span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Set the two geometries.</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">pole_position</span><span class="p">)</span>
+<span class="n">virtual_geomagnetic_pole_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span>
+    <span class="n">average_sample_site_position</span><span class="p">,</span>
+    <span class="c1"># We need to specify its property name otherwise it defaults to the pole position and overwrites it...</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_sample_site_position</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="create-a-motion-path-feature">
+<span id="pygplates-create-motion-path-feature"></span><h2><a class="toc-backref" href="#id59" role="doc-backlink">Create a <em>motion path</em> feature</a><a class="headerlink" href="#create-a-motion-path-feature" title="Link to this heading"></a></h2>
+<p>In this example we create a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">motion path</a>
+feature that tracks plate motion over time.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-motion-path-feature"><span class="std std-ref">Query a motion path feature</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_reconstruct_motion_path_features.html#pygplates-reconstruct-motion-path-features"><span class="std std-ref">Reconstruct motion path features</span></a></p>
+</div>
+<section id="id24">
+<h3><a class="toc-backref" href="#id60" role="doc-backlink">Sample code</a><a class="headerlink" href="#id24" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Specify two (lat/lon) seed points on the present-day African coastline.</span>
+<span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mi">19</span><span class="p">,</span> <span class="mf">12.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mi">28</span><span class="p">,</span> <span class="mf">15.7</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># A list of times to sample the motion path - from 0 to 90Ma in 1My intervals.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Create a motion path feature.</span>
+<span class="n">motion_path_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_motion_path</span><span class="p">(</span>
+        <span class="n">seed_points</span><span class="p">,</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">)),</span>
+        <span class="n">relative_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+        <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id25">
+<h3><a class="toc-backref" href="#id61" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#id25" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Specify two (lat/lon) seed points on the present-day African coastline.</span>
+<span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mi">19</span><span class="p">,</span> <span class="mf">12.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mi">28</span><span class="p">,</span> <span class="mf">15.7</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># A list of times to sample the motion path - from 0 to 90Ma in 1My intervals.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Create a motion path feature.</span>
+<span class="n">motion_path_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_motion_path</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">seed_points</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_times</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">))</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_relative_plate</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id26">
+<h3><a class="toc-backref" href="#id62" role="doc-backlink">Details</a><a class="headerlink" href="#id26" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">We specify two seed point locations somewhere on the coastline of Africa (701).</div>
+<div class="line">These are the points the that motion path will track over time.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify two (lat/lon) seed points on the present-day African coastline.</span>
+<span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mi">19</span><span class="p">,</span> <span class="mf">12.5</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mi">28</span><span class="p">,</span> <span class="mf">15.7</span><span class="p">)</span>
+    <span class="p">])</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">A sequence of time samples determine how accurate the motion path is - how densely sampled it is.</div>
+<div class="line">Here we sample from 0 to 90Ma in 1My intervals.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A list of times to sample the motion path - from 0 to 90Ma in 1My intervals.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">We can create the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">motion path</a>
+feature using the seed points, time samples, valid time period and relative/reconstruction plate IDs.</div>
+<div class="line">We set the valid time period to encompass the time samples.</div>
+<div class="line">The motion is the path of the seed point(s) attached to the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId">gpml:reconstructionPlateId</a> plate relative to the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:relativePlate">gpml:relativePlate</a> plate.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a motion path feature.</span>
+<span class="n">motion_path_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_motion_path</span><span class="p">(</span>
+        <span class="n">seed_points</span><span class="p">,</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">)),</span>
+        <span class="n">relative_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+        <span class="n">reconstruction_plate_id</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the alternate sample code, instead of using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_motion_path" title="pygplates.Feature.create_motion_path"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_motion_path()</span></code></a> function,
+we first create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">pygplates.FeatureType.gpml_motion_path</a>
+feature and then set its properties one by one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a motion path feature.</span>
+<span class="n">motion_path_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_motion_path</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">seed_points</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_times</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">))</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_relative_plate</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">motion_path_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="create-a-flowline-feature">
+<span id="pygplates-create-flowline-feature"></span><h2><a class="toc-backref" href="#id63" role="doc-backlink">Create a <em>flowline</em> feature</a><a class="headerlink" href="#create-a-flowline-feature" title="Link to this heading"></a></h2>
+<p>In this example we create a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a>
+feature that tracks plate motion away from a spreading ridge over time.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-flowline-feature"><span class="std std-ref">Query a flowline feature</span></a></p>
+</div>
+<section id="id29">
+<h3><a class="toc-backref" href="#id64" role="doc-backlink">Sample code</a><a class="headerlink" href="#id29" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Specify two (lat/lon) seed points on a present-day mid-ocean ridge between plates 201 and 701.</span>
+<span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">35.547600</span><span class="p">,</span> <span class="o">-</span><span class="mf">17.873000</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">46.208000</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.623000</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># A list of times to sample flowline - from 0 to 90Ma in 1My intervals.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Create a flowline feature.</span>
+<span class="n">flowline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_flowline</span><span class="p">(</span>
+        <span class="n">seed_points</span><span class="p">,</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">)),</span>
+        <span class="n">left_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+        <span class="n">right_plate</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id30">
+<h3><a class="toc-backref" href="#id65" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#id30" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Specify two (lat/lon) seed points on a present-day mid-ocean ridge between plates 201 and 701.</span>
+<span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">35.547600</span><span class="p">,</span> <span class="o">-</span><span class="mf">17.873000</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">46.208000</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.623000</span><span class="p">)</span>
+    <span class="p">])</span>
+
+<span class="c1"># A list of times to sample flowline - from 0 to 90Ma in 1My intervals.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Create a flowline feature.</span>
+<span class="n">flowline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_flowline</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">seed_points</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_times</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">))</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_left_plate</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_right_plate</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_reconstruction_method</span><span class="p">(</span><span class="s1">'HalfStageRotationVersion3'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id31">
+<h3><a class="toc-backref" href="#id66" role="doc-backlink">Details</a><a class="headerlink" href="#id31" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">We specify two seed point locations on the present-day mid-ocean ridge.</div>
+<div class="line">These are the mid-ocean ridge points that the flowline will track spreading over time.</div>
+<div class="line">The seed point(s) spread in the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:leftPlate">gpml:leftPlate</a> plate and the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rightPlate">gpml:rightPlate</a> plate of the mid-ocean ridge.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify two (lat/lon) seed points on a present-day mid-ocean ridge between plates 201 and 701.</span>
+<span class="n">seed_points</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">MultiPointOnSphere</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">35.547600</span><span class="p">,</span> <span class="o">-</span><span class="mf">17.873000</span><span class="p">),</span>
+        <span class="p">(</span><span class="o">-</span><span class="mf">46.208000</span><span class="p">,</span> <span class="o">-</span><span class="mf">13.623000</span><span class="p">)</span>
+    <span class="p">])</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">A sequence of time samples determine how accurate the flowline is - how densely sampled it is.</div>
+<div class="line">Here we sample from 0 to 90Ma in 1My intervals.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A list of times to sample flowline - from 0 to 90Ma in 1My intervals.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">91</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">We can create the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a>
+feature using the seed points, time samples, valid time period and left/right plate IDs.</div>
+<div class="line">We set the valid time period to encompass the time samples.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a flowline feature.</span>
+<span class="n">flowline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_flowline</span><span class="p">(</span>
+        <span class="n">seed_points</span><span class="p">,</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">valid_time</span><span class="o">=</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">)),</span>
+        <span class="n">left_plate</span><span class="o">=</span><span class="mi">201</span><span class="p">,</span>
+        <span class="n">right_plate</span><span class="o">=</span><span class="mi">701</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the alternate sample code, instead of using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_flowline" title="pygplates.Feature.create_flowline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_flowline()</span></code></a> function,
+we first create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">pygplates.FeatureType.gpml_flowline</a>
+feature and then set its properties one by one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a flowline feature.</span>
+<span class="n">flowline_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_flowline</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">seed_points</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_times</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_valid_time</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">))</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_left_plate</span><span class="p">(</span><span class="mi">201</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_right_plate</span><span class="p">(</span><span class="mi">701</span><span class="p">)</span>
+<span class="n">flowline_feature</span><span class="o">.</span><span class="n">set_reconstruction_method</span><span class="p">(</span><span class="s1">'HalfStageRotationVersion3'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the alternate sample code we called <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_reconstruction_method" title="pygplates.Feature.set_reconstruction_method"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_reconstruction_method()</span></code></a> only because
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_flowline" title="pygplates.Feature.create_flowline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_flowline()</span></code></a> does (a flowline is reconstructed the same way whatever its reconstruction
+method). <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_flowline" title="pygplates.Feature.create_flowline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_flowline()</span></code></a> also sets the
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry_import_time" title="pygplates.Feature.set_geometry_import_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometry</span> <span class="pre">import</span> <span class="pre">time</span></code></a> to the youngest time, but a flowline
+without one spreads from its youngest time anyway.</p>
+</div>
+</section>
+</section>
+<section id="create-a-total-reconstruction-sequence-rotation-feature">
+<span id="pygplates-create-total-reconstruction-sequence-feature"></span><h2><a class="toc-backref" href="#id67" role="doc-backlink">Create a <em>total reconstruction sequence</em> (rotation) feature</a><a class="headerlink" href="#create-a-total-reconstruction-sequence-rotation-feature" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">In this example we create a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">total reconstruction sequence</a>
+feature representing a time sequence of total rotation poles of a moving plate relative to a fixed plate.</div>
+<div class="line">These are the feature types created when a rotation file is loaded, except here we are creating them explicitly.</div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-total-reconstruction-sequence-feature"><span class="std std-ref">Query a total reconstruction sequence (rotation) feature</span></a></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_modify_reconstruction_pole.html#pygplates-modify-reconstruction-pole"><span class="std std-ref">Modify a reconstruction pole</span></a></p>
+</div>
+<section id="id33">
+<h3><a class="toc-backref" href="#id68" role="doc-backlink">Sample code</a><a class="headerlink" href="#id33" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+
+<span class="c1"># Some finite rotation pole data for moving plate 550 relative to fixed plate 801.</span>
+<span class="c1"># The data order is (pole_time, pole_lat, pole_lon, pole_angle, pole_description).</span>
+<span class="n">pole_data_550_rel_801</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="mf">99.0</span> <span class="p">,</span>   <span class="mf">0.72</span> <span class="p">,</span> <span class="o">-</span><span class="mf">179.98</span><span class="p">,</span>   <span class="mf">50.78</span><span class="p">,</span>  <span class="s1">'INA-AUS Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">120.4</span><span class="p">,</span>   <span class="mf">10.32</span><span class="p">,</span> <span class="o">-</span><span class="mf">177.4</span> <span class="p">,</span>   <span class="mf">61.12</span><span class="p">,</span>  <span class="s1">'INA-AUS M0 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">124.0</span><span class="p">,</span>   <span class="mf">11.36</span><span class="p">,</span> <span class="o">-</span><span class="mf">177.07</span><span class="p">,</span>   <span class="mf">62.54</span><span class="p">,</span>  <span class="s1">'INA-AUS M2 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">124.7</span><span class="p">,</span>   <span class="mf">11.69</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.97</span><span class="p">,</span>   <span class="mf">62.99</span><span class="p">,</span>  <span class="s1">'INA-AUS M3 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">126.7</span><span class="p">,</span>   <span class="mf">12.34</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.76</span><span class="p">,</span>   <span class="mf">63.95</span><span class="p">,</span>  <span class="s1">'INA-AUS M4 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">127.7</span><span class="p">,</span>   <span class="mf">12.65</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.66</span><span class="p">,</span>   <span class="mf">64.42</span><span class="p">,</span>  <span class="s1">'INA-AUS M5 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">128.2</span><span class="p">,</span>   <span class="mf">12.74</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.65</span><span class="p">,</span>   <span class="mf">64.63</span><span class="p">,</span>  <span class="s1">'INA-AUS M6 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">128.4</span><span class="p">,</span>   <span class="mf">12.85</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.63</span><span class="p">,</span>   <span class="mf">64.89</span><span class="p">,</span>  <span class="s1">'INA-AUS M7 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">129.0</span><span class="p">,</span>   <span class="mf">13.0</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.61</span><span class="p">,</span>   <span class="mf">65.23</span><span class="p">,</span>  <span class="s1">'INA-AUS M8 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">129.5</span><span class="p">,</span>   <span class="mf">13.2</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.59</span><span class="p">,</span>   <span class="mf">65.67</span><span class="p">,</span>  <span class="s1">'INA-AUS M9 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">130.2</span><span class="p">,</span>   <span class="mf">13.39</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.56</span><span class="p">,</span>   <span class="mf">66.1</span> <span class="p">,</span>  <span class="s1">'INA-AUS M10 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">130.9</span><span class="p">,</span>   <span class="mf">13.63</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.53</span><span class="p">,</span>   <span class="mf">66.66</span><span class="p">,</span>  <span class="s1">'INA-AUS M10N Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">132.1</span><span class="p">,</span>   <span class="mf">13.93</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.48</span><span class="p">,</span>   <span class="mf">67.4</span> <span class="p">,</span>  <span class="s1">'INA-AUS M11 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">133.4</span><span class="p">,</span>   <span class="mf">14.31</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.43</span><span class="p">,</span>   <span class="mf">68.33</span><span class="p">,</span>  <span class="s1">'INA-AUS M11A Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">134.0</span><span class="p">,</span>   <span class="mf">14.61</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.39</span><span class="p">,</span>   <span class="mf">69.09</span><span class="p">,</span>  <span class="s1">'INA-AUS M12 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">135.0</span><span class="p">,</span>   <span class="mf">14.86</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.36</span><span class="p">,</span>   <span class="mf">69.73</span><span class="p">,</span>  <span class="s1">'INA-AUS M12A Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">135.3</span><span class="p">,</span>   <span class="mf">15.03</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.33</span><span class="p">,</span>   <span class="mf">70.19</span><span class="p">,</span>  <span class="s1">'INA-AUS M13 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">135.9</span><span class="p">,</span>   <span class="mf">15.29</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.3</span> <span class="p">,</span>   <span class="mf">70.89</span><span class="p">,</span>  <span class="s1">'INA-AUS M14 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">136.2</span><span class="p">,</span>   <span class="mf">15.5</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.27</span><span class="p">,</span>   <span class="mf">71.44</span><span class="p">,</span>  <span class="s1">'INA-AUS based on closure IND-ANT Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">600.0</span><span class="p">,</span>   <span class="mf">15.5</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.27</span><span class="p">,</span>   <span class="mf">71.44</span><span class="p">,</span>  <span class="s1">'INA-AUS'</span><span class="p">)]</span>
+
+<span class="c1"># Create a list of finite rotation time samples from the pole data.</span>
+<span class="n">pole_time_samples_550_rel_801</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTimeSample</span><span class="p">(</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlFiniteRotation</span><span class="p">(</span>
+                <span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">),</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle</span><span class="p">))),</span>
+            <span class="n">time</span><span class="p">,</span>
+            <span class="n">description</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">description</span> <span class="ow">in</span> <span class="n">pole_data_550_rel_801</span><span class="p">]</span>
+
+<span class="c1"># The time samples need to be wrapped into an irregular sampling property value.</span>
+<span class="n">total_reconstruction_pole_550_rel_801</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlIrregularSampling</span><span class="p">(</span><span class="n">pole_time_samples_550_rel_801</span><span class="p">)</span>
+
+<span class="c1"># Create the total reconstruction sequence (rotation) feature.</span>
+<span class="n">rotation_feature_550_rel_801</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_total_reconstruction_sequence</span><span class="p">(</span>
+    <span class="mi">801</span><span class="p">,</span>
+    <span class="mi">550</span><span class="p">,</span>
+    <span class="n">total_reconstruction_pole_550_rel_801</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'INA-AUS Muller et.al 2000'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id34">
+<h3><a class="toc-backref" href="#id69" role="doc-backlink">Alternate sample code</a><a class="headerlink" href="#id34" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+
+<span class="c1"># Some finite rotation pole data for moving plate 550 relative to fixed plate 801.</span>
+<span class="c1"># The data order is (pole_time, pole_lat, pole_lon, pole_angle, pole_description).</span>
+<span class="n">pole_data_550_rel_801</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="mf">99.0</span> <span class="p">,</span>   <span class="mf">0.72</span> <span class="p">,</span> <span class="o">-</span><span class="mf">179.98</span><span class="p">,</span>   <span class="mf">50.78</span><span class="p">,</span>  <span class="s1">'INA-AUS Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">120.4</span><span class="p">,</span>   <span class="mf">10.32</span><span class="p">,</span> <span class="o">-</span><span class="mf">177.4</span> <span class="p">,</span>   <span class="mf">61.12</span><span class="p">,</span>  <span class="s1">'INA-AUS M0 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">124.0</span><span class="p">,</span>   <span class="mf">11.36</span><span class="p">,</span> <span class="o">-</span><span class="mf">177.07</span><span class="p">,</span>   <span class="mf">62.54</span><span class="p">,</span>  <span class="s1">'INA-AUS M2 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">124.7</span><span class="p">,</span>   <span class="mf">11.69</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.97</span><span class="p">,</span>   <span class="mf">62.99</span><span class="p">,</span>  <span class="s1">'INA-AUS M3 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">126.7</span><span class="p">,</span>   <span class="mf">12.34</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.76</span><span class="p">,</span>   <span class="mf">63.95</span><span class="p">,</span>  <span class="s1">'INA-AUS M4 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">127.7</span><span class="p">,</span>   <span class="mf">12.65</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.66</span><span class="p">,</span>   <span class="mf">64.42</span><span class="p">,</span>  <span class="s1">'INA-AUS M5 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">128.2</span><span class="p">,</span>   <span class="mf">12.74</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.65</span><span class="p">,</span>   <span class="mf">64.63</span><span class="p">,</span>  <span class="s1">'INA-AUS M6 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">128.4</span><span class="p">,</span>   <span class="mf">12.85</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.63</span><span class="p">,</span>   <span class="mf">64.89</span><span class="p">,</span>  <span class="s1">'INA-AUS M7 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">129.0</span><span class="p">,</span>   <span class="mf">13.0</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.61</span><span class="p">,</span>   <span class="mf">65.23</span><span class="p">,</span>  <span class="s1">'INA-AUS M8 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">129.5</span><span class="p">,</span>   <span class="mf">13.2</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.59</span><span class="p">,</span>   <span class="mf">65.67</span><span class="p">,</span>  <span class="s1">'INA-AUS M9 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">130.2</span><span class="p">,</span>   <span class="mf">13.39</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.56</span><span class="p">,</span>   <span class="mf">66.1</span> <span class="p">,</span>  <span class="s1">'INA-AUS M10 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">130.9</span><span class="p">,</span>   <span class="mf">13.63</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.53</span><span class="p">,</span>   <span class="mf">66.66</span><span class="p">,</span>  <span class="s1">'INA-AUS M10N Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">132.1</span><span class="p">,</span>   <span class="mf">13.93</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.48</span><span class="p">,</span>   <span class="mf">67.4</span> <span class="p">,</span>  <span class="s1">'INA-AUS M11 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">133.4</span><span class="p">,</span>   <span class="mf">14.31</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.43</span><span class="p">,</span>   <span class="mf">68.33</span><span class="p">,</span>  <span class="s1">'INA-AUS M11A Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">134.0</span><span class="p">,</span>   <span class="mf">14.61</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.39</span><span class="p">,</span>   <span class="mf">69.09</span><span class="p">,</span>  <span class="s1">'INA-AUS M12 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">135.0</span><span class="p">,</span>   <span class="mf">14.86</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.36</span><span class="p">,</span>   <span class="mf">69.73</span><span class="p">,</span>  <span class="s1">'INA-AUS M12A Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">135.3</span><span class="p">,</span>   <span class="mf">15.03</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.33</span><span class="p">,</span>   <span class="mf">70.19</span><span class="p">,</span>  <span class="s1">'INA-AUS M13 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">135.9</span><span class="p">,</span>   <span class="mf">15.29</span><span class="p">,</span> <span class="o">-</span><span class="mf">176.3</span> <span class="p">,</span>   <span class="mf">70.89</span><span class="p">,</span>  <span class="s1">'INA-AUS M14 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">136.2</span><span class="p">,</span>   <span class="mf">15.5</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.27</span><span class="p">,</span>   <span class="mf">71.44</span><span class="p">,</span>  <span class="s1">'INA-AUS based on closure IND-ANT Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">600.0</span><span class="p">,</span>   <span class="mf">15.5</span> <span class="p">,</span> <span class="o">-</span><span class="mf">176.27</span><span class="p">,</span>   <span class="mf">71.44</span><span class="p">,</span>  <span class="s1">'INA-AUS'</span><span class="p">)]</span>
+
+<span class="c1"># Create a list of finite rotation time samples from the pole data.</span>
+<span class="n">pole_time_samples_550_rel_801</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTimeSample</span><span class="p">(</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlFiniteRotation</span><span class="p">(</span>
+                <span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">),</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle</span><span class="p">))),</span>
+            <span class="n">time</span><span class="p">,</span>
+            <span class="n">description</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">description</span> <span class="ow">in</span> <span class="n">pole_data_550_rel_801</span><span class="p">]</span>
+
+<span class="c1"># The time samples need to be wrapped into an irregular sampling property value.</span>
+<span class="n">total_reconstruction_pole_550_rel_801</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlIrregularSampling</span><span class="p">(</span><span class="n">pole_time_samples_550_rel_801</span><span class="p">)</span>
+
+<span class="c1"># Create the total reconstruction sequence (rotation) feature.</span>
+<span class="n">rotation_feature_550_rel_801</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_total_reconstruction_sequence</span><span class="p">)</span>
+<span class="n">rotation_feature_550_rel_801</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'INA-AUS Muller et.al 2000'</span><span class="p">)</span>
+<span class="n">rotation_feature_550_rel_801</span><span class="o">.</span><span class="n">set_total_reconstruction_pole</span><span class="p">(</span><span class="mi">801</span><span class="p">,</span> <span class="mi">550</span><span class="p">,</span> <span class="n">total_reconstruction_pole_550_rel_801</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id35">
+<h3><a class="toc-backref" href="#id70" role="doc-backlink">Details</a><a class="headerlink" href="#id35" title="Link to this heading"></a></h3>
+<div class="line-block">
+<div class="line">First we collect some rotation pole data that we want to build a rotation feature from.</div>
+<div class="line">The data is essentially in the same format as you’d find in a PLATES4 rotation file (<code class="docutils literal notranslate"><span class="pre">.rot</span></code>)
+except the moving and fixed plate IDs are absent (they are the same for all poles in the sequence).</div>
+<div class="line">The data order is (pole_time, pole_lat, pole_lon, pole_angle, pole_description).</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pole_data_550_rel_801</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="mf">99.0</span> <span class="p">,</span>   <span class="mf">0.72</span> <span class="p">,</span> <span class="o">-</span><span class="mf">179.98</span><span class="p">,</span>   <span class="mf">50.78</span><span class="p">,</span>  <span class="s1">'INA-AUS Muller et.al 2000'</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">120.4</span><span class="p">,</span>   <span class="mf">10.32</span><span class="p">,</span> <span class="o">-</span><span class="mf">177.4</span> <span class="p">,</span>   <span class="mf">61.12</span><span class="p">,</span>  <span class="s1">'INA-AUS M0 Muller et.al 2000'</span><span class="p">),</span>
+        <span class="o">...</span>
+        <span class="p">]</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">Here we use a Python list comprehension to convert our pole data into a sequence of
+<a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> of <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotations</span></code></a>.
+For example, a list comprehension that creates a list of strings from a list of integers might look like
+<code class="docutils literal notranslate"><span class="pre">string_list</span> <span class="pre">=</span> <span class="pre">[str(item)</span> <span class="pre">for</span> <span class="pre">item</span> <span class="pre">in</span> <span class="pre">integer_list]</span></code>.</div>
+<div class="line">We could have combined this into the above pole data list but doing it this way is more succinct and easier to read.</div>
+<div class="line">Since <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GpmlTimeSample</span></code></a> expects a <a class="reference internal" href="../generated/pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">property</span> <span class="pre">value</span></code></a>
+we wrap each <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a> in a <a class="reference internal" href="../generated/pygplates.GpmlFiniteRotation.html#pygplates.GpmlFiniteRotation" title="pygplates.GpmlFiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GpmlFiniteRotation</span></code></a>
+(which is a type of <a class="reference internal" href="../generated/pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">property</span> <span class="pre">value</span></code></a>).</div>
+<div class="line">Also <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.__init__" title="pygplates.FiniteRotation.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FiniteRotation.__init__()</span></code></a> expects an angle in radians (not degrees) so we need to
+convert to radians using <code class="docutils literal notranslate"><span class="pre">math.radians()</span></code>.</div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a list of finite rotation time samples from the pole data.</span>
+<span class="n">pole_time_samples_550_rel_801</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTimeSample</span><span class="p">(</span>
+            <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlFiniteRotation</span><span class="p">(</span>
+                <span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">),</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angle</span><span class="p">))),</span>
+            <span class="n">time</span><span class="p">,</span>
+            <span class="n">description</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="n">description</span> <span class="ow">in</span> <span class="n">pole_data_550_rel_801</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The time samples need to be wrapped into an <a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">irregular</span> <span class="pre">sampling</span> <span class="pre">property</span> <span class="pre">value</span></code></a>
+before we can pass the time samples to <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_total_reconstruction_sequence" title="pygplates.Feature.create_total_reconstruction_sequence"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_total_reconstruction_sequence()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The time samples need to be wrapped into an irregular sampling property value.</span>
+<span class="n">total_reconstruction_pole_550_rel_801</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlIrregularSampling</span><span class="p">(</span><span class="n">pole_time_samples_550_rel_801</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally we can create the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">total reconstruction sequence</a>
+(rotation) feature using the fixed and moving plate IDs and the irregular sequence of finite rotations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the total reconstruction sequence (rotation) feature.</span>
+<span class="n">rotation_feature_550_rel_801</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="o">.</span><span class="n">create_total_reconstruction_sequence</span><span class="p">(</span>
+    <span class="mi">801</span><span class="p">,</span>
+    <span class="mi">550</span><span class="p">,</span>
+    <span class="n">total_reconstruction_pole_550_rel_801</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">'INA-AUS Muller et.al 2000'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the alternate sample code, instead of using the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_total_reconstruction_sequence" title="pygplates.Feature.create_total_reconstruction_sequence"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_total_reconstruction_sequence()</span></code></a> function,
+we first create an empty <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">pygplates.FeatureType.gpml_total_reconstruction_sequence</a>
+feature and then set its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_name" title="pygplates.Feature.set_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_total_reconstruction_pole" title="pygplates.Feature.set_total_reconstruction_pole"><code class="xref py py-meth docutils literal notranslate"><span class="pre">total</span> <span class="pre">reconstruction</span> <span class="pre">pole</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the total reconstruction sequence (rotation) feature.</span>
+<span class="n">rotation_feature_550_rel_801</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_total_reconstruction_sequence</span><span class="p">)</span>
+<span class="n">rotation_feature_550_rel_801</span><span class="o">.</span><span class="n">set_name</span><span class="p">(</span><span class="s1">'INA-AUS Muller et.al 2000'</span><span class="p">)</span>
+<span class="n">rotation_feature_550_rel_801</span><span class="o">.</span><span class="n">set_total_reconstruction_pole</span><span class="p">(</span><span class="mi">801</span><span class="p">,</span> <span class="mi">550</span><span class="p">,</span> <span class="n">total_reconstruction_pole_550_rel_801</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id71" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_reconstructable_feature" title="pygplates.Feature.create_reconstructable_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_reconstructable_feature()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_tectonic_section" title="pygplates.Feature.create_tectonic_section"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_tectonic_section()</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_motion_path" title="pygplates.Feature.create_motion_path"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_motion_path()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_flowline" title="pygplates.Feature.create_flowline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_flowline()</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.create_total_reconstruction_sequence" title="pygplates.Feature.create_total_reconstruction_sequence"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.create_total_reconstruction_sequence()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_geometry()</span></code></a>, <a class="reference internal" href="../generated/pygplates.reverse_reconstruct.html#pygplates.reverse_reconstruct" title="pygplates.reverse_reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.reverse_reconstruct()</span></code></a>, <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-common-feature-types"><span class="std std-ref">Query common feature types</span></a>, <a class="reference internal" href="pygplates_create_topological_features.html#pygplates-create-topological-features"><span class="std std-ref">Create topological features</span></a>,
+<a class="reference internal" href="pygplates_import_geometries_and_assign_plate_ids.html#pygplates-import-geometries-and-assign-plate-ids"><span class="std std-ref">Import geometries and assign plate IDs</span></a>, <a class="reference internal" href="pygplates_load_and_save_feature_collections.html#pygplates-load-and-save-feature-collections"><span class="std std-ref">Load and save feature collections</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_load_and_save_feature_collections.html" class="btn btn-neutral float-left" title="Load and save feature collections" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_query_common_feature_types.html" class="btn btn-neutral float-right" title="Query common feature types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

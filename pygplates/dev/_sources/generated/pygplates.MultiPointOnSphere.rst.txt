@@ -1,0 +1,33 @@
+﻿pygplates.MultiPointOnSphere
+============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: MultiPointOnSphere
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MultiPointOnSphere.__init__
+      ~MultiPointOnSphere.clone
+      ~MultiPointOnSphere.distance
+      ~MultiPointOnSphere.get_centroid
+      ~MultiPointOnSphere.get_points
+      ~MultiPointOnSphere.to_lat_lon_array
+      ~MultiPointOnSphere.to_lat_lon_list
+      ~MultiPointOnSphere.to_lat_lon_point_list
+      ~MultiPointOnSphere.to_xyz_array
+      ~MultiPointOnSphere.to_xyz_list
+   
+   
+
+   
+   
+   
+   
+   

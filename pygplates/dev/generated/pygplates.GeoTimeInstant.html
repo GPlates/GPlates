@@ -1,0 +1,304 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.GeoTimeInstant &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.Version" href="pygplates.Version.html" />
+    <link rel="prev" title="pygplates.Earth" href="pygplates.Earth.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Earth.html">pygplates.Earth</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.GeoTimeInstant</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.GeoTimeInstant"><code class="docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Version.html">pygplates.Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeaturesFunctionArgument.html">pygplates.FeaturesFunctionArgument</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.GeoTimeInstant</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.GeoTimeInstant.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-geotimeinstant">
+<h1>pygplates.GeoTimeInstant<a class="headerlink" href="#pygplates-geotimeinstant" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">GeoTimeInstant</span></span><a class="headerlink" href="#pygplates.GeoTimeInstant" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>Represents an instant in geological time. This class is able to represent:</p>
+<ul class="simple">
+<li><p>time-instants with a <em>specific</em> time-position relative to the present-day</p></li>
+<li><p>time-instants in the <em>distant past</em> (time-position of +infinity)</p></li>
+<li><p>time-instants in the <em>distant future</em> (time-position of -infinity)</p></li>
+</ul>
+<p>Note that <em>positive</em> values represent times in the <em>past</em> and <em>negative</em> values represent times in the <em>future</em>. This can be confusing at first, but the reason for this is geological times are represented by how far in the <em>past</em> to go back compared to present day.</p>
+<p>All comparison operators (==, !=, &lt;, &lt;=, &gt;, &gt;=) are supported (but GeoTimeInstant is not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>). The comparisons are such that times further in the past are <em>greater than</em> more recent times. Note that this is the opposite how we normally think of time (where future time values are greater than past values).</p>
+<p>So far this is the same as the native <code class="docutils literal notranslate"><span class="pre">float</span></code> type which can represent <em>distant past</em> as <code class="docutils literal notranslate"><span class="pre">float('inf')</span></code> and <em>distant future</em> as <code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code> (and support all comparisons with +/- infinity). The advantage with <a class="reference internal" href="#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a> is comparisons use a numerical tolerance such that they compare equal when close enough to each other, and there are explicit methods to create and test <em>distant past</em> and <em>distant future</em>. Note that due to the numerical tolerance in comparisons, a GeoTimeInstant is not hashable and hence cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code> - however the <code class="docutils literal notranslate"><span class="pre">float</span></code> returned by <a class="reference internal" href="#pygplates.GeoTimeInstant.get_value" title="pygplates.GeoTimeInstant.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_value()</span></code></a> can be.</p>
+<p>Comparisons can also be made between a GeoTimeInstant and a <code class="docutils literal notranslate"><span class="pre">float</span></code> (or <code class="docutils literal notranslate"><span class="pre">int</span></code>, etc). As between two <code class="docutils literal notranslate"><span class="pre">float</span></code> values, a comparison with <code class="docutils literal notranslate"><span class="pre">float('nan')</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, except <code class="docutils literal notranslate"><span class="pre">!=</span></code>, which is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="s1">'Time instant is distant past: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="n">float_time</span><span class="p">)</span><span class="o">.</span><span class="n">is_distant_past</span><span class="p">()</span>
+<span class="n">time10Ma</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">time20Ma</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="c1"># assert(time20Ma &gt; time10Ma)</span>
+<span class="c1"># assert(20 &gt; time10Ma)</span>
+<span class="c1"># assert(20 &gt; time10Ma.get_value()</span>
+<span class="c1"># assert(time20Ma &gt; 10)</span>
+<span class="c1"># assert(time20Ma.get_value() &gt; 10)</span>
+<span class="c1"># assert(time20Ma.get_value() &gt; time10Ma.get_value())</span>
+<span class="c1"># assert(time20Ma &gt; time10Ma.get_value())</span>
+<span class="c1"># assert(time20Ma.get_value() &gt; time10Ma)</span>
+<span class="c1"># assert(time20Ma &lt; pygplates.GeoTimeInstant.create_distant_past())</span>
+<span class="c1"># assert(time20Ma.get_value() &lt; pygplates.GeoTimeInstant.create_distant_past())</span>
+<span class="c1"># assert(20 &lt; pygplates.GeoTimeInstant.create_distant_past())</span>
+</pre></div>
+</div>
+<p>A <em>GeoTimeInstant</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span>A comparison with <code class="docutils literal notranslate"><span class="pre">float('nan')</span></code> no longer raises an error.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GeoTimeInstant.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a GeoTimeInstant instance from <em>time_value</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time_value</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the time position - positive values represent times in the <em>past</em></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>time_value</em> is NaN</p>
+</dd>
+</dl>
+<p>Note that if <em>time_value</em> is +infinity then <a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_distant_past()</span></code></a> will subsequently return true. And if <em>time_value</em> is -infinity then <a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_distant_future()</span></code></a> will subsequently return true.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time_instant</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="n">time_value</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GeoTimeInstant.__init__" title="pygplates.GeoTimeInstant.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(time_value)</p></td>
+<td><p>Create a GeoTimeInstant instance from <em>time_value</em>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GeoTimeInstant.create_distant_future" title="pygplates.GeoTimeInstant.create_distant_future"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_distant_future</span></code></a>()</p></td>
+<td><p>Create a GeoTimeInstant instance for the distant future.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GeoTimeInstant.create_distant_past" title="pygplates.GeoTimeInstant.create_distant_past"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_distant_past</span></code></a>()</p></td>
+<td><p>Create a GeoTimeInstant instance for the distant past.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GeoTimeInstant.get_value" title="pygplates.GeoTimeInstant.get_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_value</span></code></a>()</p></td>
+<td><p>Access the floating-point representation of the time-position of this instance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_distant_future</span></code></a>()</p></td>
+<td><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this instance is a time-instant in the distant future.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_distant_past</span></code></a>()</p></td>
+<td><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this instance is a time-instant in the distant past.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GeoTimeInstant.is_real" title="pygplates.GeoTimeInstant.is_real"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_real</span></code></a>()</p></td>
+<td><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this instance is a time-instant whose time-position may be expressed as a <em>real</em> floating-point number.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant.create_distant_future">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create_distant_future</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GeoTimeInstant.create_distant_future" title="Link to this definition"></a></dt>
+<dd><p>Create a GeoTimeInstant instance for the distant future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant">GeoTimeInstant</a></p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">distant_future</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_future</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is basically creating a time-instant which is infinitely far in the future.</p>
+<p>Subsequent calls to <a class="reference internal" href="#pygplates.GeoTimeInstant.get_value" title="pygplates.GeoTimeInstant.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_value()</span></code></a> will return a value of -infinity.</p>
+<p>All distant-future time-instants will compare less than all non-distant-future time-instants.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant.create_distant_past">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create_distant_past</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GeoTimeInstant.create_distant_past" title="Link to this definition"></a></dt>
+<dd><p>Create a GeoTimeInstant instance for the distant past.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant">GeoTimeInstant</a></p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">distant_past</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="o">.</span><span class="n">create_distant_past</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This is basically creating a time-instant which is infinitely far in the past.</p>
+<p>Subsequent calls to <a class="reference internal" href="#pygplates.GeoTimeInstant.get_value" title="pygplates.GeoTimeInstant.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_value()</span></code></a> will return a value of +infinity.</p>
+<p>All distant-past time-instants will compare greater than all non-distant-past time-instants.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant.get_value">
+<span class="sig-name descname"><span class="pre">get_value</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GeoTimeInstant.get_value" title="Link to this definition"></a></dt>
+<dd><p>Access the floating-point representation of the time-position of this instance. Units are in Ma (millions of year ago).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+<p>If <a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_distant_past()</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then <em>get_value</em> returns <code class="docutils literal notranslate"><span class="pre">float('inf')</span></code> and if <a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_distant_future()</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then <em>get_value</em> returns <code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code>.</p>
+<p>Note that positive values represent times in the past and negative values represent times in the future.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant.is_distant_future">
+<span class="sig-name descname"><span class="pre">is_distant_future</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GeoTimeInstant.is_distant_future" title="Link to this definition"></a></dt>
+<dd><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this instance is a time-instant in the distant future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant.is_distant_past">
+<span class="sig-name descname"><span class="pre">is_distant_past</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GeoTimeInstant.is_distant_past" title="Link to this definition"></a></dt>
+<dd><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this instance is a time-instant in the distant past.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GeoTimeInstant.is_real">
+<span class="sig-name descname"><span class="pre">is_real</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GeoTimeInstant.is_real" title="Link to this definition"></a></dt>
+<dd><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this instance is a time-instant whose time-position may be expressed as a <em>real</em> floating-point number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+</dd>
+</dl>
+<p>If <a class="reference internal" href="#pygplates.GeoTimeInstant.is_real" title="pygplates.GeoTimeInstant.is_real"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_real()</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then both <a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_distant_past()</span></code></a> and <a class="reference internal" href="#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_distant_future()</span></code></a> will be <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.Earth.html" class="btn btn-neutral float-left" title="pygplates.Earth" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.Version.html" class="btn btn-neutral float-right" title="pygplates.Version" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

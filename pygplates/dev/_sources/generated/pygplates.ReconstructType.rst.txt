@@ -1,0 +1,8 @@
+﻿pygplates.ReconstructType
+=========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructType
+   :no-members:
+   :no-show-inheritance:

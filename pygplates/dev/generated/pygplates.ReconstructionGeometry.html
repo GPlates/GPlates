@@ -1,0 +1,208 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.ReconstructionGeometry &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.TopologicalModel" href="pygplates.TopologicalModel.html" />
+    <link rel="prev" title="pygplates.ReconstructedMotionPath" href="pygplates.ReconstructedMotionPath.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructModel.html">pygplates.ReconstructModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructSnapshot.html">pygplates.ReconstructSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.reconstruct.html">pygplates.reconstruct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.reverse_reconstruct.html">pygplates.reverse_reconstruct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html">pygplates.ReconstructedFeatureGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedFlowline.html">pygplates.ReconstructedFlowline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedMotionPath.html">pygplates.ReconstructedMotionPath</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.ReconstructionGeometry</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.ReconstructionGeometry"><code class="docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalModel.html">pygplates.TopologicalModel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalSnapshot.html">pygplates.TopologicalSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html">pygplates.ReconstructedGeometryTimeSpan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologyPointLocation.html">pygplates.TopologyPointLocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolveTopologyParameters.html">pygplates.ResolveTopologyParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.resolve_topologies.html">pygplates.resolve_topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html">pygplates.ResolvedTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html">pygplates.ResolvedTopologicalBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html">pygplates.ResolvedTopologicalNetwork</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.ReconstructionGeometry</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.ReconstructionGeometry"><code class="docutils literal notranslate"><span class="pre">ReconstructionGeometry</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html">pygplates.ResolvedTopologicalSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSection.html">pygplates.ResolvedTopologicalSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html">pygplates.ResolvedTopologicalSharedSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetworkTriangulation.html">pygplates.NetworkTriangulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.ReconstructionGeometry</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.ReconstructionGeometry.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-reconstructiongeometry">
+<h1>pygplates.ReconstructionGeometry<a class="headerlink" href="#pygplates-reconstructiongeometry" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.ReconstructionGeometry">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">ReconstructionGeometry</span></span><a class="headerlink" href="#pygplates.ReconstructionGeometry" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>The base class inherited by all derived reconstruction geometry classes.</p>
+<p>The list of derived classes is:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedFeatureGeometry</span></code></a></p></li>
+<li><p><a class="reference internal" href="pygplates.ReconstructedMotionPath.html#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedMotionPath</span></code></a></p></li>
+<li><p><a class="reference internal" href="pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline" title="pygplates.ReconstructedFlowline"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedFlowline</span></code></a></p></li>
+<li><p><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html#pygplates.ResolvedTopologicalLine" title="pygplates.ResolvedTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalLine</span></code></a></p></li>
+<li><p><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalBoundary</span></code></a></p></li>
+<li><p><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork</span></code></a></p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructionGeometry.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructionGeometry.__init__" title="Link to this definition"></a></dt>
+<dd><p>Raises an exception
+This class cannot be instantiated from Python</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructionGeometry.__init__" title="pygplates.ReconstructionGeometry.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>Raises an exception This class cannot be instantiated from Python</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructionGeometry.get_reconstruction_time" title="pygplates.ReconstructionGeometry.get_reconstruction_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstruction_time</span></code></a>()</p></td>
+<td><p>Returns the reconstruction time that this instance was created at.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructionGeometry.get_reconstruction_time">
+<span class="sig-name descname"><span class="pre">get_reconstruction_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructionGeometry.get_reconstruction_time" title="Link to this definition"></a></dt>
+<dd><p>Returns the reconstruction time that this instance was created at.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ReconstructedMotionPath.html" class="btn btn-neutral float-left" title="pygplates.ReconstructedMotionPath" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.TopologicalModel.html" class="btn btn-neutral float-right" title="pygplates.TopologicalModel" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

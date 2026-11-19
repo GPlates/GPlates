@@ -1,0 +1,6 @@
+﻿pygplates.OpenFileForWritingError
+=================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: OpenFileForWritingError

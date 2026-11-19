@@ -1,0 +1,33 @@
+﻿pygplates.GpmlTimeWindowList
+============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTimeWindowList
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTimeWindowList.__init__
+      ~GpmlTimeWindowList.append
+      ~GpmlTimeWindowList.count
+      ~GpmlTimeWindowList.extend
+      ~GpmlTimeWindowList.index
+      ~GpmlTimeWindowList.insert
+      ~GpmlTimeWindowList.pop
+      ~GpmlTimeWindowList.remove
+      ~GpmlTimeWindowList.reverse
+      ~GpmlTimeWindowList.sort
+   
+   
+
+   
+   
+   
+   
+   

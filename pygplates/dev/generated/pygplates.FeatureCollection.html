@@ -1,0 +1,540 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.FeatureCollection &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.Property" href="pygplates.Property.html" />
+    <link rel="prev" title="pygplates.Feature" href="pygplates.Feature.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Feature.html">pygplates.Feature</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.FeatureCollection</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.FeatureCollection"><code class="docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Property.html">pygplates.Property</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PropertyName.html">pygplates.PropertyName</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PropertyValue.html">pygplates.PropertyValue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PropertyValueVisitor.html">pygplates.PropertyValueVisitor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeatureType.html">pygplates.FeatureType</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeatureId.html">pygplates.FeatureId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ScalarType.html">pygplates.ScalarType</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.EnumerationType.html">pygplates.EnumerationType</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.FeatureCollection</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.FeatureCollection.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-featurecollection">
+<h1>pygplates.FeatureCollection<a class="headerlink" href="#pygplates-featurecollection" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">FeatureCollection</span></span><a class="headerlink" href="#pygplates.FeatureCollection" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>A feature collection aggregates a set of features into a collection. This is traditionally so that a group of features can be loaded, saved or unloaded in a single operation.</p>
+<p>For example, to read coastline features from a file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">coastline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And to write coastline features to a file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">coastline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">coastline_features</span><span class="p">)</span>
+<span class="n">coastline_feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The following <em>feature collection</em> file formats are currently supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File Format</p></th>
+<th class="head"><p>Filename Extension</p></th>
+<th class="head"><p>Supports Read</p></th>
+<th class="head"><p>Supports Write</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>GPlates Markup Language</p></td>
+<td><p>‘.gpml’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>Compressed GPML</p></td>
+<td><p>‘.gpmlz’ or ‘.gpml.gz’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-even"><td><p>PLATES4 line</p></td>
+<td><p>‘.dat’ or ‘.pla’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>PLATES4 rotation</p></td>
+<td><p>‘.rot’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-even"><td><p>GPlates rotation</p></td>
+<td><p>‘.grot’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>ESRI Shapefile</p></td>
+<td><p>‘.shp’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-even"><td><p>GeoJSON</p></td>
+<td><p>‘.geojson’ or ‘.json’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>GeoPackage</p></td>
+<td><p>‘.gpkg’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-even"><td><p>OGR GMT</p></td>
+<td><p>‘.gmt’</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>GMT xy</p></td>
+<td><p>‘.xy’</p></td>
+<td><p>No</p></td>
+<td><p>Yes</p></td>
+</tr>
+<tr class="row-even"><td><p>GMAP Virtual Geomagnetic Poles</p></td>
+<td><p>‘.vgp’</p></td>
+<td><p>Yes</p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+<p>In the future, support will be added to enable users to implement and register readers/writers for other file formats (or their own non-standard file formats).</p>
+<p>The following operations for accessing the features are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(fc)</span></code></p></td>
+<td><p>number of features in feature collection <em>fc</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">f</span> <span class="pre">in</span> <span class="pre">fc</span></code></p></td>
+<td><p>iterates over the features <em>f</em> in feature collection <em>fc</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fc[i]</span></code></p></td>
+<td><p>the feature of <em>fc</em> at index <em>i</em></p></td>
+</tr>
+</tbody>
+</table>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">num_features</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">feature_collection</span><span class="p">)</span>
+<span class="n">features_in_collection</span> <span class="o">=</span> <span class="p">[</span><span class="n">feature</span> <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">feature_collection</span><span class="p">]</span>
+<span class="c1"># assert(num_features == len(features_in_collection))</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A feature collection can be deep copied using <a class="reference internal" href="#pygplates.FeatureCollection.clone" title="pygplates.FeatureCollection.clone"><code class="xref py py-meth docutils literal notranslate"><span class="pre">clone()</span></code></a>.</p>
+</div>
+<p>A <em>FeatureCollection</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.31: </span>Can index a feature in feature collection <em>fc</em> with <code class="docutils literal notranslate"><span class="pre">fc[i]</span></code>.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureCollection.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create a new feature collection instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>features</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a><em>, or </em><a class="reference internal" href="#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><em>FeatureCollection</em></a><em>, or </em><em>a sequence</em><em> (</em><em>eg</em><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em>) of </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>a single Feature</em><em>, or </em><em>None</em>) – an optional filename, or sequence of features, or a single feature</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="pygplates.OpenFileForReadingError.html#pygplates.OpenFileForReadingError" title="pygplates.OpenFileForReadingError"><strong>OpenFileForReadingError</strong></a> – if file is not readable (if filename specified)</p></li>
+<li><p><a class="reference internal" href="pygplates.FileFormatNotSupportedError.html#pygplates.FileFormatNotSupportedError" title="pygplates.FileFormatNotSupportedError"><strong>FileFormatNotSupportedError</strong></a> – if file format (identified by the filename extension) does not support reading (when filename specified)</p></li>
+</ul>
+</dd>
+</dl>
+<p>To create a new feature collection from a file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">coastline_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To create a new feature collection from a sequence of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">([</span><span class="n">feature1</span><span class="p">,</span> <span class="n">feature2</span><span class="p">])</span>
+
+<span class="c1"># ...is the equivalent of...</span>
+
+<span class="n">feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">()</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">feature1</span><span class="p">)</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">feature2</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since a <a class="reference internal" href="#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a> is an iterable sequence of features it can be used in the <em>features</em> argument.</p>
+<p>This creates a shallow copy much in the same way as with a Python list (for example <code class="docutils literal notranslate"><span class="pre">shallow_copy_list</span> <span class="pre">=</span> <span class="pre">list(original_list)</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">shallow_copy_feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">original_feature_collection</span><span class="p">)</span>
+
+<span class="c1"># Modifying the collection/list of features in the shallow copy will not affect the original...</span>
+<span class="n">shallow_copy_feature_collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="c1"># assert(len(shallow_copy_feature_collection) != len(original_feature_collection))</span>
+
+<span class="c1"># Modifying the actual feature data in the collection will affect both feature collections</span>
+<span class="c1"># since the feature data is shared by both collections...</span>
+<span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">original_feature_collection</span><span class="p">:</span>
+    <span class="c1"># Changing the reconstruction plate ID affects both original and shallow copy collections.</span>
+    <span class="n">feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span>Raises <a class="reference internal" href="pygplates.FileFormatNotSupportedError.html#pygplates.FileFormatNotSupportedError" title="pygplates.FileFormatNotSupportedError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileFormatNotSupportedError</span></code></a> for a format that is write only (such as <code class="docutils literal notranslate"><span class="pre">.xy</span></code>), rather than returning an empty feature collection.</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureCollection.__init__" title="pygplates.FeatureCollection.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([features])</p></td>
+<td><p>Create a new feature collection instance.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.FeatureCollection.add" title="pygplates.FeatureCollection.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(feature)</p></td>
+<td><p>Adds one or more features to this collection.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureCollection.clone" title="pygplates.FeatureCollection.clone"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code></a>()</p></td>
+<td><p>Create a duplicate of this feature collection instance.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.FeatureCollection.get" title="pygplates.FeatureCollection.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>(feature_query, ...)</p></td>
+<td><p>Returns one or more features matching a feature type, feature id or predicate.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureCollection.read" title="pygplates.FeatureCollection.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a>(filename)</p></td>
+<td><p>Reads one or more feature collections (from one or more files).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.FeatureCollection.remove" title="pygplates.FeatureCollection.remove"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove</span></code></a>(feature_query)</p></td>
+<td><p>Removes features from this collection.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write</span></code></a>(filename)</p></td>
+<td><p>Writes this feature collection to the file with name <em>filename</em>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureCollection.add" title="Link to this definition"></a></dt>
+<dd><p>Adds one or more features to this collection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>feature</strong> (<a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>iterable</em><em> of </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a>) – one or more features to add</p>
+</dd>
+</dl>
+<p>A feature collection is an <em>unordered</em> collection of features so there is no concept of where a feature is inserted in the sequence of features.</p>
+<p>This does not check for duplicates: a feature added twice is in this collection twice (and is written twice to a file). <a class="reference internal" href="#pygplates.FeatureCollection.remove" title="pygplates.FeatureCollection.remove"><code class="xref py py-meth docutils literal notranslate"><span class="pre">remove()</span></code></a> removes every copy.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">feature_collection</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="n">feature1</span><span class="p">,</span> <span class="n">feature2</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureCollection.clone" title="Link to this definition"></a></dt>
+<dd><p>Create a duplicate of this feature collection instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pygplates.FeatureCollection" title="pygplates.FeatureCollection">FeatureCollection</a></p>
+</dd>
+</dl>
+<p>This creates a new <a class="reference internal" href="#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a> instance with cloned versions of this collection’s features. And the cloned features (in the cloned collection) are each created with a unique <a class="reference internal" href="pygplates.FeatureId.html#pygplates.FeatureId" title="pygplates.FeatureId"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureId</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature_query</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">feature_return</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">FeatureReturn.exactly_one</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureCollection.get" title="Link to this definition"></a></dt>
+<dd><p>Returns one or more features matching a feature type, feature id or predicate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature_query</strong> (<a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><em>FeatureType</em></a><em>, or </em><a class="reference internal" href="pygplates.FeatureId.html#pygplates.FeatureId" title="pygplates.FeatureId"><em>FeatureId</em></a><em>, or </em><em>callable</em><em> (</em><em>accepting single Feature argument</em><em>)</em>) – the feature type, feature id or predicate function that matches the feature (or features) to get</p></li>
+<li><p><strong>feature_return</strong> (<a class="reference internal" href="pygplates.FeatureReturn.html#pygplates.FeatureReturn" title="pygplates.FeatureReturn"><em>FeatureReturn</em></a>) – whether to return exactly one feature, the first feature or all matching features</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a>, or <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a>, or None</p>
+</dd>
+</dl>
+<p>The following table maps <em>feature_return</em> values to return values:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>FeatureReturn Value</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>exactly_one</p></td>
+<td><p>Returns a <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> only if <em>feature_query</em> matches exactly one feature, otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code> is returned.</p></td>
+</tr>
+<tr class="row-odd"><td><p>first</p></td>
+<td><p>Returns the first <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> that matches <em>feature_query</em> - however note that a feature collection is an <em>unordered</em> collection of features. If no features match then <code class="docutils literal notranslate"><span class="pre">None</span></code> is returned.</p></td>
+</tr>
+<tr class="row-even"><td><p>all</p></td>
+<td><p>Returns a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a> matching <em>feature_query</em>. If no features match then the returned list will be empty.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">isochron_feature_type</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span>
+<span class="n">exactly_one_isochron</span> <span class="o">=</span> <span class="n">feature_collection</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">isochron_feature_type</span><span class="p">)</span>
+<span class="n">first_isochron</span> <span class="o">=</span> <span class="n">feature_collection</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">isochron_feature_type</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureReturn</span><span class="o">.</span><span class="n">first</span><span class="p">)</span>
+<span class="n">all_isochrons</span> <span class="o">=</span> <span class="n">feature_collection</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">isochron_feature_type</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureReturn</span><span class="o">.</span><span class="n">all</span><span class="p">)</span>
+
+<span class="n">feature_matching_id</span> <span class="o">=</span> <span class="n">feature_collection</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">feature_id</span><span class="p">)</span>
+
+<span class="c1"># Using a predicate function that returns true if feature's type is 'gpml:Isochron' and </span>
+<span class="c1"># reconstruction plate ID is less than 700.</span>
+<span class="n">recon_plate_id_less_700_isochrons</span> <span class="o">=</span> <span class="n">feature_collection</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">feature</span><span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span> <span class="ow">and</span>
+                    <span class="n">feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">700</span><span class="p">,</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureReturn</span><span class="o">.</span><span class="n">all</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection.read">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureCollection.read" title="Link to this definition"></a></dt>
+<dd><p>Reads one or more feature collections (from one or more files).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a><em>, or </em><em>iterable</em><em> of </em><em>str/os.PathLike</em>) – the name of the file (or files) to read</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.FeatureCollection" title="pygplates.FeatureCollection">FeatureCollection</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference internal" href="#pygplates.FeatureCollection" title="pygplates.FeatureCollection">FeatureCollection</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="pygplates.OpenFileForReadingError.html#pygplates.OpenFileForReadingError" title="pygplates.OpenFileForReadingError"><strong>OpenFileForReadingError</strong></a> – if any file is not readable</p></li>
+<li><p><a class="reference internal" href="pygplates.FileFormatNotSupportedError.html#pygplates.FileFormatNotSupportedError" title="pygplates.FileFormatNotSupportedError"><strong>FileFormatNotSupportedError</strong></a> – if any file format (identified by a filename extension) does not support reading</p></li>
+</ul>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>…although for a single file the following is even easier:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">feature_collection</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Multiple files can also be read:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">feature_collection</span> <span class="ow">in</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="o">.</span><span class="n">read</span><span class="p">([</span><span class="n">filename1</span><span class="p">,</span> <span class="n">filename2</span><span class="p">]):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span>Raises <a class="reference internal" href="pygplates.FileFormatNotSupportedError.html#pygplates.FileFormatNotSupportedError" title="pygplates.FileFormatNotSupportedError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileFormatNotSupportedError</span></code></a> for a format that is write only (such as <code class="docutils literal notranslate"><span class="pre">.xy</span></code>), rather than returning an empty feature collection.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature_query</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureCollection.remove" title="Link to this definition"></a></dt>
+<dd><p>Removes features from this collection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>feature_query</strong> (<a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><em>FeatureType</em></a><em>, or </em><a class="reference internal" href="pygplates.FeatureId.html#pygplates.FeatureId" title="pygplates.FeatureId"><em>FeatureId</em></a><em>, or </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>callable</em><em> (</em><em>accepting single Feature argument</em><em>)</em><em>, or </em><em>an iterable</em><em> (</em><em>eg</em><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em> or </em><em>generator</em><em>) of </em><em>any combination</em><em> of </em><em>them</em>) – one or more feature types, feature IDs, feature instances or predicate functions that determine which features to remove</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if any specified <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> is not currently a feature in this collection</p>
+</dd>
+</dl>
+<p>All features matching any <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a>, <a class="reference internal" href="pygplates.FeatureId.html#pygplates.FeatureId" title="pygplates.FeatureId"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureId</span></code></a> or predicate callable (if any specified) will be removed. Any specified <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureType</span></code></a>, <a class="reference internal" href="pygplates.FeatureId.html#pygplates.FeatureId" title="pygplates.FeatureId"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureId</span></code></a> or predicate callable that does not match a feature in this collection is ignored. However if any specified <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> is not currently a feature in this collection then the <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> exception is raised - note that the same <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> <em>instance</em> must have previously been added (in other words the feature <em>values</em> are not compared - it actually looks for the same feature <em>instance</em>). If <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> is raised then no features are removed. A <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> added to this collection more than once (see <a class="reference internal" href="#pygplates.FeatureCollection.add" title="pygplates.FeatureCollection.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code></a>) has every copy removed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">feature_id</span><span class="p">)</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_volcano</span><span class="p">)</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">([</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_volcano</span><span class="p">,</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">])</span>
+
+<span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">feature_collection</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">predicate</span><span class="p">(</span><span class="n">feature</span><span class="p">):</span>
+        <span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">([</span><span class="n">feature</span> <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">feature_collection</span> <span class="k">if</span> <span class="n">predicate</span><span class="p">(</span><span class="n">feature</span><span class="p">)])</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">predicate</span><span class="p">)</span>
+
+<span class="c1"># Mix different query types.</span>
+<span class="c1"># Remove a specific 'feature' instance and any features of type 'gpml:Isochron'...</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">([</span><span class="n">feature</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">])</span>
+
+<span class="c1"># Remove features of type 'gpml:Isochron' with reconstruction plate IDs less than 700...</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">feature</span><span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span> <span class="ow">and</span>
+                     <span class="n">feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">700</span><span class="p">)</span>
+
+<span class="c1"># Remove features of type 'gpml:Volcano' and 'gpml:Isochron'...</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">([</span>
+    <span class="k">lambda</span> <span class="n">feature</span><span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_volcano</span><span class="p">,</span>
+    <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">])</span>
+<span class="n">feature_collection</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">feature</span><span class="p">:</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_volcano</span> <span class="ow">or</span>
+                     <span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_isochron</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.FeatureCollection.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.FeatureCollection.write" title="Link to this definition"></a></dt>
+<dd><p>Writes this feature collection to the file with name <em>filename</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a>) – the name of the file to write</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="pygplates.OpenFileForWritingError.html#pygplates.OpenFileForWritingError" title="pygplates.OpenFileForWritingError"><strong>OpenFileForWritingError</strong></a> – if the file is not writable</p></li>
+<li><p><a class="reference internal" href="pygplates.FileFormatNotSupportedError.html#pygplates.FileFormatNotSupportedError" title="pygplates.FileFormatNotSupportedError"><strong>FileFormatNotSupportedError</strong></a> – if the file format (identified by the filename extension) does not support writing</p></li>
+<li><p><a class="reference internal" href="pygplates.GPlatesError.html#pygplates.GPlatesError" title="pygplates.GPlatesError"><strong>GPlatesError</strong></a> – if the file format can store none of the features’ geometries (for example, a Shapefile or GeoJSON file of only topological features, or of no features)</p></li>
+</ul>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">feature_collection</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span>Raises <a class="reference internal" href="pygplates.FileFormatNotSupportedError.html#pygplates.FileFormatNotSupportedError" title="pygplates.FileFormatNotSupportedError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileFormatNotSupportedError</span></code></a> for a format that is read only (such as <code class="docutils literal notranslate"><span class="pre">.vgp</span></code>), and <a class="reference internal" href="pygplates.GPlatesError.html#pygplates.GPlatesError" title="pygplates.GPlatesError"><code class="xref py py-class docutils literal notranslate"><span class="pre">GPlatesError</span></code></a> when there are no geometries to write to a Shapefile, GeoJSON, GeoPackage or OGR GMT file. Both used to write no file and raise nothing.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.Feature.html" class="btn btn-neutral float-left" title="pygplates.Feature" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.Property.html" class="btn btn-neutral float-right" title="pygplates.Property" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,385 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.GpmlTopologicalSection &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.GpmlTopologicalSectionList" href="pygplates.GpmlTopologicalSectionList.html" />
+    <link rel="prev" title="pygplates.GpmlTopologicalNetwork" href="pygplates.GpmlTopologicalNetwork.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Enumeration.html">pygplates.Enumeration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlDataBlock.html">pygplates.GmlDataBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlLineString.html">pygplates.GmlLineString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlMultiPoint.html">pygplates.GmlMultiPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlOrientableCurve.html">pygplates.GmlOrientableCurve</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlPoint.html">pygplates.GmlPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlPolygon.html">pygplates.GmlPolygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlTimeInstant.html">pygplates.GmlTimeInstant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlTimePeriod.html">pygplates.GmlTimePeriod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlArray.html">pygplates.GpmlArray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlFiniteRotation.html">pygplates.GpmlFiniteRotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlKeyValueDictionary.html">pygplates.GpmlKeyValueDictionary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlOldPlatesHeader.html">pygplates.GpmlOldPlatesHeader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPlateId.html">pygplates.GpmlPlateId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPolarityChronId.html">pygplates.GpmlPolarityChronId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsBoolean.html">pygplates.XsBoolean</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsDouble.html">pygplates.XsDouble</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsInteger.html">pygplates.XsInteger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsString.html">pygplates.XsString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalLine.html">pygplates.GpmlTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalPolygon.html">pygplates.GpmlTopologicalPolygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalNetwork.html">pygplates.GpmlTopologicalNetwork</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.GpmlTopologicalSection</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.GpmlTopologicalSection"><code class="docutils literal notranslate"><span class="pre">GpmlTopologicalSection</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalSectionList.html">pygplates.GpmlTopologicalSectionList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalPoint.html">pygplates.GpmlTopologicalPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html">pygplates.GpmlTopologicalLineSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPropertyDelegate.html">pygplates.GpmlPropertyDelegate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPropertyDelegateList.html">pygplates.GpmlPropertyDelegateList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlConstantValue.html">pygplates.GpmlConstantValue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlIrregularSampling.html">pygplates.GpmlIrregularSampling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPiecewiseAggregation.html">pygplates.GpmlPiecewiseAggregation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeSample.html">pygplates.GpmlTimeSample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeSampleList.html">pygplates.GpmlTimeSampleList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeWindow.html">pygplates.GpmlTimeWindow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeWindowList.html">pygplates.GpmlTimeWindowList</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.GpmlTopologicalSection</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.GpmlTopologicalSection.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-gpmltopologicalsection">
+<h1>pygplates.GpmlTopologicalSection<a class="headerlink" href="#pygplates-gpmltopologicalsection" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.GpmlTopologicalSection">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">GpmlTopologicalSection</span></span><a class="headerlink" href="#pygplates.GpmlTopologicalSection" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyValue</span></code></a></p>
+<p>The base class inherited by all derived <em>topological section</em> property value classes.</p>
+<p>The list of derived topological section property value classes includes:</p>
+<ul>
+<li><p><a class="reference internal" href="pygplates.GpmlTopologicalPoint.html#pygplates.GpmlTopologicalPoint" title="pygplates.GpmlTopologicalPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTopologicalPoint</span></code></a></p></li>
+<li><p><a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html#pygplates.GpmlTopologicalLineSection" title="pygplates.GpmlTopologicalLineSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTopologicalLineSection</span></code></a></p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.21.</span></p>
+</div>
+</li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlTopologicalSection.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlTopologicalSection.__init__" title="Link to this definition"></a></dt>
+<dd><p>Raises an exception
+This class cannot be instantiated from Python</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlTopologicalSection.__init__" title="pygplates.GpmlTopologicalSection.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a></p></td>
+<td><p>Raises an exception This class cannot be instantiated from Python</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.accept_visitor" title="pygplates.PropertyValue.accept_visitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_visitor</span></code></a>(visitor)</p></td>
+<td><p>Accept a property value visitor so that it can visit this property value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.clone" title="pygplates.PropertyValue.clone"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code></a>()</p></td>
+<td><p>Create a duplicate of this property value (derived) instance, including a recursive copy of any nested property values that this instance might contain.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlTopologicalSection.create" title="pygplates.GpmlTopologicalSection.create"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create</span></code></a>(feature, [geometry_property_name], ...)</p></td>
+<td><p>Create a topological section referencing a feature geometry.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlTopologicalSection.create_network_interior" title="pygplates.GpmlTopologicalSection.create_network_interior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_network_interior</span></code></a>(feature, ...)</p></td>
+<td><p>Create a topological network interior referencing a feature geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.get_geometry" title="pygplates.PropertyValue.get_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_geometry</span></code></a>()</p></td>
+<td><p>Extracts the <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">geometry</span></code></a> if this property value contains a geometry.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlTopologicalSection.get_property_delegate" title="pygplates.GpmlTopologicalSection.get_property_delegate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_property_delegate</span></code></a>()</p></td>
+<td><p>Returns the property value that references/delegates the source geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlTopologicalSection.get_reverse_orientation" title="pygplates.GpmlTopologicalSection.get_reverse_orientation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reverse_orientation</span></code></a>()</p></td>
+<td><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this topological section is a <a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html#pygplates.GpmlTopologicalLineSection" title="pygplates.GpmlTopologicalLineSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">line</span></code></a> and it was reversed when contributing to the parent topology.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.get_value" title="pygplates.PropertyValue.get_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_value</span></code></a>([time=0])</p></td>
+<td><p>Extracts the value, of this possibly time-dependent property value, at the reconstruction <em>time</em>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlTopologicalSection.create">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">geometry_property_name</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reverse_order</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">topological_geometry_type</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">property_return</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PropertyReturn.exactly_one</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlTopologicalSection.create" title="Link to this definition"></a></dt>
+<dd><p>Create a topological section referencing a feature geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature</strong> (<a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a>) – the feature referenced by the returned topological section</p></li>
+<li><p><strong>geometry_property_name</strong> (<a class="reference internal" href="pygplates.PropertyName.html#pygplates.PropertyName" title="pygplates.PropertyName"><em>PropertyName</em></a><em>, or </em><em>None</em>) – the optional geometry property name used to find the geometry (topological or non-topological), if not specified then the default geometry property name associated with the feature’s <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> is used instead</p></li>
+<li><p><strong>reverse_order</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to reverse the topological section when it’s used to resolve a topological geometry, this is ignored for <em>point</em> sections and only applies to a <em>line</em> section when it does not intersect both its neighbours (when resolving the parent topology) - defaults to False</p></li>
+<li><p><strong>topological_geometry_type</strong> (<a class="reference internal" href="pygplates.GpmlTopologicalLine.html#pygplates.GpmlTopologicalLine" title="pygplates.GpmlTopologicalLine"><em>GpmlTopologicalLine</em></a><em> or </em><a class="reference internal" href="pygplates.GpmlTopologicalPolygon.html#pygplates.GpmlTopologicalPolygon" title="pygplates.GpmlTopologicalPolygon"><em>GpmlTopologicalPolygon</em></a><em> or </em><a class="reference internal" href="pygplates.GpmlTopologicalNetwork.html#pygplates.GpmlTopologicalNetwork" title="pygplates.GpmlTopologicalNetwork"><em>GpmlTopologicalNetwork</em></a><em>, or </em><em>None</em>) – optional type of topological geometry that the returned section will be used for (if specified, then used to determine what type of feature geometry can be used as a section)</p></li>
+<li><p><strong>property_return</strong> (<a class="reference internal" href="pygplates.PropertyReturn.html#pygplates.PropertyReturn" title="pygplates.PropertyReturn"><em>PropertyReturn</em></a>) – whether <em>feature</em> must have exactly one geometry property named <em>geometry_property_name</em> (or default), or whether the first one found is used - <code class="docutils literal notranslate"><span class="pre">PropertyReturn.all</span></code> is not supported (see note below)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.GpmlTopologicalSection" title="pygplates.GpmlTopologicalSection">GpmlTopologicalSection</a> (<a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html#pygplates.GpmlTopologicalLineSection" title="pygplates.GpmlTopologicalLineSection">GpmlTopologicalLineSection</a> or <a class="reference internal" href="pygplates.GpmlTopologicalPoint.html#pygplates.GpmlTopologicalPoint" title="pygplates.GpmlTopologicalPoint">GpmlTopologicalPoint</a>), or None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>topological_geometry_type</em> is specified but is not one of the accepted types (<a class="reference internal" href="pygplates.GpmlTopologicalLine.html#pygplates.GpmlTopologicalLine" title="pygplates.GpmlTopologicalLine"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTopologicalLine</span></code></a> or <a class="reference internal" href="pygplates.GpmlTopologicalPolygon.html#pygplates.GpmlTopologicalPolygon" title="pygplates.GpmlTopologicalPolygon"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTopologicalPolygon</span></code></a> or <a class="reference internal" href="pygplates.GpmlTopologicalNetwork.html#pygplates.GpmlTopologicalNetwork" title="pygplates.GpmlTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTopologicalNetwork</span></code></a>), or if <em>property_return</em> is <code class="docutils literal notranslate"><span class="pre">PropertyReturn.all</span></code></p>
+</dd>
+</dl>
+<p>If <em>geometry_property_name</em> is not specified then the default geometry property name is determined from the feature’s <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> - see <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Feature.get_geometry()</span></code></a> for more details.</p>
+<p>A regular point, polyline or polygon can be referenced by any topological geometry (topological line, polygon or network). However a topological <em>line</em> can only be referenced by a topological polygon or network. A regular polygon is referenced as a <em>line</em> section (a <a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html#pygplates.GpmlTopologicalLineSection" title="pygplates.GpmlTopologicalLineSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTopologicalLineSection</span></code></a>), as it is by the topology building tools in GPlates.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A topological section refers to its geometry only by the feature ID and <em>geometry_property_name</em>, so if <em>feature</em> has more than one geometry property with that name then the section cannot say which one it means, and resolving the topology uses the first one found. For this reason <em>property_return</em> defaults to <code class="docutils literal notranslate"><span class="pre">PropertyReturn.exactly_one</span></code>, and <code class="docutils literal notranslate"><span class="pre">PropertyReturn.first</span></code> has to be asked for. <code class="docutils literal notranslate"><span class="pre">PropertyReturn.first</span></code> also uses the first geometry found to decide the type of section returned (line or point), and so it may not match the geometry used when resolving if the geometries differ in type. It looks at regular geometries before topological ones (a topological line is used only if no regular geometry has the name), so for a feature with both under that name this is not necessarily the first in the feature. <code class="docutils literal notranslate"><span class="pre">PropertyReturn.all</span></code> is not supported since each section returned would be the same reference.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It’s fine to ignore <em>reverse_order</em> (leave it as the default) since it is not used when resolving the topological geometry provided it intersects both its neighbouring topological sections (in the topological geometry) - which applies only to line sections (not points). When a line section does not intersect both neighbouring sections then its reverse flag determines its orientation when rubber-banding the topology geometry.</p>
+</div>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if:</p>
+<ul class="simple">
+<li><p><em>geometry_property_name</em> is not specified and the feature’s <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> has no default geometry property name, or</p></li>
+<li><p>there is not exactly one geometry (topological or non-topological) property named <em>geometry_property_name</em> (or default) in <em>feature</em> (or, if <em>property_return</em> is <code class="docutils literal notranslate"><span class="pre">PropertyReturn.first</span></code>, there is none), or</p></li>
+<li><p>it’s a regular geometry but it’s not a point, polyline or polygon, or</p></li>
+<li><p>it’s a regular point, polyline or polygon and <em>topological_geometry_type</em> is a topological network but <em>feature</em> is not reconstructable by plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or</p></li>
+<li><p>it’s a topological polygon or network, or</p></li>
+<li><p>it’s a topological line but <em>topological_geometry_type</em> is also a topological line (or not specified)</p></li>
+</ul>
+<p>Create a topological section to be used in a <a class="reference internal" href="pygplates.GpmlTopologicalPolygon.html#pygplates.GpmlTopologicalPolygon" title="pygplates.GpmlTopologicalPolygon"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTopologicalPolygon</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">boundary_sections</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">boundary_section</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalSection</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">referenced_feature</span><span class="p">,</span> <span class="n">topological_geometry_type</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalPolygon</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">boundary_section</span><span class="p">:</span>
+    <span class="n">boundary_sections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">boundary_section</span><span class="p">)</span>
+
+<span class="o">...</span>
+
+<span class="n">topological_boundary</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalPolygon</span><span class="p">(</span><span class="n">boundary_sections</span><span class="p">)</span>
+
+<span class="n">topological_boundary_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_topological_closed_plate_boundary</span><span class="p">)</span>
+<span class="n">topological_boundary_feature</span><span class="o">.</span><span class="n">set_topological_geometry</span><span class="p">(</span><span class="n">topological_boundary</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates.GpmlTopologicalLine.html#pygplates.GpmlTopologicalLine.get_sections" title="pygplates.GpmlTopologicalLine.get_sections"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GpmlTopologicalLine.get_sections()</span></code></a>, <a class="reference internal" href="pygplates.GpmlTopologicalPolygon.html#pygplates.GpmlTopologicalPolygon.get_boundary_sections" title="pygplates.GpmlTopologicalPolygon.get_boundary_sections"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GpmlTopologicalPolygon.get_boundary_sections()</span></code></a> and <a class="reference internal" href="pygplates.GpmlTopologicalNetwork.html#pygplates.GpmlTopologicalNetwork.get_boundary_sections" title="pygplates.GpmlTopologicalNetwork.get_boundary_sections"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GpmlTopologicalNetwork.get_boundary_sections()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.24.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span>A regular polygon can be referenced (as a line section), and added the <em>property_return</em> argument.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlTopologicalSection.create_network_interior">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create_network_interior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feature</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">geometry_property_name</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">property_return</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PropertyReturn.exactly_one</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlTopologicalSection.create_network_interior" title="Link to this definition"></a></dt>
+<dd><p>Create a topological network interior referencing a feature geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feature</strong> (<a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a>) – the feature referenced by the returned network interior</p></li>
+<li><p><strong>geometry_property_name</strong> (<a class="reference internal" href="pygplates.PropertyName.html#pygplates.PropertyName" title="pygplates.PropertyName"><em>PropertyName</em></a><em>, or </em><em>None</em>) – the optional geometry property name used to find the geometry (topological or non-topological), if not specified then the default geometry property name associated with the feature’s <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> is used instead</p></li>
+<li><p><strong>property_return</strong> (<a class="reference internal" href="pygplates.PropertyReturn.html#pygplates.PropertyReturn" title="pygplates.PropertyReturn"><em>PropertyReturn</em></a>) – whether <em>feature</em> must have exactly one geometry property named <em>geometry_property_name</em> (or default), or whether the first one found is used - <code class="docutils literal notranslate"><span class="pre">PropertyReturn.all</span></code> is not supported (see the note in <a class="reference internal" href="#pygplates.GpmlTopologicalSection.create" title="pygplates.GpmlTopologicalSection.create"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create()</span></code></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GpmlPropertyDelegate.html#pygplates.GpmlPropertyDelegate" title="pygplates.GpmlPropertyDelegate">GpmlPropertyDelegate</a>, or None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>property_return</em> is <code class="docutils literal notranslate"><span class="pre">PropertyReturn.all</span></code></p>
+</dd>
+</dl>
+<p>If <em>geometry_property_name</em> is not specified then the default geometry property name is determined from the feature’s <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> - see <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Feature.get_geometry()</span></code></a> for more details.</p>
+<p>Any regular geometry (point, multipoint, polyline, polygon) or topological <em>line</em> can be referenced by a topological network interior.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If a regular <em>polygon</em> geometry is referenced then it will be treated as a <em>rigid</em> interior block in the topological network and will not be part of the deforming region. Anything inside this interior polygon geometry will move rigidly using the plate ID of the referenced feature.</p>
+</div>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if:</p>
+<ul class="simple">
+<li><p><em>geometry_property_name</em> is not specified and the feature’s <a class="reference internal" href="pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a> has no default geometry property name, or</p></li>
+<li><p>there is not exactly one geometry (topological or non-topological) property named <em>geometry_property_name</em> (or default) in <em>feature</em> (or, if <em>property_return</em> is <code class="docutils literal notranslate"><span class="pre">PropertyReturn.first</span></code>, there is none), or</p></li>
+<li><p>it’s a regular geometry but <em>feature</em> is not reconstructable by plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or</p></li>
+<li><p>it’s a topological polygon or network</p></li>
+</ul>
+<p>Create a topological network interior:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">network_interiors</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">network_interior</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalSection</span><span class="o">.</span><span class="n">create_network_interior</span><span class="p">(</span><span class="n">referenced_interior_feature</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">network_interior</span><span class="p">:</span>
+    <span class="n">network_interiors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">network_interior</span><span class="p">)</span>
+
+<span class="o">...</span>
+<span class="n">network_boundaries</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="n">network_boundary</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalSection</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">referenced_boundary_feature</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">network_boundary</span><span class="p">:</span>
+    <span class="n">network_boundaries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">network_boundary</span><span class="p">)</span>
+
+<span class="o">...</span>
+
+<span class="n">topological_network</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTopologicalNetwork</span><span class="p">(</span><span class="n">network_boundaries</span><span class="p">,</span> <span class="n">network_interiors</span><span class="p">)</span>
+
+<span class="n">topological_network_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_topological_network</span><span class="p">)</span>
+<span class="n">topological_network_feature</span><span class="o">.</span><span class="n">set_topological_geometry</span><span class="p">(</span><span class="n">topological_network</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates.GpmlTopologicalNetwork.html#pygplates.GpmlTopologicalNetwork.get_interiors" title="pygplates.GpmlTopologicalNetwork.get_interiors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GpmlTopologicalNetwork.get_interiors()</span></code></a></p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.24.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span>Added the <em>property_return</em> argument.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlTopologicalSection.get_property_delegate">
+<span class="sig-name descname"><span class="pre">get_property_delegate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlTopologicalSection.get_property_delegate" title="Link to this definition"></a></dt>
+<dd><p>Returns the property value that references/delegates the source geometry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.GpmlPropertyDelegate.html#pygplates.GpmlPropertyDelegate" title="pygplates.GpmlPropertyDelegate">GpmlPropertyDelegate</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlTopologicalSection.get_reverse_orientation">
+<span class="sig-name descname"><span class="pre">get_reverse_orientation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlTopologicalSection.get_reverse_orientation" title="Link to this definition"></a></dt>
+<dd><p>Returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if this topological section is a <a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html#pygplates.GpmlTopologicalLineSection" title="pygplates.GpmlTopologicalLineSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">line</span></code></a> and it was reversed when contributing to the parent topology.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)">bool</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If this topological section is a <a class="reference internal" href="pygplates.GpmlTopologicalPoint.html#pygplates.GpmlTopologicalPoint" title="pygplates.GpmlTopologicalPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">point</span></code></a> then <code class="docutils literal notranslate"><span class="pre">False</span></code> will always be returned.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.GpmlTopologicalNetwork.html" class="btn btn-neutral float-left" title="pygplates.GpmlTopologicalNetwork" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.GpmlTopologicalSectionList.html" class="btn btn-neutral float-right" title="pygplates.GpmlTopologicalSectionList" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

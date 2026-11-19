@@ -1,0 +1,52 @@
+﻿pygplates.LatLonPoint
+=====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: LatLonPoint
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LatLonPoint.__init__
+      ~LatLonPoint.get_latitude
+      ~LatLonPoint.get_longitude
+      ~LatLonPoint.is_valid_latitude
+      ~LatLonPoint.is_valid_longitude
+      ~LatLonPoint.to_lat_lon
+      ~LatLonPoint.to_point_on_sphere
+      ~LatLonPoint.to_xyz
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+   
+   
+   
+   .. list-table::
+      :class: autosummary longtable
+      :widths: auto
+   
+      * - :py:obj:`north_pole <pygplates.LatLonPoint.north_pole>`
+        - The North pole (latitude 90, longitude 0).
+      * - :py:obj:`south_pole <pygplates.LatLonPoint.south_pole>`
+        - The South pole (latitude -90, longitude 0).
+   
+   .. py:attribute:: north_pole
+      :type: LatLonPoint
+
+      The North pole (latitude 90, longitude 0).
+   
+   .. py:attribute:: south_pole
+      :type: LatLonPoint
+
+      The South pole (latitude -90, longitude 0).
+   
+   

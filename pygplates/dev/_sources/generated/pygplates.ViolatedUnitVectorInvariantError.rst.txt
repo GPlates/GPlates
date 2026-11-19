@@ -1,0 +1,6 @@
+﻿pygplates.ViolatedUnitVectorInvariantError
+==========================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: ViolatedUnitVectorInvariantError

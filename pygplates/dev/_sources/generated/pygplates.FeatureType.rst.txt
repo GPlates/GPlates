@@ -1,0 +1,395 @@
+﻿pygplates.FeatureType
+=====================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: FeatureType
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FeatureType.__init__
+      ~FeatureType.create_from_qualified_string
+      ~FeatureType.create_gpml
+      ~FeatureType.get_default_geometry_property_name
+      ~FeatureType.get_name
+      ~FeatureType.get_namespace
+      ~FeatureType.get_namespace_alias
+      ~FeatureType.to_qualified_string
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+   
+   
+   
+   .. list-table::
+      :class: autosummary longtable
+      :widths: auto
+   
+      * - :py:obj:`gpml_aseismic_ridge <pygplates.FeatureType.gpml_aseismic_ridge>`
+        - The `gpml:AseismicRidge <http://www.gplates.org/docs/gpgim/#gpml:AseismicRidge>`__ feature type.
+      * - :py:obj:`gpml_basic_rock_unit <pygplates.FeatureType.gpml_basic_rock_unit>`
+        - The `gpml:BasicRockUnit <http://www.gplates.org/docs/gpgim/#gpml:BasicRockUnit>`__ feature type.
+      * - :py:obj:`gpml_basin <pygplates.FeatureType.gpml_basin>`
+        - The `gpml:Basin <http://www.gplates.org/docs/gpgim/#gpml:Basin>`__ feature type.
+      * - :py:obj:`gpml_closed_continental_boundary <pygplates.FeatureType.gpml_closed_continental_boundary>`
+        - The `gpml:ClosedContinentalBoundary <http://www.gplates.org/docs/gpgim/#gpml:ClosedContinentalBoundary>`__ feature type.
+      * - :py:obj:`gpml_closed_plate_boundary <pygplates.FeatureType.gpml_closed_plate_boundary>`
+        - The `gpml:ClosedPlateBoundary <http://www.gplates.org/docs/gpgim/#gpml:ClosedPlateBoundary>`__ feature type.
+      * - :py:obj:`gpml_coastline <pygplates.FeatureType.gpml_coastline>`
+        - The `gpml:Coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`__ feature type.
+      * - :py:obj:`gpml_continental_crust <pygplates.FeatureType.gpml_continental_crust>`
+        - The `gpml:ContinentalCrust <http://www.gplates.org/docs/gpgim/#gpml:ContinentalCrust>`__ feature type.
+      * - :py:obj:`gpml_continental_fragment <pygplates.FeatureType.gpml_continental_fragment>`
+        - The `gpml:ContinentalFragment <http://www.gplates.org/docs/gpgim/#gpml:ContinentalFragment>`__ feature type.
+      * - :py:obj:`gpml_continental_rift <pygplates.FeatureType.gpml_continental_rift>`
+        - The `gpml:ContinentalRift <http://www.gplates.org/docs/gpgim/#gpml:ContinentalRift>`__ feature type.
+      * - :py:obj:`gpml_craton <pygplates.FeatureType.gpml_craton>`
+        - The `gpml:Craton <http://www.gplates.org/docs/gpgim/#gpml:Craton>`__ feature type.
+      * - :py:obj:`gpml_extended_continental_crust <pygplates.FeatureType.gpml_extended_continental_crust>`
+        - The `gpml:ExtendedContinentalCrust <http://www.gplates.org/docs/gpgim/#gpml:ExtendedContinentalCrust>`__ feature type.
+      * - :py:obj:`gpml_fault <pygplates.FeatureType.gpml_fault>`
+        - The `gpml:Fault <http://www.gplates.org/docs/gpgim/#gpml:Fault>`__ feature type.
+      * - :py:obj:`gpml_flowline <pygplates.FeatureType.gpml_flowline>`
+        - The `gpml:Flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`__ feature type.
+      * - :py:obj:`gpml_fold_plane <pygplates.FeatureType.gpml_fold_plane>`
+        - The `gpml:FoldPlane <http://www.gplates.org/docs/gpgim/#gpml:FoldPlane>`__ feature type.
+      * - :py:obj:`gpml_fracture_zone <pygplates.FeatureType.gpml_fracture_zone>`
+        - The `gpml:FractureZone <http://www.gplates.org/docs/gpgim/#gpml:FractureZone>`__ feature type.
+      * - :py:obj:`gpml_fracture_zone_identification <pygplates.FeatureType.gpml_fracture_zone_identification>`
+        - The `gpml:FractureZoneIdentification <http://www.gplates.org/docs/gpgim/#gpml:FractureZoneIdentification>`__ feature type.
+      * - :py:obj:`gpml_geological_lineation <pygplates.FeatureType.gpml_geological_lineation>`
+        - The `gpml:GeologicalLineation <http://www.gplates.org/docs/gpgim/#gpml:GeologicalLineation>`__ feature type.
+      * - :py:obj:`gpml_geological_plane <pygplates.FeatureType.gpml_geological_plane>`
+        - The `gpml:GeologicalPlane <http://www.gplates.org/docs/gpgim/#gpml:GeologicalPlane>`__ feature type.
+      * - :py:obj:`gpml_hot_spot <pygplates.FeatureType.gpml_hot_spot>`
+        - The `gpml:HotSpot <http://www.gplates.org/docs/gpgim/#gpml:HotSpot>`__ feature type.
+      * - :py:obj:`gpml_hot_spot_trail <pygplates.FeatureType.gpml_hot_spot_trail>`
+        - The `gpml:HotSpotTrail <http://www.gplates.org/docs/gpgim/#gpml:HotSpotTrail>`__ feature type.
+      * - :py:obj:`gpml_inferred_paleo_boundary <pygplates.FeatureType.gpml_inferred_paleo_boundary>`
+        - The `gpml:InferredPaleoBoundary <http://www.gplates.org/docs/gpgim/#gpml:InferredPaleoBoundary>`__ feature type.
+      * - :py:obj:`gpml_island_arc <pygplates.FeatureType.gpml_island_arc>`
+        - The `gpml:IslandArc <http://www.gplates.org/docs/gpgim/#gpml:IslandArc>`__ feature type.
+      * - :py:obj:`gpml_isochron <pygplates.FeatureType.gpml_isochron>`
+        - The `gpml:Isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`__ feature type.
+      * - :py:obj:`gpml_large_igneous_province <pygplates.FeatureType.gpml_large_igneous_province>`
+        - The `gpml:LargeIgneousProvince <http://www.gplates.org/docs/gpgim/#gpml:LargeIgneousProvince>`__ feature type.
+      * - :py:obj:`gpml_magnetic_anomaly_identification <pygplates.FeatureType.gpml_magnetic_anomaly_identification>`
+        - The `gpml:MagneticAnomalyIdentification <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyIdentification>`__ feature type.
+      * - :py:obj:`gpml_magnetic_anomaly_lineation <pygplates.FeatureType.gpml_magnetic_anomaly_lineation>`
+        - The `gpml:MagneticAnomalyLineation <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyLineation>`__ feature type.
+      * - :py:obj:`gpml_magnetic_anomaly_ship_track <pygplates.FeatureType.gpml_magnetic_anomaly_ship_track>`
+        - The `gpml:MagneticAnomalyShipTrack <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyShipTrack>`__ feature type.
+      * - :py:obj:`gpml_mid_ocean_ridge <pygplates.FeatureType.gpml_mid_ocean_ridge>`
+        - The `gpml:MidOceanRidge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`__ feature type.
+      * - :py:obj:`gpml_motion_path <pygplates.FeatureType.gpml_motion_path>`
+        - The `gpml:MotionPath <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`__ feature type.
+      * - :py:obj:`gpml_oceanic_crust <pygplates.FeatureType.gpml_oceanic_crust>`
+        - The `gpml:OceanicCrust <http://www.gplates.org/docs/gpgim/#gpml:OceanicCrust>`__ feature type.
+      * - :py:obj:`gpml_ophiolite <pygplates.FeatureType.gpml_ophiolite>`
+        - The `gpml:Ophiolite <http://www.gplates.org/docs/gpgim/#gpml:Ophiolite>`__ feature type.
+      * - :py:obj:`gpml_orogenic_belt <pygplates.FeatureType.gpml_orogenic_belt>`
+        - The `gpml:OrogenicBelt <http://www.gplates.org/docs/gpgim/#gpml:OrogenicBelt>`__ feature type.
+      * - :py:obj:`gpml_passive_continental_boundary <pygplates.FeatureType.gpml_passive_continental_boundary>`
+        - The `gpml:PassiveContinentalBoundary <http://www.gplates.org/docs/gpgim/#gpml:PassiveContinentalBoundary>`__ feature type.
+      * - :py:obj:`gpml_pluton <pygplates.FeatureType.gpml_pluton>`
+        - The `gpml:Pluton <http://www.gplates.org/docs/gpgim/#gpml:Pluton>`__ feature type.
+      * - :py:obj:`gpml_pseudo_fault <pygplates.FeatureType.gpml_pseudo_fault>`
+        - The `gpml:PseudoFault <http://www.gplates.org/docs/gpgim/#gpml:PseudoFault>`__ feature type.
+      * - :py:obj:`gpml_seamount <pygplates.FeatureType.gpml_seamount>`
+        - The `gpml:Seamount <http://www.gplates.org/docs/gpgim/#gpml:Seamount>`__ feature type.
+      * - :py:obj:`gpml_slab_edge <pygplates.FeatureType.gpml_slab_edge>`
+        - The `gpml:SlabEdge <http://www.gplates.org/docs/gpgim/#gpml:SlabEdge>`__ feature type.
+      * - :py:obj:`gpml_subduction_zone <pygplates.FeatureType.gpml_subduction_zone>`
+        - The `gpml:SubductionZone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`__ feature type.
+      * - :py:obj:`gpml_suture <pygplates.FeatureType.gpml_suture>`
+        - The `gpml:Suture <http://www.gplates.org/docs/gpgim/#gpml:Suture>`__ feature type.
+      * - :py:obj:`gpml_terrane_boundary <pygplates.FeatureType.gpml_terrane_boundary>`
+        - The `gpml:TerraneBoundary <http://www.gplates.org/docs/gpgim/#gpml:TerraneBoundary>`__ feature type.
+      * - :py:obj:`gpml_topological_closed_plate_boundary <pygplates.FeatureType.gpml_topological_closed_plate_boundary>`
+        - The `gpml:TopologicalClosedPlateBoundary <http://www.gplates.org/docs/gpgim/#gpml:TopologicalClosedPlateBoundary>`__ feature type.
+      * - :py:obj:`gpml_topological_network <pygplates.FeatureType.gpml_topological_network>`
+        - The `gpml:TopologicalNetwork <http://www.gplates.org/docs/gpgim/#gpml:TopologicalNetwork>`__ feature type.
+      * - :py:obj:`gpml_topological_slab_boundary <pygplates.FeatureType.gpml_topological_slab_boundary>`
+        - The `gpml:TopologicalSlabBoundary <http://www.gplates.org/docs/gpgim/#gpml:TopologicalSlabBoundary>`__ feature type.
+      * - :py:obj:`gpml_total_reconstruction_sequence <pygplates.FeatureType.gpml_total_reconstruction_sequence>`
+        - The `gpml:TotalReconstructionSequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`__ feature type.
+      * - :py:obj:`gpml_transform <pygplates.FeatureType.gpml_transform>`
+        - The `gpml:Transform <http://www.gplates.org/docs/gpgim/#gpml:Transform>`__ feature type.
+      * - :py:obj:`gpml_transitional_crust <pygplates.FeatureType.gpml_transitional_crust>`
+        - The `gpml:TransitionalCrust <http://www.gplates.org/docs/gpgim/#gpml:TransitionalCrust>`__ feature type.
+      * - :py:obj:`gpml_unclassified_feature <pygplates.FeatureType.gpml_unclassified_feature>`
+        - The ``gpml:UnclassifiedFeature`` feature type, the default for :meth:`Feature()<Feature.__init__>`, whose features can have any property in the GPGIM.
+      * - :py:obj:`gpml_unconformity <pygplates.FeatureType.gpml_unconformity>`
+        - The `gpml:Unconformity <http://www.gplates.org/docs/gpgim/#gpml:Unconformity>`__ feature type.
+      * - :py:obj:`gpml_unknown_contact <pygplates.FeatureType.gpml_unknown_contact>`
+        - The `gpml:UnknownContact <http://www.gplates.org/docs/gpgim/#gpml:UnknownContact>`__ feature type.
+      * - :py:obj:`gpml_virtual_geomagnetic_pole <pygplates.FeatureType.gpml_virtual_geomagnetic_pole>`
+        - The `gpml:VirtualGeomagneticPole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`__ feature type.
+      * - :py:obj:`gpml_volcano <pygplates.FeatureType.gpml_volcano>`
+        - The `gpml:Volcano <http://www.gplates.org/docs/gpgim/#gpml:Volcano>`__ feature type.
+   
+   .. py:attribute:: gpml_aseismic_ridge
+      :type: FeatureType
+
+      The `gpml:AseismicRidge <http://www.gplates.org/docs/gpgim/#gpml:AseismicRidge>`__ feature type.
+   
+   .. py:attribute:: gpml_basic_rock_unit
+      :type: FeatureType
+
+      The `gpml:BasicRockUnit <http://www.gplates.org/docs/gpgim/#gpml:BasicRockUnit>`__ feature type.
+   
+   .. py:attribute:: gpml_basin
+      :type: FeatureType
+
+      The `gpml:Basin <http://www.gplates.org/docs/gpgim/#gpml:Basin>`__ feature type.
+   
+   .. py:attribute:: gpml_closed_continental_boundary
+      :type: FeatureType
+
+      The `gpml:ClosedContinentalBoundary <http://www.gplates.org/docs/gpgim/#gpml:ClosedContinentalBoundary>`__ feature type.
+   
+   .. py:attribute:: gpml_closed_plate_boundary
+      :type: FeatureType
+
+      The `gpml:ClosedPlateBoundary <http://www.gplates.org/docs/gpgim/#gpml:ClosedPlateBoundary>`__ feature type.
+   
+   .. py:attribute:: gpml_coastline
+      :type: FeatureType
+
+      The `gpml:Coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`__ feature type.
+   
+   .. py:attribute:: gpml_continental_crust
+      :type: FeatureType
+
+      The `gpml:ContinentalCrust <http://www.gplates.org/docs/gpgim/#gpml:ContinentalCrust>`__ feature type.
+   
+   .. py:attribute:: gpml_continental_fragment
+      :type: FeatureType
+
+      The `gpml:ContinentalFragment <http://www.gplates.org/docs/gpgim/#gpml:ContinentalFragment>`__ feature type.
+   
+   .. py:attribute:: gpml_continental_rift
+      :type: FeatureType
+
+      The `gpml:ContinentalRift <http://www.gplates.org/docs/gpgim/#gpml:ContinentalRift>`__ feature type.
+   
+   .. py:attribute:: gpml_craton
+      :type: FeatureType
+
+      The `gpml:Craton <http://www.gplates.org/docs/gpgim/#gpml:Craton>`__ feature type.
+   
+   .. py:attribute:: gpml_extended_continental_crust
+      :type: FeatureType
+
+      The `gpml:ExtendedContinentalCrust <http://www.gplates.org/docs/gpgim/#gpml:ExtendedContinentalCrust>`__ feature type.
+   
+   .. py:attribute:: gpml_fault
+      :type: FeatureType
+
+      The `gpml:Fault <http://www.gplates.org/docs/gpgim/#gpml:Fault>`__ feature type.
+   
+   .. py:attribute:: gpml_flowline
+      :type: FeatureType
+
+      The `gpml:Flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`__ feature type.
+   
+   .. py:attribute:: gpml_fold_plane
+      :type: FeatureType
+
+      The `gpml:FoldPlane <http://www.gplates.org/docs/gpgim/#gpml:FoldPlane>`__ feature type.
+   
+   .. py:attribute:: gpml_fracture_zone
+      :type: FeatureType
+
+      The `gpml:FractureZone <http://www.gplates.org/docs/gpgim/#gpml:FractureZone>`__ feature type.
+   
+   .. py:attribute:: gpml_fracture_zone_identification
+      :type: FeatureType
+
+      The `gpml:FractureZoneIdentification <http://www.gplates.org/docs/gpgim/#gpml:FractureZoneIdentification>`__ feature type.
+   
+   .. py:attribute:: gpml_geological_lineation
+      :type: FeatureType
+
+      The `gpml:GeologicalLineation <http://www.gplates.org/docs/gpgim/#gpml:GeologicalLineation>`__ feature type.
+   
+   .. py:attribute:: gpml_geological_plane
+      :type: FeatureType
+
+      The `gpml:GeologicalPlane <http://www.gplates.org/docs/gpgim/#gpml:GeologicalPlane>`__ feature type.
+   
+   .. py:attribute:: gpml_hot_spot
+      :type: FeatureType
+
+      The `gpml:HotSpot <http://www.gplates.org/docs/gpgim/#gpml:HotSpot>`__ feature type.
+   
+   .. py:attribute:: gpml_hot_spot_trail
+      :type: FeatureType
+
+      The `gpml:HotSpotTrail <http://www.gplates.org/docs/gpgim/#gpml:HotSpotTrail>`__ feature type.
+   
+   .. py:attribute:: gpml_inferred_paleo_boundary
+      :type: FeatureType
+
+      The `gpml:InferredPaleoBoundary <http://www.gplates.org/docs/gpgim/#gpml:InferredPaleoBoundary>`__ feature type.
+   
+   .. py:attribute:: gpml_island_arc
+      :type: FeatureType
+
+      The `gpml:IslandArc <http://www.gplates.org/docs/gpgim/#gpml:IslandArc>`__ feature type.
+   
+   .. py:attribute:: gpml_isochron
+      :type: FeatureType
+
+      The `gpml:Isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`__ feature type.
+   
+   .. py:attribute:: gpml_large_igneous_province
+      :type: FeatureType
+
+      The `gpml:LargeIgneousProvince <http://www.gplates.org/docs/gpgim/#gpml:LargeIgneousProvince>`__ feature type.
+   
+   .. py:attribute:: gpml_magnetic_anomaly_identification
+      :type: FeatureType
+
+      The `gpml:MagneticAnomalyIdentification <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyIdentification>`__ feature type.
+   
+   .. py:attribute:: gpml_magnetic_anomaly_lineation
+      :type: FeatureType
+
+      The `gpml:MagneticAnomalyLineation <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyLineation>`__ feature type.
+   
+   .. py:attribute:: gpml_magnetic_anomaly_ship_track
+      :type: FeatureType
+
+      The `gpml:MagneticAnomalyShipTrack <http://www.gplates.org/docs/gpgim/#gpml:MagneticAnomalyShipTrack>`__ feature type.
+   
+   .. py:attribute:: gpml_mid_ocean_ridge
+      :type: FeatureType
+
+      The `gpml:MidOceanRidge <http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge>`__ feature type.
+   
+   .. py:attribute:: gpml_motion_path
+      :type: FeatureType
+
+      The `gpml:MotionPath <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`__ feature type.
+   
+   .. py:attribute:: gpml_oceanic_crust
+      :type: FeatureType
+
+      The `gpml:OceanicCrust <http://www.gplates.org/docs/gpgim/#gpml:OceanicCrust>`__ feature type.
+   
+   .. py:attribute:: gpml_ophiolite
+      :type: FeatureType
+
+      The `gpml:Ophiolite <http://www.gplates.org/docs/gpgim/#gpml:Ophiolite>`__ feature type.
+   
+   .. py:attribute:: gpml_orogenic_belt
+      :type: FeatureType
+
+      The `gpml:OrogenicBelt <http://www.gplates.org/docs/gpgim/#gpml:OrogenicBelt>`__ feature type.
+   
+   .. py:attribute:: gpml_passive_continental_boundary
+      :type: FeatureType
+
+      The `gpml:PassiveContinentalBoundary <http://www.gplates.org/docs/gpgim/#gpml:PassiveContinentalBoundary>`__ feature type.
+   
+   .. py:attribute:: gpml_pluton
+      :type: FeatureType
+
+      The `gpml:Pluton <http://www.gplates.org/docs/gpgim/#gpml:Pluton>`__ feature type.
+   
+   .. py:attribute:: gpml_pseudo_fault
+      :type: FeatureType
+
+      The `gpml:PseudoFault <http://www.gplates.org/docs/gpgim/#gpml:PseudoFault>`__ feature type.
+   
+   .. py:attribute:: gpml_seamount
+      :type: FeatureType
+
+      The `gpml:Seamount <http://www.gplates.org/docs/gpgim/#gpml:Seamount>`__ feature type.
+   
+   .. py:attribute:: gpml_slab_edge
+      :type: FeatureType
+
+      The `gpml:SlabEdge <http://www.gplates.org/docs/gpgim/#gpml:SlabEdge>`__ feature type.
+   
+   .. py:attribute:: gpml_subduction_zone
+      :type: FeatureType
+
+      The `gpml:SubductionZone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`__ feature type.
+   
+   .. py:attribute:: gpml_suture
+      :type: FeatureType
+
+      The `gpml:Suture <http://www.gplates.org/docs/gpgim/#gpml:Suture>`__ feature type.
+   
+   .. py:attribute:: gpml_terrane_boundary
+      :type: FeatureType
+
+      The `gpml:TerraneBoundary <http://www.gplates.org/docs/gpgim/#gpml:TerraneBoundary>`__ feature type.
+   
+   .. py:attribute:: gpml_topological_closed_plate_boundary
+      :type: FeatureType
+
+      The `gpml:TopologicalClosedPlateBoundary <http://www.gplates.org/docs/gpgim/#gpml:TopologicalClosedPlateBoundary>`__ feature type.
+   
+   .. py:attribute:: gpml_topological_network
+      :type: FeatureType
+
+      The `gpml:TopologicalNetwork <http://www.gplates.org/docs/gpgim/#gpml:TopologicalNetwork>`__ feature type.
+   
+   .. py:attribute:: gpml_topological_slab_boundary
+      :type: FeatureType
+
+      The `gpml:TopologicalSlabBoundary <http://www.gplates.org/docs/gpgim/#gpml:TopologicalSlabBoundary>`__ feature type.
+   
+   .. py:attribute:: gpml_total_reconstruction_sequence
+      :type: FeatureType
+
+      The `gpml:TotalReconstructionSequence <http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence>`__ feature type.
+   
+   .. py:attribute:: gpml_transform
+      :type: FeatureType
+
+      The `gpml:Transform <http://www.gplates.org/docs/gpgim/#gpml:Transform>`__ feature type.
+   
+   .. py:attribute:: gpml_transitional_crust
+      :type: FeatureType
+
+      The `gpml:TransitionalCrust <http://www.gplates.org/docs/gpgim/#gpml:TransitionalCrust>`__ feature type.
+   
+   .. py:attribute:: gpml_unclassified_feature
+      :type: FeatureType
+
+      The ``gpml:UnclassifiedFeature`` feature type, the default for :meth:`Feature()<Feature.__init__>`, whose features can have any property in the GPGIM.
+   
+   .. py:attribute:: gpml_unconformity
+      :type: FeatureType
+
+      The `gpml:Unconformity <http://www.gplates.org/docs/gpgim/#gpml:Unconformity>`__ feature type.
+   
+   .. py:attribute:: gpml_unknown_contact
+      :type: FeatureType
+
+      The `gpml:UnknownContact <http://www.gplates.org/docs/gpgim/#gpml:UnknownContact>`__ feature type.
+   
+   .. py:attribute:: gpml_virtual_geomagnetic_pole
+      :type: FeatureType
+
+      The `gpml:VirtualGeomagneticPole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`__ feature type.
+   
+   .. py:attribute:: gpml_volcano
+      :type: FeatureType
+
+      The `gpml:Volcano <http://www.gplates.org/docs/gpgim/#gpml:Volcano>`__ feature type.
+   
+   

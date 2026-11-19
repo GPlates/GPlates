@@ -1,0 +1,6 @@
+﻿pygplates.IndeterminateArcRotationAxisError
+===========================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: IndeterminateArcRotationAxisError

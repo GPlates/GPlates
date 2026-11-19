@@ -1,0 +1,471 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.ReconstructSnapshot &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.reconstruct" href="pygplates.reconstruct.html" />
+    <link rel="prev" title="pygplates.ReconstructModel" href="pygplates.ReconstructModel.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructModel.html">pygplates.ReconstructModel</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.ReconstructSnapshot</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.ReconstructSnapshot"><code class="docutils literal notranslate"><span class="pre">ReconstructSnapshot</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.reconstruct.html">pygplates.reconstruct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.reverse_reconstruct.html">pygplates.reverse_reconstruct</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html">pygplates.ReconstructedFeatureGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedFlowline.html">pygplates.ReconstructedFlowline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedMotionPath.html">pygplates.ReconstructedMotionPath</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionGeometry.html">pygplates.ReconstructionGeometry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.ReconstructSnapshot</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.ReconstructSnapshot.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-reconstructsnapshot">
+<h1>pygplates.ReconstructSnapshot<a class="headerlink" href="#pygplates-reconstructsnapshot" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">ReconstructSnapshot</span></span><a class="headerlink" href="#pygplates.ReconstructSnapshot" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>A snapshot of reconstructed regular features (including motion paths and flowlines) at a specific geological time.</p>
+<p>A <em>ReconstructSnapshot</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.48.</span></p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconstructable_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconstruction_time</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">anchor_plate_id</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create from reconstructable features and a rotation model at a specific reconstruction time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reconstructable_features</strong> (<a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><em>FeatureCollection</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a><em>, or </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><em>any combination</em><em> of </em><em>those four types</em>) – The reconstructable features as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) of any combination of those four types.</p></li>
+<li><p><strong>rotation_model</strong> (<a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><em>FeatureCollection</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a><em>, or </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><em>any combination</em><em> of </em><em>those four types</em><em>, or </em><a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><em>RotationModel</em></a>) – A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.</p></li>
+<li><p><strong>reconstruction_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the specific geological time to reconstruct to</p></li>
+<li><p><strong>anchor_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – The anchored plate id used for all reconstructions. Defaults to the default anchor plate of <em>rotation_model</em> (or zero if <em>rotation_model</em> is not a <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a>).</p></li>
+</ul>
+</dd>
+</dl>
+<p>Create a reconstruct snapshot by reconstructing features at a specific reconstruction time:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">reconstructable_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'reconstructable_features.gpml'</span><span class="p">)</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="n">reconstructable_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(reconstructable_features, ...)</p></td>
+<td><p>Create from reconstructable features and a rotation model at a specific reconstruction time.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.export_reconstructed_geometries" title="pygplates.ReconstructSnapshot.export_reconstructed_geometries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_reconstructed_geometries</span></code></a>(...)</p></td>
+<td><p>Exports the reconstructed geometries of the requested type(s) to a file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_anchor_plate_id" title="pygplates.ReconstructSnapshot.get_anchor_plate_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_anchor_plate_id</span></code></a>()</p></td>
+<td><p>Return the anchor plate ID (see <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_point_locations" title="pygplates.ReconstructSnapshot.get_point_locations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_locations</span></code></a>(points, ...)</p></td>
+<td><p>Returns the reconstructed static polygons that contain the specified points.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_point_velocities" title="pygplates.ReconstructSnapshot.get_point_velocities"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_point_velocities</span></code></a>(points, ...)</p></td>
+<td><p>Returns the velocities of the specified points (as determined by the reconstructed static polygons that contain them).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_features" title="pygplates.ReconstructSnapshot.get_reconstructed_features"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstructed_features</span></code></a>(...)</p></td>
+<td><p>Returns the reconstructed geometries of the requested type(s) grouped by their feature.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstructed_geometries</span></code></a>(...)</p></td>
+<td><p>Returns the reconstructed geometries of the requested type(s).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstruction_time" title="pygplates.ReconstructSnapshot.get_reconstruction_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstruction_time</span></code></a>()</p></td>
+<td><p>Return the reconstruction time of this snapshot.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_rotation_model" title="pygplates.ReconstructSnapshot.get_rotation_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rotation_model</span></code></a>()</p></td>
+<td><p>Return the rotation model used internally.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.export_reconstructed_geometries">
+<span class="sig-name descname"><span class="pre">export_reconstructed_geometries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">export_filename</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reconstruct_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.ReconstructType.feature_geometry</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">wrap_to_dateline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">force_polygon_orientation</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.export_reconstructed_geometries" title="Link to this definition"></a></dt>
+<dd><p>Exports the reconstructed geometries of the requested type(s) to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>export_filename</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a>) – the name of the export file</p></li>
+<li><p><strong>reconstruct_type</strong> (<a class="reference internal" href="pygplates.ReconstructType.html#pygplates.ReconstructType" title="pygplates.ReconstructType"><em>ReconstructType</em></a>) – specifies which type of features to export - defaults to exporting only regular features (not motion paths or flowlines)</p></li>
+<li><p><strong>wrap_to_dateline</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to wrap/clip reconstructed geometries to the dateline (currently ignored unless exporting to an ESRI Shapefile format <em>file</em>). Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>force_polygon_orientation</strong> (<a class="reference internal" href="pygplates.PolygonOnSphereOrientation.html#pygplates.PolygonOnSphereOrientation" title="pygplates.PolygonOnSphereOrientation"><em>PolygonOnSphereOrientation</em></a><em>, or </em><em>None</em>) – Optionally force boundary orientation to clockwise (<code class="docutils literal notranslate"><span class="pre">PolygonOnSphere.Orientation.clockwise</span></code>) or counter-clockwise (<code class="docutils literal notranslate"><span class="pre">PolygonOnSphere.Orientation.counter_clockwise</span></code>). Only applies to reconstructed feature geometries (excludes <em>motion paths</em> and <em>flowlines</em>) that are polygons. Note that ESRI Shapefiles always use <em>clockwise</em> orientation (and so ignore this parameter).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruct_type</em> (if specified) is not <strong>one</strong> of <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.feature_geometry</span></code>, <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.motion_path</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.flowline</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>reconstruct_type</em> must be a <strong>single</strong> reconstruct type.  This is different than <a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstructed_geometries()</span></code></a> and <a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_features" title="pygplates.ReconstructSnapshot.get_reconstructed_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstructed_features()</span></code></a> which can specify multiple types.</p>
+</div>
+<p>The following <em>export</em> file formats are currently supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Export File Format</p></th>
+<th class="head"><p>Filename Extension</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ESRI Shapefile</p></td>
+<td><p>‘.shp’</p></td>
+</tr>
+<tr class="row-odd"><td><p>GeoJSON</p></td>
+<td><p>‘.geojson’ or ‘.json’</p></td>
+</tr>
+<tr class="row-even"><td><p>OGR GMT</p></td>
+<td><p>‘.gmt’</p></td>
+</tr>
+<tr class="row-odd"><td><p>GMT xy</p></td>
+<td><p>‘.xy’</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Reconstructed geometries are exported in the order of their respective reconstructable features (see <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>). This includes the order across any reconstructable feature collections/files.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.get_anchor_plate_id">
+<span class="sig-name descname"><span class="pre">get_anchor_plate_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.get_anchor_plate_id" title="Link to this definition"></a></dt>
+<dd><p>Return the anchor plate ID (see <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the same as the <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel.get_default_anchor_plate_id" title="pygplates.RotationModel.get_default_anchor_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default</span> <span class="pre">anchor</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a> of <a class="reference internal" href="#pygplates.ReconstructSnapshot.get_rotation_model" title="pygplates.ReconstructSnapshot.get_rotation_model"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation_model()</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.get_point_locations">
+<span class="sig-name descname"><span class="pre">get_point_locations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">sort_reconstructed_static_polygons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.SortReconstructedStaticPolygons.by_plate_id</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.get_point_locations" title="Link to this definition"></a></dt>
+<dd><p>Returns the reconstructed static polygons that contain the specified points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>sequence</em><em> of </em><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em> or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em> or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em><em>, or </em><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><em>GeometryOnSphere</em></a>) – sequence of points at which to find containing reconstructed static polygons</p></li>
+<li><p><strong>sort_reconstructed_static_polygons</strong> (<a class="reference internal" href="pygplates.SortReconstructedStaticPolygons.html#pygplates.SortReconstructedStaticPolygons" title="pygplates.SortReconstructedStaticPolygons"><em>SortReconstructedStaticPolygons</em></a><em>, or </em><em>None</em>) – optional sort order of reconstructed static polygons (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.SortReconstructedStaticPolygons.by_plate_id</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the reconstructed static polygon containing each point (<code class="docutils literal notranslate"><span class="pre">None</span></code> for each point <em>outside</em> all reconstructed static polygons)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry">ReconstructedFeatureGeometry</a> | None]</p>
+</dd>
+</dl>
+<p>Reconstructed static polygons are <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometries</span></code></a> that have <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polygon</span></code></a> geometries (other geometry types are ignored since only polygons can contain points). The reconstructed feature geometries are obtained from <a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstructed_geometries()</span></code></a> with <code class="docutils literal notranslate"><span class="pre">reconstruct_types=pygplates.ReconstructType.feature_geometry</span></code> and <code class="docutils literal notranslate"><span class="pre">same_order_as_reconstructable_features=True</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each point that is <em>outside</em> all reconstructed static polygons will have a point location (reconstructed static polygon) of <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</div>
+<p>Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike <a class="reference internal" href="pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">plates</span></code></a> which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using <em>sort_reconstructed_static_polygons</em> (see <a class="reference internal" href="pygplates.SortReconstructedStaticPolygons.html#pygplates.SortReconstructedStaticPolygons" title="pygplates.SortReconstructedStaticPolygons"><code class="xref py py-class docutils literal notranslate"><span class="pre">SortReconstructedStaticPolygons</span></code></a>). The default searches by plate ID, so the results do not depend on the order of the reconstructable features (specified in the <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p>
+<p>To associate each point with the reconstructed static polygon containing it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstructed_static_polygons</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)):</span>
+    <span class="n">point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">reconstructed_static_polygon</span> <span class="o">=</span> <span class="n">reconstructed_static_polygons</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">reconstructed_static_polygon</span><span class="p">:</span>  <span class="c1"># if point is inside a reconstructed static polygon</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.get_point_velocities">
+<span class="sig-name descname"><span class="pre">get_point_velocities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">points</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityUnits.kms_per_my</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">earth_radius_in_kms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">sort_reconstructed_static_polygons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.SortReconstructedStaticPolygons.by_plate_id</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">return_point_locations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.get_point_velocities" title="Link to this definition"></a></dt>
+<dd><p>Returns the velocities of the specified points (as determined by the reconstructed static polygons that contain them).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>points</strong> (<em>sequence</em><em> of </em><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em> or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em> or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em><em>, or </em><a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><em>GeometryOnSphere</em></a>) – sequence of points at which to calculate velocities</p></li>
+<li><p><strong>velocity_delta_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time delta used to calculate velocities (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<a class="reference internal" href="pygplates.VelocityDeltaTimeType.html#pygplates.VelocityDeltaTimeType" title="pygplates.VelocityDeltaTimeType"><em>VelocityDeltaTimeType</em></a>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>velocity_units</strong> (<a class="reference internal" href="pygplates.VelocityUnits.html#pygplates.VelocityUnits" title="pygplates.VelocityUnits"><em>VelocityUnits</em></a>) – whether to return velocities as <em>kilometres per million years</em> or <em>centimetres per year</em> (defaults to <em>kilometres per million years</em>)</p></li>
+<li><p><strong>earth_radius_in_kms</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – the radius of the Earth in <em>kilometres</em> (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code>)</p></li>
+<li><p><strong>sort_reconstructed_static_polygons</strong> (<a class="reference internal" href="pygplates.SortReconstructedStaticPolygons.html#pygplates.SortReconstructedStaticPolygons" title="pygplates.SortReconstructedStaticPolygons"><em>SortReconstructedStaticPolygons</em></a><em>, or </em><em>None</em>) – optional sort order of reconstructed static polygons (defaults to <code class="docutils literal notranslate"><span class="pre">pygplates.SortReconstructedStaticPolygons.by_plate_id</span></code>)</p></li>
+<li><p><strong>return_point_locations</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to also return the reconstructed static polygon that contains each point - defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the velocity of each point (<code class="docutils literal notranslate"><span class="pre">None</span></code> for each point <em>outside</em> all reconstructed static polygons), and (if <em>return_point_locations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) also the reconstructed static polygon containing each point (<code class="docutils literal notranslate"><span class="pre">None</span></code> for points outside)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D">Vector3D</a> | None], or <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D">Vector3D</a> | None], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry">ReconstructedFeatureGeometry</a> | None]]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>velocity_delta_time</em> is negative or zero.</p>
+</dd>
+</dl>
+<p>Reconstructed static polygons are <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometries</span></code></a> that have <a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polygon</span></code></a> geometries (other geometry types are ignored since only polygons can contain points). The reconstructed feature geometries are obtained from <a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstructed_geometries()</span></code></a> with <code class="docutils literal notranslate"><span class="pre">reconstruct_types=pygplates.ReconstructType.feature_geometry</span></code> and <code class="docutils literal notranslate"><span class="pre">same_order_as_reconstructable_features=True</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each point that is <em>outside</em> all reconstructed static polygons will have a velocity of <code class="docutils literal notranslate"><span class="pre">None</span></code>, and optionally (if <em>return_point_locations</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) have a point location (reconstructed static polygon) of <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</div>
+<p>Reconstructed static polygons can overlap each other at reconstruction times in the past (unlike <a class="reference internal" href="pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">plates</span></code></a> which typically do not overlap). This means a point could be contained inside more than one reconstructed static polygon, but only the first one will be returned for that point. However, you can change the search order of reconstructed static polygons using <em>sort_reconstructed_static_polygons</em> (see <a class="reference internal" href="pygplates.SortReconstructedStaticPolygons.html#pygplates.SortReconstructedStaticPolygons" title="pygplates.SortReconstructedStaticPolygons"><code class="xref py py-class docutils literal notranslate"><span class="pre">SortReconstructedStaticPolygons</span></code></a>). The default searches by plate ID, so the results do not depend on the order of the reconstructable features (specified in the <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p>
+<p>To associate each point with its velocity and the reconstructed static polygon containing it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">velocities</span><span class="p">,</span> <span class="n">reconstructed_static_polygons</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+        <span class="n">points</span><span class="p">,</span>
+        <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">point_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)):</span>
+    <span class="n">point</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">velocity</span> <span class="o">=</span> <span class="n">velocities</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">reconstructed_static_polygon</span> <span class="o">=</span> <span class="n">reconstructed_static_polygons</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">velocity</span><span class="p">:</span>  <span class="c1"># if point is inside a reconstructed static polygon</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is more efficient to call <code class="docutils literal notranslate"><span class="pre">reconstruct_snapshot.get_point_velocities(points,</span> <span class="pre">return_point_locations=True)</span></code> to get both velocities and point locations than it is to call both <code class="docutils literal notranslate"><span class="pre">reconstruct_snapshot.get_point_velocities(points)</span></code> and <code class="docutils literal notranslate"><span class="pre">reconstruct_snapshot.get_point_locations(points)</span></code>.</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.50.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.get_reconstructed_features">
+<span class="sig-name descname"><span class="pre">get_reconstructed_features</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">reconstruct_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.ReconstructType.feature_geometry</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.get_reconstructed_features" title="Link to this definition"></a></dt>
+<dd><p>Returns the reconstructed geometries of the requested type(s) grouped by their feature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>reconstruct_types</strong> (<em>a bitwise combination</em><em> of </em><em>ReconstructType enumeration values</em>) – specifies which types of features to reconstruct - defaults to reconstructing only regular features (not motion paths or flowlines)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a list of tuples, where each tuple contains a <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> and a <code class="docutils literal notranslate"><span class="pre">list</span></code> of reconstructed geometries (each reconstructed geometry is a <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometry</span></code></a>, <a class="reference internal" href="pygplates.ReconstructedMotionPath.html#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">motion</span> <span class="pre">path</span></code></a> or <a class="reference internal" href="pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline" title="pygplates.ReconstructedFlowline"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">flowline</span></code></a> - depending on the optional argument <em>reconstruct_types</em>)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature">Feature</a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry">ReconstructedFeatureGeometry</a> | <a class="reference internal" href="pygplates.ReconstructedMotionPath.html#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath">ReconstructedMotionPath</a> | <a class="reference internal" href="pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline" title="pygplates.ReconstructedFlowline">ReconstructedFlowline</a>]]]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruct_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.feature_geometry</span></code>, <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.motion_path</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.flowline</span></code></p>
+</dd>
+</dl>
+<p>This can be useful (compared to <a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstructed_geometries()</span></code></a>) when a <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a> has more than one (present day) geometry and hence more than one reconstructed geometry.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The returned features (and associated reconstructed geometries) are sorted in the order of their respective reconstructable features (see <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>). This includes the order across any reconstructable feature collections/files.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <em>reconstruct_types</em> argument accepts more than one reconstruct type, unlike <a class="reference internal" href="#pygplates.ReconstructSnapshot.export_reconstructed_geometries" title="pygplates.ReconstructSnapshot.export_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export_reconstructed_geometries()</span></code></a> and <a class="reference internal" href="pygplates.reconstruct.html#pygplates.reconstruct" title="pygplates.reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reconstruct()</span></code></a>.</p>
+</div>
+<p>To get the <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometries</span></code></a> grouped by their <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstructed_features</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_features</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">feature_reconstructed_geometries</span> <span class="ow">in</span> <span class="n">reconstructed_features</span><span class="p">:</span>
+    <span class="c1"># Note that 'feature' is the same as 'feature_reconstructed_geometry.get_feature()'.</span>
+    <span class="k">for</span> <span class="n">feature_reconstructed_geometry</span> <span class="ow">in</span> <span class="n">feature_reconstructed_geometries</span><span class="p">:</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstructed_geometries()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.get_reconstructed_geometries">
+<span class="sig-name descname"><span class="pre">get_reconstructed_geometries</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">reconstruct_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.ReconstructType.feature_geometry</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">same_order_as_reconstructable_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="Link to this definition"></a></dt>
+<dd><p>Returns the reconstructed geometries of the requested type(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reconstruct_types</strong> (<em>a bitwise combination</em><em> of </em><em>ReconstructType enumeration values</em>) – specifies which types of features to reconstruct - defaults to reconstructing only regular features (not motion paths or flowlines)</p></li>
+<li><p><strong>same_order_as_reconstructable_features</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether the returned reconstructed geometries are sorted in the order of the reconstructable features (including order across reconstructable files, if there were any) - defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the <a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometries</span></code></a>, <a class="reference internal" href="pygplates.ReconstructedMotionPath.html#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">motion</span> <span class="pre">paths</span></code></a> and <a class="reference internal" href="pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline" title="pygplates.ReconstructedFlowline"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">flowlines</span></code></a> (depending on the optional argument <em>reconstruct_types</em>) - by default <a class="reference internal" href="pygplates.ReconstructedMotionPath.html#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">motion</span> <span class="pre">paths</span></code></a> and <a class="reference internal" href="pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline" title="pygplates.ReconstructedFlowline"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">flowlines</span></code></a> are excluded</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry">ReconstructedFeatureGeometry</a> | <a class="reference internal" href="pygplates.ReconstructedMotionPath.html#pygplates.ReconstructedMotionPath" title="pygplates.ReconstructedMotionPath">ReconstructedMotionPath</a> | <a class="reference internal" href="pygplates.ReconstructedFlowline.html#pygplates.ReconstructedFlowline" title="pygplates.ReconstructedFlowline">ReconstructedFlowline</a>]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruct_types</em> (if specified) contains a flag that is not one of <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.feature_geometry</span></code>, <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.motion_path</span></code> or <code class="docutils literal notranslate"><span class="pre">pygplates.ReconstructType.flowline</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <em>same_order_as_reconstructable_features</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code> then the returned reconstructed geometries are sorted in the order of their respective reconstructable features (see <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>). This includes the order across any reconstructable feature collections/files.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <em>reconstruct_types</em> argument accepts more than one reconstruct type, unlike <a class="reference internal" href="#pygplates.ReconstructSnapshot.export_reconstructed_geometries" title="pygplates.ReconstructSnapshot.export_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export_reconstructed_geometries()</span></code></a> and <a class="reference internal" href="pygplates.reconstruct.html#pygplates.reconstruct" title="pygplates.reconstruct"><code class="xref py py-func docutils literal notranslate"><span class="pre">reconstruct()</span></code></a>.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#pygplates.ReconstructSnapshot.get_reconstructed_features" title="pygplates.ReconstructSnapshot.get_reconstructed_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstructed_features()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.get_reconstruction_time">
+<span class="sig-name descname"><span class="pre">get_reconstruction_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.get_reconstruction_time" title="Link to this definition"></a></dt>
+<dd><p>Return the reconstruction time of this snapshot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.ReconstructSnapshot.get_rotation_model">
+<span class="sig-name descname"><span class="pre">get_rotation_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.ReconstructSnapshot.get_rotation_model" title="Link to this definition"></a></dt>
+<dd><p>Return the rotation model used internally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel">RotationModel</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel.get_default_anchor_plate_id" title="pygplates.RotationModel.get_default_anchor_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default</span> <span class="pre">anchor</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a> of the returned rotation model may be different to that of the rotation model passed into the <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> if an anchor plate ID was specified in the <a class="reference internal" href="#pygplates.ReconstructSnapshot.__init__" title="pygplates.ReconstructSnapshot.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ReconstructModel.html" class="btn btn-neutral float-left" title="pygplates.ReconstructModel" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.reconstruct.html" class="btn btn-neutral float-right" title="pygplates.reconstruct" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

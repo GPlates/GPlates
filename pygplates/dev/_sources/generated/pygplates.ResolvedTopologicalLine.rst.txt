@@ -1,0 +1,35 @@
+﻿pygplates.ResolvedTopologicalLine
+=================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ResolvedTopologicalLine
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ResolvedTopologicalLine.__init__
+      ~ResolvedTopologicalLine.get_feature
+      ~ResolvedTopologicalLine.get_geometry_sub_segments
+      ~ResolvedTopologicalLine.get_line_sub_segments
+      ~ResolvedTopologicalLine.get_property
+      ~ResolvedTopologicalLine.get_reconstruction_time
+      ~ResolvedTopologicalLine.get_resolved_feature
+      ~ResolvedTopologicalLine.get_resolved_geometry
+      ~ResolvedTopologicalLine.get_resolved_geometry_point_features
+      ~ResolvedTopologicalLine.get_resolved_geometry_point_velocities
+      ~ResolvedTopologicalLine.get_resolved_geometry_points
+      ~ResolvedTopologicalLine.get_resolved_line
+   
+   
+
+   
+   
+   
+   
+   

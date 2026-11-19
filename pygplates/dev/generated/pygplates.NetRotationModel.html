@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.NetRotationModel &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.NetRotationSnapshot" href="pygplates.NetRotationSnapshot.html" />
+    <link rel="prev" title="pygplates.Strain" href="pygplates.Strain.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.calculate_velocities.html">pygplates.calculate_velocities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.PlateBoundaryStatistic.html">pygplates.PlateBoundaryStatistic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.StrainRate.html">pygplates.StrainRate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Strain.html">pygplates.Strain</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.NetRotationModel</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.NetRotationModel"><code class="docutils literal notranslate"><span class="pre">NetRotationModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetRotationSnapshot.html">pygplates.NetRotationSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetRotation.html">pygplates.NetRotation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.NetRotationModel</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.NetRotationModel.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-netrotationmodel">
+<h1>pygplates.NetRotationModel<a class="headerlink" href="#pygplates-netrotationmodel" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.NetRotationModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">NetRotationModel</span></span><a class="headerlink" href="#pygplates.NetRotationModel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>Net rotation of topological plates and deforming networks.</p>
+<p>A <em>NetRotationModel</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.43.</span></p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotationModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topological_model</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">velocity_delta_time_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">point_distribution</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotationModel.__init__" title="Link to this definition"></a></dt>
+<dd><p>Net rotation snapshots will be calculated from the specified topological model, and using the requested parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topological_model</strong> (<a class="reference internal" href="pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><em>TopologicalModel</em></a>) – The topological model to calculate net rotations with.</p></li>
+<li><p><strong>velocity_delta_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – The time delta used to calculate velocities for net rotation (defaults to 1 Myr).</p></li>
+<li><p><strong>velocity_delta_time_type</strong> (<a class="reference internal" href="pygplates.VelocityDeltaTimeType.html#pygplates.VelocityDeltaTimeType" title="pygplates.VelocityDeltaTimeType"><em>VelocityDeltaTimeType</em></a>) – How the two velocity times are calculated relative to the reconstruction time. This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].</p></li>
+<li><p><strong>point_distribution</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>iterable</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em> (</em><em>point</em><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>) </em><em>where point is a PointOnSphere</em><em> or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em> or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em>) – Can be an integer <cite>N</cite> representing the number of uniformly spaced latitude-longitude grid points sampled along each <em>meridian</em> (ie, an <cite>N x 2N</cite> grid). Or can be a sequence of (point, sample_area) tuples where <em>point</em> is a point that contributes to net rotation and <em>sample_area</em> is the surface area around the point in steradians (square radians). If nothing specified then defaults to a <cite>180 x 360</cite> uniformly spaced latitude-longitude points.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>velocity_delta_time</em> is negative or zero, or if <em>point_distribution</em> is zero or negative, or an empty sequence.</p>
+</dd>
+</dl>
+<p>The <a class="reference external" href="https://doi.org/10.1016/j.epsl.2009.12.055">total net rotation</a> of all resolved topologies in a snapshot (<a class="reference internal" href="#pygplates.NetRotationModel.net_rotation_snapshot" title="pygplates.NetRotationModel.net_rotation_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NetRotationModel.net_rotation_snapshot()</span></code></a>) is:</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol \omega_{net} = \frac{3}{8\pi} \sum_i \int \boldsymbol r \times (\boldsymbol \omega_i(\boldsymbol r) \times \boldsymbol r) \, dS_i\]</div>
+<p>…where <span class="math notranslate nohighlight">\(\sum_i\)</span> is the summation over all resolved topologies, and <span class="math notranslate nohighlight">\(\int ... dS_i\)</span> is integration over the surface area of resolved topology <span class="math notranslate nohighlight">\(i\)</span>, and <span class="math notranslate nohighlight">\(\boldsymbol \omega_i(\boldsymbol r)\)</span> is the rotation rate vector for resolved topology <span class="math notranslate nohighlight">\(i\)</span> at location <span class="math notranslate nohighlight">\(\boldsymbol r\)</span>. For a rigid plate this is just a constant <span class="math notranslate nohighlight">\(\boldsymbol \omega_i(\boldsymbol r) = \boldsymbol \omega_i\)</span>, but for a deforming network this varies spatially across the network (hence the dependency on <span class="math notranslate nohighlight">\(\boldsymbol r\)</span>). Note that if a deforming network overlaps a rigid plate then only the deforming network contributes to the total net rotation (in the overlap region).</p>
+<p>The surface integrals are approximated by sampling at points distributed across the surface of the globe. So it’s helpful to think of a <em>single</em> integral over the entire globe (rather than a separate integral for each topology) and then approximate that as a summation over points:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\boldsymbol \omega_{net} &amp;= \frac{3}{8\pi} \int \boldsymbol r \times (\boldsymbol \omega(\boldsymbol r) \times \boldsymbol r) \, dS\\
+                           &amp;\approx \frac{3}{8\pi} \sum_p (\boldsymbol r_p \times (\boldsymbol \omega(\boldsymbol r_p) \times \boldsymbol r_p)) \, dS_p\end{split}\]</div>
+<p>…where the summation is over all locations <span class="math notranslate nohighlight">\(\boldsymbol r_p\)</span> in the point distribution <span class="math notranslate nohighlight">\(p\)</span>, and <span class="math notranslate nohighlight">\(dS_p\)</span> is the surface area contributed at location <span class="math notranslate nohighlight">\(\boldsymbol r_p\)</span> (where <span class="math notranslate nohighlight">\(\sum_p dS_p \approx 4\pi\)</span>), and <span class="math notranslate nohighlight">\(\boldsymbol \omega(\boldsymbol r_p)\)</span> is the rotation rate vector contributed by whichever resolved topology happens to intersect location <span class="math notranslate nohighlight">\(\boldsymbol r_p\)</span> (with preference given to deforming networks when they overlap rigid plates).</p>
+<p>The point distribution used to calculate net rotation can be controlled with the <em>point_distribution</em> parameter. If <em>point_distribution</em> is an integer <cite>N</cite> then a uniform latitude-longitude grid of <cite>N x 2N</cite> points is used. Otherwise <em>point_distribution</em> can be a sequence of (point, sample area) representing an arbitrary user-specified distribution of points (and their sample areas). For example, if you have a distribution that is uniformly spaced on the surface of the sphere then the sample area will be the same for each point (ie, <span class="math notranslate nohighlight">\(4\pi\)</span> steradians divided by the total number of points). If nothing is specified for <em>point_distribution</em> then a uniform latitude-longitude grid of <cite>180 x 360</cite> points is used.</p>
+<p>To create a net rotation snapshot at 0Ma calculated from a net rotation model with a velocity delta from 1Ma (to 0Ma):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">net_rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotationModel</span><span class="p">(</span>
+    <span class="n">topological_model</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityDeltaTimeType</span><span class="o">.</span><span class="n">t_plus_delta_t_to_t</span><span class="p">)</span>
+<span class="n">net_rotation_snapshot</span> <span class="o">=</span> <span class="n">net_rotation_model</span><span class="o">.</span><span class="n">net_rotation_snapshot</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>…which is equivalent to the following code that explicitly specifies a point distribution:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">point_distribution</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">num_samples_along_meridian</span> <span class="o">=</span> <span class="mi">180</span>
+<span class="n">delta_in_degrees</span> <span class="o">=</span> <span class="mf">180.0</span> <span class="o">/</span> <span class="n">num_samples_along_meridian</span>
+<span class="n">delta_in_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">delta_in_degrees</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">lat_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples_along_meridian</span><span class="p">):</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="o">-</span><span class="mf">90.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">lat_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">delta_in_degrees</span>
+    <span class="c1"># The cosine is because points near the North/South poles are closer together (latitude parallel small circle radius).</span>
+    <span class="n">sample_area_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat</span><span class="p">))</span> <span class="o">*</span> <span class="n">delta_in_radians</span> <span class="o">*</span> <span class="n">delta_in_radians</span>
+    <span class="k">for</span> <span class="n">lon_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">num_samples_along_meridian</span><span class="p">):</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">lon_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">delta_in_degrees</span>
+        <span class="n">point_distribution</span><span class="o">.</span><span class="n">append</span><span class="p">(((</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">),</span> <span class="n">sample_area_radians</span><span class="p">))</span>
+
+<span class="n">net_rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotationModel</span><span class="p">(</span>
+    <span class="n">topological_model</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityDeltaTimeType</span><span class="o">.</span><span class="n">t_plus_delta_t_to_t</span><span class="p">,</span> <span class="n">point_distribution</span><span class="p">)</span>
+<span class="n">net_rotation_snapshot</span> <span class="o">=</span> <span class="n">net_rotation_model</span><span class="o">.</span><span class="n">net_rotation_snapshot</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The anchor plate is that of the specified topological model (see <a class="reference internal" href="pygplates.TopologicalModel.html#pygplates.TopologicalModel.get_anchor_plate_id" title="pygplates.TopologicalModel.get_anchor_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TopologicalModel.get_anchor_plate_id()</span></code></a>).</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.NetRotationModel.__init__" title="pygplates.NetRotationModel.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(topological_model, ...)</p></td>
+<td><p>Net rotation snapshots will be calculated from the specified topological model, and using the requested parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.NetRotationModel.get_topological_model" title="pygplates.NetRotationModel.get_topological_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_topological_model</span></code></a>()</p></td>
+<td><p>Return the topological model used internally.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.NetRotationModel.net_rotation_snapshot" title="pygplates.NetRotationModel.net_rotation_snapshot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">net_rotation_snapshot</span></code></a>(reconstruction_time)</p></td>
+<td><p>Returns a snapshot of net rotation at the requested reconstruction time.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotationModel.get_topological_model">
+<span class="sig-name descname"><span class="pre">get_topological_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotationModel.get_topological_model" title="Link to this definition"></a></dt>
+<dd><p>Return the topological model used internally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel">TopologicalModel</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.NetRotationModel.net_rotation_snapshot">
+<span class="sig-name descname"><span class="pre">net_rotation_snapshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconstruction_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.NetRotationModel.net_rotation_snapshot" title="Link to this definition"></a></dt>
+<dd><p>Returns a snapshot of net rotation at the requested reconstruction time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>reconstruction_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the geological time of the snapshot</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot" title="pygplates.NetRotationSnapshot">NetRotationSnapshot</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruction_time</em> is distant-past (<code class="docutils literal notranslate"><span class="pre">float('inf')</span></code>) or distant-future (<code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.Strain.html" class="btn btn-neutral float-left" title="pygplates.Strain" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.NetRotationSnapshot.html" class="btn btn-neutral float-right" title="pygplates.NetRotationSnapshot" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

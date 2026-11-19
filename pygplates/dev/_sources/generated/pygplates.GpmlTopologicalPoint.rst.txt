@@ -1,0 +1,33 @@
+﻿pygplates.GpmlTopologicalPoint
+==============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTopologicalPoint
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTopologicalPoint.__init__
+      ~GpmlTopologicalPoint.accept_visitor
+      ~GpmlTopologicalPoint.clone
+      ~GpmlTopologicalPoint.create
+      ~GpmlTopologicalPoint.create_network_interior
+      ~GpmlTopologicalPoint.get_geometry
+      ~GpmlTopologicalPoint.get_property_delegate
+      ~GpmlTopologicalPoint.get_reverse_orientation
+      ~GpmlTopologicalPoint.get_value
+      ~GpmlTopologicalPoint.set_property_delegate
+   
+   
+
+   
+   
+   
+   
+   

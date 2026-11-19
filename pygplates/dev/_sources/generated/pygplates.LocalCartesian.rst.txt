@@ -1,0 +1,35 @@
+﻿pygplates.LocalCartesian
+========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: LocalCartesian
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LocalCartesian.__init__
+      ~LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination
+      ~LocalCartesian.convert_from_geocentric_to_north_east_down
+      ~LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric
+      ~LocalCartesian.convert_from_north_east_down_to_geocentric
+      ~LocalCartesian.from_geocentric_to_magnitude_azimuth_inclination
+      ~LocalCartesian.from_geocentric_to_north_east_down
+      ~LocalCartesian.from_magnitude_azimuth_inclination_to_geocentric
+      ~LocalCartesian.from_north_east_down_to_geocentric
+      ~LocalCartesian.get_down
+      ~LocalCartesian.get_east
+      ~LocalCartesian.get_north
+   
+   
+
+   
+   
+   
+   
+   

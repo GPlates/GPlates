@@ -1,0 +1,31 @@
+﻿pygplates.ReconstructedMotionPath
+=================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructedMotionPath
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReconstructedMotionPath.__init__
+      ~ReconstructedMotionPath.get_feature
+      ~ReconstructedMotionPath.get_motion_path
+      ~ReconstructedMotionPath.get_present_day_seed_point
+      ~ReconstructedMotionPath.get_property
+      ~ReconstructedMotionPath.get_reconstructed_seed_point
+      ~ReconstructedMotionPath.get_reconstructed_seed_point_velocity
+      ~ReconstructedMotionPath.get_reconstruction_time
+   
+   
+
+   
+   
+   
+   
+   

@@ -1,0 +1,6 @@
+﻿pygplates.InvalidLatLonError
+============================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: InvalidLatLonError

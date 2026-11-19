@@ -1,0 +1,6 @@
+﻿pygplates.InsufficientPointsForMultiPointConstructionError
+==========================================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: InsufficientPointsForMultiPointConstructionError

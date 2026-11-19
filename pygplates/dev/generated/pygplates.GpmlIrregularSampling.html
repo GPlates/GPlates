@@ -1,0 +1,629 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.GpmlIrregularSampling &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.GpmlPiecewiseAggregation" href="pygplates.GpmlPiecewiseAggregation.html" />
+    <link rel="prev" title="pygplates.GpmlConstantValue" href="pygplates.GpmlConstantValue.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Enumeration.html">pygplates.Enumeration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlDataBlock.html">pygplates.GmlDataBlock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlLineString.html">pygplates.GmlLineString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlMultiPoint.html">pygplates.GmlMultiPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlOrientableCurve.html">pygplates.GmlOrientableCurve</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlPoint.html">pygplates.GmlPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlPolygon.html">pygplates.GmlPolygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlTimeInstant.html">pygplates.GmlTimeInstant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GmlTimePeriod.html">pygplates.GmlTimePeriod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlArray.html">pygplates.GpmlArray</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlFiniteRotation.html">pygplates.GpmlFiniteRotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlKeyValueDictionary.html">pygplates.GpmlKeyValueDictionary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlOldPlatesHeader.html">pygplates.GpmlOldPlatesHeader</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPlateId.html">pygplates.GpmlPlateId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPolarityChronId.html">pygplates.GpmlPolarityChronId</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsBoolean.html">pygplates.XsBoolean</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsDouble.html">pygplates.XsDouble</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsInteger.html">pygplates.XsInteger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.XsString.html">pygplates.XsString</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalLine.html">pygplates.GpmlTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalPolygon.html">pygplates.GpmlTopologicalPolygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalNetwork.html">pygplates.GpmlTopologicalNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalSection.html">pygplates.GpmlTopologicalSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalSectionList.html">pygplates.GpmlTopologicalSectionList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalPoint.html">pygplates.GpmlTopologicalPoint</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTopologicalLineSection.html">pygplates.GpmlTopologicalLineSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPropertyDelegate.html">pygplates.GpmlPropertyDelegate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPropertyDelegateList.html">pygplates.GpmlPropertyDelegateList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlConstantValue.html">pygplates.GpmlConstantValue</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.GpmlIrregularSampling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.GpmlIrregularSampling"><code class="docutils literal notranslate"><span class="pre">GpmlIrregularSampling</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlPiecewiseAggregation.html">pygplates.GpmlPiecewiseAggregation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeSample.html">pygplates.GpmlTimeSample</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeSampleList.html">pygplates.GpmlTimeSampleList</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeWindow.html">pygplates.GpmlTimeWindow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GpmlTimeWindowList.html">pygplates.GpmlTimeWindowList</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.GpmlIrregularSampling</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.GpmlIrregularSampling.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-gpmlirregularsampling">
+<h1>pygplates.GpmlIrregularSampling<a class="headerlink" href="#pygplates-gpmlirregularsampling" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">GpmlIrregularSampling</span></span><a class="headerlink" href="#pygplates.GpmlIrregularSampling" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyValue</span></code></a></p>
+<p>A time-dependent property consisting of a sequence of time samples irregularly spaced in time.</p>
+<p>The time samples are kept in order of time, from most recent (closest to present day) to least recent (furthest in the geological past). The <a class="reference internal" href="#pygplates.GpmlIrregularSampling.__init__" title="pygplates.GpmlIrregularSampling.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> sorts them into that order (keeping time samples with equal times in the order given). Everything that uses the time samples relies on that order (eg, <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_value" title="pygplates.GpmlIrregularSampling.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_value()</span></code></a> and <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a>).</p>
+<p><strong>Keep the time samples in that order when changing them directly</strong> (eg, inserting a time sample, or changing a time sample’s time with <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample.set_time" title="pygplates.GpmlTimeSample.set_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GpmlTimeSample.set_time()</span></code></a>). Otherwise interpolation finds the wrong time samples, or none. For example, <a class="reference internal" href="#pygplates.GpmlIrregularSampling.sort" title="pygplates.GpmlIrregularSampling.sort"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sort()</span></code></a> them afterwards, or use <a class="reference internal" href="#pygplates.GpmlIrregularSampling.set_value" title="pygplates.GpmlIrregularSampling.set_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_value()</span></code></a>, which keeps them in order.</p>
+<p>GpmlIrregularSampling behaves like a regular python <code class="docutils literal notranslate"><span class="pre">list</span></code> (of <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a> elements) in that the following operations are supported:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Operation</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">s</span></code></p></td>
+<td><p>iterates over the elements <em>x</em> of <em>s</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">in</span> <span class="pre">s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <em>x</em> is an item of <em>s</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">not</span> <span class="pre">in</span> <span class="pre">s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">False</span></code> if <em>x</em> is an item of <em>s</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">+=</span> <span class="pre">t</span></code></p></td>
+<td><p>the <em>GpmlIrregularSampling</em> instance <em>s</em> is extended by sequence <em>t</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">+</span> <span class="pre">t</span></code></p></td>
+<td><p>the concatenation of sequences <em>s</em> and <em>t</em> where either, or both, is a <em>GpmlIrregularSampling</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s[i]</span></code></p></td>
+<td><p>the item of <em>s</em> at index <em>i</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s[i]</span> <span class="pre">=</span> <span class="pre">x</span></code></p></td>
+<td><p>replace the item of <em>s</em> at index <em>i</em> with <em>x</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">s[i]</span></code></p></td>
+<td><p>remove the item at index <em>i</em> from <em>s</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s[i:j]</span></code></p></td>
+<td><p>slice of <em>s</em> from <em>i</em> to <em>j</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s[i:j]</span> <span class="pre">=</span> <span class="pre">t</span></code></p></td>
+<td><p>slice of <em>s</em> from <em>i</em> to <em>j</em> is replaced by the contents of the sequence <em>t</em> (the slice and <em>t</em> can be different lengths)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">s[i:j]</span></code></p></td>
+<td><p>same as <code class="docutils literal notranslate"><span class="pre">s[i:j]</span> <span class="pre">=</span> <span class="pre">[]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s[i:j:k]</span></code></p></td>
+<td><p>slice of <em>s</em> from <em>i</em> to <em>j</em> with step <em>k</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">del</span> <span class="pre">s[i:j:k]</span></code></p></td>
+<td><p>removes the elements of <code class="docutils literal notranslate"><span class="pre">s[i:j:k]</span></code> from the list</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s[i:j:k]</span> <span class="pre">=</span> <span class="pre">t</span></code></p></td>
+<td><p>the elements of <code class="docutils literal notranslate"><span class="pre">s[i:j:k]</span></code> are replaced by those of <em>t</em> (the slice and <em>t</em> <strong>must</strong> be the same length if <code class="docutils literal notranslate"><span class="pre">k</span> <span class="pre">!=</span> <span class="pre">1</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">len(s)</span></code></p></td>
+<td><p>length of <em>s</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.append(x)</span></code></p></td>
+<td><p>add element <em>x</em> to the end of <em>s</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.extend(t)</span></code></p></td>
+<td><p>add the elements in sequence <em>t</em> to the end of <em>s</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.insert(i,x)</span></code></p></td>
+<td><p>insert element <em>x</em> at index <em>i</em> in <em>s</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.pop([i])</span></code></p></td>
+<td><p>removes the element at index <em>i</em> in <em>s</em> and returns it (defaults to last element)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.remove(x)</span></code></p></td>
+<td><p>removes the first element in <em>s</em> that equals <em>x</em> (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if not found)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.count(x)</span></code></p></td>
+<td><p>number of occurrences of <em>x</em> in <em>s</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.index(x[,i[,j]])</span></code></p></td>
+<td><p>smallest <em>k</em> such that <code class="docutils literal notranslate"><span class="pre">s[k]</span> <span class="pre">==</span> <span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">i</span> <span class="pre">&lt;=</span> <span class="pre">k</span> <span class="pre">&lt;</span> <span class="pre">j</span></code> (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if not found)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s.reverse()</span></code></p></td>
+<td><p>reverses the items of <em>s</em> in place</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s.sort(key[,reverse])</span></code></p></td>
+<td><p>sort the items of <em>s</em> in place (note that <em>key</em> is <strong>not</strong> optional and, like python 3.0, we removed <em>cmp</em>)</p></td>
+</tr>
+</tbody>
+</table>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sort samples by time.</span>
+<span class="n">irregular_sampling</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlIrregularSampling</span><span class="p">([</span><span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlTimeSample</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="o">...</span><span class="p">])</span>
+<span class="o">...</span>
+<span class="n">irregular_sampling</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_time</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>A <em>GpmlIrregularSampling</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<p>In addition to the above <code class="docutils literal notranslate"><span class="pre">list</span></code>-style operations there are also the following methods…</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_samples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create an irregularly sampled time-dependent property from a sequence of time samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time_samples</strong> (<em>iterable</em><em> of </em><a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><em>GpmlTimeSample</em></a>) – A sequence of <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a> elements, in any order (they are sorted by time, from most recent to least recent).</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – if time sample sequence is empty</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The sequence of time samples must <strong>not</strong> be empty (for technical implementation reasons), otherwise a <em>RuntimeError</em> exception will be thrown.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">irregular_sampling</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlIrregularSampling</span><span class="p">(</span><span class="n">time_samples</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span>Sorts the time samples by time (previously they were kept in the order given).</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.__init__" title="pygplates.GpmlIrregularSampling.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(time_samples)</p></td>
+<td><p>Create an irregularly sampled time-dependent property from a sequence of time samples.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.accept_visitor" title="pygplates.PropertyValue.accept_visitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_visitor</span></code></a>(visitor)</p></td>
+<td><p>Accept a property value visitor so that it can visit this property value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.append" title="pygplates.GpmlIrregularSampling.append"><code class="xref py py-obj docutils literal notranslate"><span class="pre">append</span></code></a>(x)</p></td>
+<td><p>Add element <em>x</em> to the end.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.clone" title="pygplates.PropertyValue.clone"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clone</span></code></a>()</p></td>
+<td><p>Create a duplicate of this property value (derived) instance, including a recursive copy of any nested property values that this instance might contain.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.count" title="pygplates.GpmlIrregularSampling.count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count</span></code></a>(x)</p></td>
+<td><p>Number of occurrences of <em>x</em>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.extend" title="pygplates.GpmlIrregularSampling.extend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extend</span></code></a>(t)</p></td>
+<td><p>Add the elements in sequence <em>t</em> to the end.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_enabled_time_samples" title="pygplates.GpmlIrregularSampling.get_enabled_time_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_enabled_time_samples</span></code></a>()</p></td>
+<td><p>Filter out the disabled <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> and return a list of enabled time samples.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.get_geometry" title="pygplates.PropertyValue.get_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_geometry</span></code></a>()</p></td>
+<td><p>Extracts the <a class="reference internal" href="pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere" title="pygplates.GeometryOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">geometry</span></code></a> if this property value contains a geometry.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_time_samples</span></code></a>()</p></td>
+<td><p>Returns the <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> in a sequence that behaves as a python <code class="docutils literal notranslate"><span class="pre">list</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples_bounding_time" title="pygplates.GpmlIrregularSampling.get_time_samples_bounding_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_time_samples_bounding_time</span></code></a>(time[[, ...])</p></td>
+<td><p>Return the two adjacent <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> that surround <em>time</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_value" title="pygplates.GpmlIrregularSampling.get_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_value</span></code></a>([time=0])</p></td>
+<td><p>Extracts the value at the reconstruction <em>time</em>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_value_type" title="pygplates.GpmlIrregularSampling.get_value_type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_value_type</span></code></a>()</p></td>
+<td><p>Returns the type of property value returned by <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_value" title="pygplates.GpmlIrregularSampling.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_value()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.index" title="pygplates.GpmlIrregularSampling.index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">index</span></code></a>(x[,i[,j]])</p></td>
+<td><p>Smallest <em>k</em> such that the <em>k</em> th element equals <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">i</span> <span class="pre">&lt;=</span> <span class="pre">k</span> <span class="pre">&lt;</span> <span class="pre">j</span></code> (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if not found).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.insert" title="pygplates.GpmlIrregularSampling.insert"><code class="xref py py-obj docutils literal notranslate"><span class="pre">insert</span></code></a>(i, x)</p></td>
+<td><p>Insert element <em>x</em> at index <em>i</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.pop" title="pygplates.GpmlIrregularSampling.pop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pop</span></code></a>([i])</p></td>
+<td><p>Removes the element at index <em>i</em> and returns it (defaults to last element).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.remove" title="pygplates.GpmlIrregularSampling.remove"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove</span></code></a>(x)</p></td>
+<td><p>Removes the first element that equals <em>x</em> (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if not found).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.reverse" title="pygplates.GpmlIrregularSampling.reverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reverse</span></code></a>()</p></td>
+<td><p>Reverses the items in place.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.set_value" title="pygplates.GpmlIrregularSampling.set_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_value</span></code></a>(property_value, time, ...)</p></td>
+<td><p>Sets the value at the reconstruction <em>time</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.GpmlIrregularSampling.sort" title="pygplates.GpmlIrregularSampling.sort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code></a>(key[,reverse])</p></td>
+<td><p>Sort the items in place (note that <em>key</em> is <strong>not</strong> optional and, like python 3.0, we removed <em>cmp</em>).</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.append" title="Link to this definition"></a></dt>
+<dd><p>Add element <em>x</em> to the end.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a>) – the element to add</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.count">
+<span class="sig-name descname"><span class="pre">count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.count" title="Link to this definition"></a></dt>
+<dd><p>Number of occurrences of <em>x</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a>) – the element to count</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.extend">
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.extend" title="Link to this definition"></a></dt>
+<dd><p>Add the elements in sequence <em>t</em> to the end.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (iterable of <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a>) – the elements to add</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.get_enabled_time_samples">
+<span class="sig-name descname"><span class="pre">get_enabled_time_samples</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.get_enabled_time_samples" title="Link to this definition"></a></dt>
+<dd><p>Filter out the disabled <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> and return a list of enabled time samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the list of enabled <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> (if any)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a>[<a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample">GpmlTimeSample</a>]</p>
+</dd>
+</dl>
+<p>Returns an empty list if all time samples are disabled.</p>
+<p>This method essentially does the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">return</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">is_enabled</span><span class="p">(),</span> <span class="n">get_time_samples</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><strong>NOTE:</strong> Unlike <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_time_samples()</span></code></a>, the returned sequence is a new <code class="docutils literal notranslate"><span class="pre">list</span></code> object and
+hence modifications to the <code class="docutils literal notranslate"><span class="pre">list</span></code> such as <code class="docutils literal notranslate"><span class="pre">list.sort</span></code> (as opposed to modifications to the list
+<em>elements</em>) will <strong>not</strong> modify the internal state of the <a class="reference internal" href="#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlIrregularSampling</span></code></a> instance
+(it only modifies the returned <code class="docutils literal notranslate"><span class="pre">list</span></code>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.get_time_samples">
+<span class="sig-name descname"><span class="pre">get_time_samples</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="Link to this definition"></a></dt>
+<dd><p>Returns the <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> in a sequence that behaves as a python <code class="docutils literal notranslate"><span class="pre">list</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.GpmlTimeSampleList.html#pygplates.GpmlTimeSampleList" title="pygplates.GpmlTimeSampleList">GpmlTimeSampleList</a></p>
+</dd>
+</dl>
+<p>Modifying the returned sequence will modify the internal state of the <em>GpmlIrregularSampling</em> instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time_samples</span> <span class="o">=</span> <span class="n">irregular_sampling</span><span class="o">.</span><span class="n">get_time_samples</span><span class="p">()</span>
+
+<span class="c1"># Sort samples by time.</span>
+<span class="n">time_samples</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_time</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>The same effect can be achieved by working directly on the <em>GpmlIrregularSampling</em> instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sort samples by time.</span>
+<span class="n">irregular_sampling</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_time</span><span class="p">())</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.get_time_samples_bounding_time">
+<span class="sig-name descname"><span class="pre">get_time_samples_bounding_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">include_disabled_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.get_time_samples_bounding_time" title="Link to this definition"></a></dt>
+<dd><p>Return the two adjacent <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> that surround <em>time</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the time</p></li>
+<li><p><strong>include_disabled_samples</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – if True then disabled time samples are included in the search</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the two time samples surrounding <em>time</em>, or <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)">tuple</a>[<a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample">GpmlTimeSample</a>, <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample">GpmlTimeSample</a>], or None</p>
+</dd>
+</dl>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if <em>time</em> is outside the range of times (later than the most recent time sample
+or earlier than the least recent time sample). If there is only one time sample then <em>time</em> must
+equal its time, and that sample is returned as both samples.</p>
+<p><em>Note:</em> The returned time samples are ordered forward in time (the first sample is further in the past than the second sample).
+This is opposite the typical ordering of time samples in a <a class="reference internal" href="#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlIrregularSampling</span></code></a> (which are progressively further
+back in time) but is similar to <a class="reference internal" href="pygplates.GpmlTimeWindow.html#pygplates.GpmlTimeWindow" title="pygplates.GpmlTimeWindow"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeWindow</span></code></a> (where its <em>begin</em> time is further in the past than its <em>end</em> time).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.get_value">
+<span class="sig-name descname"><span class="pre">get_value</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.get_value" title="Link to this definition"></a></dt>
+<dd><p>Extracts the value at the reconstruction <em>time</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the time to extract value (defaults to present day)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue">PropertyValue</a> or None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.InterpolationError.html#pygplates.InterpolationError" title="pygplates.InterpolationError"><strong>InterpolationError</strong></a> – if a <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span> <span class="pre">sample</span></code></a> bounding <em>time</em> has a time that is     <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">past</span></code></a> or <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">future</span></code></a></p>
+</dd>
+</dl>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if <em>time</em> is outside the time range of the <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a>
+(including a <em>time</em> that is itself distant past or distant future).</p>
+<p>Note that the extracted property value is interpolated (at reconstruction <em>time</em>) if property
+value can be interpolated (currently only <a class="reference internal" href="pygplates.GpmlFiniteRotation.html#pygplates.GpmlFiniteRotation" title="pygplates.GpmlFiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlFiniteRotation</span></code></a> and <a class="reference internal" href="pygplates.XsDouble.html#pygplates.XsDouble" title="pygplates.XsDouble"><code class="xref py py-class docutils literal notranslate"><span class="pre">XsDouble</span></code></a>),
+otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code> is returned. The function <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation.interpolate" title="pygplates.FiniteRotation.interpolate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">FiniteRotation.interpolate()</span></code></a> is used
+internally when the extracted property value type is <a class="reference internal" href="pygplates.GpmlFiniteRotation.html#pygplates.GpmlFiniteRotation" title="pygplates.GpmlFiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlFiniteRotation</span></code></a>.</p>
+<p><strong>NOTE:</strong> modifying the returned <a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">property</span> <span class="pre">value</span></code></a> does <strong>not</strong> modify the sequence
+of <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> (because the returned <a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">property</span> <span class="pre">value</span></code></a>
+is a new interpolated time sample that does not exist in the <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sequence</span></code></a>).
+Instead <a class="reference internal" href="#pygplates.GpmlIrregularSampling.set_value" title="pygplates.GpmlIrregularSampling.set_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_value()</span></code></a> can be used to modify the sequence for a specific time value.</p>
+<p>This method overrides <a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue.get_value" title="pygplates.PropertyValue.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PropertyValue.get_value()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.get_value_type">
+<span class="sig-name descname"><span class="pre">get_value_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.get_value_type" title="Link to this definition"></a></dt>
+<dd><p>Returns the type of property value returned by <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_value" title="pygplates.GpmlIrregularSampling.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_value()</span></code></a>.</p>
+<p>For example, it might return <code class="docutils literal notranslate"><span class="pre">pygplates.GmlLineString</span></code> which is a <em>class</em> object (not an instance).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a class object of the property type (derived from PropertyValue)</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.21.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.index">
+<span class="sig-name descname"><span class="pre">index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">j</span></span></em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.index" title="Link to this definition"></a></dt>
+<dd><p>Smallest <em>k</em> such that the <em>k</em> th element equals <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">i</span> <span class="pre">&lt;=</span> <span class="pre">k</span> <span class="pre">&lt;</span> <span class="pre">j</span></code> (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if not found).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a>) – the element to search for</p></li>
+<li><p><strong>i</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the index to start searching at (defaults to the first element)</p></li>
+<li><p><strong>j</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the index to stop searching before (defaults to past the last element)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.insert">
+<span class="sig-name descname"><span class="pre">insert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.insert" title="Link to this definition"></a></dt>
+<dd><p>Insert element <em>x</em> at index <em>i</em>.</p>
+<p>Like <code class="docutils literal notranslate"><span class="pre">list.insert()</span></code>, an index <em>i</em> past either end of the sequence inserts at that end (rather than raising <code class="docutils literal notranslate"><span class="pre">IndexError</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the index to insert at</p></li>
+<li><p><strong>x</strong> (<a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a>) – the element to insert</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.pop">
+<span class="sig-name descname"><span class="pre">pop</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.pop" title="Link to this definition"></a></dt>
+<dd><p>Removes the element at index <em>i</em> and returns it (defaults to last element).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>i</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the index to remove at (defaults to the last element)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.remove" title="Link to this definition"></a></dt>
+<dd><p>Removes the first element that equals <em>x</em> (raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if not found).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a>) – the element to remove</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.reverse">
+<span class="sig-name descname"><span class="pre">reverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.reverse" title="Link to this definition"></a></dt>
+<dd><p>Reverses the items in place.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.set_value">
+<span class="sig-name descname"><span class="pre">set_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">property_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">is_enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.set_value" title="Link to this definition"></a></dt>
+<dd><p>Sets the value at the reconstruction <em>time</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>property_value</strong> (<a class="reference internal" href="pygplates.PropertyValue.html#pygplates.PropertyValue" title="pygplates.PropertyValue"><em>PropertyValue</em></a>) – the property value to set</p></li>
+<li><p><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the time to set the value</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><em>None</em>) – description of the time sample</p></li>
+<li><p><strong>is_enabled</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em> or </em><em>None</em>) – whether time sample is enabled (defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>, as does <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the time sample that is modified, or inserted into the time sequence</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample">GpmlTimeSample</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>time</em> is <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">past</span></code></a> or     <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">future</span></code></a></p>
+</dd>
+</dl>
+<p>If an existing <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span> <span class="pre">sample</span></code></a> matches <em>time</em> then it will be modified,
+otherwise a new <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">sample</span></code></a> will be inserted into the sequence
+such that the <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> remain ordered by time.</p>
+<p>This method assumes the precondition that the <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a> are
+ordered by time from most recent to least recent.</p>
+<p>Note that <em>time</em> can be outside the time range of existing <a class="reference internal" href="#pygplates.GpmlIrregularSampling.get_time_samples" title="pygplates.GpmlIrregularSampling.get_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span> <span class="pre">samples</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>is_enabled</em> set to <code class="docutils literal notranslate"><span class="pre">None</span></code> means enabled (the default), not disabled.
+A disabled time sample is ignored when interpolating (eg, a disabled sample of a total reconstruction pole
+is ignored when calculating rotations).</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.1: </span><em>is_enabled</em> set to <code class="docutils literal notranslate"><span class="pre">None</span></code> means enabled (previously it disabled the time sample).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.GpmlIrregularSampling.sort">
+<span class="sig-name descname"><span class="pre">sort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reverse</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.GpmlIrregularSampling.sort" title="Link to this definition"></a></dt>
+<dd><p>Sort the items in place (note that <em>key</em> is <strong>not</strong> optional and, like python 3.0, we removed <em>cmp</em>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (callable (accepting single <a class="reference internal" href="pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">GpmlTimeSample</span></code></a> argument)) – the sort key extracted from each element</p></li>
+<li><p><strong>reverse</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to sort in descending order (defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.GpmlConstantValue.html" class="btn btn-neutral float-left" title="pygplates.GpmlConstantValue" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.GpmlPiecewiseAggregation.html" class="btn btn-neutral float-right" title="pygplates.GpmlPiecewiseAggregation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

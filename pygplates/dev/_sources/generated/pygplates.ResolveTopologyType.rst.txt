@@ -1,0 +1,8 @@
+﻿pygplates.ResolveTopologyType
+=============================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ResolveTopologyType
+   :no-members:
+   :no-show-inheritance:

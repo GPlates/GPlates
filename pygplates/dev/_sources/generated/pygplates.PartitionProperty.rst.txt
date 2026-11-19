@@ -1,0 +1,8 @@
+﻿pygplates.PartitionProperty
+===========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PartitionProperty
+   :no-members:
+   :no-show-inheritance:

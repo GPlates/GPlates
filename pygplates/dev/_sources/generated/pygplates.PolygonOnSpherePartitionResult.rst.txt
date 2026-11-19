@@ -1,0 +1,8 @@
+﻿pygplates.PolygonOnSpherePartitionResult
+========================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PolygonOnSpherePartitionResult
+   :no-members:
+   :no-show-inheritance:

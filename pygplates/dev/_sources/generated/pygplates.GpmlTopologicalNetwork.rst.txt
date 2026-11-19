@@ -1,0 +1,30 @@
+﻿pygplates.GpmlTopologicalNetwork
+================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: GpmlTopologicalNetwork
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GpmlTopologicalNetwork.__init__
+      ~GpmlTopologicalNetwork.accept_visitor
+      ~GpmlTopologicalNetwork.clone
+      ~GpmlTopologicalNetwork.get_boundary_sections
+      ~GpmlTopologicalNetwork.get_geometry
+      ~GpmlTopologicalNetwork.get_interiors
+      ~GpmlTopologicalNetwork.get_value
+   
+   
+
+   
+   
+   
+   
+   

@@ -1,0 +1,25 @@
+﻿pygplates.ReconstructionGeometry
+================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ReconstructionGeometry
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReconstructionGeometry.__init__
+      ~ReconstructionGeometry.get_reconstruction_time
+   
+   
+
+   
+   
+   
+   
+   

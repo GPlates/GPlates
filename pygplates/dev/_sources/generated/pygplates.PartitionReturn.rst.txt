@@ -1,0 +1,8 @@
+﻿pygplates.PartitionReturn
+=========================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: PartitionReturn
+   :no-members:
+   :no-show-inheritance:

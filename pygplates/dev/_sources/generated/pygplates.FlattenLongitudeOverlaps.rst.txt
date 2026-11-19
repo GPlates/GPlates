@@ -1,0 +1,8 @@
+﻿pygplates.FlattenLongitudeOverlaps
+==================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: FlattenLongitudeOverlaps
+   :no-members:
+   :no-show-inheritance:

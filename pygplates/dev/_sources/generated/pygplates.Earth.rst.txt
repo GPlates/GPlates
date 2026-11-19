@@ -1,0 +1,55 @@
+﻿pygplates.Earth
+===============
+
+.. currentmodule:: pygplates
+
+.. autoclass:: Earth
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Earth.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+   
+   
+   
+   .. list-table::
+      :class: autosummary longtable
+      :widths: auto
+   
+      * - :py:obj:`equatorial_radius_in_kms <pygplates.Earth.equatorial_radius_in_kms>`
+        - The radius of the Earth at the equator, in kms (WGS-84).
+      * - :py:obj:`mean_radius_in_kms <pygplates.Earth.mean_radius_in_kms>`
+        - The mean radius of the Earth, in kms (WGS-84).
+      * - :py:obj:`polar_radius_in_kms <pygplates.Earth.polar_radius_in_kms>`
+        - The radius of the Earth at the poles, in kms (WGS-84).
+   
+   .. py:attribute:: equatorial_radius_in_kms
+      :type: float
+      :value: 6378.137
+
+      The radius of the Earth at the equator, in kms (WGS-84).
+   
+   .. py:attribute:: mean_radius_in_kms
+      :type: float
+      :value: 6371.009
+
+      The mean radius of the Earth, in kms (WGS-84).
+   
+   .. py:attribute:: polar_radius_in_kms
+      :type: float
+      :value: 6356.7523142
+
+      The radius of the Earth at the poles, in kms (WGS-84).
+   
+   

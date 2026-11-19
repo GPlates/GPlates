@@ -1,0 +1,30 @@
+﻿pygplates.XsDouble
+==================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: XsDouble
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~XsDouble.__init__
+      ~XsDouble.accept_visitor
+      ~XsDouble.clone
+      ~XsDouble.get_double
+      ~XsDouble.get_geometry
+      ~XsDouble.get_value
+      ~XsDouble.set_double
+   
+   
+
+   
+   
+   
+   
+   

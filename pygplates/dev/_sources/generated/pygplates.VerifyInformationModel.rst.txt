@@ -1,0 +1,8 @@
+﻿pygplates.VerifyInformationModel
+================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: VerifyInformationModel
+   :no-members:
+   :no-show-inheritance:

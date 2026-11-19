@@ -1,0 +1,375 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.Version &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.FeaturesFunctionArgument" href="pygplates.FeaturesFunctionArgument.html" />
+    <link rel="prev" title="pygplates.GeoTimeInstant" href="pygplates.GeoTimeInstant.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates.Earth.html">pygplates.Earth</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.GeoTimeInstant.html">pygplates.GeoTimeInstant</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.Version</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.Version"><code class="docutils literal notranslate"><span class="pre">Version</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FeaturesFunctionArgument.html">pygplates.FeaturesFunctionArgument</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.Version</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.Version.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-version">
+<h1>pygplates.Version<a class="headerlink" href="#pygplates-version" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.Version">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">Version</span></span><a class="headerlink" href="#pygplates.Version" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>A version of pyGPlates (GPlates Python API).</p>
+<p>Versions are defined by the <a class="reference external" href="https://www.python.org/dev/peps/pep-0440/">PEP440 versioning scheme</a> as <code class="docutils literal notranslate"><span class="pre">N.N[.N][{a|b|rc}N][.postN][.devN]</span></code> where <code class="docutils literal notranslate"><span class="pre">N.N[.N]</span></code> is the major.minor[.patch] version and <code class="docutils literal notranslate"><span class="pre">[{a|b|rc}N][.postN][.devN]</span></code> is an optional release suffix. Examples include <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code> for an official release, <code class="docutils literal notranslate"><span class="pre">1.0.0.dev1</span></code> for a first development release and <code class="docutils literal notranslate"><span class="pre">1.0.0rc1</span></code> for a first release candidate.</p>
+<p>All comparison operators (==, !=, &lt;, &lt;=, &gt;, &gt;=) are supported and <code class="docutils literal notranslate"><span class="pre">Version</span></code> is hashable (can be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>). And <code class="docutils literal notranslate"><span class="pre">Version</span></code> can be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="line-block">
+<div class="line">During the lifespan of pyGPlates, the <a class="reference internal" href="#pygplates.Version.get_imported_version" title="pygplates.Version.get_imported_version"><code class="xref py py-meth docutils literal notranslate"><span class="pre">imported</span> <span class="pre">pyGPlates</span> <span class="pre">version</span></code></a> has been updated for each API change. So it can be used to ensure new API additions are present in the imported pyGPlates library.</div>
+<div class="line">For example, if we are using an API function that was added in version <code class="docutils literal notranslate"><span class="pre">1.0</span></code> (the official public release of pyGPlates in 2025) then we can ensure we are using a sufficient API version by checking this at the beginning of our script:</div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="o">.</span><span class="n">get_imported_version</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">'Using pygplates version </span><span class="si">{0}</span><span class="s1"> but version </span><span class="si">{1}</span><span class="s1"> or greater is required'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="o">.</span><span class="n">get_imported_version</span><span class="p">(),</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>To print the version string of the imported pyGPlates library:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'imported pyGPlates version: </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="o">.</span><span class="n">get_imported_version</span><span class="p">()))</span>
+</pre></div>
+</div>
+<p>…which, for pyGPlates version 1.0.0, will print <code class="docutils literal notranslate"><span class="pre">imported</span> <span class="pre">pyGPlates</span> <span class="pre">version:</span> <span class="pre">1.0.0</span></code>.</p>
+<p>There is also a <code class="docutils literal notranslate"><span class="pre">pygplates.__version__</span></code> string which, for that same version, would be <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.__init__" title="Link to this definition"></a></dt>
+<dd><p>A <em>Version</em> object can be constructed in more than one way…</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">major</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minor</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">patch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">release_suffix</span></span></em><span class="optional">]</span><span class="sig-paren">)</span></dt>
+<dd><p>Create from major, minor, patch numbers and optional release suffix string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>major</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the major version number</p></li>
+<li><p><strong>minor</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the minor version number</p></li>
+<li><p><strong>patch</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the patch version number (defaults to zero)</p></li>
+<li><p><strong>release_suffix</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><em>None</em>) – the optional release PEP440 suffix <code class="docutils literal notranslate"><span class="pre">[{a|b|rc}N][.postN][.devN]</span></code> (defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>release_suffix</em> is specified but doesn’t match pattern <code class="docutils literal notranslate"><span class="pre">[{a|b|rc}N][.postN][.devN]</span></code></p>
+</dd>
+</dl>
+<p>To create version <code class="docutils literal notranslate"><span class="pre">1.0</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">version</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.34.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 1.0: </span>Deprecated <em>prerelease_suffix</em> argument and renamed to <em>release_suffix</em>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Create from a version string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>version</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – the version string in PEP440 format matching <code class="docutils literal notranslate"><span class="pre">N.N[.N][{a|b|rc}N][.postN][.devN]</span></code></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if version string doesn’t match pattern <code class="docutils literal notranslate"><span class="pre">N.N[.N][{a|b|rc}N][.postN][.devN]</span></code></p>
+</dd>
+</dl>
+<p>To create the first development release of version <code class="docutils literal notranslate"><span class="pre">1.0</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">version</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="p">(</span><span class="s1">'1.0.dev1'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.34.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">revision</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Only supported when <em>revision</em> &lt;= 33 (where creates version <em>0.revision</em>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>revision</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the revision number</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – if <em>revision</em> is greater than 33</p>
+</dd>
+</dl>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 0.34.</span></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.Version.__init__" title="pygplates.Version.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(...)</p></td>
+<td><p>A <em>Version</em> object can be constructed in more than one way...</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.Version.get_imported_version" title="pygplates.Version.get_imported_version"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_imported_version</span></code></a>()</p></td>
+<td><p>Return the version of the imported pyGPlates library.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.Version.get_major" title="pygplates.Version.get_major"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_major</span></code></a>()</p></td>
+<td><p>Return the major version number.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.Version.get_minor" title="pygplates.Version.get_minor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_minor</span></code></a>()</p></td>
+<td><p>Return the minor version number.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.Version.get_patch" title="pygplates.Version.get_patch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_patch</span></code></a>()</p></td>
+<td><p>Return the patch version number.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.Version.get_prerelease_suffix" title="pygplates.Version.get_prerelease_suffix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_prerelease_suffix</span></code></a>()</p></td>
+<td><p>Same as <a class="reference internal" href="#pygplates.Version.get_release_suffix" title="pygplates.Version.get_release_suffix"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_release_suffix()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.Version.get_release_suffix" title="pygplates.Version.get_release_suffix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_release_suffix</span></code></a>()</p></td>
+<td><p>Return the PEP440 release suffix (matching pattern <code class="docutils literal notranslate"><span class="pre">[{a|b|rc}N][.postN][.devN]</span></code>), or <code class="docutils literal notranslate"><span class="pre">None</span></code> if a <em>final</em> release.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.Version.get_revision" title="pygplates.Version.get_revision"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_revision</span></code></a>()</p></td>
+<td><p>Only supported for versions &lt;= 0.33 (with zero patch number and no release suffix).</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.get_imported_version">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_imported_version</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.get_imported_version" title="Link to this definition"></a></dt>
+<dd><p>Return the version of the imported pyGPlates library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a Version instance representing the version of the imported pyGPlates library</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pygplates.Version" title="pygplates.Version">Version</a></p>
+</dd>
+</dl>
+<p>To get the imported version:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">imported_version</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="o">.</span><span class="n">get_imported_version</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.get_major">
+<span class="sig-name descname"><span class="pre">get_major</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.get_major" title="Link to this definition"></a></dt>
+<dd><p>Return the major version number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.34.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.get_minor">
+<span class="sig-name descname"><span class="pre">get_minor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.get_minor" title="Link to this definition"></a></dt>
+<dd><p>Return the minor version number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.34.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.get_patch">
+<span class="sig-name descname"><span class="pre">get_patch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.get_patch" title="Link to this definition"></a></dt>
+<dd><p>Return the patch version number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.34.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.get_prerelease_suffix">
+<span class="sig-name descname"><span class="pre">get_prerelease_suffix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.get_prerelease_suffix" title="Link to this definition"></a></dt>
+<dd><p>Same as <a class="reference internal" href="#pygplates.Version.get_release_suffix" title="pygplates.Version.get_release_suffix"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_release_suffix()</span></code></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.34.</span></p>
+</div>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 1.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.get_release_suffix">
+<span class="sig-name descname"><span class="pre">get_release_suffix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.get_release_suffix" title="Link to this definition"></a></dt>
+<dd><p>Return the PEP440 release suffix (matching pattern <code class="docutils literal notranslate"><span class="pre">[{a|b|rc}N][.postN][.devN]</span></code>), or <code class="docutils literal notranslate"><span class="pre">None</span></code> if a <em>final</em> release.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a> or None</p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.0.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.Version.get_revision">
+<span class="sig-name descname"><span class="pre">get_revision</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.Version.get_revision" title="Link to this definition"></a></dt>
+<dd><p>Only supported for versions &lt;= 0.33 (with zero patch number and no release suffix).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the minor version number</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – if internal version is not &lt;= 0.33 (with zero patch number and no release)</p>
+</dd>
+</dl>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 0.34.</span></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.GeoTimeInstant.html" class="btn btn-neutral float-left" title="pygplates.GeoTimeInstant" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.FeaturesFunctionArgument.html" class="btn btn-neutral float-right" title="pygplates.FeaturesFunctionArgument" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

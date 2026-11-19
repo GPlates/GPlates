@@ -1,0 +1,334 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.TopologicalModel &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.TopologicalSnapshot" href="pygplates.TopologicalSnapshot.html" />
+    <link rel="prev" title="pygplates.ReconstructionGeometry" href="pygplates.ReconstructionGeometry.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.TopologicalModel</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.TopologicalModel"><code class="docutils literal notranslate"><span class="pre">TopologicalModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologicalSnapshot.html">pygplates.TopologicalSnapshot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html">pygplates.ReconstructedGeometryTimeSpan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.TopologyPointLocation.html">pygplates.TopologyPointLocation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolveTopologyParameters.html">pygplates.ResolveTopologyParameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.resolve_topologies.html">pygplates.resolve_topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalLine.html">pygplates.ResolvedTopologicalLine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalBoundary.html">pygplates.ResolvedTopologicalBoundary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html">pygplates.ResolvedTopologicalNetwork</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionGeometry.html">pygplates.ReconstructionGeometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSubSegment.html">pygplates.ResolvedTopologicalSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSection.html">pygplates.ResolvedTopologicalSection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ResolvedTopologicalSharedSubSegment.html">pygplates.ResolvedTopologicalSharedSubSegment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.NetworkTriangulation.html">pygplates.NetworkTriangulation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.TopologicalModel</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.TopologicalModel.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-topologicalmodel">
+<h1>pygplates.TopologicalModel<a class="headerlink" href="#pygplates-topologicalmodel" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.TopologicalModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">TopologicalModel</span></span><a class="headerlink" href="#pygplates.TopologicalModel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>A history of topologies over geological time.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-model"><span class="std std-ref">Topological model</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<p>A <em>TopologicalModel</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.30.</span></p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topological_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_model</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">anchor_plate_id</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">default_resolve_topology_parameters</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">topological_snapshot_cache_size</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalModel.__init__" title="Link to this definition"></a></dt>
+<dd><p>Create from topological features and a rotation model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topological_features</strong> (<a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><em>FeatureCollection</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a><em>, or </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><em>any combination</em><em> of </em><em>those four types</em>) – The topological boundary and/or network features and the topological section features they reference (regular and topological lines) as a feature collection, or filename, or feature, or sequence of features, or a sequence (eg, <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) of any combination of those four types. <strong>Note</strong>: Each entry can optionally be a 2-tuple (entry, <a class="reference internal" href="pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters" title="pygplates.ResolveTopologyParameters"><code class="xref py py-class docutils literal notranslate"><span class="pre">ResolveTopologyParameters</span></code></a>) to override <em>default_resolve_topology_parameters</em> for that entry.</p></li>
+<li><p><strong>rotation_model</strong> (<a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><em>FeatureCollection</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a><em>, or </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><em>any combination</em><em> of </em><em>those four types</em><em>, or </em><a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><em>RotationModel</em></a>) – A rotation model. Or a rotation feature collection, or a rotation filename, or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.</p></li>
+<li><p><strong>anchor_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – The anchored plate id used for all reconstructions (resolving topologies, and reconstructing regular features and <a class="reference internal" href="#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometries</span></code></a>). Defaults to the default anchor plate of <em>rotation_model</em> (or zero if <em>rotation_model</em> is not a <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotationModel</span></code></a>).</p></li>
+<li><p><strong>default_resolve_topology_parameters</strong> (<a class="reference internal" href="pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters" title="pygplates.ResolveTopologyParameters"><em>ResolveTopologyParameters</em></a><em>, or </em><em>None</em>) – Default parameters used to resolve topologies. Note that these can optionally be overridden in <em>topological_features</em>. Defaults to <a class="reference internal" href="pygplates.ResolveTopologyParameters.html#pygplates.ResolveTopologyParameters.__init__" title="pygplates.ResolveTopologyParameters.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default-constructed</span> <span class="pre">ResolveTopologyParameters</span></code></a>).</p></li>
+<li><p><strong>topological_snapshot_cache_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – Number of topological snapshots to cache internally. Defaults to unlimited.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>topological_snapshot_cache_size</em> is zero</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-model"><span class="std std-ref">Topological model</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All reconstructions (including resolving topologies and reconstructing regular features and <a class="reference internal" href="#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometries</span></code></a>) use <em>anchor_plate_id</em>. So if you need to use a different anchor plate ID then you’ll need to create a new <a class="reference internal" href="#pygplates.TopologicalModel.__init__" title="pygplates.TopologicalModel.__init__"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalModel</span></code></a>. However this should only be done if necessary since each <a class="reference internal" href="#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TopologicalModel</span></code></a> created can consume a reasonable amount of CPU and memory (since it caches resolved topologies and reconstructed geometries over geological time).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <em>topological_snapshot_cache_size</em> parameter controls the size of an internal least-recently-used cache of topological snapshots (evicts least recently requested topological snapshot when a new reconstruction time is requested that does not currently exist in the cache). This enables topological snapshots associated with different reconstruction times to be re-used instead of re-creating them, provided they have not been evicted from the cache. This benefit also applies when reconstructing geometries with <a class="reference internal" href="#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruct_geometry()</span></code></a> since it, in turn, requests topological snapshots.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.31: </span>Added <em>default_resolve_topology_parameters</em> argument.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.43: </span>Added <em>topological_snapshot_cache_size</em> argument.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalModel.__init__" title="pygplates.TopologicalModel.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(topological_features, ...)</p></td>
+<td><p>Create from topological features and a rotation model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalModel.get_anchor_plate_id" title="pygplates.TopologicalModel.get_anchor_plate_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_anchor_plate_id</span></code></a>()</p></td>
+<td><p>Return the anchor plate ID (see <a class="reference internal" href="#pygplates.TopologicalModel.__init__" title="pygplates.TopologicalModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalModel.get_rotation_model" title="pygplates.TopologicalModel.get_rotation_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rotation_model</span></code></a>()</p></td>
+<td><p>Return the rotation model used internally.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reconstruct_geometry</span></code></a>(geometry, initial_time, ...)</p></td>
+<td><p>Reconstruct a geometry (and optional scalars) over a time span.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topological_snapshot</span></code></a>(reconstruction_time)</p></td>
+<td><p>Returns a snapshot of resolved topologies at the requested reconstruction time.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalModel.get_anchor_plate_id">
+<span class="sig-name descname"><span class="pre">get_anchor_plate_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalModel.get_anchor_plate_id" title="Link to this definition"></a></dt>
+<dd><p>Return the anchor plate ID (see <a class="reference internal" href="#pygplates.TopologicalModel.__init__" title="pygplates.TopologicalModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the same as the <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel.get_default_anchor_plate_id" title="pygplates.RotationModel.get_default_anchor_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default</span> <span class="pre">anchor</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a> of <a class="reference internal" href="#pygplates.TopologicalModel.get_rotation_model" title="pygplates.TopologicalModel.get_rotation_model"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation_model()</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalModel.get_rotation_model">
+<span class="sig-name descname"><span class="pre">get_rotation_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalModel.get_rotation_model" title="Link to this definition"></a></dt>
+<dd><p>Return the rotation model used internally.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel">RotationModel</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <a class="reference internal" href="pygplates.RotationModel.html#pygplates.RotationModel.get_default_anchor_plate_id" title="pygplates.RotationModel.get_default_anchor_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">default</span> <span class="pre">anchor</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a> of the returned rotation model may be different to that of the rotation model passed into the <a class="reference internal" href="#pygplates.TopologicalModel.__init__" title="pygplates.TopologicalModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> if an anchor plate ID was specified in the <a class="reference internal" href="#pygplates.TopologicalModel.__init__" title="pygplates.TopologicalModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The reconstruction tree cache size of the returned rotation model is equal to the <em>topological_snapshot_cache_size</em> argument specified in the <a class="reference internal" href="#pygplates.TopologicalModel.__init__" title="pygplates.TopologicalModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> plus one (or unlimited if not specified).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalModel.reconstruct_geometry">
+<span class="sig-name descname"><span class="pre">reconstruct_geometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">geometry</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_time</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">oldest_time</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">youngest_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">time_increment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reconstruction_plate_id</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">initial_scalars</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">deactivate_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">deformation_uses_natural_neighbour_interpolation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalModel.reconstruct_geometry" title="Link to this definition"></a></dt>
+<dd><p>Reconstruct a geometry (and optional scalars) over a time span.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>geometry</strong> (<a class="reference internal" href="pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><em>MultiPointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><em>PointOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><em>PolylineOnSphere</em></a><em>, or </em><a class="reference internal" href="pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><em>PolygonOnSphere</em></a><em>, or </em><em>iterable</em><em> of </em><em>points</em><em> (</em><em>where a point can be PointOnSphere</em><em> or </em><a class="reference internal" href="pygplates.LatLonPoint.html#pygplates.LatLonPoint" title="pygplates.LatLonPoint"><em>LatLonPoint</em></a><em> or </em><em>sequence</em><em> (</em><em>latitude</em><em>,</em><em>longitude</em><em>) </em><em>in degrees</em><em> or </em><em>(</em><em>x</em><em>,</em><em>y</em><em>,</em><em>z</em><em>)</em><em>)</em>) – The geometry to reconstruct (using topologies). Currently limited to a multipoint, or a point or sequence of points. A polyline or polygon is accepted as a sequence of its points (all the points of a polygon, including those of its interior rings), which are reconstructed as independent points. Reconstructing polylines and polygons as such is to be introduced in future.</p></li>
+<li><p><strong>initial_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – The time that reconstruction by topologies starts at. If it’s not one of the time slots (from <em>oldest_time</em> to <em>youngest_time</em> in steps of <em>time_increment</em>) then it’s snapped to the nearest one, at a cost in accuracy: if <em>reconstruction_plate_id</em> is specified then the present-day <em>geometry</em> is rigidly rotated to that time slot’s time (so it’s correct for that time slot), otherwise <em>geometry</em> is treated as being at that time slot’s time.</p></li>
+<li><p><strong>oldest_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a><em>, or </em><em>None</em>) – Oldest time in the history of topologies. Defaults to <em>initial_time</em>.</p></li>
+<li><p><strong>youngest_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – Youngest time in the history of topologies. Defaults to present day.</p></li>
+<li><p><strong>time_increment</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a>) – Time step in the history of topologies (<code class="docutils literal notranslate"><span class="pre">oldest_time</span> <span class="pre">-</span> <span class="pre">youngest_time</span></code> must be an integer multiple of <code class="docutils literal notranslate"><span class="pre">time_increment</span></code>). Defaults to 1My. There can be at most 100,000 time slots (<code class="docutils literal notranslate"><span class="pre">(oldest_time</span> <span class="pre">-</span> <span class="pre">youngest_time)</span> <span class="pre">/</span> <span class="pre">time_increment</span> <span class="pre">+</span> <span class="pre">1</span></code>). Note that the run time grows with the square of the number of time slots (and memory linearly), so a small increment over a long time span is expensive.</p></li>
+<li><p><strong>reconstruction_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – If specified then <em>geometry</em> is assumed to be a snapshot at present day, and this will rotate it to <em>initial_time</em>. If not specified then <em>geometry</em> is assumed to already be a snapshot at <em>initial_time</em> - this is the default.</p></li>
+<li><p><strong>initial_scalars</strong> (<em>dict mapping each ScalarType to an iterable</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, or </em><em>a sequence</em><em> of </em><em>(</em><a class="reference internal" href="pygplates.ScalarType.html#pygplates.ScalarType" title="pygplates.ScalarType"><em>ScalarType</em></a><em>, </em><em>iterable</em><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>) </em><em>tuples</em><em>, or </em><em>None</em>) – optional mapping of scalar types to sequences of initial scalar values</p></li>
+<li><p><strong>deactivate_points</strong> (<a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints" title="pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints"><em>ReconstructedGeometryTimeSpan.DeactivatePoints</em></a><em> or </em><em>None</em>) – Specify how points are deactivated when reconstructed forward and/or backward in time, or specify <code class="docutils literal notranslate"><span class="pre">None</span></code> to disable deactivation of points (which is useful if you know your points are on continental crust where they’re typically always active, as opposed to oceanic crust that is produced at mid-ocean ridges and consumed at subduction zones). Note that you can use your own class derived from <a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints" title="pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedGeometryTimeSpan.DeactivatePoints</span></code></a> or use the provided class <a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints" title="pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedGeometryTimeSpan.DefaultDeactivatePoints</span></code></a>. Defaults to a default-constructed <a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints" title="pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReconstructedGeometryTimeSpan.DefaultDeactivatePoints</span></code></a>.</p></li>
+<li><p><strong>deformation_uses_natural_neighbour_interpolation</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> then any point that lies (at any time) within a deforming region of a resolved topological network will be reconstructed using natural neighbour interpolation (otherwise barycentric interpolation will be used) - see <a class="reference internal" href="pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.reconstruct_point" title="pygplates.ResolvedTopologicalNetwork.reconstruct_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ResolvedTopologicalNetwork.reconstruct_point()</span></code></a>. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan" title="pygplates.ReconstructedGeometryTimeSpan">ReconstructedGeometryTimeSpan</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if initial time, oldest time or youngest time is distant-past (<code class="docutils literal notranslate"><span class="pre">float('inf')</span></code>) or distant-future (<code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code>).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if oldest time is later than (or same as) youngest time.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if time increment is negative or zero (or NaN).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if there would be more than 100,000 time slots.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if oldest to youngest time period is not an integer multiple of the time increment.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>initial_scalars</em> is specified but: is empty, or each <a class="reference internal" href="pygplates.ScalarType.html#pygplates.ScalarType" title="pygplates.ScalarType"><code class="xref py py-class docutils literal notranslate"><span class="pre">scalar</span> <span class="pre">type</span></code></a> is not mapped to the same number of scalar values, or the number of scalars is not equal to the number of points in <em>geometry</em></p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topologically-reconstruct-geometries"><span class="std std-ref">Topologically reconstruct geometries</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.31: </span>Added <em>deactivate_points</em> argument.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.43: </span>Oldest time, youngest time and time increment no longer required to be <em>integral</em> values.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.50: </span>Added <em>deformation_uses_natural_neighbour_interpolation</em> argument. Previously it was hardwired to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.TopologicalModel.topological_snapshot">
+<span class="sig-name descname"><span class="pre">topological_snapshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconstruction_time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.TopologicalModel.topological_snapshot" title="Link to this definition"></a></dt>
+<dd><p>Returns a snapshot of resolved topologies at the requested reconstruction time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>reconstruction_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – the geological time of the snapshot</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot">TopologicalSnapshot</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruction_time</em> is distant-past (<code class="docutils literal notranslate"><span class="pre">float('inf')</span></code>) or distant-future (<code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code>).</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-snapshot"><span class="std std-ref">Topological snapshot</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.43: </span><em>reconstruction_time</em> no longer required to be integral.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates.ReconstructionGeometry.html" class="btn btn-neutral float-left" title="pygplates.ReconstructionGeometry" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.TopologicalSnapshot.html" class="btn btn-neutral float-right" title="pygplates.TopologicalSnapshot" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

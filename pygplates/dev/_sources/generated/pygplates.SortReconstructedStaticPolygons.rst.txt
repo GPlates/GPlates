@@ -1,0 +1,8 @@
+﻿pygplates.SortReconstructedStaticPolygons
+=========================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: SortReconstructedStaticPolygons
+   :no-members:
+   :no-show-inheritance:

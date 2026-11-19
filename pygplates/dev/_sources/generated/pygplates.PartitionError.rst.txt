@@ -1,0 +1,6 @@
+﻿pygplates.PartitionError
+========================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: PartitionError

@@ -1,0 +1,6 @@
+﻿pygplates.InvalidPointsForPolygonConstructionError
+==================================================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: InvalidPointsForPolygonConstructionError

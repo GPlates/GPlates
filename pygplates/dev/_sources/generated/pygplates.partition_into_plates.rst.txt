@@ -1,0 +1,6 @@
+﻿pygplates.partition\_into\_plates
+=================================
+
+.. currentmodule:: pygplates
+
+.. autofunction:: partition_into_plates

@@ -1,0 +1,6 @@
+﻿pygplates.GPlatesError
+======================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: GPlatesError

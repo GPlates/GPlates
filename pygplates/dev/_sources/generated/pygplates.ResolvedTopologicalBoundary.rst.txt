@@ -1,0 +1,39 @@
+﻿pygplates.ResolvedTopologicalBoundary
+=====================================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: ResolvedTopologicalBoundary
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ResolvedTopologicalBoundary.__init__
+      ~ResolvedTopologicalBoundary.get_boundary_sub_segments
+      ~ResolvedTopologicalBoundary.get_feature
+      ~ResolvedTopologicalBoundary.get_geometry_sub_segments
+      ~ResolvedTopologicalBoundary.get_point_location
+      ~ResolvedTopologicalBoundary.get_point_strain_rate
+      ~ResolvedTopologicalBoundary.get_point_velocity
+      ~ResolvedTopologicalBoundary.get_property
+      ~ResolvedTopologicalBoundary.get_reconstruction_time
+      ~ResolvedTopologicalBoundary.get_resolved_boundary
+      ~ResolvedTopologicalBoundary.get_resolved_feature
+      ~ResolvedTopologicalBoundary.get_resolved_geometry
+      ~ResolvedTopologicalBoundary.get_resolved_geometry_point_features
+      ~ResolvedTopologicalBoundary.get_resolved_geometry_point_velocities
+      ~ResolvedTopologicalBoundary.get_resolved_geometry_points
+      ~ResolvedTopologicalBoundary.reconstruct_point
+   
+   
+
+   
+   
+   
+   
+   

@@ -1,0 +1,6 @@
+﻿pygplates.AbortError
+====================
+
+.. currentmodule:: pygplates
+
+.. autoexception:: AbortError

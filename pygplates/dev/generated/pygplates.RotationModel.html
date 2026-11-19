@@ -1,0 +1,381 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pygplates.RotationModel &mdash; pygplates 1.2.0.dev4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=6563fbb8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="pygplates.FiniteRotation" href="pygplates.FiniteRotation.html" />
+    <link rel="prev" title="Reference" href="../pygplates_reference.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_reference.html">Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_reference.html#rotations">Rotations</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">pygplates.RotationModel</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pygplates.RotationModel"><code class="docutils literal notranslate"><span class="pre">RotationModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.FiniteRotation.html">pygplates.FiniteRotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionTree.html">pygplates.ReconstructionTree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.ReconstructionTreeEdge.html">pygplates.ReconstructionTreeEdge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.find_crossovers.html">pygplates.find_crossovers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates.synchronise_crossovers.html">pygplates.synchronise_crossovers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#topology">Topology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#velocity-strain-and-net-rotation">Velocity, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#plate-partitioning">Plate partitioning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#features-and-properties">Features and properties</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#property-values">Property values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#geometry">Geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#vector">Vector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#utility">Utility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#enumerations">Enumerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_reference.html#exceptions">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_reference.html">Reference</a></li>
+      <li class="breadcrumb-item active">pygplates.RotationModel</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/generated/pygplates.RotationModel.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pygplates-rotationmodel">
+<h1>pygplates.RotationModel<a class="headerlink" href="#pygplates-rotationmodel" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pygplates.RotationModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pygplates.</span></span><span class="sig-name descname"><span class="pre">RotationModel</span></span><a class="headerlink" href="#pygplates.RotationModel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">instance</span></code></p>
+<p>Query a finite rotation of a moving plate relative to any other plate, optionally between two instants in geological time.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">Plate reconstruction hierarchy</span></a> in the <em>Primer</em> documentation.</p>
+</div>
+<p>This class provides an easy way to query rotations in any of the four combinations of total/stage and equivalent/relative rotations using <a class="reference internal" href="#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation()</span></code></a>. <a class="reference internal" href="pygplates.ReconstructionTree.html#pygplates.ReconstructionTree" title="pygplates.ReconstructionTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reconstruction</span> <span class="pre">trees</span></code></a> can also be created at any instant of geological time and these are cached internally depending the <em>reconstruction_tree_cache_size</em> parameter passed to <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code></a>. This cache size parameter controls the size of an internal least-recently-used cache of reconstruction trees (evicts least recently requested reconstruction tree when a new reconstruction time is requested that does not currently exist in the cache). This enables reconstruction trees associated with different reconstruction times to be re-used instead of re-creating them, provided they have not been evicted from the cache. This benefit also applies when querying rotations with <a class="reference internal" href="#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation()</span></code></a> since it, in turn, requests reconstruction trees.</p>
+<p>A <em>RotationModel</em> can also be <a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.42: </span>Added pickle support.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.RotationModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.RotationModel.__init__" title="Link to this definition"></a></dt>
+<dd><p>A <em>RotationModel</em> object can be constructed in more than one way…</p>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rotation_features</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reconstruction_tree_cache_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">150</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">extend_total_reconstruction_poles_to_distant_past</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">default_anchor_plate_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="optional">]</span><span class="sig-paren">)</span></dt>
+<dd><p>Create from rotation feature collection(s) and/or rotation filename(s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rotation_features</strong> (<a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><em>FeatureCollection</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><em>os.PathLike</em></a><em>, or </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><em>Feature</em></a><em>, or </em><em>sequence</em><em> of </em><em>any combination</em><em> of </em><em>those four types</em>) – A rotation feature collection, or rotation filename, or rotation feature, or sequence of rotation features, or a sequence (eg, <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) of any combination of those four types</p></li>
+<li><p><strong>reconstruction_tree_cache_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of reconstruction trees to cache internally. Defaults to 150.</p></li>
+<li><p><strong>extend_total_reconstruction_poles_to_distant_past</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – extend each moving plate sequence back infinitely far into the distant past such that reconstructed geometries will not snap back to their present day positions when the reconstruction time is older than the oldest times specified in the rotation features (defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>)</p></li>
+<li><p><strong>default_anchor_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – The default anchored plate id to use when <a class="reference internal" href="#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation()</span></code></a> and <a class="reference internal" href="#pygplates.RotationModel.get_reconstruction_tree" title="pygplates.RotationModel.get_reconstruction_tree"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstruction_tree()</span></code></a> are called without specifying their <em>anchor_plate_id</em> parameter. Defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruction_tree_cache_size</em> is zero</p></li>
+<li><p><a class="reference internal" href="pygplates.OpenFileForReadingError.html#pygplates.OpenFileForReadingError" title="pygplates.OpenFileForReadingError"><strong>OpenFileForReadingError</strong></a> – if any file is not readable (when filenames specified)</p></li>
+<li><p><a class="reference internal" href="pygplates.FileFormatNotSupportedError.html#pygplates.FileFormatNotSupportedError" title="pygplates.FileFormatNotSupportedError"><strong>FileFormatNotSupportedError</strong></a> – if any file format (identified by the filename extensions) does not support reading (when filenames specified)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Note that <em>rotation_features</em> can be a rotation <a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a> or a rotation filename or a rotation <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Feature</span></code></a> or a sequence of rotation <a class="reference internal" href="pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>, or a sequence (eg, <code class="docutils literal notranslate"><span class="pre">list</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) of any combination of those four types.</p>
+<p>If any rotation filenames are specified then this method uses <a class="reference internal" href="pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureCollection</span></code></a> internally to read the rotation files.</p>
+<p>Load a rotation file and some rotation adjustments (as a collection of rotation features) into a rotation model:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_adjustments</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">()</span>
+<span class="o">...</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">([</span><span class="s1">'rotations.rot'</span><span class="p">,</span> <span class="n">rotation_adjustments</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.25: </span>Added <em>extend_total_reconstruction_poles_to_distant_past</em> argument and removed <em>clone_rotation_features</em> argument.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.26: </span>Added <em>default_anchor_plate_id</em> argument.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.44: </span>Filenames can be <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike">os.PathLike</a> (such as <a class="reference external" href="https://docs.python.org/3/library/pathlib.html">pathlib.Path</a>) in addition to strings.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rotation_model</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">reconstruction_tree_cache_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">default_anchor_plate_id</span></span></em><span class="optional">]</span><span class="sig-paren">)</span></dt>
+<dd><p>Use an existing rotation model but adapt it with a potentially different cache size and/or default anchor plate ID.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rotation_model</strong> (<a class="reference internal" href="#pygplates.RotationModel" title="pygplates.RotationModel"><em>RotationModel</em></a>) – an existing rotation model</p></li>
+<li><p><strong>reconstruction_tree_cache_size</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – Number of reconstruction trees to cache internally. Defaults to 2 - this is much lower than the usual default cache size since the existing rotation model likely already has a sizeable cache anyway - and if you are leaving this at its default value then you are presumably only interested in changing the default anchor plate ID (not increasing the cache size).</p></li>
+<li><p><strong>default_anchor_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – The default anchored plate id to use when <a class="reference internal" href="#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation()</span></code></a> and <a class="reference internal" href="#pygplates.RotationModel.get_reconstruction_tree" title="pygplates.RotationModel.get_reconstruction_tree"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_reconstruction_tree()</span></code></a> are called without specifying their <em>anchor_plate_id</em> parameter. Defaults to the default anchor plate of <em>rotation_model</em>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – if <em>reconstruction_tree_cache_size</em> is zero</p>
+</dd>
+</dl>
+<p>This is useful if you want to use an existing rotation model but with a larger cache size or a different default anchor plate ID:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="n">rotation_files</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">rotation_model_anchor_1</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">default_anchor_plate_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above example just changes the <em>default</em> anchor plate ID. You can still explicitly specify any anchor plate ID to <a class="reference internal" href="#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_rotation()</span></code></a>. So the following two calls return the same results:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="mf">100.0</span><span class="p">,</span> <span class="mi">802</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">rotation_model_anchor_1</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="mf">100.0</span><span class="p">,</span> <span class="mi">802</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.29.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rotation_model</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Simply return an existing rotation model as a convenience.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rotation_model</strong> (<a class="reference internal" href="#pygplates.RotationModel" title="pygplates.RotationModel"><em>RotationModel</em></a>) – an existing rotation model</p>
+</dd>
+</dl>
+<p>This is useful when defining your own function that accepts rotation features or a rotation model. It avoids the hassle of having to explicitly test for each source type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">my_function</span><span class="p">(</span><span class="n">rotation_features_or_model</span><span class="p">):</span>
+    <span class="c1"># The appropriate constructor (__init__) overload is chosen depending on argument type.</span>
+    <span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="n">rotation_features_or_model</span><span class="p">)</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> just returns a reference to the existing <em>rotation_model</em> because a <em>RotationModel</em> object is immutable (contains no operations or methods that modify its state) and hence a deep copy of <em>rotation_model</em> is not needed.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(...)</p></td>
+<td><p>A <em>RotationModel</em> object can be constructed in more than one way...</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.RotationModel.get_default_anchor_plate_id" title="pygplates.RotationModel.get_default_anchor_plate_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_default_anchor_plate_id</span></code></a>()</p></td>
+<td><p>Return the default anchor plate ID (see <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pygplates.RotationModel.get_reconstruction_tree" title="pygplates.RotationModel.get_reconstruction_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reconstruction_tree</span></code></a>(reconstruction_time, ...)</p></td>
+<td><p>Return the reconstruction tree associated with the specified instant of geological time and anchored plate id.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rotation</span></code></a>(to_time, moving_plate_id, ...)</p></td>
+<td><p>Return the finite rotation that rotates from the <em>fixed_plate_id</em> plate to the <em>moving_plate_id</em> plate and from the time <em>from_time</em> to the time <em>to_time</em>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.RotationModel.get_default_anchor_plate_id">
+<span class="sig-name descname"><span class="pre">get_default_anchor_plate_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.RotationModel.get_default_anchor_plate_id" title="Link to this definition"></a></dt>
+<dd><p>Return the default anchor plate ID (see <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)">int</a></p>
+</dd>
+</dl>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.29.</span></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.RotationModel.get_reconstruction_tree">
+<span class="sig-name descname"><span class="pre">get_reconstruction_tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconstruction_time</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">anchor_plate_id</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.RotationModel.get_reconstruction_tree" title="Link to this definition"></a></dt>
+<dd><p>Return the reconstruction tree associated with the specified instant of geological time and anchored plate id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reconstruction_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – time at which to create a reconstruction tree (in Ma)</p></li>
+<li><p><strong>anchor_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – The id of the anchored plate that <em>equivalent</em> rotations are calculated with respect to. If not specified then the <em>default</em> anchor plate id (specified in <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>) is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.ReconstructionTree.html#pygplates.ReconstructionTree" title="pygplates.ReconstructionTree">ReconstructionTree</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.InterpolationError.html#pygplates.InterpolationError" title="pygplates.InterpolationError"><strong>InterpolationError</strong></a> – if <em>reconstruction_time</em> is <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">past</span></code></a> or <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">future</span></code></a></p>
+</dd>
+</dl>
+<p>If the reconstruction tree for the specified reconstruction time and anchored plate id is currently in the internal cache then it is returned, otherwise a new reconstruction tree is created and stored in the cache (after evicting the reconstruction tree associated with the least recently requested reconstruction time and anchored plate id if necessary).</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.26: </span><em>anchor_plate_id</em> no longer defaults to zero (see <em>default_anchor_plate_id</em> in <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>).</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pygplates.RotationModel.get_rotation">
+<span class="sig-name descname"><span class="pre">get_rotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">to_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moving_plate_id</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">from_time</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">fixed_plate_id</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">anchor_plate_id</span></span></em><span class="optional">]</span><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">use_identity_for_missing_plate_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#pygplates.RotationModel.get_rotation" title="Link to this definition"></a></dt>
+<dd><p>Return the finite rotation that rotates from the <em>fixed_plate_id</em> plate to the <em>moving_plate_id</em> plate and from the time <em>from_time</em> to the time <em>to_time</em>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>to_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a>) – time at which the moving plate is being rotated <em>to</em> (in Ma)</p></li>
+<li><p><strong>moving_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a>) – the plate id of the moving plate</p></li>
+<li><p><strong>from_time</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em> or </em><a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><em>GeoTimeInstant</em></a><em>, or </em><em>None</em>) – time at which the moving plate is being rotated <em>from</em> (in Ma)</p></li>
+<li><p><strong>fixed_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – the plate id of the fixed plate (defaults to <em>anchor_plate_id</em> if not specified)</p></li>
+<li><p><strong>anchor_plate_id</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, or </em><em>None</em>) – The id of the anchored plate. If not specified then the <em>default</em> anchor plate id (specified in <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>) is used.</p></li>
+<li><p><strong>use_identity_for_missing_plate_ids</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – whether to return an <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation.create_identity_rotation" title="pygplates.FiniteRotation.create_identity_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">identity</span> <span class="pre">rotation</span></code></a> or return <code class="docutils literal notranslate"><span class="pre">None</span></code> for missing plate ids (default is to use identity rotation)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation">FiniteRotation</a>, or None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pygplates.InterpolationError.html#pygplates.InterpolationError" title="pygplates.InterpolationError"><strong>InterpolationError</strong></a> – if any time value is <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_past" title="pygplates.GeoTimeInstant.is_distant_past"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">past</span></code></a> or <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant.is_distant_future" title="pygplates.GeoTimeInstant.is_distant_future"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distant</span> <span class="pre">future</span></code></a></p>
+</dd>
+</dl>
+<p>This method conveniently handles all four combinations of total/stage and equivalent/relative rotations normally handled by:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="pygplates.ReconstructionTree.html#pygplates.ReconstructionTree.get_equivalent_total_rotation" title="pygplates.ReconstructionTree.get_equivalent_total_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ReconstructionTree.get_equivalent_total_rotation()</span></code></a> - see <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-total-rotation"><span class="std std-ref">Equivalent total rotation</span></a> for rotation math derivation</p></li>
+<li><p><a class="reference internal" href="pygplates.ReconstructionTree.html#pygplates.ReconstructionTree.get_relative_total_rotation" title="pygplates.ReconstructionTree.get_relative_total_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ReconstructionTree.get_relative_total_rotation()</span></code></a> - see <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-relative-total-rotation"><span class="std std-ref">Relative total rotation</span></a> for rotation math derivation</p></li>
+<li><p><a class="reference internal" href="pygplates.ReconstructionTree.html#pygplates.ReconstructionTree.get_equivalent_stage_rotation" title="pygplates.ReconstructionTree.get_equivalent_stage_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ReconstructionTree.get_equivalent_stage_rotation()</span></code></a> - see <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">Equivalent stage rotation</span></a> for rotation math derivation</p></li>
+<li><p><a class="reference internal" href="pygplates.ReconstructionTree.html#pygplates.ReconstructionTree.get_relative_stage_rotation" title="pygplates.ReconstructionTree.get_relative_stage_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ReconstructionTree.get_relative_stage_rotation()</span></code></a> - see <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-relative-stage-rotation"><span class="std std-ref">Relative stage rotation</span></a> for rotation math derivation</p></li>
+</ul>
+<p>If <em>fixed_plate_id</em> is not specified then it defaults to <em>anchor_plate_id</em> (which itself defaults to the <em>default</em> anchor plate id specified in <a class="reference internal" href="#pygplates.RotationModel.__init__" title="pygplates.RotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a>). Normally it is sufficient to specify <em>fixed_plate_id</em> (for a relative rotation) and leave <em>anchor_plate_id</em> as its default. However if there is no plate circuit path from the default anchor plate to either <em>moving_plate_id</em> or <em>fixed_plate_id</em>, but there is a path from <em>fixed_plate_id</em> to <em>moving_plate_id</em>, then the correct result will require setting <em>anchor_plate_id</em> to <em>fixed_plate_id</em>. See <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">Plate reconstruction hierarchy</span></a> for an overview of plate circuit paths.</p>
+<p>If there is no plate circuit path from <em>moving_plate_id</em> (and optionally <em>fixed_plate_id</em>) to the anchor plate (at times <em>to_time</em> and optionally <em>from_time</em>) then an <a class="reference internal" href="pygplates.FiniteRotation.html#pygplates.FiniteRotation.create_identity_rotation" title="pygplates.FiniteRotation.create_identity_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">identity</span> <span class="pre">rotation</span></code></a> is returned if <em>use_identity_for_missing_plate_ids</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code> is returned. See <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">Plate reconstruction hierarchy</span></a> for details on how a plate id can go missing and how to work around it.</p>
+<p>This method essentially does the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_rotation</span><span class="p">(</span><span class="n">rotation_model</span><span class="p">,</span> <span class="n">to_time</span><span class="p">,</span> <span class="n">moving_plate_id</span><span class="p">,</span> <span class="n">from_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fixed_plate_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">from_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">fixed_plate_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="p">)</span><span class="o">.</span><span class="n">get_equivalent_total_rotation</span><span class="p">(</span><span class="n">moving_plate_id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="p">)</span><span class="o">.</span><span class="n">get_relative_total_rotation</span><span class="p">(</span><span class="n">moving_plate_id</span><span class="p">,</span> <span class="n">fixed_plate_id</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fixed_plate_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructionTree</span><span class="o">.</span><span class="n">get_equivalent_stage_rotation</span><span class="p">(</span>
+            <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">from_time</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="p">),</span>
+            <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="p">),</span>
+            <span class="n">moving_plate_id</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructionTree</span><span class="o">.</span><span class="n">get_relative_stage_rotation</span><span class="p">(</span>
+        <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">from_time</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="p">),</span>
+        <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_reconstruction_tree</span><span class="p">(</span><span class="n">to_time</span><span class="p">,</span> <span class="n">anchor_plate_id</span><span class="p">),</span>
+        <span class="n">moving_plate_id</span><span class="p">,</span>
+        <span class="n">fixed_plate_id</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Explicitly setting <em>from_time</em> to zero can give a different result than not specifying <em>from_time</em> at all if the moving plate (or fixed plate) has a non-zero finite rotation at present day (relative to the anchor plate). However all present-day finite rotations should ideally be zero (identity), so typically there should not be a difference.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.26: </span><em>anchor_plate_id</em> no longer defaults to zero (see <em>default_anchor_plate_id</em>)</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 0.27: </span><em>from_time</em> no longer defaults to zero, and no longer assumes present day rotations are identity (zero) rotations</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../pygplates_reference.html" class="btn btn-neutral float-left" title="Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates.FiniteRotation.html" class="btn btn-neutral float-right" title="pygplates.FiniteRotation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

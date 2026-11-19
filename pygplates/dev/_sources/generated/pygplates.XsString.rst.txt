@@ -1,0 +1,30 @@
+﻿pygplates.XsString
+==================
+
+.. currentmodule:: pygplates
+
+.. autoclass:: XsString
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~XsString.__init__
+      ~XsString.accept_visitor
+      ~XsString.clone
+      ~XsString.get_geometry
+      ~XsString.get_string
+      ~XsString.get_value
+      ~XsString.set_string
+   
+   
+
+   
+   
+   
+   
+   
