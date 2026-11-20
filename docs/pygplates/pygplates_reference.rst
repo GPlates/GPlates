@@ -1,3 +1,7 @@
+.. Some sections below also carry a label named after their anchor in the pyGPlates 1.0
+   documentation (eg, '.. _rotation:'), because links to those anchors are published. They are
+   listed, and checked, in '_OLD_PAGE_ANCHORS' in conf.py.
+
 .. _pygplates_reference:
 
 Reference
@@ -22,6 +26,8 @@ The :ref:`pygplates_primer` explains the concepts behind them, and the :ref:`pyg
 .. contents::
    :local:
    :depth: 2
+
+.. _rotation:
 
 Rotations
 ---------
@@ -176,6 +182,8 @@ The following class contains the triangulation of the deforming region of a reso
    :ref:`pygplates_detect_topology_gaps_and_overlaps`, :ref:`pygplates_reconstruct_strain_and_strain_rate` and
    :ref:`pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence`.
 
+.. _velocity-and-strain:
+
 Velocity, strain and net rotation
 ---------------------------------
 
@@ -238,6 +246,11 @@ Function to partition into plates (the class above is preferred when partitionin
 
 .. seealso:: The sample code :ref:`pygplates_import_geometries_and_assign_plate_ids`.
 
+.. _feature:
+.. _feature-property:
+.. _file-i-o:
+.. _string:
+
 Features and properties
 -----------------------
 
@@ -278,6 +291,8 @@ String-like types that identify features, feature types, property names, scalar 
 
 .. seealso:: The sample code :ref:`pygplates_load_and_save_feature_collections`, :ref:`pygplates_create_common_feature_types`,
    :ref:`pygplates_query_common_feature_types` and :ref:`pygplates_create_topological_features`.
+
+.. _feature-property-value:
 
 Property values
 ---------------
