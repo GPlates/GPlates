@@ -19,7 +19,7 @@
   </p>
 
   [![PyGPlates Version](https://img.shields.io/pypi/v/pygplates?label=PyGPlates)](
-  https://www.gplates.org/docs/pygplates/index.html)
+  https://gplates.github.io/GPlates/pygplates/stable/)
   [![Python Versions](https://img.shields.io/pypi/pyversions/pygplates?label=Python)](
   https://pypi.org/project/pygplates)
   [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/pygplates?label=Conda%20downloads)](
@@ -58,6 +58,10 @@ The [documentation](https://www.gplates.org/docs/) includes:
 - __pyGPlates library documentation__ covering installation, sample code and a detailed API reference for pyGPlates,
 - __pyGPlates tutorials__ in the form of Jupyter Notebooks that analyse and visualise real-world data using pyGPlates.
 
+The pyGPlates library documentation is published for each release series at [gplates.github.io/GPlates/pygplates](https://gplates.github.io/GPlates/pygplates/):
+[stable](https://gplates.github.io/GPlates/pygplates/stable/) for the latest release, [dev](https://gplates.github.io/GPlates/pygplates/dev/) for the development version, and `<major>.<minor>/` for each release series (eg, [1.0](https://gplates.github.io/GPlates/pygplates/1.0/)).
+To link to a particular version, use its series rather than `stable/`, which moves to each new release.
+
 There is also a [GPlates online forum](https://discourse.gplates.org/) for the users, developers and researchers to discuss topics related to GPlates and pyGPlates.
 
 ## Installation
@@ -68,7 +72,7 @@ __GPlates__ can be installed on Windows, macOS (Intel and Silicon) and Ubuntu vi
 These packages also include [GPlates-compatible geodata](https://www.gplates.org/download/#download-gplates-compatible-data).
 
 __PyGPlates__ can be installed using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/index.html) or [pip](https://pip.pypa.io/en/stable/).
-Please see the [installation instructions](https://www.gplates.org/docs/pygplates/pygplates_getting_started.html) in the pyGPlates documentation.
+Please see the [installation instructions](https://gplates.github.io/GPlates/pygplates/stable/pygplates_getting_started.html) in the pyGPlates documentation.
 
 ### Source code
 

@@ -120,7 +120,7 @@ about:
   license: GPL-2.0-only
   license_family: GPL
   license_file: COPYING
-  doc_url: https://www.gplates.org/docs/pygplates/index.html
+  doc_url: https://gplates.github.io/GPlates/pygplates/stable/
   dev_url: https://github.com/GPlates/GPlates
 
 extra:

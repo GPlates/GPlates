@@ -90,7 +90,7 @@ classifiers = [
 #
 [project.urls]
 Homepage = "https://www.gplates.org"
-Documentation = "https://www.gplates.org/docs/pygplates/index.html"
+Documentation = "https://gplates.github.io/GPlates/pygplates/stable/"
 Source = "https://github.com/GPlates/GPlates"
 Discussions = "https://discourse.gplates.org/"
 
