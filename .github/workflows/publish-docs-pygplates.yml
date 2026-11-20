@@ -197,6 +197,38 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      # A rehearsal (a dispatch with 'publish' unticked) also runs what publishing would, without
+      # pushing, so the release path's checks are exercised before a release depends on them: the
+      # version and series, and that no page of the series 'stable' points at is dropped. The
+      # script comes from the ref this run is on, as in 'publish' (a tag before #127 has none).
+      # Not in a fork, which has no 'gh-pages' of GPlates/GPlates to rehearse against. Rehearsing
+      # a tag older than what its series already documents fails, as publishing it would.
+      - name: Check out the publishing script (rehearsal)
+        if: needs.resolve.outputs.publish != 'true' && github.repository == 'GPlates/GPlates'
+        uses: actions/checkout@v6
+        with:
+          path: source
+          sparse-checkout: docs/pygplates/publish_docs.py
+          sparse-checkout-cone-mode: false
+
+      - name: Check out gh-pages (rehearsal)
+        if: needs.resolve.outputs.publish != 'true' && github.repository == 'GPlates/GPlates'
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Rehearse publishing
+        if: needs.resolve.outputs.publish != 'true' && github.repository == 'GPlates/GPlates'
+        env:
+          SERIES: ${{ needs.resolve.outputs.series }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          git -C gh-pages config user.name "github-actions[bot]"
+          git -C gh-pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python source/docs/pygplates/publish_docs.py --html html --pages-dir gh-pages \
+            --target "$SERIES" --update-stable --source "$TAG" --no-push
+
   publish:
     needs: [ resolve, build ]
     if: needs.resolve.outputs.publish == 'true'

@@ -109,7 +109,8 @@ jobs:
           # Whole history and all tags: the version is counted from the distance to the
           # nearest release tag (see 'cmake/modules/VersionFromGit.cmake'), and a shallow
           # clone is refused rather than allowed to produce a smaller, plausible-looking
-          # number.
+          # number. It also fetches every branch, 'gh-pages' among them, which the docs'
+          # dropped-page check below reads.
           fetch-depth: 0
 
       - name: Restore compiler cache
@@ -222,6 +223,21 @@ jobs:
         env:
           PYGPLATES_DOCS_BASE_URL: https://gplates.github.io/GPlates/pygplates/stable/
         run: cmake --build build-pygplates --target docs-pygplates
+
+      - name: Check no published page is dropped (Linux)
+        # Every page of the release series 'stable' points at on 'gh-pages' must still be built:
+        # links through 'stable/' (and every old www.gplates.org/docs/pygplates/ link) follow it to
+        # the next release. A page that is removed or renamed keeps a page at its old path instead
+        # ('docs/design/documentation-hosting/README.md'). Checked here so that the pull request
+        # that drops a page fails, rather than the release that would publish it. The checkout's
+        # 'fetch-depth: 0' fetches 'gh-pages' too. In GPlates/GPlates (pull requests from forks
+        # included, which run here) the check must find it ('--require-ref'), so that a change to
+        # the checkout can't quietly turn it off; a fork's own run without one passes with a note.
+        if: matrix.name == 'Linux'
+        run: >
+          python docs/pygplates/publish_docs.py --html build-pygplates/docs/pygplates/html
+          --check-against origin/gh-pages
+          ${{ github.repository == 'GPlates/GPlates' && '--require-ref' || '' }}
 
       - name: Upload docs (Linux, main)
         # Handed to the 'publish-dev-docs' job below, which is the only job allowed to write to

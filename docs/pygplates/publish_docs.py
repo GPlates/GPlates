@@ -29,9 +29,22 @@ workflow that pushes declares it, and a release event runs the workflow file as 
 release's tag. A rejected push is the server's own lock, and holds whatever the other publisher
 does.
 
+No published page is dropped. Links to 'stable/' (and every old www.gplates.org/docs/pygplates/
+link, which redirects there) follow it to each new release, so a newer series that becomes
+'stable' must still have every page of the series 'stable' points at. And a link to '<X.Y>/' pins
+that series, so a patch release must keep every page its series already has. A page that a
+release removes or renames keeps a page at its old path instead
+('docs/design/documentation-hosting/README.md'). '--check-against' compares a build with
+the published pages without publishing anything: CI runs it on every 'dev' build, so that the pull
+request that drops a page fails, rather than the release. Publishing a release checks again, as a
+backstop. A page given up deliberately, where no page can be kept at its path, is listed with its
+reason in 'GIVEN_UP_PAGES' below, which both checks honour: giving a page up is then a change
+reviewed in the pull request that does it.
+
 Usage:
     publish_docs.py --html <dir> --pages-dir <gh-pages checkout> --target <dev|X.Y>
                     [--update-stable] [--source <text>] [--no-push]
+    publish_docs.py --html <dir> --check-against <gh-pages ref> [--require-ref]
 
     --html            the Sphinx HTML output (from 'build_docs.py' or the 'docs-pygplates' target)
     --pages-dir       a git checkout of 'gh-pages' whose 'origin' can be pushed to
@@ -40,6 +53,13 @@ Usage:
     --source          what was built, for the commit message (eg, "main at 0123abcd")
     --no-push         commit, but do not push (for trying it out); also allows a release series
                       target to take a candidate or development build
+    --check-against   only compare the HTML with the pages of the series 'stable' points at in
+                      this ref of 'gh-pages', in the repository of the current directory (eg,
+                      'origin/gh-pages'), and fail if any is missing; a ref that doesn't exist (a
+                      fork with no 'gh-pages', say) is noted and passes, unless --require-ref
+    --require-ref     with --check-against, fail instead when the ref, its 'stable', or any page
+                      of it cannot be found (CI passes it in GPlates/GPlates, so that the check
+                      cannot be lost unnoticed, eg by a change to the checkout)
 
 The checkout may be shallow ('actions/checkout' fetches one commit by default).
 """
@@ -53,6 +73,12 @@ import sys
 from pathlib import Path
 
 PUSH_ATTEMPTS = 5
+
+# Published pages given up deliberately: page path (relative to a series directory, eg
+# 'generated/pygplates.Foo.html') -> why. Only for a page that cannot keep a page at its old path
+# (see the module docstring); the dropped-page checks skip these. Empty: no page has been given up.
+GIVEN_UP_PAGES = {
+}
 
 
 def git(pages_dir, *args, check=True, capture=False, input_bytes=None):
@@ -104,20 +130,20 @@ def final_release_key(version):
 def published_version(pages_dir, target):
     """Return the version 'pygplates/<target>' documents on gh-pages, or None if there is none."""
     path = f"pygplates/{target}/_static/documentation_options.js"
-    if not git(pages_dir, "ls-tree", "HEAD", path, capture=True):
+    if not git(pages_dir, "ls-tree", "--full-tree", "HEAD", path, capture=True):
         return None
     options = git(pages_dir, "show", f"HEAD:{path}", capture=True)
     match = re.search(r"VERSION:\s*'([^']+)'", options)
     return match.group(1) if match else None
 
 
-def current_stable(pages_dir):
+def current_stable(pages_dir, ref="HEAD"):
     """Return the series 'pygplates/stable' points at, or None if there is no such link.
 
     Read from git rather than the file system, since a Windows checkout writes a symbolic link
     as a plain file holding the target (unless 'core.symlinks' is enabled).
     """
-    entry = git(pages_dir, "ls-tree", "HEAD", "pygplates/stable", capture=True)
+    entry = git(pages_dir, "ls-tree", "--full-tree", ref, "pygplates/stable", capture=True)
     if not entry:
         return None
     mode, _, rest = entry.partition(" ")
@@ -127,21 +153,73 @@ def current_stable(pages_dir):
     return git(pages_dir, "cat-file", "blob", blob, capture=True)
 
 
+def is_page(path):
+    """Whether 'path' (relative to a documentation tree) is one of its pages.
+
+    Not an HTML file under a '_' directory ('_static/', '_sources/', ...): those belong to Sphinx
+    and the theme, which may add or drop one between versions.
+    """
+    return path.endswith(".html") and not path.startswith("_")
+
+
+def html_pages(html_dir):
+    """Return the path of every page in a built documentation tree, relative to it."""
+    paths = (page.relative_to(html_dir).as_posix() for page in html_dir.rglob("*.html"))
+    return {path for path in paths if is_page(path)}
+
+
+def published_pages(pages_dir, ref, series):
+    """Return the path of every page of 'pygplates/<series>' at 'ref', relative to it."""
+    prefix = f"pygplates/{series}/"
+    listing = git(pages_dir, "ls-tree", "-r", "--full-tree", "--name-only", ref, "--", prefix,
+                  capture=True)
+    return {path[len(prefix):] for path in listing.splitlines() if is_page(path[len(prefix):])}
+
+
+def check_no_dropped_pages(old_pages, new_pages, old_series, what, links_through):
+    """Refuse 'what' if it lacks any of 'old_pages', the pages published in 'old_series'.
+
+    'links_through' says which published links would break ('stable/', or the series' own).
+    """
+    dropped = sorted(old_pages - new_pages - GIVEN_UP_PAGES.keys())
+    if dropped:
+        raise SystemExit(
+            f"error: {what} lacks {len(dropped)} of the {len(old_pages)} pages published in "
+            f"pygplates/{old_series}:\n         " + "\n         ".join(dropped) + "\n"
+            f"       Links to them through {links_through}\n"
+            f"       would break. A page that is removed or renamed keeps a page at its old path\n"
+            f"       that redirects ('docs/design/documentation-hosting/README.md'), or, if that\n"
+            f"       cannot be done, is listed in 'GIVEN_UP_PAGES' in\n"
+            f"       'docs/pygplates/publish_docs.py'.")
+
+
 def apply(pages_dir, html_dir, version, target, update_stable):
     """Replace 'pygplates/<target>' with 'html_dir', and move 'stable' if asked to.
 
     Stages the change and returns a description of it for the commit message.
     """
+    stable = current_stable(pages_dir)
     if target != "dev":
-        # A release series holds its newest release: re-publishing 1.1.0 (by a dispatch, or a
-        # re-run within the artifact's retention) must not replace 1.1.1. Checked on every attempt,
-        # since a retry starts from a newer tip.
+        # These are all checked on every attempt, since a retry starts from a newer tip. First, a
+        # release series holds its newest release: re-publishing 1.1.0 (by a dispatch, or a re-run
+        # within the artifact's retention) must not replace 1.1.1.
         published = published_version(pages_dir, target)
         new_key = final_release_key(version)
         published_key = final_release_key(published) if published else None
         if new_key and published_key and published_key > new_key:
             raise SystemExit(f"error: pygplates/{target} already documents {published}, which is "
                              f"newer than {version}.")
+
+        # Then a release keeps the pages its series already has, since a link to '<X.Y>/' pins it;
+        # and a newer series about to become 'stable' keeps the pages of the one 'stable' points
+        # at, since links through 'stable/' follow it.
+        new_pages = html_pages(html_dir)
+        check_no_dropped_pages(published_pages(pages_dir, "HEAD", target), new_pages, target,
+                               f"pyGPlates {version}", f"'{target}/'")
+        if update_stable and stable is not None and series_key(target) > series_key(stable):
+            check_no_dropped_pages(published_pages(pages_dir, "HEAD", stable), new_pages, stable,
+                                   f"pyGPlates {version}",
+                                   "'stable/' (and the old www.gplates.org URLs)")
 
     target_dir = pages_dir / "pygplates" / target
     if target_dir.exists():
@@ -154,7 +232,6 @@ def apply(pages_dir, html_dir, version, target, update_stable):
     if not update_stable:
         return f"pygplates/{target}"
 
-    stable = current_stable(pages_dir)
     if stable is not None and series_key(stable) >= series_key(target):
         # A patch release of an older series (1.1.x after 1.2.0) must not move 'stable' back.
         print(f"'stable' stays at {stable} (not older than {target})")
@@ -172,16 +249,25 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--html", required=True, help="the Sphinx HTML output directory")
-    parser.add_argument("--pages-dir", required=True, help="a git checkout of 'gh-pages'")
-    parser.add_argument("--target", required=True, help="'dev', or a release series 'X.Y'")
+    parser.add_argument("--pages-dir", help="a git checkout of 'gh-pages'")
+    parser.add_argument("--target", help="'dev', or a release series 'X.Y'")
     parser.add_argument("--update-stable", action="store_true",
                         help="point 'stable' at the target if it is the newest release series")
     parser.add_argument("--source", help="what was built, for the commit message")
     parser.add_argument("--no-push", action="store_true", help="commit, but do not push")
+    parser.add_argument("--check-against", metavar="REF",
+                        help="only check the HTML against the 'stable' pages of this gh-pages ref")
+    parser.add_argument("--require-ref", action="store_true",
+                        help="with --check-against, fail if there is nothing to compare with")
     args = parser.parse_args(argv)
 
     # Keep this script's messages in order with git's (unbuffered) ones when a CI log captures both.
     sys.stdout.reconfigure(line_buffering=True)
+
+    if args.check_against:
+        return check_against(Path(args.html).resolve(), args.check_against, args.require_ref)
+    if not args.pages_dir or not args.target:
+        parser.error("--pages-dir and --target are required, unless --check-against is given")
 
     # Also what keeps the target inside 'pygplates/': no '..', no '/', and never 'stable' itself.
     if args.target != "dev" and not re.fullmatch(r"\d+\.\d+", args.target):
@@ -227,6 +313,33 @@ def main(argv=None):
         git(pages_dir, "reset", "--quiet", "--hard", "FETCH_HEAD")
 
     raise SystemExit(f"error: could not push to gh-pages after {PUSH_ATTEMPTS} attempts.")
+
+
+def check_against(html_dir, ref, require_ref):
+    """Check a build against the pages of the series 'stable' points at in 'ref' (of gh-pages)."""
+    version = check_html(html_dir)
+    repo_dir = Path.cwd()
+
+    def nothing_to_compare(reason):
+        if require_ref:
+            raise SystemExit(f"error: {reason}, so this build cannot be checked (--require-ref).")
+        print(f"note: {reason}, so there are no published pages to compare with.")
+        return 0
+
+    if not git(repo_dir, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}", check=False,
+               capture=True):
+        return nothing_to_compare(f"no '{ref}' in the repository of {repo_dir}")
+    stable = current_stable(repo_dir, ref)
+    if stable is None:
+        return nothing_to_compare(f"'{ref}' has no 'pygplates/stable'")
+    old_pages = published_pages(repo_dir, ref, stable)
+    if not old_pages:
+        return nothing_to_compare(f"'{ref}' has no pages in 'pygplates/{stable}'")
+    check_no_dropped_pages(old_pages, html_pages(html_dir), stable, f"This build ({version})",
+                           "'stable/' (and the old www.gplates.org URLs), once it is released,")
+    print(f"This build ({version}) has all {len(old_pages)} pages published in pygplates/{stable}, "
+          f"the series 'stable' points at in {ref}.")
+    return 0
 
 
 if __name__ == "__main__":
