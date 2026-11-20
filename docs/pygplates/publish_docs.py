@@ -7,6 +7,8 @@ GitHub Pages serves 'gh-pages' at https://gplates.github.io/GPlates/. Its layout
     .nojekyll               without it, Pages runs Jekyll, which drops every '_'-prefixed
                             directory - including Sphinx's '_static/' and '_images/'
     index.html              redirects to https://www.gplates.org/docs/, the documentation hub
+    404.html                served by Pages for any missing path on the site; it links back to
+                            'stable/', 'dev/' and the hub
     pygplates/
       index.html            redirects to 'stable/'
       1.0/  1.1/  ...       one real directory per release series (a newer patch release replaces
