@@ -214,7 +214,13 @@ jobs:
         # Always from scratch (see the 'docs-pygplates' target). Sphinx runs with '-W', so a
         # docstring that makes it warn fails this step - on pull requests too, which is the only
         # check the docstrings' markup gets before they are published.
+        #
+        # Every page names its 'stable/' page as canonical, as the release docs' pages do, so that
+        # search engines prefer the latest release's page to this development copy (see
+        # 'PYGPLATES_DOCS_BASE_URL' in 'docs/pygplates/build_docs.py').
         if: matrix.name == 'Linux'
+        env:
+          PYGPLATES_DOCS_BASE_URL: https://gplates.github.io/GPlates/pygplates/stable/
         run: cmake --build build-pygplates --target docs-pygplates
 
       - name: Upload docs (Linux, main)

@@ -39,6 +39,14 @@ Usage:
     --scratch-dir  Sphinx source/working directory (default: a temporary directory)
     --incremental  keep the doctree and generated-stub caches (see the warning below)
 
+    PYGPLATES_DOCS_BASE_URL (environment), if set, becomes Sphinx's 'html_baseurl', so every page
+    names its URL below it as its canonical URL ('<link rel="canonical">'). The published
+    documentation sets it to the 'stable/' URL, for the 'dev' docs as well as each release series,
+    so that search engines prefer the latest release's page to its copies (the reasons are in
+    'docs/design/documentation-hosting/README.md'). It is an environment variable rather than an
+    option so that a workflow can set it when building a release tag whose copy of this script
+    predates it.
+
 By default the doctree and 'generated/' caches are deleted first. Do not pass '--incremental' for
 anything you intend to publish: an incremental rebuild produces HTML identical to a clean build
 except for 'searchindex.js', where it silently drops *every* index entry.
@@ -279,6 +287,15 @@ def main(argv=None):
     print(f"source    {scratch_dir}")
     print(f"output    {html_dir}")
 
+    # '-W' (warnings are errors) and '-j auto' match the CMake target.
+    sphinx_args = ["-q", "-b", "html", "-W", "-j", "auto", "-d", str(doctrees_dir)]
+    base_url = os.environ.get("PYGPLATES_DOCS_BASE_URL")
+    if base_url:
+        # Sphinx joins each page's path onto it with 'posixpath.join', so a trailing slash is
+        # optional.
+        sphinx_args += ["-D", f"html_baseurl={base_url}"]
+        print(f"base URL  {base_url}")
+
     populate_scratch_dir(scratch_dir)
     write_conf_py(scratch_dir, package_dir, read_copyright(), version, release)
 
@@ -292,9 +309,7 @@ def main(argv=None):
             "           conda env update -n gplates -f env.docs.yml"
         )
 
-    # '-W' (warnings are errors) and '-j auto' match the CMake target.
-    status = sphinx_main(["-q", "-b", "html", "-W", "-j", "auto",
-                          "-d", str(doctrees_dir), str(scratch_dir), str(html_dir)])
+    status = sphinx_main(sphinx_args + [str(scratch_dir), str(html_dir)])
 
     if status == 0:
         print(f"\nBuilt {html_dir / 'index.html'}")

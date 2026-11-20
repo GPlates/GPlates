@@ -178,7 +178,12 @@ jobs:
 
       - name: Build docs
         # Without '--module-dir', 'build_docs.py' documents the installed wheel, with the pages from
-        # this checkout. Always from scratch.
+        # this checkout. Always from scratch. Every page names its 'stable/' page as canonical, so
+        # that search engines prefer the latest release's page to an older series' copy (see
+        # 'PYGPLATES_DOCS_BASE_URL' in 'docs/pygplates/build_docs.py'; a tag whose copy of that
+        # script predates it ignores it).
+        env:
+          PYGPLATES_DOCS_BASE_URL: https://gplates.github.io/GPlates/pygplates/stable/
         run: python docs/pygplates/build_docs.py --output html
 
       - name: Upload docs
