@@ -57,7 +57,8 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    check of the tag: that it names the version, that the version sorts above every earlier
    release in its history, and (for a release after a candidate) that the candidate is released
    unchanged. If either check disagrees, delete the local tag and fix the commit. Then push the
-   tag to the GitHub remote. Ask which remote if there is more than one.
+   tag to the GitHub remote. Ask which remote if there is more than one. If this is the series'
+   first tag, do `main`'s part of step 6 straight after the push, before waiting for the build.
 3. **Wait for the build.** `build-wheels.yml` builds the sdist and the full matrix — roughly
    2.5 hours warm, 4.5 cold — then uploads the sdist plus one platform's wheels to TestPyPI as a
    rehearsal.
@@ -70,6 +71,9 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
    people to find the latest release tag, and nothing creates the entry for them. Publishing it
    also starts `publish-docs-pygplates.yml`, which, for a final release, publishes its
    documentation from PyPI (for a candidate it does nothing); check that run went green.
+   The release's notes are its description (`--notes-file`): a summary of its changelog section,
+   with a link to the changelog. Draft them with the user. The website's news item stays short
+   and links to the GitHub release, not the other way round.
 6. **Move the targets on.** A tag changes what the next version on each branch is called, and
    the resolver refuses to configure until `VersionRelease.cmake` says so:
    - on the series branch, after the *release*, set the target to the next patch (`1.1.1` after
@@ -83,7 +87,12 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
      above the series' section in `CHANGELOG-pyGPlates.md`. Later tags in the series need nothing
      on `main`, except that once the release (or a patch release) is final its changelog
      section there should match the series branch's.
-   Commit each on its own branch. The rules are in `docs/design/versioning/README.md` (7.2).
+
+   `main`'s change is a direct commit on `main`, not a pull request, pushed straight after the
+   tag (step 2) rather than after steps 3-5, and it must be `main`'s next commit: before the tag exists the resolver refuses the new
+   target as skipping a version, and once it exists any commit on `main` past the branch point
+   that still has the old target is refused for good. The series branch's change is a commit on
+   that branch. The rules are in `docs/design/versioning/README.md` (7.2).
 
 ## Recovery
 
