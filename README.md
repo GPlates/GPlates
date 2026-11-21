@@ -103,7 +103,7 @@ GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw
 * [GDAL](https://gdal.org/) 2.0 or above
 * [GLEW](http://glew.sourceforge.net/)
 * [PROJ](https://proj.org/) 6 or above
-* [Python](http://python.org/) 3.8 or above
+* [Python](https://www.python.org/) 3.9 or above
 * [Qt](https://www.qt.io/) 6.x recommended (5.15 also supported)
 * [Qwt](https://qwt.sourceforge.io/) 6.0.1 or above (preferably 6.1 or above)
 
