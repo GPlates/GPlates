@@ -4382,7 +4382,7 @@ class GeoTimeInstant:
     Comparisons can also be made between a GeoTimeInstant and a ``float`` (or ``int``, etc). As between two ``float`` values, a comparison with ``float('nan')`` is ``False``, except ``!=``, which is ``True``.
     ::
 
-      print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()
+      print('Time instant is distant past:', pygplates.GeoTimeInstant(float_time).is_distant_past())
       time10Ma = pygplates.GeoTimeInstant(10)
       time20Ma = pygplates.GeoTimeInstant(20)
       # assert(time20Ma > time10Ma)
@@ -5134,14 +5134,14 @@ class GmlTimeInstant(PropertyValue):
         ::
 
           float_time = time_instant.get_time()
-          print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()
+          print('Time instant is distant past:', pygplates.GeoTimeInstant(float_time).is_distant_past())
 
         ...or just test directly using ``float`` comparisons...
 
         ::
 
           float_time = time_instant.get_time()
-          print 'Time instant is distant past: %s' % (float_time == float('inf'))
+          print('Time instant is distant past:', float_time == float('inf'))
         """
 
     def set_time(self, time_position: float | GeoTimeInstant) -> None:
@@ -11196,9 +11196,9 @@ class PolygonOnSphere(GeometryOnSphere):
         ::
 
           if polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.clockwise:
-            print 'Orientation is clockwise'
+            print('Orientation is clockwise')
           else:
-            print 'Orientation is counter-clockwise'
+            print('Orientation is counter-clockwise')
 
         Clockwise means that the exterior ring goes clockwise round the polygon's interior, which is the ring's smaller side (see :meth:`is_point_in_polygon`).
 
@@ -12618,7 +12618,7 @@ class PropertyValue:
 
           gpml_finite_rotation_20Ma = total_reconstruction_pole.get_value(20)
           if gpml_finite_rotation_20Ma:
-            print 'Interpolated finite rotation at 20Ma: %s' % gpml_finite_rotation_20Ma.get_finite_rotation()
+            print('Interpolated finite rotation at 20Ma:', gpml_finite_rotation_20Ma.get_finite_rotation())
         """
 
 class PropertyValueVisitor:
@@ -12657,7 +12657,7 @@ class PropertyValueVisitor:
 
         # If we found a 'GpmlPlateId' then print its plate id.
         if plate_id is not None:
-            print 'plate id: %d' % plate_id
+            print('plate id:', plate_id)
 
     .. warning:: You must call the base class *__init__* method otherwise you will get a *Boost.Python.ArgumentError* exception. Note that if you do not define an *__init__* method in your derived class then Python will call the base class *__init__* (so you don't have to do anything). However if you do define *__init__* in your derived class then it must explicitly call the base class *__init__*.
     """
@@ -13902,7 +13902,7 @@ class ReconstructionTree:
         ::
 
           def traverse_sub_tree(edge):
-              print 'Parent plate: %d, child plate:%d' % (edge.get_fixed_plate_id(), edge.get_moving_plate_id())
+              print('Parent plate: %d, child plate: %d' % (edge.get_fixed_plate_id(), edge.get_moving_plate_id()))
               # Recurse into the children sub-trees.
               for child_edge in edge.get_child_edges():
                   traverse_sub_tree(child_edge)
@@ -14185,7 +14185,7 @@ class ReconstructionTreeEdge:
         ::
 
           def traverse_sub_tree(edge):
-              print 'Parent plate: %d, child plate:%d' % (edge.get_fixed_plate_id(), edge.get_moving_plate_id())
+              print('Parent plate: %d, child plate: %d' % (edge.get_fixed_plate_id(), edge.get_moving_plate_id()))
               # Recurse into the children sub-trees.
               for child_edge in edge.get_child_edges():
                   traverse_sub_tree(child_edge)
@@ -14239,9 +14239,9 @@ class ReconstructionTreeEdge:
         ::
 
           while True:
-              print 'Plate: %d' % edge.get_moving_plate_id()
+              print('Plate:', edge.get_moving_plate_id())
               if not edge.get_parent_edge():
-                  print 'Anchored plate: %d' % edge.get_fixed_plate_id()
+                  print('Anchored plate:', edge.get_fixed_plate_id())
                   break
               edge = edge.get_parent_edge()
         """
@@ -19419,8 +19419,8 @@ def synchronise_crossovers(rotation_features: FeatureCollection | str | os.PathL
           0.01, # Equivalent to 2 decimal places
           pygplates.CrossoverType.synch_old_crossover_and_stages,
           crossover_results)
-      print 'Fixed %d crossovers' % sum(
-          1 for result in crossover_results if result[1]==pygplates.CrossoverResult.synchronised)
+      print('Fixed %d crossovers' % sum(
+          1 for result in crossover_results if result[1]==pygplates.CrossoverResult.synchronised))
 
     .. versionchanged:: 0.44
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_

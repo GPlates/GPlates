@@ -678,7 +678,7 @@ export_geo_time_instant()
 					"except ``!=``, which is ``True``.\n"
 					"::\n"
 					"\n"
-					"  print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()\n"
+					"  print('Time instant is distant past:', pygplates.GeoTimeInstant(float_time).is_distant_past())\n"
 					"  time10Ma = pygplates.GeoTimeInstant(10)\n"
 					"  time20Ma = pygplates.GeoTimeInstant(20)\n"
 					"  # assert(time20Ma > time10Ma)\n"
