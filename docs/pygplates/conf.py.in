@@ -146,6 +146,8 @@ def setup(app):
     app.add_directive('sample-code', SampleCodeDirective)
     # Redirect links to the old single-page Primer (see 'write_primer_anchors').
     app.connect('build-finished', write_primer_anchors)
+    # Keep the 1.0 documentation's section anchors that later pages give back (see 'check_old_anchors').
+    app.connect('build-finished', check_old_anchors)
     # Link inherited members to the base class that documents them (see 'resolve_inherited_member').
     app.connect('missing-reference', resolve_inherited_member)
 
@@ -865,3 +867,44 @@ def write_primer_anchors(app, exception):
         js.write('var PRIMER_ANCHORS = ' + json.dumps(anchors, indent=1, sort_keys=True) + ';\n')
 
 _HTML_ID_RE = re.compile(r'\bid="([^"]+)"')
+
+
+# -- Old section anchors ---------------------------------------------------------
+
+# Sections of the pyGPlates 1.0 documentation that 1.1 renamed or regrouped, on pages that kept their
+# paths. Links to their anchors are published (the 1.0 documentation was served unversioned, and the
+# website sends its URLs to the same path below 'stable/'), so each page gives the old anchor back
+# with a label at the section now holding the content. They are listed here, frozen, so that a later
+# rewrite of these pages cannot drop one unnoticed. The single-page Primer's anchors are handled
+# above ('_OLD_PRIMER_TITLE_ANCHORS'), and numbered anchors ('#id4') are not kept, for the same
+# reason.
+_OLD_PAGE_ANCHORS = {
+    'pygplates_getting_started.html': ['libgl-importerror-on-linux'],
+    'pygplates_reference.html': ['rotation', 'velocity-and-strain', 'feature', 'feature-property',
+                                 'file-i-o', 'string', 'feature-property-value'],
+    'pygplates_sample_code.html': ['load-save', 'import', 'create-query-features',
+                                   'reconstruct-features', 'topologies', 'velocities',
+                                   'spatial-proximity']}
+
+def check_old_anchors(app, exception):
+    """
+    Warn (an error under '-W') if a page no longer has an anchor in '_OLD_PAGE_ANCHORS'.
+    """
+    if exception is not None or app.builder.name != 'html':
+        return
+
+    from sphinx.util import logging
+    logger = logging.getLogger(__name__)
+
+    for page, anchors in _OLD_PAGE_ANCHORS.items():
+        path = os.path.join(app.builder.outdir, page)
+        if not os.path.isfile(path):
+            logger.warning(f"'{page}', which keeps anchors of the pyGPlates 1.0 documentation, no "
+                           f"longer exists (see '_OLD_PAGE_ANCHORS' in conf.py)")
+            continue
+        with open(path, encoding='utf-8') as html:
+            page_ids = set(_HTML_ID_RE.findall(html.read()))
+        for anchor in anchors:
+            if anchor not in page_ids:
+                logger.warning(f"'{page}' no longer has the anchor '#{anchor}' of the pyGPlates 1.0 "
+                               f"documentation (see '_OLD_PAGE_ANCHORS' in conf.py)")

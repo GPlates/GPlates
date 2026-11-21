@@ -53,7 +53,7 @@ else() # pyGPlates ...
 	set(GPLATES_PACKAGE_DESCRIPTION [[
 PyGPlates is the GPlates Python library enabling fine-grained access to GPlates functionality.
 
-Documentation is available at https://www.gplates.org/docs/pygplates/index.html
+Documentation is available at https://gplates.github.io/GPlates/pygplates/stable/
 ]])
 
 endif()

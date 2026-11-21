@@ -202,9 +202,12 @@ class also requires deleting its stale `generated/*.rst` or the build fails.
 
 **Published docs** are served by GitHub Pages from the generated `gh-pages` branch, at
 `https://gplates.github.io/GPlates/pygplates/`: `dev/` from each push to `main` that CI builds, and
-each release series when its GitHub release is published. Only CI writes to `gh-pages`. A pull request's Linux
-leg builds the docs too, so a docstring that makes Sphinx warn fails CI. How to re-publish, and
-why it works this way: `docs/pygplates/README.md`, *Publishing*.
+each release series when its GitHub release is published. Only CI writes to `gh-pages`. A pull
+request's Linux leg builds the docs too, so a docstring that makes Sphinx warn fails CI. So does
+dropping a page that is published, or an old anchor the build keeps: links to them are in papers
+and other sites, so a page that is removed or renamed keeps a page at its old path. How publishing
+works, why, and which addresses must keep working: `docs/design/documentation-hosting/README.md`.
+How to re-publish: `docs/pygplates/README.md`, *Publishing*.
 
 ## Code style
 
