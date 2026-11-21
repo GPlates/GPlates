@@ -200,7 +200,8 @@ from 90Ma to 50Ma.
         time: 55.000000, lat: -50.485515, lon: -10.611898
         time: 50.000000, lat: -50.546458, lon: -11.620705
 
-.. note:: The reconstructed seed point is the same position as the last point in the left and right flowlines.
+.. note:: The reconstructed seed point is the same position as the first point in the left and right flowlines.
+   It is the last point printed for each, since the script prints their points in reverse (oldest first).
 
 See also
 ++++++++

@@ -9,8 +9,9 @@ This example uses existing regular features to create the following new topologi
 - topological polygon feature (which also uses the topological line feature)
 - topological network feature (which also uses the topological line feature)
 
-.. note:: Creating topological features is different than :func:`resolving/reconstructing<pygplates.resolve_topologies>`
-   them to a specific reconstruction time. Typically topological features are created/built using GPlates,
+.. note:: Creating topological features is different than resolving/reconstructing them to a specific
+   reconstruction time (which is done with a :class:`pygplates.TopologicalModel` or a
+   :class:`pygplates.TopologicalSnapshot`). Typically topological features are created/built using GPlates,
    but they can also be created using pyGPlates and this section shows how to do that.
 
 .. contents::
@@ -196,6 +197,8 @@ if the referenced geometry is a polyline or a polygon (or a topological line, pr
 .. note:: We are not specifying a geometry property name when calling :meth:`pygplates.GpmlTopologicalSection.create`. This means the *default* geometry property name
   (for the referenced feature *type*) is used. However it is sometimes possible for geometry to be placed in two different properties (with different property names).
   If the geometry happened to be in a non-default geometry property then we would need to explicitly specify that property name.
+  It is also possible for a feature to have more than one geometry under the *same* property name. :meth:`pygplates.GpmlTopologicalSection.create` then returns
+  ``None`` (and this function leaves the feature out), unless its *property_return* argument is set to ``pygplates.PropertyReturn.first`` to reference the first one found.
 
 .. note:: The `reverse_order` flag in :meth:`pygplates.GpmlTopologicalSection.create` is not needed (can be left as default, as we have done here)
    if the topological sections always intersect each other (or if they’re points, and hence have no orientation). This flag is only used when a line section stops
@@ -221,6 +224,8 @@ and is what references a specific geometry property within a feature (since a :c
 .. note:: We are not specifying a geometry property name when calling :meth:`pygplates.GpmlTopologicalSection.create_network_interior`. This means the *default* geometry property name
   (for the referenced feature *type*) is used. However it is sometimes possible for geometry to be placed in two different properties (with different property names).
   If the geometry happened to be in a non-default geometry property then we would need to explicitly specify that property name.
+  It is also possible for a feature to have more than one geometry under the *same* property name. :meth:`pygplates.GpmlTopologicalSection.create_network_interior`
+  then returns ``None`` (and this function leaves the feature out), unless its *property_return* argument is set to ``pygplates.PropertyReturn.first`` to reference the first one found.
 
 
 .. _pygplates_create_topological_features_input:

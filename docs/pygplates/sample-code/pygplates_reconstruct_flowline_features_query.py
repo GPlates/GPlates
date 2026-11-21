@@ -67,7 +67,7 @@ for reconstructed_flowline in reconstructed_flowlines:
 
         lat, lon = left_point.to_lat_lon()
 
-        # The first point in the path is the oldest and the last point is the reconstructed seed point.
+        # The first point in the reversed path is the oldest and the last point is the reconstructed seed point.
         # So we need to start at the last time and work our way backwards.
         time = flowline_times[-1-point_index]
 
@@ -84,7 +84,7 @@ for reconstructed_flowline in reconstructed_flowlines:
 
         lat, lon = right_point.to_lat_lon()
 
-        # The first point in the path is the oldest and the last point is the reconstructed seed point.
+        # The first point in the reversed path is the oldest and the last point is the reconstructed seed point.
         # So we need to start at the last time and work our way backwards.
         time = flowline_times[-1-point_index]
 

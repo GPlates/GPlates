@@ -63,7 +63,7 @@ Details
 
 | Here we create a coastline feature (a feature of type ``pygplates.FeatureType.gpml_coastline``)
   using the :meth:`pygplates.Feature.create_reconstructable_feature` function.
-| We give the `pygplates.Feature.create_reconstructable_feature` function a *present day* geometry,
+| We give the :meth:`pygplates.Feature.create_reconstructable_feature` function a *present day* geometry,
   a name, a valid time period and a reconstruction plate ID. The valid time period ends in the
   :meth:`distant future<pygplates.GeoTimeInstant.create_distant_future>`.
 

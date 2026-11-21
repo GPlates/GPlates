@@ -16,6 +16,8 @@ This document contains sample code that shows pyGPlates solving common plate tec
 Each sample is a complete script that runs in a directory containing the data files it names
 (such as ``rotations.rot`` or ``topologies.gpml``). The GPlates
 `sample data <https://www.gplates.org/download/>`_ provides files of every kind the samples use.
+Where a sample has an *Output* section, it shows what the script printed for one particular model
+and version of pyGPlates, so running it on other data (the sample data included) gives other numbers.
 
 .. contents::
    :local:
