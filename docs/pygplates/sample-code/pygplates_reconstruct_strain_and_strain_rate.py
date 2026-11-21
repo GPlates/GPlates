@@ -7,7 +7,8 @@ topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot
 # [end: create-topological-model]
 
 # The initial points that we will reconstruct (and deform) through the topological model.
-initial_points = [(-20, 130), (-30, 150), (10, 100), (40, -110)]
+# Each is the (latitude, longitude) of a point at the initial time.
+initial_points = [(0, 155), (15, 160), (20, 155), (5, 170)]
 
 # Our reconstruction will span from 250Ma to present day in 1 Myr intervals.
 initial_time = 250
@@ -27,6 +28,12 @@ for time in range(initial_time, -1, -time_increment):  # initial_time, initial_t
     # Reconstructed positions at the current 'time'.
     reconstructed_points = reconstructed_time_span.get_geometry_points(time)
     # [end: reconstructed-points]
+
+    # [fragment: no-active-points]
+    # If every point has been deactivated by the current 'time' then there are no positions (or anything else) to get.
+    if reconstructed_points is None:
+        continue
+    # [end: no-active-points]
 
     # [fragment: topology-point-locations]
     # The resolved topologies (rigid plates and deforming networks) in which the reconstructed positions are located at the current 'time'.

@@ -7,6 +7,7 @@ This example reconstructs (and deforms) points through topological plate polygon
 the following quantities over a time period spanning a past geological time to present day:
 
 - the reconstructed positions of the initial points,
+- their crustal thicknesses,
 - their crustal stretching factors, and
 - their tectonic subsidences.
 
@@ -18,8 +19,9 @@ Data files
 """"""""""
 
 ``topologies.gpml``
-    Topological plate polygon and/or deforming network features. The crustal stretching factor and
-    tectonic subsidence of a point only change while it is inside a deforming network.
+    Topological plate polygon and/or deforming network features. The crustal thickness, crustal
+    stretching factor and tectonic subsidence of a point only change while it is inside the deforming
+    region of a network.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological features.
@@ -46,9 +48,10 @@ Details
 Next we get our topological model to reconstruct (and deform) our ``initial_points`` from their position at ``initial_time``
 to present day in 1 Myr intervals using :meth:`pygplates.TopologicalModel.reconstruct_geometry`. This returns a
 :class:`reconstructed geometry time span<pygplates.ReconstructedGeometryTimeSpan>` containing a history of the reconstructed
-point positions and their associated scalar values, such as crustal stretching factor and tectonic subsidence, that change over time
-when passing through deforming networks. Since we did not specify the *initial_scalars* parameter, the initial crustal stretching factors
-and initial tectonic subsidences will have default values (of 1.0 and 0.0 respectively) indicating no initial stretching and sea-level subsidence.
+point positions and their associated scalar values, such as crustal thickness and tectonic subsidence, that change over time
+when passing through deforming networks. Since we did not specify the *initial_scalars* parameter, the initial crustal thicknesses,
+initial crustal stretching factors and initial tectonic subsidences will have default values (of 40 kms, 1.0 and 0.0 respectively),
+with the last two indicating no initial stretching and sea-level subsidence.
 And since we did not specify the *deactivate_points* parameter, the default deactivation is used which matches GPlates
 (when using 'reconstruct by topologies' in a green visual layer). This means any initial points on oceanic crust could get subducted and
 disappear (get deactivated).
@@ -62,19 +65,37 @@ of points in ``reconstructed_points`` could be less than ``initial_points``.
 .. sample-code:: pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.py
    :fragment: reconstructed-points
 
+If *all* the points have been deactivated by the current ``time`` then
+:meth:`pygplates.ReconstructedGeometryTimeSpan.get_geometry_points` returns ``None`` rather than an empty list,
+and so do the other queries below. So we test for that first.
+
+.. sample-code:: pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.py
+   :fragment: no-active-points
+
 Query in which resolved topologies the reconstructed positions are located at the current ``time``.
 Note that the number of values in ``reconstructed_topology_point_locations`` matches the number of points in ``reconstructed_points``.
 
 .. sample-code:: pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.py
    :fragment: topology-point-locations
 
-Extract the reconstructed/deformed crustal stretching factor and tectonic subsidence (in kms) for each point in ``reconstructed_points``.
-Note that :meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values` returns a Python dictionary mapping scalar types to their scalar values
-(unless a specific scalar type is specified). From that dictionary we then extract the crustal stretching factor and tectonic subsidence values.
-Also note that these builtin scalar types are always available (even when no initial scalar values are provided).
+| Get the reconstructed/deformed crustal thickness (in kms), crustal stretching factor and tectonic subsidence (in kms)
+  for each point in ``reconstructed_points``, using :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses`,
+  :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors` and
+  :meth:`pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences`.
+| Each returns a list with one value for each point in ``reconstructed_points``, in the same order.
+| The crustal stretching factor is the initial crustal thickness divided by the crustal thickness at the current ``time``.
+  So crust that has been stretched to half its initial thickness has a crustal stretching factor of 2.
+| These three scalar types are builtin, so they are always available (even when no initial scalar values are provided).
+  Each method is the equivalent of calling :meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values`
+  with the corresponding :class:`scalar type<pygplates.ScalarType>`.
 
 .. sample-code:: pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.py
-   :fragment: scalar-values
+   :fragment: crustal-thickness-and-subsidence
+
+Finally we print the position, crustal thickness, crustal stretching factor and tectonic subsidence of each point.
+
+.. sample-code:: pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.py
+   :fragment: print-values
 
 See also
 """"""""
@@ -83,5 +104,8 @@ See also
   :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`,
   :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence`
 - Reference: :meth:`pygplates.TopologicalModel.reconstruct_geometry`, :class:`pygplates.ReconstructedGeometryTimeSpan`,
+  :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses`,
+  :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors`,
+  :meth:`pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences`,
   :meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values`, :class:`pygplates.ScalarType`
 - Sample code: :ref:`pygplates_reconstruct_strain_and_strain_rate`

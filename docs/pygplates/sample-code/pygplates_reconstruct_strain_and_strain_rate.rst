@@ -64,6 +64,13 @@ of points in ``reconstructed_points`` could be less than ``initial_points``.
 .. sample-code:: pygplates_reconstruct_strain_and_strain_rate.py
    :fragment: reconstructed-points
 
+If *all* the points have been deactivated by the current ``time`` then
+:meth:`pygplates.ReconstructedGeometryTimeSpan.get_geometry_points` returns ``None`` rather than an empty list,
+and so do the other queries below. So we test for that first, and skip the current ``time``.
+
+.. sample-code:: pygplates_reconstruct_strain_and_strain_rate.py
+   :fragment: no-active-points
+
 Query :meth:`in which resolved topologies <pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations>` (rigid plates and deforming networks)
 the reconstructed positions are located at the current ``time``.
 Note that the number of values in ``reconstructed_topology_point_locations`` matches the number of points in ``reconstructed_points``.
