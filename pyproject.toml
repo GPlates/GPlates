@@ -187,7 +187,8 @@ GPLATES_BUILD_GPLATES = "FALSE"
 # which no longer searches for DLLs using the PATH environment variable.
 #
 # Note that it is better to first build a wheel and then repair it with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
-# in order to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+# in order to check dependencies (manylinux), copy them into the wheel and (most importantly) link the module to those copies,
+# renaming them on Linux and Windows (to avoid conflicts).
 # And then install that repaired wheel (using 'pip wheel ...'). This avoids potential issues with binary dependency conflicts from other
 # installed Python packages that have the same dependencies (eg, the GDAL dependency). This means first creating a wheel that leaves the
 # dependency libraries to the repair tool. For example, building a wheel that will subsequently be repaired by auditwheel/delocate/delvewheel can be done with:

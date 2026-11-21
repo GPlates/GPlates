@@ -2,8 +2,9 @@
 
 PyGPlates wheels are built with [cibuildwheel](https://cibuildwheel.pypa.io/) - both in CI and
 locally. Cibuildwheel drives the whole per-wheel pipeline: build pyGPlates for each Python
-version, repair the wheel (copy the dependency shared libraries into it and give them unique
-names - `auditwheel` on Linux, `delocate` on macOS, `delvewheel` on Windows) and run the
+version, repair the wheel (copy the dependency shared libraries into it and link the module to
+those copies, renaming them on Linux and Windows - `auditwheel` on Linux, `delocate` on macOS,
+`delvewheel` on Windows) and run the
 pyGPlates test suite against the repaired wheel.
 
 The pieces fit together like this:
@@ -214,8 +215,9 @@ These are the reasons behind the non-obvious `[tool.cibuildwheel]` settings in
 The wheel is a standalone bundle like any other `GPLATES_INSTALL_STANDALONE` install (the
 default when building with scikit-build-core outside conda): it carries the GDAL and PROJ data,
 and the module looks for them there. What differs is who copies the dependency libraries in:
-`auditwheel` (or `delocate`/`delvewheel`), which runs afterwards to repair the wheel and gives
-them unique names, rather than the install. So the install must not copy them itself.
+`auditwheel` (or `delocate`/`delvewheel`), which runs afterwards to repair the wheel and links the
+module to the copies (renaming them, except on macOS), rather than the install. So the install
+must not copy them itself.
 
 Two measures assume the repair has happened. On macOS the option compiles in a `qt.conf` (see
 `src/qt-resources/CMakeLists.txt`). And at run time, any standalone bundle with GDAL's data but

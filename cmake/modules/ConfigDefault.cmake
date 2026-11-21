@@ -212,7 +212,8 @@ unset(_INSTALL_STANDALONE)
 #
 # GPLATES_INSTALL_FOR_WHEEL_REPAIR - pyGPlates only: the install is for a wheel that a repair tool (auditwheel on Linux,
 # delocate on macOS, delvewheel on Windows) then fixes up. The repair tool copies the dependency libraries into the wheel
-# (renaming them so they cannot clash with another copy in the same process), so the install does not copy them itself.
+# (renaming them, on Linux and Windows, so they cannot clash with another copy in the same process), so the install does
+# not copy them itself.
 # Everything else about the standalone bundle is unchanged. 'pyproject.toml' turns it on for the cibuildwheel builds.
 #
 # Such an install is only meant as the input to a repair: installed as it is, the module would use the environment's
