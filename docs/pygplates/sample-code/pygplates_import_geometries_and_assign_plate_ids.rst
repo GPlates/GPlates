@@ -137,8 +137,12 @@ The input points file is opened and read line-by-line.
   :class:`pygplates.PlatePartitioner`, because it partitions only once. The function creates a
   partitioner, partitions the features with :meth:`pygplates.PlatePartitioner.partition_features`
   and discards the partitioner. To partition more than one set of features with the same plates,
-  create a :class:`pygplates.PlatePartitioner` once and use it for each set
-  (:ref:`pygplates_calculate_velocities_in_dynamic_plates` creates one for each time).
+  create a :class:`pygplates.PlatePartitioner` once and use it for each set.
+
+.. TODO: Point to the sample that uses a PlatePartitioner here, and under 'See also' below, once
+   it is written (a sample that partitions at a past time, and partitions polygons). The sentence
+   above used to point to 'pygplates_calculate_velocities_in_dynamic_plates', which created a
+   partitioner at each time, but that page no longer partitions.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: partition-into-plates
@@ -464,5 +468,4 @@ See also
 
 - Reference: :func:`pygplates.partition_into_plates`, :class:`pygplates.PlatePartitioner`,
   :meth:`pygplates.Feature.set_geometry`, :class:`pygplates.FeatureCollection`, :meth:`pygplates.FeatureCollection.write`
-- Sample code: :ref:`pygplates_load_and_save_feature_collections`, :ref:`pygplates_create_common_feature_types`,
-  :ref:`pygplates_calculate_velocities_in_dynamic_plates`
+- Sample code: :ref:`pygplates_load_and_save_feature_collections`, :ref:`pygplates_create_common_feature_types`

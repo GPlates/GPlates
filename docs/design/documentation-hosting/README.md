@@ -392,7 +392,7 @@ build checks both (as warnings, which `-W` makes errors):
   to redirect. Anchors made from labels are found from the labels, so the map follows a section
   that moves again. Anchors made from section titles are a frozen list
   (`_OLD_PRIMER_TITLE_ANCHORS`), since a title's anchor is not unique across pages.
-- **Fifteen section anchors of the 1.0 documentation** that 1.1 renamed or regrouped, on three
+- **Seventeen section anchors of the 1.0 documentation** that 1.1 renamed or regrouped, on four
   pages that kept their paths (`_OLD_PAGE_ANCHORS`). Each section now holding the content carries
   a label that gives the old anchor back, and `check_old_anchors` fails the build if a later
   rewrite of those pages drops one. The labels have the anchors' plain names (`feature`,

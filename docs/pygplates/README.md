@@ -87,7 +87,7 @@ publishing it. Three things can fail it:
 - **A Sphinx warning.** A docstring or page that makes Sphinx warn fails the build (`-W`).
 - **A lost anchor.** Links to some sections of the pyGPlates 1.0 documentation are published, so
   the build keeps their anchors: those of the old single-page Primer (`write_primer_anchors` in
-  `conf.py.in`) and fifteen section anchors on other pages (`check_old_anchors`). A rewrite that
+  `conf.py.in`) and seventeen section anchors on other pages (`check_old_anchors`). A rewrite that
   drops one gets a warning naming it. A local build checks this too.
 - **A dropped page.** Every page of the release series `stable` points at must still be built,
   since links to `stable/` follow it to the next release. To run the check on a local build,
