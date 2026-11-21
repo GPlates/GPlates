@@ -11,10 +11,12 @@ The real features are cut from the sample data installed with GPlates 2.5 (the E
 coastlines, the Seton et al. 2020 isochrons, the Zahirovic et al. 2022 plate-boundary geometries, the
 Atlantic flowlines and the GPMDB virtual geomagnetic poles), keeping only features with few points, on a
 handful of plates that 'rotations.rot' knows. Re-run this only to regenerate them; the outputs are
-committed. Re-running reproduces the real ones byte for byte, but the synthetic ones (the motion
-paths, the velocity domain, the static polygons and 'sample-code/topologies.gpml') come back with
-new feature IDs and nothing else - restore those with git checkout unless they were meant to
-change.
+committed. Re-running reproduces the real features, but the synthetic ones (the motion paths, the
+velocity domain, the static polygons, the Southeast Indian Ridge in 'ridges.gpml' and
+'sample-code/topologies.gpml') come back with new feature IDs. A later pyGPlates changes more: every
+file gets its 'gpml:version' (1.6.0340 where most of these have 1.6.0339), and a property it writes
+differently changes too (it no longer gives a motion path a reconstruction method). So restore
+every file with git checkout unless it was meant to change.
 
 Usage: generate_sample_fixtures.py [<GeoData/FeatureCollections directory>]
 """
@@ -142,24 +144,62 @@ write('static_polygons.gpml', [
 # looks for ridges or subduction zones would find none. This one is written to 'sample-code/', which
 # 'sample_code_test.py' lays over the shared fixtures for every sample.
 #
-# Four bands in the western Pacific, in the direction the Pacific moves: rigid Nazca (911); the East
-# Pacific Rise; rigid Pacific (901); a trench where the Pacific subducts beneath a deforming zone that
-# moves with the Philippine Sea plate (608); and rigid Eurasia (301). The plates and the orientation
-# were chosen by searching 'rotations.rot' for a trench that converges and a ridge that diverges at
-# every time the samples visit (0 to 140 Ma). With plates that do not move consistently the samples
-# would report ridges converging and trenches diverging, which is what they look for as anomalies.
-# Beyond 140 Ma the layout is unchecked, and 'rotations.rot' thins out: Eurasia's chain to the anchor
-# (through Africa) ends at 141 Ma, the deforming zone's at 170 Ma and the Pacific plates' at 240 Ma.
+# Three rigid plates in bands across the western Pacific, in the direction the Pacific moves: Nazca
+# (911); the East Pacific Rise; the Pacific (901); a trench; and Eurasia (301), which the Pacific
+# subducts beneath. A deforming zone (a topological network) lies over the part of Eurasia beside the
+# trench. The plates and the orientation were chosen by searching 'rotations.rot' for a trench that
+# converges and a ridge that diverges at every time the samples visit (0 to 140 Ma). With plates that
+# do not move consistently the samples would report ridges converging and trenches diverging, which is
+# what they look for as anomalies. Beyond 140 Ma the layout is unchecked, and 'rotations.rot' thins
+# out: Eurasia's chain to the anchor (through Africa) ends at 141 Ma, and the Pacific plates' at 240 Ma.
 #
-# Every boundary section is on plate 0, so the geometry stays put and the bands always close. That is
-# enough for the samples, because what they measure comes from the topologies, not their sections: a
-# rigid plate's velocity (and so the convergence across a boundary and the net rotation) comes from
-# the plate ID of its topology, and a network's from its vertices. Sections on the real plates would
-# drift apart by thousands of kilometres over the 140 My the samples cover, and the resolved
-# boundaries would be stitched across the gaps. The deforming zone deforms because its interior
-# points move with the Philippine Sea plate while its boundary stays still. Those points sit near the
-# zone's leading edge: nearer the trench, the Philippine Sea plate's motion reaches the trench and makes
-# parts of it diverge (with them 8 degrees from the trench, it converges everywhere, at every time).
+# Every boundary section of the plates is on plate 0, so the geometry stays put and the bands always
+# close. That is enough for the samples, because what they measure comes from the topologies, not their
+# sections: a rigid plate's velocity (and so the convergence across a boundary and the net rotation)
+# comes from the plate ID of its topology, and a network's from its vertices. Sections on the real
+# plates would drift apart by thousands of kilometres over the 140 My the samples cover, and the
+# resolved boundaries would be stitched across the gaps.
+#
+# The deforming zone overlays Eurasia, as networks overlay plates in real models, where it used to sit
+# between Eurasia and the trench. So three topologies share the trench (the Pacific on one side,
+# Eurasia and the zone on the other), and the zone alone has its leading edge, which crosses Eurasia's
+# interior. Neither is a gap or an overlap, which the gaps-and-overlaps sample has to get right. The
+# zone runs the whole length of the trench, and has to: where a network and a plate are on the same
+# side of a boundary the network's velocity is the one compared, and at the trench that is zero, which
+# is what the search above was done with. With Eurasia's own velocity there, parts of the trench would
+# diverge (by 3 cm/yr at 100 Ma). The zone keeps the plate ID of the Philippine Sea plate (608), which
+# its interior once moved with. Nothing moves with that plate now: the ID tells the zone from Eurasia
+# where a sample prints the plate ID of the overriding plate.
+#
+# The zone deforms from 30.5 Ma. Until then it is the band from the trench to a leading edge 10 degrees
+# ahead, with a rigid block inside it, all on plate 0: nothing in it moves or strains, and a point
+# reconstructed through the topologies stays where it is (a point in Eurasia outside the zone does
+# not: from 141 Ma it moves with plate 301, and has left the model by 95 Ma). From 30.5 Ma the
+# leading edge and the block move ahead with South America (201), at 1 to 2.5 cm/yr mid-zone, while
+# the trench stays put. The zone widens to about 16 degrees at its middle, and the crust in it
+# stretches: by a factor of 1.4 in mid-zone, and of 1.9 between the trench and the block, which takes
+# up none of the stretching itself. That is what the crustal-thickness and strain samples reconstruct
+# their points through.
+#
+# South America is here for its motion, not its geography. A plate's motion relative to the anchor is
+# all that 'rotations.rot' offers, and at this place most plates wander, or run thousands of
+# kilometres in 140 My. Plate 201 is one of the few that move steadily ahead, at a rift's speed, for
+# tens of millions of years. Even it does not do so for long enough: it would carry the leading edge
+# back across the trench by 70 Ma. Hence the handover. The leading edge and the block are each a pair
+# of features with the same geometry at 30.5 Ma, one on plate 0 that ends then and one on plate 201
+# that begins then ('fixed_then_moving()' below). The resolver is made for this: it leaves out a
+# section whose feature does not exist at the time, so that another can take its place.
+#
+# Three things to know before changing the zone:
+# - The handover is at 30.5 Ma because the samples visit whole millions of years. At 30.5 Ma itself
+#   both features of each pair exist, and the zone resolves with two leading edges and two blocks.
+# - The leading edge slides 3 to 5 degrees to the left as it moves ahead, and the zone's sides are
+#   fixed. So the leading edge overhangs the sides by 10 degrees, and its points are 20 degrees apart,
+#   which keeps them 4 degrees or more from a side at every time. A point that comes within a degree
+#   or two of a side makes a sliver triangle with the corner: with points 5 degrees apart, one had 20
+#   times the strain rate of its neighbours.
+# - The same slide shortens the crust beside the zone's left side instead of stretching it (by present
+#   day, within 4 degrees of the side). A sample that wants plain extension keeps away from the sides.
 #
 # The bands are laid out in a local frame whose "north" is the Pacific's direction of motion, then
 # rotated so that frame is centred on the Pacific at the equator and the date line, facing azimuth 285
@@ -167,6 +207,9 @@ write('static_polygons.gpml', [
 TOPOLOGY_CENTRE_LAT, TOPOLOGY_CENTRE_LON = 0, 180
 TOPOLOGY_AZIMUTH = 285
 TOPOLOGY_HALF_WIDTH = 30
+# The deforming zone's leading edge and rigid block stay put until this time (Ma), then move with this plate.
+DEFORMING_ZONE_HANDOVER_TIME = 30.5
+DEFORMING_ZONE_MOVING_PLATE = 201
 
 
 def to_model(local_points):
@@ -188,10 +231,10 @@ def to_model(local_points):
     return points
 
 
-def across_line(lat):
+def across_line(lat, half_width=TOPOLOGY_HALF_WIDTH, spacing=10):
     """A line across the Pacific's motion, drawn so that the band ahead of it is on its left."""
     return pygplates.PolylineOnSphere(to_model(
-        [(lat, lon) for lon in range(-TOPOLOGY_HALF_WIDTH, TOPOLOGY_HALF_WIDTH + 1, 10)]))
+        [(lat, lon) for lon in range(-half_width, half_width + 1, spacing)]))
 
 
 def section(feature_type, geometry, name, **properties):
@@ -207,11 +250,40 @@ def band_sides(lat_ahead, lat_behind, band_name):
             for side, lon in (('left', -TOPOLOGY_HALF_WIDTH), ('right', TOPOLOGY_HALF_WIDTH))]
 
 
+# The rotations the samples resolve the topologies with, to find where a moving feature is at present day.
+rotation_model = pygplates.RotationModel(os.path.join(OUT, 'rotations.rot'))
+
+
+def fixed_then_moving(geometry, name):
+    """
+    The two features of a geometry that stays put until the handover, then moves with a plate.
+
+    'geometry' is where it is at the handover, which is the geometry of the fixed feature. The moving
+    feature's present-day geometry is that, reverse reconstructed from the handover time.
+    """
+    fixed = section(pygplates.FeatureType.gpml_unclassified_feature, geometry,
+                    '%s (until %g Ma)' % (name, DEFORMING_ZONE_HANDOVER_TIME),
+                    valid_time=(pygplates.GeoTimeInstant.create_distant_past(), DEFORMING_ZONE_HANDOVER_TIME))
+    moving = pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_unclassified_feature, geometry,
+        name='%s (from %g Ma)' % (name, DEFORMING_ZONE_HANDOVER_TIME),
+        valid_time=(DEFORMING_ZONE_HANDOVER_TIME, pygplates.GeoTimeInstant.create_distant_future()),
+        reconstruction_plate_id=DEFORMING_ZONE_MOVING_PLATE,
+        reverse_reconstruct=(rotation_model, DEFORMING_ZONE_HANDOVER_TIME))
+    return [fixed, moving]
+
+
 leading_edge = section(pygplates.FeatureType.gpml_unclassified_feature, across_line(40),
                        'leading edge of the model')
-deforming_zone_edge = section(pygplates.FeatureType.gpml_unclassified_feature, across_line(30),
-                              'leading edge of the deforming zone')
-# The deforming zone (the overriding plate) is ahead of the trench, so on its left.
+deforming_zone_edges = fixed_then_moving(across_line(30, half_width=40, spacing=20),
+                                         'leading edge of the deforming zone')
+# The block is to the right of the zone's middle, which leaves the middle to stretch evenly. From 12 Ma
+# to present day it is over the velocity domain's point at (20, 150), so that the samples that
+# calculate velocities at those points meet a rigid block as well as the zone's deforming region.
+deforming_zone_blocks = fixed_then_moving(
+    pygplates.PolygonOnSphere(to_model([(26, 6), (26, 20), (28.5, 20), (28.5, 6)])),
+    'rigid block in the deforming zone')
+# The deforming zone (and Eurasia, the overriding plate) is ahead of the trench, so on its left.
 trench = section(pygplates.FeatureType.gpml_subduction_zone, across_line(20), 'trench',
                  other_properties=[(pygplates.PropertyName.gpml_subduction_polarity,
                                     pygplates.Enumeration(
@@ -220,22 +292,23 @@ trench = section(pygplates.FeatureType.gpml_subduction_zone, across_line(20), 't
 ridge = section(pygplates.FeatureType.gpml_mid_ocean_ridge, across_line(-20), 'East Pacific Rise')
 trailing_edge = section(pygplates.FeatureType.gpml_unclassified_feature, across_line(-35),
                         'trailing edge of the model')
-deforming_zone_interior = pygplates.Feature.create_reconstructable_feature(
-    pygplates.FeatureType.gpml_unclassified_feature,
-    pygplates.MultiPointOnSphere(to_model([(28, lon) for lon in range(-25, 26, 10)])),
-    name='deforming zone interior', reconstruction_plate_id=608)
 
-eurasia_sides = band_sides(40, 30, 'Eurasia')
-deforming_zone_sides = band_sides(30, 20, 'deforming zone')
+# Eurasia's sides are the deforming zone's too, as far as the zone's leading edge.
+eurasia_sides = band_sides(40, 20, 'Eurasia')
 pacific_sides = band_sides(20, -20, 'Pacific')
 nazca_sides = band_sides(-20, -35, 'Nazca')
 
 
 def topology(feature_type, topological_geometry_type, boundary, name, plate_id, interiors=()):
-    """A topology whose boundary goes leading edge, right edge, trailing edge, left edge."""
+    """
+    A topology whose boundary goes leading edge, right edge, trailing edge, left edge.
+
+    The leading edge is a list: one feature, or the features that take its place at different times
+    (a section whose feature does not exist at a time is left out of the boundary resolved then).
+    """
     ahead, behind, (left, right) = boundary
     sections = [pygplates.GpmlTopologicalSection.create(feature, topological_geometry_type=topological_geometry_type)
-                for feature in (ahead, right, behind, left)]
+                for feature in ahead + [right, behind, left]]
     if interiors:
         topological_geometry = topological_geometry_type(
             sections, [pygplates.GpmlTopologicalSection.create_network_interior(feature) for feature in interiors])
@@ -249,17 +322,17 @@ def topology(feature_type, topological_geometry_type, boundary, name, plate_id, 
 closed_plate_boundary = pygplates.FeatureType.gpml_topological_closed_plate_boundary
 sample_topologies = [
     topology(closed_plate_boundary, pygplates.GpmlTopologicalPolygon,
-             (leading_edge, deforming_zone_edge, eurasia_sides), 'Eurasia', 301),
+             ([leading_edge], trench, eurasia_sides), 'Eurasia', 301),
     topology(pygplates.FeatureType.gpml_topological_network, pygplates.GpmlTopologicalNetwork,
-             (deforming_zone_edge, trench, deforming_zone_sides), 'deforming zone', 608,
-             interiors=[deforming_zone_interior]),
+             (deforming_zone_edges, trench, eurasia_sides), 'deforming zone', 608,
+             interiors=deforming_zone_blocks),
     topology(closed_plate_boundary, pygplates.GpmlTopologicalPolygon,
-             (trench, ridge, pacific_sides), 'Pacific', 901),
+             ([trench], ridge, pacific_sides), 'Pacific', 901),
     topology(closed_plate_boundary, pygplates.GpmlTopologicalPolygon,
-             (ridge, trailing_edge, nazca_sides), 'Nazca', 911)]
+             ([ridge], trailing_edge, nazca_sides), 'Nazca', 911)]
 write(os.path.join('sample-code', 'topologies.gpml'),
-      [leading_edge, deforming_zone_edge, trench, ridge, trailing_edge, deforming_zone_interior] +
-      eurasia_sides + deforming_zone_sides + pacific_sides + nazca_sides + sample_topologies)
+      [leading_edge, trench, ridge, trailing_edge] + deforming_zone_edges + deforming_zone_blocks +
+      eurasia_sides + pacific_sides + nazca_sides + sample_topologies)
 
 # Input text files for the import page: 'lon lat' per line (GMT order); polylines separated by '>'.
 # The points file has no '>' headers in either form: pyGPlates' GMT reader takes a header followed

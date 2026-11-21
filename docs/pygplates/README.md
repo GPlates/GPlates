@@ -370,8 +370,10 @@ the generator if it is cut from real data) rather than special-casing the test.
 
 The test lays two more directories over the shared fixtures. `fixtures/sample-code/` holds files for
 every sample that must differ from the unit tests' files of the same name: its `topologies.gpml` has
-a ridge that diverges and a trench that converges at every time the samples visit, where the unit
-tests' one has only unclassified sections on plates that do not move. `fixtures/sample-code/<script>/`
+a ridge that diverges and a trench that converges at every time the samples visit, and a deforming
+network (with a rigid block in it) that overlays a plate and stretches from 30 Ma to present day,
+where the unit tests' one has only unclassified sections on plates that do not move. The comments
+in the generator say what a sample can rely on there. `fixtures/sample-code/<script>/`
 holds files for one script, whose page reproduces its own input in full
 (`create_topological_features` shows its `features.gpml`).
 
