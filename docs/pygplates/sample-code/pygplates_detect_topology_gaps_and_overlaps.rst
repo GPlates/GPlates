@@ -16,6 +16,9 @@ Gaps and overlaps are caused when:
 This can also happen if two topological line sections are *identical* when ideally there should
 only be one of them (and it should be shared by two neighbouring topological boundaries).
 
+A deforming network that lies over a topological boundary polygon is not an overlap. Networks
+usually do overlay the rigid plates.
+
 .. contents::
    :local:
    :depth: 2
@@ -25,7 +28,8 @@ Data files
 """"""""""
 
 ``topologies.gpml``
-    Topological plate polygon and/or deforming network features, intended to cover the globe.
+    Topological plate polygon features, intended to cover the globe. There can also be deforming
+    network features, which can overlay the plate polygons.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological features.
@@ -77,14 +81,46 @@ we're interested in because their sub-segments have a list of topologies on them
    :fragment: shared-sub-segments
 
 | The list of topologies that share a :class:`sub-segment<pygplates.ResolvedTopologicalSharedSubSegment>`
-  is obtained using :class:`pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies`.
-| If the resolved topologies have global coverage with no gaps/overlaps then each sub-segment should be
-  shared by exactly two resolved boundaries.
+  is obtained using :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies`.
+| :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags`
+  returns a list in the same order, with ``True`` for each topology that is on the left side of the
+  sub-segment and ``False`` for each one on the right. The left side is the one on the left when
+  following the points of the sub-segment from its first to its last.
 
 .. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
    :fragment: sharing-resolved-topologies
 
-If a sub-segment is not shared by exactly two resolved boundaries then we record its feature.
+| If the resolved topologies have global coverage with no gaps/overlaps then each side of a
+  sub-segment has one resolved boundary (a plate) on it, or one resolved network, or one of each.
+| So it is not enough to count the topologies that share a sub-segment. A subduction zone whose
+  overriding plate has a deforming network lying over it is shared by three topologies (two plates and
+  the network), with nothing wrong. And two topologies sharing a sub-segment could both be on the same
+  side of it, which is an overlap on that side and a gap on the other.
+| Instead we count the plates and the networks separately, on each side.
+
+.. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
+   :fragment: count-each-side
+
+There is an overlap if either side of the sub-segment has more than one plate, or more than one network.
+
+.. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
+   :fragment: overlap
+
+| There is a gap if either side of the sub-segment has neither a plate nor a network.
+| We only test this for a sub-segment that at least one plate shares. A sub-segment shared only by
+  networks is not tested for a gap, because the lists cannot tell us whether it has one beside it. Where a
+  network overlays a plate, the parts of the network's boundary that cross the plate's interior have
+  the network on one side only, with the plate lying beneath on both sides. But the plate does not
+  share those sub-segments (they are not part of its boundary), so it is not in the lists.
+  (:meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics` also leaves out such
+  sub-segments by default, since they are not necessarily plate boundaries.)
+| This means a gap beside a network is only found where the network's boundary is also the boundary of a plate.
+
+.. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
+   :fragment: gap
+
+If we found a gap or an overlap then we record the sub-segment's feature, with a description
+saying which was found (it can be both).
 
 .. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
    :fragment: record-anomalous-feature
@@ -121,6 +157,7 @@ See also
 - Primer: :ref:`pygplates_primer_topological_snapshot`
 - Reference: :class:`pygplates.TopologicalModel`, :meth:`pygplates.TopologicalSnapshot.get_resolved_topological_sections`,
   :meth:`pygplates.ResolvedTopologicalSection.get_shared_sub_segments`,
-  :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies`
+  :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies`,
+  :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags`
 - Sample code: :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`,
   :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`
