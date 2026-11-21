@@ -1,3 +1,7 @@
+.. Some sections below also carry a label named after their anchor in the pyGPlates 1.0
+   documentation (eg, '.. _load-save:'), because links to those anchors are published. They are
+   listed, and checked, in '_OLD_PAGE_ANCHORS' in conf.py.
+
 .. _pygplates_sample_code:
 
 Sample code
@@ -17,6 +21,9 @@ Each sample is a complete script that runs in a directory containing the data fi
    :local:
    :depth: 2
 
+.. _load-save:
+.. _import:
+
 Load and save
 -------------
 
@@ -29,6 +36,8 @@ and how to load and save collections of features from/to files.
    sample-code/pygplates_import_geometries_and_assign_plate_ids
    sample-code/pygplates_load_and_save_feature_collections
 
+.. _create-query-features:
+
 Create and query features
 -------------------------
 
@@ -40,6 +49,8 @@ This section covers how to create features from scratch and how to query their p
    sample-code/pygplates_create_common_feature_types
    sample-code/pygplates_query_common_feature_types
    sample-code/pygplates_create_topological_features
+
+.. _reconstruct-features:
 
 Reconstruct
 -----------
@@ -67,6 +78,8 @@ past geological times.
    sample-code/pygplates_plate_circuits_to_anchored_plate
    sample-code/pygplates_modify_reconstruction_pole
 
+.. _topologies:
+
 Topologies and plate boundaries
 -------------------------------
 
@@ -81,6 +94,8 @@ at past geological times, how to query their topologies, and how to track quanti
    sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges
    sample-code/pygplates_detect_topology_gaps_and_overlaps
    sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence
+
+.. _velocities:
 
 Velocities, strain and net rotation
 -----------------------------------
@@ -97,6 +112,8 @@ and the net rotation of the lithosphere.
    sample-code/pygplates_reconstruct_strain_and_strain_rate
    sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones
    sample-code/pygplates_calculate_net_rotation
+
+.. _spatial-proximity:
 
 Spatial queries
 ---------------

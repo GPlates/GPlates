@@ -256,7 +256,11 @@ This section covers issues you might encounter when installing or running pyGPla
    :local:
    :depth: 1
 
+.. The second label is the section's anchor in the pyGPlates 1.0 documentation, whose links are
+   published (see '_OLD_PAGE_ANCHORS' in conf.py).
+
 .. _pygplates_getting_started_troubleshooting_libgl_glib:
+.. _libgl-importerror-on-linux:
 
 libGL or glib ImportError on Linux
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
