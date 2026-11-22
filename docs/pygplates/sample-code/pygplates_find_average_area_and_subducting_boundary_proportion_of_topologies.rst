@@ -3,12 +3,11 @@
 Find average area and subducting boundary proportion of topologies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example resolves topological plate polygons (and deforming networks) and determines:
+This example resolves topological plate polygons (and deforming networks) over a series of
+geological times. At each time it finds:
 
-- the average area enclosed by a topology's boundary, and
-- the average proportion of a topology's boundary length that is subducting
-
-...over a series of geological times.
+- the average area enclosed by the boundary of a topology, and
+- the average proportion of the boundary length of a topology that is subducting.
 
 .. contents::
    :local:
@@ -18,8 +17,9 @@ Data files
 """"""""""
 
 ``topologies.gpml``
-    Topological plate polygon and/or deforming network features. Subduction zones are recognised by
-    the feature type (``gpml_subduction_zone``) of the boundary section features.
+    Topological plate polygon and/or deforming network features, and the boundary section features
+    that they reference. Subduction zones are recognised by the feature type
+    (:attr:`pygplates.FeatureType.gpml_subduction_zone`) of the boundary section features.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological features.
@@ -34,69 +34,78 @@ Sample code
 Details
 """""""
 
-| First create a :class:`topological model<pygplates.TopologicalModel>` from topological features and rotation files.
-| The topological features can be plate polygons and/or deforming networks.
-| More than one file containing topological features can be specified here, however we're only specifying one file.
-| Also note that more than one rotation file (or even a single :class:`pygplates.RotationModel`) can be specified here,
-  however we're only specifying a single rotation file.
+A :class:`topological model<pygplates.TopologicalModel>` is created from the topological features
+and the rotation file. The topological features can be plate polygons, deforming networks or both.
+
+Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a :class:`pygplates.RotationModel` can be given in place of the rotation files.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: create-topological-model
 
-.. note:: We create our :class:`pygplates.TopologicalModel` **outside** the time loop since that does not require ``time``.
+.. note:: The :class:`pygplates.TopologicalModel` is created **outside** the time loop, since it does not depend on ``time``.
 
-| Get a snapshot of our resolved topologies.
-| Here the topological features are resolved to the current ``time``
-  using :func:`pygplates.TopologicalModel.topological_snapshot`.
+:meth:`pygplates.TopologicalModel.topological_snapshot` resolves the topological features at the
+current ``time``, and returns the result as a :class:`pygplates.TopologicalSnapshot`.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: topological-snapshot
 
-| Extract the resolved topological plate polygons (and deforming networks) from the current snapshot.
-| By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
-  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are returned.
+:meth:`pygplates.TopologicalSnapshot.get_resolved_topologies` returns the resolved topologies of
+the snapshot. By default these are the resolved plate polygons
+(:class:`pygplates.ResolvedTopologicalBoundary`) and the resolved deforming networks
+(:class:`pygplates.ResolvedTopologicalNetwork`).
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: resolved-topologies
 
-| The boundary polygon of a resolved topology is found by calling
-  ``resolved_topology.get_resolved_boundary()`` which is available for both
-  :class:`pygplates.ResolvedTopologicalBoundary` and :class:`pygplates.ResolvedTopologicalNetwork`.
-| Then the area of the boundary polygon is obtained with :meth:`pygplates.PolygonOnSphere.get_area`.
+``resolved_topology.get_resolved_boundary()`` returns the boundary polygon of a resolved topology.
+Both :class:`pygplates.ResolvedTopologicalBoundary` and :class:`pygplates.ResolvedTopologicalNetwork`
+have this method.
+
+:meth:`pygplates.PolygonOnSphere.get_area` then returns the area of the boundary polygon.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: boundary-area
 
-The boundary sub-segments are obtained using
-``resolved_topology.get_boundary_sub_segments()`` which is available for both
-:class:`pygplates.ResolvedTopologicalBoundary` and :class:`pygplates.ResolvedTopologicalNetwork`.
+``resolved_topology.get_boundary_sub_segments()`` returns the boundary sub-segments of a resolved
+topology. Again both classes have this method.
+
+A :class:`sub-segment<pygplates.ResolvedTopologicalSubSegment>` is the part of a boundary section
+feature (a subduction zone, a mid-ocean ridge, and so on) that contributes to the boundary of the
+topology.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: boundary-sub-segments
 
-The :meth:`feature type<pygplates.Feature.get_feature_type>` of the boundary sub-segment is checked
-to see if it's a subduction zone :class:`feature type<pygplates.FeatureType>`.
+The :meth:`feature type<pygplates.Feature.get_feature_type>` of each boundary sub-segment is
+compared with :attr:`pygplates.FeatureType.gpml_subduction_zone`, to see whether the sub-segment
+is part of a subduction zone.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: is-subduction-zone
 
-The boundary sub-segment :meth:`polyline<pygplates.ResolvedTopologicalSubSegment.get_resolved_geometry>`
-length is obtained using :meth:`pygplates.PolylineOnSphere.get_arc_length`.
+The :meth:`geometry<pygplates.ResolvedTopologicalSubSegment.get_resolved_geometry>` of a boundary
+sub-segment is a polyline. :meth:`pygplates.PolylineOnSphere.get_arc_length` returns its length,
+which is added to the subduction zone length of the topology.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: sub-segment-length
 
-The boundary polygon of a resolved topology also has a length (obtained using :meth:`pygplates.PolygonOnSphere.get_arc_length`).
+The boundary polygon of the resolved topology has a length too, which
+:meth:`pygplates.PolygonOnSphere.get_arc_length` returns. The subduction zone length divided by
+this length is the proportion of the boundary that is subducting.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: subduction-length-proportion
 
-The area is for a unit-length sphere so we must multiple by the Earth's radius squared (see :class:`pygplates.Earth`).
+The area is that of a polygon on a sphere of radius one. It is converted to square kilometres by
+multiplying it by the square of the Earth's radius, :attr:`pygplates.Earth.mean_radius_in_kms`.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: convert-to-sq-kms
 
-Finally the results for the current 'time' are printed.
+Finally the averages for the current ``time`` are printed.
 
 .. sample-code:: pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.py
    :fragment: print-results

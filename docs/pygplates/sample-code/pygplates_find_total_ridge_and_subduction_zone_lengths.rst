@@ -3,12 +3,11 @@
 Find the total length of ridges and subduction zones
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example resolves topological plate polygons (and deforming networks) and determines:
+This example resolves topological plate polygons (and deforming networks) over a series of
+geological times. At each time it finds:
 
 - the total length of all mid-ocean ridges, and
-- the total length of all subduction zones
-
-...over a series of geological times.
+- the total length of all subduction zones.
 
 .. contents::
    :local:
@@ -18,9 +17,10 @@ Data files
 """"""""""
 
 ``topologies.gpml``
-    Topological plate polygon and/or deforming network features. Mid-ocean ridges and subduction
-    zones are recognised by the feature type (``gpml_mid_ocean_ridge`` or ``gpml_subduction_zone``)
-    of the boundary section features.
+    Topological plate polygon and/or deforming network features, and the boundary section features
+    that they reference. Mid-ocean ridges and subduction zones are recognised by the feature type
+    (:attr:`pygplates.FeatureType.gpml_mid_ocean_ridge` or
+    :attr:`pygplates.FeatureType.gpml_subduction_zone`) of the boundary section features.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological features.
@@ -35,60 +35,65 @@ Sample code
 Details
 """""""
 
-| First create a :class:`topological model<pygplates.TopologicalModel>` from topological features and rotation files.
-| The topological features can be plate polygons and/or deforming networks.
-| More than one file containing topological features can be specified here, however we're only specifying one file.
-| Also note that more than one rotation file (or even a single :class:`pygplates.RotationModel`) can be specified here,
-  however we're only specifying a single rotation file.
+A :class:`topological model<pygplates.TopologicalModel>` is created from the topological features
+and the rotation file. The topological features can be plate polygons, deforming networks or both.
+
+Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a :class:`pygplates.RotationModel` can be given in place of the rotation files.
 
 .. sample-code:: pygplates_find_total_ridge_and_subduction_zone_lengths.py
    :fragment: create-topological-model
 
-.. note:: We create our :class:`pygplates.TopologicalModel` **outside** the time loop since that does not require ``time``.
+.. note:: The :class:`pygplates.TopologicalModel` is created **outside** the time loop, since it does not depend on ``time``.
 
-| Get a snapshot of our resolved topologies.
-| Here the topological features are resolved to the current ``time``
-  using :func:`pygplates.TopologicalModel.topological_snapshot`.
+:meth:`pygplates.TopologicalModel.topological_snapshot` resolves the topological features at the
+current ``time``, and returns the result as a :class:`pygplates.TopologicalSnapshot`.
 
 .. sample-code:: pygplates_find_total_ridge_and_subduction_zone_lengths.py
    :fragment: topological-snapshot
 
-| Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.
-| By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
-  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are listed in the boundary sections.
+:meth:`pygplates.TopologicalSnapshot.get_resolved_topological_sections` returns the boundary
+sections of the resolved topologies in the snapshot. By default these are the sections on the
+boundaries of both the resolved plate polygons (:class:`pygplates.ResolvedTopologicalBoundary`) and
+the resolved deforming networks (:class:`pygplates.ResolvedTopologicalNetwork`).
 
 .. sample-code:: pygplates_find_total_ridge_and_subduction_zone_lengths.py
    :fragment: resolved-topological-sections
 
-| These :class:`boundary sections<pygplates.ResolvedTopologicalSection>` are actually what
-  we're interested in because they contain no duplicate sub-segments.
-| If we were to iterate over the resolved topologies and *their* sub-segments, as we do in the
-  :ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies` sample code,
-  then those sub-segments would have been counted twice (since two adjacent plate polygons will both
-  have sub-segments at the same shared boundary).
+These :class:`boundary sections<pygplates.ResolvedTopologicalSection>` are used, rather than the
+resolved topologies, because they count each part of a boundary once.
 
-The :meth:`feature type<pygplates.Feature.get_feature_type>` of each topological section is checked
-to see if it's a ridge or subduction zone :class:`feature type<pygplates.FeatureType>` and
-ignored if it's neither.
+Two neighbouring plate polygons each have a sub-segment along the boundary that they share. So
+iterating over the resolved topologies and *their* sub-segments, as in
+:ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies`, would count
+the length of that boundary twice.
+
+The :meth:`feature type<pygplates.Feature.get_feature_type>` of each boundary section is compared
+with :attr:`pygplates.FeatureType.gpml_subduction_zone` and
+:attr:`pygplates.FeatureType.gpml_mid_ocean_ridge`. A section that is neither is skipped.
 
 .. sample-code:: pygplates_find_total_ridge_and_subduction_zone_lengths.py
    :fragment: skip-other-feature-types
 
-| Not all parts of a topological section feature's geometry contribute to the boundaries of topologies.
-| Little bits at the ends get clipped off.
-| The parts that do contribute can be found using :meth:`pygplates.ResolvedTopologicalSection.get_shared_sub_segments`.
-| So we iterate over these and accumulate the lengths of each sub-segment obtained with
-  :meth:`pygplates.PolylineOnSphere.get_arc_length`.
+Not all of the geometry of a boundary section feature is on the boundary of a topology. For
+example, the ends of a section that extend past its neighbouring sections are clipped off.
+
+:meth:`pygplates.ResolvedTopologicalSection.get_shared_sub_segments` returns the parts that are on
+a boundary. Each is a :class:`shared sub-segment<pygplates.ResolvedTopologicalSharedSubSegment>`
+whose geometry is a polyline, and :meth:`pygplates.PolylineOnSphere.get_arc_length` returns its
+length. The script adds up these lengths.
 
 .. sample-code:: pygplates_find_total_ridge_and_subduction_zone_lengths.py
    :fragment: accumulate-sub-segment-lengths
 
-The lengths are for a unit-length sphere so we must multiple by the Earth's radius (see :class:`pygplates.Earth`).
+The lengths are those of polylines on a sphere of radius one (so they are in radians). They are
+converted to kilometres by multiplying them by the Earth's radius,
+:attr:`pygplates.Earth.mean_radius_in_kms`.
 
 .. sample-code:: pygplates_find_total_ridge_and_subduction_zone_lengths.py
    :fragment: convert-to-kms
 
-Finally the results for the current 'time' are printed.
+Finally the total lengths for the current ``time`` are printed.
 
 .. sample-code:: pygplates_find_total_ridge_and_subduction_zone_lengths.py
    :fragment: print-lengths

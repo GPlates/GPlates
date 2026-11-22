@@ -4,10 +4,10 @@ Hierarchy of plate rotations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This example traverses the :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
-(for a particular reconstruction time) and prints the equivalent and relative total rotations at each plate.
+at a reconstruction time, and prints the relative and equivalent total rotations of each plate.
 
-The output of this example is similar to the output of the ``Total Reconstruction Poles`` dialog
-(under the ``Reconstruction Tree`` tab) in `GPlates <http://www.gplates.org>`_.
+The output is similar to the ``Reconstruction Tree`` tab of the ``Total Reconstruction Poles``
+dialog in `GPlates <http://www.gplates.org>`_.
 
 .. seealso:: :ref:`pygplates_plate_circuits_to_anchored_plate`
 
@@ -34,71 +34,79 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_plate_rotation_hierarchy.py
    :fragment: load-rotations
 
-| The :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
-  is encapsulated in a :class:`reconstruction tree<pygplates.ReconstructionTree>` which we obtain
-  from the :class:`rotation model<pygplates.RotationModel>` using
-  :meth:`pygplates.RotationModel.get_reconstruction_tree` and the desired reconstruction time.
-| The hierarchy can change from one reconstruction time to the next depending on how the rotations
-  are arranged in the rotation file(s).
+The :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>` at a
+reconstruction time is held in a :class:`reconstruction tree<pygplates.ReconstructionTree>`.
+:meth:`pygplates.RotationModel.get_reconstruction_tree` returns the tree at the reconstruction
+time, here 60Ma.
+
+The hierarchy can differ from one reconstruction time to the next, depending on how the rotations
+are arranged in the rotation file.
 
 .. sample-code:: pygplates_plate_rotation_hierarchy.py
    :fragment: reconstruction-tree
 
-| An edge in a :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
-  represents the rotation of a moving plate relative to a fixed plate. These edges are arranged in
-  a tree-like structure (hierarchy) rooted at the anchor plate (usually plate ID zero).
-| The anchor plate edges represent those edges emanating from the anchor plate and are obtained
-  using :meth:`pygplates.ReconstructionTree.get_anchor_plate_edges`.
+An :class:`edge<pygplates.ReconstructionTreeEdge>` of the reconstruction tree is the rotation of a
+moving plate relative to a fixed plate. The edges form a tree whose root is the anchor plate
+(plate ID zero, unless another is asked for).
+
+The anchor plate edges are the edges at the top of the tree, and
+:meth:`pygplates.ReconstructionTree.get_anchor_plate_edges` returns them.
 
 .. sample-code:: pygplates_plate_rotation_hierarchy.py
    :fragment: anchor-plate-edges
 
-| The anchor plate edges have different moving plate IDs but all have the same fixed plate ID (which is the anchor plate).
-| In this way the moving plate of each anchor plate edge is a sub-tree of the entire reconstruction tree.
-| Here we traverse the sub-trees corresponding to those anchor plate edges.
-| Note that the reconstruction tree ``depth`` starts at zero.
+The anchor plate edges all have the same fixed plate, the anchor plate, and each has a different
+moving plate. Each of those moving plates is the root of a sub-tree of the reconstruction tree.
+
+The script traverses the sub-tree of each anchor plate edge, starting at a depth of zero.
 
 .. sample-code:: pygplates_plate_rotation_hierarchy.py
    :fragment: traverse-sub-trees
 
-| A function is defined that traverses the sub-tree rooted at the moving plate of an edge in the reconstruction tree.
-| One reason for implementing this as a function is we need to call it recursively (a recursive function
-  calls itself) and this is more difficult to achieve without using a function.
-| The ``depth`` argument represents the depth into the reconstruction tree (from the anchored plate) and
-  is used purely to control the amount of indentation used in the ``print`` statements.
+The traversal is done by a function. It visits one edge, and then the sub-tree below the moving
+plate of that edge.
+
+It is a function because it is recursive (it calls itself), which is the simplest way to traverse a
+tree.
+
+Its ``depth`` argument is the depth of the edge below the anchor plate. It is used only to indent
+the printed lines.
 
 ::
 
     def traverse_sub_tree(edge, depth):
         ...
 
-| Get the :ref:`relative<pygplates_primer_relative_total_rotation>` and
-  :ref:`equivalent<pygplates_primer_equivalent_total_rotation>` total rotations of an edge
-  in the reconstruction tree using :meth:`pygplates.ReconstructionTreeEdge.get_relative_total_rotation`
-  and :meth:`pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation`.
-| The relative rotation is the total rotation of the edge's moving plate relative to its fixed plate.
-| The equivalent total rotation is the total rotation of the edge's moving plate relative to anchored plate.
-| A *total* rotation means a rotation at the reconstruction time relative to *present day* (0Ma).
-| The pole and angle of each rotation is obtained using
-  :meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees`.
+The function first gets the :ref:`relative<pygplates_primer_relative_total_rotation>` and
+:ref:`equivalent<pygplates_primer_equivalent_total_rotation>` total rotations of the edge, with
+:meth:`pygplates.ReconstructionTreeEdge.get_relative_total_rotation` and
+:meth:`pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation`:
+
+- The relative total rotation is the rotation of the moving plate of the edge relative to its fixed plate.
+- The equivalent total rotation is the rotation of the moving plate of the edge relative to the anchor plate.
+
+A *total* rotation is a rotation from present day (0Ma) to the reconstruction time.
+
+:meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees` returns the pole and
+angle of each rotation.
 
 .. sample-code:: pygplates_plate_rotation_hierarchy.py
    :fragment: relative-and-equivalent-rotations
 
-| Print the relative and equivalent total rotations of the moving plate of the reconstruction tree edge.
-| The level of indentation is controlled with ``prefix_padding`` which is proportional to the traversal depth.
+The function then prints the moving and fixed plate IDs of the edge, and its two rotations. The
+indent is ``prefix_padding``, which is two spaces for each level of depth.
 
 .. sample-code:: pygplates_plate_rotation_hierarchy.py
    :fragment: print-rotations
 
-| Just as the anchored plate has one or more anchored plate edges emanating from it,
-  the moving plate of a reconstruction tree edge has one or more child edges emanating from it.
-  These are obtained using :meth:`pygplates.ReconstructionTreeEdge.get_child_edges`.
-| Note that by calling the ``traverse_sub_tree`` function we are calling the same function we are
-  already in. This recursive descent enables us to visit all edges and plates in the sub-tree.
-| The reconstruction tree ``depth`` is incremented with each recursive call.
-| The recursion stops when an edge has no child edges. This means that no other plate moves
-  relative to the (moving) plate of that edge.
+Just as the anchor plate has anchor plate edges below it, the moving plate of an edge can have
+child edges below it. :meth:`pygplates.ReconstructionTreeEdge.get_child_edges` returns them.
+
+The function calls itself on each child edge, with a depth that is one greater. In this way it
+visits every edge, and so every plate, of the sub-tree.
+
+The recursion stops at an edge that has no child edges. No plate moves relative to the moving plate
+of that edge.
 
 .. sample-code:: pygplates_plate_rotation_hierarchy.py
    :fragment: recurse-into-child-edges
@@ -164,9 +172,10 @@ Output
   
       ...
 
-...where ``lat: 90.000000, lon: 0.000000:, angle:0.000000`` is the default representation that
-:meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees` returns for an
-:meth:`identity rotation<pygplates.FiniteRotation.represents_identity_rotation>` (zero rotation angle).
+Here ``lat: 90.000000, lon: 0.000000:, angle:0.000000`` is what
+:meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees` returns, by default, for
+an :meth:`identity rotation<pygplates.FiniteRotation.represents_identity_rotation>`: the north
+pole and an angle of zero. An identity rotation has no pole of its own, since it does not rotate.
 
 See also
 """"""""

@@ -6,16 +6,15 @@ Modify a reconstruction pole
 This example:
 
 - reads a rotation file,
-- modifies a total reconstruction pole such that a reconstructed point coincides with its desired location
-  at a particular reconstruction time, and
-- writes the modifications back to the same rotation file.
+- modifies a total reconstruction pole so that a point reconstructs to a desired location at a
+  reconstruction time, and
+- writes the modified rotations back to the same rotation file.
 
-The functionality in this example is similar to the ``Modify Reconstruction Pole`` tool
+This is similar to what the ``Modify Reconstruction Pole`` tool does
 in `GPlates <http://www.gplates.org>`_.
 
-.. seealso:: :ref:`pygplates_create_total_reconstruction_sequence_feature`
-
-.. seealso:: :ref:`pygplates_query_total_reconstruction_sequence_feature`
+.. seealso:: :ref:`pygplates_create_total_reconstruction_sequence_feature` and
+   :ref:`pygplates_query_total_reconstruction_sequence_feature`
 
 .. contents::
    :local:
@@ -40,134 +39,152 @@ Sample code
 Details
 """""""
 
-The filenames of one or more rotation files. We'll be writing modifications back out to these files.
+The script starts with the filenames of one or more rotation files. The modified rotations are
+written back to these files at the end.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: rotation-filenames
 
-| The rotation adjustment will get applied at 60Ma.
-| We wrap the reconstruction time in a :class:`pygplates.GeoTimeInstant` purely because its comparison
-  operators (==, !=, <, <=, >, >=) handle numerical tolerance in floating-point comparisons. This is
-  a good idea in general when comparing floating-point numbers even though in our case the sample code
-  would probably still work if we directly compared floating-point numbers (without a comparison threshold) -
-  in other words if we wrote this as ``reconstruction_time = 60`` instead.
+The rotation is adjusted at 60Ma.
+
+The reconstruction time is a :class:`pygplates.GeoTimeInstant` rather than a plain number. Its
+comparison operators (``==``, ``!=``, ``<``, ``<=``, ``>``, ``>=``) compare times within a
+numerical tolerance, which is a good idea whenever floating-point numbers are compared. The script
+compares the reconstruction time with the times of rotation samples further down.
+
+Here the script would probably still work with ``reconstruction_time = 60``.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: reconstruction-time
 
-| The desired reconstructed position is the location we want the present day point position to
-  reconstruct to at 60Ma.
-| We specify point locations by passing a latitude and longitude to :class:`pygplates.PointOnSphere`.
+There are two positions. The present day position is the point to reconstruct. The desired
+reconstructed position is where that point should be at 60Ma.
+
+Each is a :class:`pygplates.PointOnSphere`, created from a latitude and a longitude.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: positions
 
-| Before we can reconstruct the point location we need to create a :class:`pygplates.Feature`.
-| This contains the information (plate ID and present day position) needed to reconstruct the point to the reconstruction time.
+A point is reconstructed as part of a :class:`pygplates.Feature`. The feature holds what the
+reconstruction needs: the plate ID (801) and the present day position.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: point-feature
 
-| We use the utility class :class:`pygplates.FeaturesFunctionArgument` to load our rotation file(s).
-| This makes it a little easier for us to write changes to the rotation features back out to the same files.
-| Alternatively we could have loaded each rotation file into its own :class:`pygplates.FeatureCollection` and then
-  later :meth:`saved<pygplates.FeatureCollection.write>` them back to their rotation file(s).
+The rotation files are loaded with the utility class :class:`pygplates.FeaturesFunctionArgument`.
+It keeps the features of each file together with the filename, which makes it a little easier to
+write the modified rotation features back to their files.
+
+Alternatively, each rotation file could be loaded into its own :class:`pygplates.FeatureCollection`
+and later :meth:`saved<pygplates.FeatureCollection.write>` back to its file.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: load-rotation-features
 
-| We use the unmodified rotation features to generate a :class:`rotation model<pygplates.RotationModel>`.
-| We'll use this model to reconstruct the point and to help us make an adjustment to the total reconstruction pole.
+A :class:`rotation model<pygplates.RotationModel>` is created from the rotation features before
+they are modified. It is used to reconstruct the point, and later to work out the adjustment to the
+total reconstruction pole.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: rotation-model-before-adjustment
 
-| To find the *actual* reconstructed point location at 60Ma we :class:`reconstruct<pygplates.ReconstructSnapshot>` our point feature.
-| Since our point feature is valid for all time (by default if we don't :meth:`set its valid time<pygplates.Feature.set_valid_time>`)
-  we should get one :class:`pygplates.ReconstructedFeatureGeometry` from which we obtain the
-  :meth:`reconstructed point position<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>`.
+The point feature is :class:`reconstructed<pygplates.ReconstructSnapshot>` to 60Ma, to find where
+the point *actually* is at that time.
+
+The point feature has no :meth:`valid time<pygplates.Feature.set_valid_time>`, which means it
+exists at all times. So there is exactly one :class:`pygplates.ReconstructedFeatureGeometry`, and
+its :meth:`reconstructed geometry<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>`
+is the reconstructed point.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: reconstruct-before-adjustment
 
-| If the *actual reconstructed position* differs from the *desired reconstructed position* then we need to adjust
-  the appropriate rotation feature(s) so that they match.
-| The rotation adjustment is the rotation from ``reconstructed_position`` to ``desired_reconstructed_position``.
-  The rotation is created using the :meth:`constructor<pygplates.FiniteRotation.__init__>` of :class:`pygplates.FiniteRotation`.
+If the actual reconstructed position differs from the desired reconstructed position then the
+rotations of plate 801 need to be adjusted.
+
+The rotation adjustment is the rotation from ``reconstructed_position`` to
+``desired_reconstructed_position``. This :meth:`constructor<pygplates.FiniteRotation.__init__>` of
+:class:`pygplates.FiniteRotation` creates the rotation that moves one point to another along the
+great circle arc between them.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: rotation-adjustment
 
-| Next we iterate over all the rotation features to find those whose moving plate ID matches the plate ID
-  of our point feature. This is because we only want our rotation adjustment to affect the plate on
-  which our point lies (and all :ref:`child plates<pygplates_primer_plate_reconstruction_hierarchy>`
-  at the reconstruction time).
-| We obtain the moving/fixed plate IDs and the time-varying total reconstruction poles from the rotation feature
-  using :meth:`pygplates.Feature.get_total_reconstruction_pole`.
+The script then iterates over the rotation features, looking for those whose moving plate ID is
+the plate ID of the point feature. Changing the rotation of that plate moves the point, along with
+everything else on that plate and on its
+:ref:`child plates<pygplates_primer_plate_reconstruction_hierarchy>` (the plates that move
+relative to it at the reconstruction time).
+
+:meth:`pygplates.Feature.get_total_reconstruction_pole` returns the fixed plate ID, the moving
+plate ID and the time-varying total reconstruction pole of a rotation feature. It returns ``None``
+for a feature that does not have all three, which means it is not a rotation feature.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: find-rotation-features
 
-| A rotation sequence is a :class:`time sequence<pygplates.GpmlIrregularSampling>` of total rotations of
-  a moving plate relative to a fixed plate.
-| Not all rotation samples in the sequence are necessarily enabled. So we ignore the disabled samples by
-  calling :meth:`pygplates.GpmlIrregularSampling.get_enabled_time_samples`.
-| We use the enabled rotation samples to determine if the time range of the rotation sequence includes the reconstruction time.
-| Note that since ``reconstruction_time`` is a :class:`pygplates.GeoTimeInstant`, comparisons with it
-  will handle numerical tolerance (as mentioned above). This ensures that the test will pass if the
-  reconstruction time coincides with the time of the first or last rotation sample.
+The total reconstruction pole is a :class:`sequence of time samples<pygplates.GpmlIrregularSampling>`.
+Each sample is the total rotation of the moving plate relative to the fixed plate at one time.
+
+Some of the samples may be disabled.
+:meth:`pygplates.GpmlIrregularSampling.get_enabled_time_samples` returns only the enabled ones.
+
+The script continues with this rotation feature only if the reconstruction time is within the
+time range of its enabled samples, which are ordered from youngest to oldest.
+
+Because ``reconstruction_time`` is a :class:`pygplates.GeoTimeInstant`, these comparisons are made
+within a numerical tolerance (as mentioned above). So the test passes when the reconstruction time
+is the time of the first or the last sample.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: enabled-rotation-samples
 
-| If one of the enabled rotation samples matches the reconstruction time then
-  get its description so we don't clobber it when we write the adjusted rotation.
-| Each rotation sample usually has a comment/description in the rotation file and this
-  enables us to retain them when writing back out to the rotation file.
-
-.. sample-code:: pygplates_modify_reconstruction_pole.py
-   :fragment: rotation-description
-
-| We obtain the original rotation (at the reconstruction time) from the rotation feature using :meth:`pygplates.GpmlIrregularSampling.get_value`.
-| This will :meth:`interpolate<pygplates.FiniteRotation.interpolate>` between the two nearest rotation time samples in the rotation sequence
-  if the reconstruction time does not coincide with a rotation sample.
+:meth:`pygplates.GpmlIrregularSampling.get_value` returns the original rotation at the
+reconstruction time. If the reconstruction time is between two rotation samples then it
+:meth:`interpolates<pygplates.FiniteRotation.interpolate>` between them.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: original-rotation
 
-Now that we have the original rotation from the rotation feature we need to calculate a rotation adjustment such that the new rotation
-will result in the *present day position* reconstructing to the *desired reconstructed position*.
+The next step is to adjust the original rotation, so that the present day position reconstructs
+to the desired reconstructed position.
 
-The reconstruction of the present day point position is given by the equation for the :ref:`pygplates_primer_equivalent_total_rotation`
-which shows the equivalent total rotation of  moving plate :math:`P_{M}` (relative to anchored plate :math:`P_{A}`) at time :math:`t` (relative to present day) is:
+A point on moving plate :math:`P_{M}` is reconstructed to time :math:`t` by the
+:ref:`equivalent total rotation<pygplates_primer_equivalent_total_rotation>` of that plate. This
+is its rotation relative to the anchor plate :math:`P_{A}`, from present day to time :math:`t`:
 
 .. math::
 
    \text{reconstructed\_position} = R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}
 
-Using the approach in :ref:`pygplates_primer_composing_finite_rotations` we write the *desired reconstructed position*
-in terms of the *actual reconstructed position*:
+Using the approach in :ref:`pygplates_primer_composing_finite_rotations`, the desired reconstructed
+position can be written in terms of the actual reconstructed position:
 
 .. math::
 
    \text{desired\_reconstructed\_position} &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times \text{reconstructed\_position} \\
                          &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}
 
-...where the rotation adjustment :math:`R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position})` represents the
-:class:`rotation<pygplates.FiniteRotation>` from :math:`\text{reconstructed\_position}` to :math:`\text{desired\_reconstructed\_position}` which (in pyGPlates) is
-``pygplates.FiniteRotation(reconstructed_position, desired_reconstructed_position)``.
+Here :math:`R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position})`
+is the rotation adjustment: the :class:`rotation<pygplates.FiniteRotation>` from
+:math:`\text{reconstructed\_position}` to :math:`\text{desired\_reconstructed\_position}`. In
+pyGPlates it is ``pygplates.FiniteRotation(reconstructed_position, desired_reconstructed_position)``.
 
-The composed rotation from *present day position* to *desired reconstructed position* represents the adjusted *equivalent* rotation:
+The composed rotation, from the present day position to the desired reconstructed position, is the
+adjusted *equivalent* rotation:
 
 .. math::
 
    \text{desired\_reconstructed\_position} &= R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} \times \text{present\_day\_position} \\
    R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M})
 
-| However we want to adjust a total rotation pole in a rotation feature. But a rotation feature represents a *relative* rotation between a moving and fixed plate pair.
-| So we need to rewrite the adjusted *equivalent* rotation (which is relative to the anchored plate) as an adjusted *relative* rotation (relative to the fixed plate
-  :math:`P_{F}` of the rotation feature/pole) using the result :math:`R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})`
-  from :ref:`pygplates_primer_plate_circuit_paths`:
+But the pole of a rotation feature is not an equivalent rotation. It is a *relative* rotation, of
+the moving plate relative to the fixed plate :math:`P_{F}` of the rotation feature.
+
+So the adjusted equivalent rotation (relative to the anchor plate) is rewritten as an adjusted
+relative rotation (relative to the fixed plate), using the result
+:math:`R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})`
+from :ref:`pygplates_primer_plate_circuit_paths`:
 
 .. math::
 
@@ -180,48 +197,65 @@ Pre-multiplying both sides by :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})^
 
    R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} = R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1} \times R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})
 
-...which represents the *adjusted* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted}`
+This gives the *adjusted* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted}`
 in terms of the *original* relative rotation :math:`R(0 \rightarrow t,P_{F} \rightarrow P_{M})`.
 
-This is written in pyGPlates as:
+In pyGPlates this is written as follows, where ``fixed_plate_frame`` is
+:math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})`, the equivalent total rotation of the fixed plate:
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: adjust-rotation
 
-...where ``fixed_plate_frame`` represents :math:`R(0 \rightarrow t,P_{A} \rightarrow P_{F})`.
+A rotation sample usually has a description, which is the comment at the end of its line in the
+rotation file. If one of the enabled samples is at the reconstruction time then the script gets
+its description, so that it is not lost when the adjusted rotation replaces that sample.
 
-| Now that we have calculated the adjusted relative rotation we set it back in the rotation feature, at
-  the reconstruction time, with the description we kept from any existing sample at that time.
+.. sample-code:: pygplates_modify_reconstruction_pole.py
+   :fragment: rotation-description
+
+:meth:`pygplates.GpmlIrregularSampling.set_value` sets the adjusted relative rotation in the
+rotation feature, at the reconstruction time. If there is a sample at that time then it is
+modified, otherwise a new sample is inserted. Either way the sample gets the description found
+above (or none).
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: set-adjusted-rotation
 
-| Our rotation adjustment may require crossovers to be re-synchronised. This can happen when
-  a child plate (a plate that moves relative to the plate we made the adjustment on) crosses over
-  from another plate (or to another plate) at the reconstruction time of the rotation adjustment (60Ma).
-  The two crossover rotations will no longer match resulting in a jump in the reconstruction.
-| So we call :func:`pygplates.synchronise_crossovers` to synchronise all crossover rotations.
-| How each encountered crossover is synchronised needs to be specified. For example, do we synchronise
-  the younger or older rotation sequence (younger/older relative to the crossover time) ?  Here we
-  use the function ``pygplates.CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys`` to
-  determine this for us. It will use ``@xo_`` tags in the rotation file (pole comments/descriptions)
-  to determine this and default to the ``@xo_ys`` tag if not present for a particular crossover.
-  See :func:`pygplates.synchronise_crossovers` for more details.
-| Note that this modifies the rotation features in-place.
+The adjustment can put crossovers out of step. A crossover is a time at which a plate stops moving
+relative to one fixed plate and starts moving relative to another, so two of its rotation
+sequences meet there.
+
+The adjustment changes the motion of plate 801 around 60Ma, and with it the motion of every plate
+below plate 801 in the hierarchy (the plates that move relative to it, the plates that move
+relative to those, and so on). Suppose a plate crosses over, at a time the adjustment affects,
+between one of those plates and a plate elsewhere in the hierarchy. Its two rotation sequences no
+longer agree at the crossover time, so the plate would jump in the reconstruction.
+
+So the script calls :func:`pygplates.synchronise_crossovers`. It synchronises every crossover in
+the rotation features that is out of step by more than *crossover_threshold_degrees*, and
+modifies the rotation features in place.
+
+The function needs to know how to synchronise each crossover: by changing the rotation sequence
+that is younger than the crossover time, or the one that is older. Here that is decided by
+``pygplates.CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys``. It looks for an
+``@xo_`` tag in the description of the crossover's younger pole (its comment in the rotation
+file), and treats a crossover without a tag as if it had the ``@xo_ys`` tag. See
+:func:`pygplates.synchronise_crossovers` for the tags and what they mean.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: synchronise-crossovers
 
 
-| Now we reconstruct the point feature again, but this time using the modified rotation features.
-| This time the reconstructed point location should match the desired reconstructed point location.
+The point feature is then reconstructed again, this time with a rotation model created from the
+modified rotation features. Its reconstructed position should now be the desired reconstructed
+position.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: reconstruct-after-adjustment
 
-| The last step is to write the (modified) rotation features back to the files they came from.
-| This is made a little easier for us by using the ability of :class:`pygplates.FeaturesFunctionArgument`
-  to list those feature collections that came from files as well as their associated filenames.
+The last step is to write the modified rotation features back to the files they came from.
+:meth:`pygplates.FeaturesFunctionArgument.get_files` returns each feature collection that was
+loaded from a file, along with its filename.
 
 .. sample-code:: pygplates_modify_reconstruction_pole.py
    :fragment: write-rotation-files

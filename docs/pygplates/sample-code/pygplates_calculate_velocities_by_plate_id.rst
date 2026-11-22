@@ -3,17 +3,19 @@
 Calculate velocities by plate ID
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example calculates velocities at all points in geometries of a collection of features
+This example calculates velocities at all the points of the geometries of a collection of features,
 using the plate IDs of those features and a rotation model.
 
-| It does so in two ways. The sample code reconstructs the features and asks each reconstructed
-  geometry for the velocities of its points.
-| The alternate sample code does the same by hand: it gets the total and stage rotations of each
-  feature's plate ID from the rotation model, rotates the feature's geometries, and calculates the
-  velocities from the stage rotation.
-| The two give the same velocities for features that are reconstructed by plate ID, and the
-  alternate shows where those velocities come from. Use the sample code unless you need the
-  rotations yourself: it also handles features that the alternate cannot (see the end of the details).
+It does so in two ways. The sample code reconstructs the features and asks each reconstructed
+geometry for the velocities of its points.
+
+The alternate sample code does the same by hand: it gets the total and stage rotations of each
+feature's plate ID from the rotation model, rotates the feature's geometries, and calculates the
+velocities from the stage rotation.
+
+The two give the same velocities for features that are reconstructed by plate ID, and the
+alternate shows where those velocities come from. Use the sample code unless you need the
+rotations yourself: it also handles features that the alternate cannot (see the end of the details).
 
 .. contents::
    :local:
@@ -52,63 +54,72 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: load-rotations
 
-| The velocities are calculated at geometries reconstructed to their 10Ma positions.
-| And the velocities are calculated over a 1My interval from 11Ma to 10Ma.
+The velocities are calculated at geometries reconstructed to their 10Ma positions, over a 1My
+interval from 11Ma to 10Ma.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: reconstruction-time-and-delta-time
 
-| The features to calculate velocities at are reconstructed to 10Ma by creating a
-  :class:`pygplates.ReconstructSnapshot` from them, the rotation model and the reconstruction time.
-| They can be any :class:`type<pygplates.FeatureType>` of feature as long as they have a
-  :meth:`reconstruction plate ID<pygplates.Feature.get_reconstruction_plate_id>`
-  (and of course some :meth:`geometry<pygplates.Feature.get_geometries>`). The note at the end of
-  these details is about features that are reconstructed some other way.
+The features to calculate velocities at are reconstructed to 10Ma by creating a
+:class:`pygplates.ReconstructSnapshot` from them, the rotation model and the reconstruction time.
+
+They can be any :class:`type<pygplates.FeatureType>` of feature as long as they have a
+:meth:`reconstruction plate ID<pygplates.Feature.get_reconstruction_plate_id>`
+(and of course some :meth:`geometry<pygplates.Feature.get_geometries>`). The note at the end of
+these details is about features that are reconstructed some other way.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: reconstruct-snapshot
 
-| :meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries` returns a
-  :class:`pygplates.ReconstructedFeatureGeometry` for each geometry of each feature.
-  A :class:`pygplates.Feature` usually contains a single geometry property but sometimes it contains more.
-| A feature that does not exist at 10Ma is not reconstructed, so it has no reconstructed geometries.
-| Setting *same_order_as_reconstructable_features* to ``True`` returns them in the order of the
-  features in the file, which they are not sorted into by default.
+:meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries` returns a
+:class:`pygplates.ReconstructedFeatureGeometry` for each geometry of each feature.
+A :class:`pygplates.Feature` usually contains a single geometry property but sometimes it contains more.
+
+A feature that does not exist at 10Ma is not reconstructed, so it has no reconstructed geometries.
+
+Setting *same_order_as_reconstructable_features* to ``True`` returns them in the order of the
+features in the file, which they are not sorted into by default.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: iterate-reconstructed-geometries
 
-| The reconstructed geometry could be a :class:`pygplates.PointOnSphere`, :class:`pygplates.MultiPointOnSphere`,
-  :class:`pygplates.PolylineOnSphere` or :class:`pygplates.PolygonOnSphere`.
-| Its points, at their 10Ma positions, are returned as a list of :class:`pygplates.PointOnSphere` by
-  :meth:`pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry_points`.
+The reconstructed geometry could be a :class:`pygplates.PointOnSphere`, :class:`pygplates.MultiPointOnSphere`,
+:class:`pygplates.PolylineOnSphere` or :class:`pygplates.PolygonOnSphere`.
+
+Its points, at their 10Ma positions, are returned as a list of :class:`pygplates.PointOnSphere` by
+:meth:`pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry_points`.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: reconstructed-points
 
-| :meth:`pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry_point_velocities`
-  returns the velocities at those points, in the same order.
-| This is a list of :class:`pygplates.Vector3D` (one global cartesian velocity vector per geometry point),
-  in kilometres per million years unless the *velocity_units* argument says otherwise.
-| By default each velocity is calculated from ``reconstruction_time + velocity_delta_time`` to ``reconstruction_time``.
+:meth:`pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry_point_velocities`
+returns the velocities at those points, in the same order.
+
+This is a list of :class:`pygplates.Vector3D` (one global cartesian velocity vector per geometry point),
+in kilometres per million years unless the *velocity_units* argument says otherwise.
+
+By default each velocity is calculated from ``reconstruction_time + velocity_delta_time`` to ``reconstruction_time``.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: calculate-velocities
 
-| If the velocities need to be in local (magnitude, azimuth, inclination) coordinates then the global
-  cartesian vectors can be converted using :meth:`pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination`.
-| Note that each point in ``reconstructed_points`` determines a separate local coordinate system.
-  For example, the velocity *azimuth* is relative to North as viewed from a particular point position.
+The script wants each velocity as a local (magnitude, azimuth, inclination) tuple, so it converts
+the global cartesian vectors with
+:meth:`pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination`.
+
+Each point in ``reconstructed_points`` has its own local coordinate system. For example, the
+*azimuth* of a velocity is measured from North as seen from the position of its point.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: convert-velocities
 
-| Finally we add the reconstructed points and velocities to two large lists for *all* features.
+Finally the reconstructed points and their velocities are added to two large lists, which hold
+the results for *all* the features.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id.py
    :fragment: append-results
 
-In the alternate sample code the features are not reconstructed for us. They are loaded into a
+In the alternate sample code the features are not reconstructed by pyGPlates. They are loaded into a
 :class:`pygplates.FeatureCollection`, and each is handled in turn.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
@@ -125,40 +136,47 @@ The plate that the feature moves with is its reconstruction plate ID.
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
    :fragment: domain-plate-id
 
-:class:`pygplates.RotationModel` enables us to calculate both the rotation from present day to 10Ma
-of a particular tectonic plate relative to the anchor plate (which is zero because *rotation_model*
-was created without specifying a default anchor plate):
+:meth:`pygplates.RotationModel.get_rotation` returns the rotation of that plate, relative to the
+anchor plate, from present day to 10Ma. The anchor plate is zero, because ``rotation_model`` was
+created without a default anchor plate.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
    :fragment: equivalent-total-rotation
 
-...and the *stage* rotation from 11Ma to 10Ma:
+Given a third argument, the same method returns the *stage* rotation of the plate from that time
+(11Ma) to 10Ma.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
    :fragment: equivalent-stage-rotation
 
-| We use :meth:`pygplates.Feature.get_geometries` instead of :meth:`pygplates.Feature.get_geometry`
-  because a feature can contain more than one geometry.
-| Actually ``domain_feature.get_geometries()`` is just a convenient alternative to
-  ``domain_feature.get_geometry(property_return=PropertyReturn.all)``.
+:meth:`pygplates.Feature.get_all_geometries` returns a list, since a feature can contain more than
+one geometry. It returns every geometry of the feature, whatever its property name, which is what a
+reconstruct snapshot reconstructs. So the two scripts use the same geometries.
+
+:meth:`pygplates.Feature.get_geometries` would return only the geometries in the feature's default
+geometry property (or, where it has none there, all of its geometries). The script would then agree
+with the sample code for a feature with one geometry property, but not for one that also has
+geometries under another property name.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
    :fragment: iterate-geometries
 
-The :class:`geometries<pygplates.GeometryOnSphere>` extracted from :class:`features<pygplates.Feature>`
-are in present day coordinates and need to be reconstructed to their 10Ma positions.
+The :class:`geometries<pygplates.GeometryOnSphere>` of a :class:`feature<pygplates.Feature>` are
+at their present day positions. Multiplying a geometry by the total rotation moves it to its 10Ma
+position.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
    :fragment: reconstruct-geometry
 
-We convert the reconstructed geometry into a list of :class:`pygplates.PointOnSphere` to calculate
-velocities at using :meth:`pygplates.GeometryOnSphere.get_points`.
+:meth:`pygplates.GeometryOnSphere.get_points` returns the points of the reconstructed geometry, as
+a list of :class:`pygplates.PointOnSphere`. These are the points to calculate velocities at.
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
    :fragment: reconstructed-points
 
-| The velocities are :func:`calculated<pygplates.calculate_velocities>` at the reconstructed geometry positions (10Ma) using the stage rotation.
-| This returns a list of :class:`pygplates.Vector3D` (one global cartesian velocity vector per geometry point).
+:func:`pygplates.calculate_velocities` calculates the velocities at those points (which are at
+their 10Ma positions) from the stage rotation. It returns a list of :class:`pygplates.Vector3D`
+(one global cartesian velocity vector per geometry point).
 
 .. sample-code:: pygplates_calculate_velocities_by_plate_id_alt.py
    :fragment: calculate-velocities
@@ -180,5 +198,5 @@ See also
 - Reference: :class:`pygplates.ReconstructSnapshot`,
   :meth:`pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry_point_velocities`,
   :meth:`pygplates.RotationModel.get_rotation`, :func:`pygplates.calculate_velocities`,
-  :class:`pygplates.LocalCartesian`, :meth:`pygplates.Feature.get_geometries`
+  :class:`pygplates.LocalCartesian`, :meth:`pygplates.Feature.get_all_geometries`
 - Sample code: :ref:`pygplates_calculate_velocities_in_dynamic_plates`, :ref:`pygplates_reconstruct_regular_features`

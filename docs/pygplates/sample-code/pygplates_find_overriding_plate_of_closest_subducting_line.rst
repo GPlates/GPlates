@@ -3,12 +3,13 @@
 Find overriding plate of closest subducting line
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example finds the overriding plate of the nearest subducting line over time by:
+This example finds the overriding plate of the subducting line that is nearest to each of a set
+of features, over a series of geological times. At each time it:
 
-- reconstructing regular features,
-- resolving topological plate boundaries,
-- finding the nearest subducting line (in the topological plate boundaries) to each regular feature,
-- determining the overriding plate of that subducting line.
+- reconstructs the regular features,
+- resolves the topological plate boundaries,
+- finds the subducting line (in the topological plate boundaries) that is nearest to each regular feature, and
+- determines the overriding plate of that subducting line.
 
 .. contents::
    :local:
@@ -26,9 +27,10 @@ Data files
     The output below was captured with spreading ridges.
 
 ``topologies.gpml``
-    Topological plate polygon and/or deforming network features. Subduction zones are recognised by
-    the feature type (``gpml_subduction_zone``) of the boundary section features, and each needs a
-    subduction polarity, since that is what determines its overriding plate.
+    Topological plate polygon and/or deforming network features, and the boundary section features
+    that they reference. Subduction zones are recognised by the feature type
+    (:attr:`pygplates.FeatureType.gpml_subduction_zone`) of the boundary section features, and each
+    needs a subduction polarity, since that is what determines its overriding plate.
 
 Files of these kinds are in the GPlates `sample data <https://www.gplates.org/download/>`_.
 
@@ -45,28 +47,32 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: load-rotations
 
-Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the regular (non-topological) features and the rotation model.
-These are the regular features that we want to see which subducting lines (in the topologies) are closest to.
+A :class:`reconstruct model<pygplates.ReconstructModel>` is created from the regular
+(non-topological) features and the rotation model. These are the features whose nearest subducting
+lines are to be found.
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: reconstruct-model
 
-Create a :class:`topological model<pygplates.TopologicalModel>` from topological features and the rotation model.
+A :class:`topological model<pygplates.TopologicalModel>` is created from the topological features
+and the rotation model.
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: topological-model
 
-| All regular features are reconstructed to the current ``time`` using :meth:`pygplates.ReconstructModel.reconstruct_snapshot`
-  that returns a :class:`pygplates.ReconstructSnapshot`.
-| We then call :meth:`pygplates.ReconstructSnapshot.get_reconstructed_features` so that our
-  :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>` are grouped with their :class:`feature<pygplates.Feature>`.
+:meth:`pygplates.ReconstructModel.reconstruct_snapshot` reconstructs the regular features to the
+current ``time``, and returns the result as a :class:`pygplates.ReconstructSnapshot`.
+
+:meth:`pygplates.ReconstructSnapshot.get_reconstructed_features` then returns the
+:class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>` grouped by their
+:class:`feature<pygplates.Feature>`.
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: reconstruct-snapshot
 
-| Each item in the *reconstructed_features* list is a tuple containing a feature and its associated
-  reconstructed geometries.
-| A feature can have more than one geometry and hence will have more than one *reconstructed* geometry.
+Each item in the ``reconstructed_features`` list is a tuple of a feature and a list of its
+reconstructed geometries. A feature can have more than one geometry, and so more than one
+*reconstructed* geometry.
 
 ::
 
@@ -74,24 +80,28 @@ Create a :class:`topological model<pygplates.TopologicalModel>` from topological
         ...
         for feature_reconstructed_geometry in feature_reconstructed_geometries:
 
-| Get a snapshot of our resolved topologies at the current ``time`` using :func:`pygplates.TopologicalModel.topological_snapshot`.
-| And from the snapshot extract the boundary sections between our resolved topological plate polygons (and deforming networks).
-  By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
-  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are listed in the boundary sections.
+:meth:`pygplates.TopologicalModel.topological_snapshot` resolves the topological features at the
+current ``time``, and returns the result as a :class:`pygplates.TopologicalSnapshot`.
+
+:meth:`pygplates.TopologicalSnapshot.get_resolved_topological_sections` then returns the boundary
+sections of the resolved topologies in the snapshot. By default these are the sections on the
+boundaries of both the resolved plate polygons (:class:`pygplates.ResolvedTopologicalBoundary`) and
+the resolved deforming networks (:class:`pygplates.ResolvedTopologicalNetwork`).
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: topological-snapshot
 
-| These :class:`boundary sections<pygplates.ResolvedTopologicalSection>` are actually what
-  we're interested in because their sub-segments have a list of topologies on them.
-| And it's that list of topologies that we'll be searching to find the overriding plate of a subducting line.
+These :class:`boundary sections<pygplates.ResolvedTopologicalSection>` are used because each of
+their sub-segments has a list of the topologies that share it. That list is searched to find the
+overriding plate of a subducting line.
 
-We ignore features that are not subduction zones because we're only interested in finding the
-nearest subducting lines.
+A boundary section whose feature is not a subduction zone is skipped, since only subducting lines
+are of interest.
 
-| Not all parts of a topological section feature's geometry contribute to the boundaries of topologies.
-| Little bits at the ends get clipped off.
-| The parts that do contribute can be found using :meth:`pygplates.ResolvedTopologicalSection.get_shared_sub_segments`.
+Not all of the geometry of a boundary section feature is on the boundary of a topology. For
+example, the ends of a section that extend past its neighbouring sections are clipped off.
+:meth:`pygplates.ResolvedTopologicalSection.get_shared_sub_segments` returns the parts that are on
+a boundary.
 
 ::
 
@@ -101,38 +111,48 @@ nearest subducting lines.
         for shared_sub_segment in shared_boundary_section.get_shared_sub_segments():
             ...
 
-| For each regular feature we want to find the minimum distance to all subducting lines.
-| Initially we don't have a minimum distance or the nearest subducting line (shared sub-segment).
+For each regular feature, the script finds the minimum distance from the feature to all the
+subducting lines. To begin with there is no minimum distance, and no nearest subducting line
+(shared sub-segment).
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: initial-minimum-distance
 
-| Calculate the minimum distance from the reconstructed regular feature to the subducting line using
-  the :meth:`distance()<pygplates.GeometryOnSphere.distance>` method of the reconstructed geometry.
-| *min_distance_to_subducting_line* is specified as the distance threshold since we're only interested
-  in subducting lines that are nearer than the closest one encountered so far.
+The :meth:`distance()<pygplates.GeometryOnSphere.distance>` method of the reconstructed geometry
+returns the minimum distance from the reconstructed regular feature to a subducting line.
+
+``min_distance_to_all_subducting_lines`` is the distance threshold. With a threshold, the method
+returns ``None`` for a subducting line that is further away than the threshold. Only a subducting
+line that is nearer than the nearest one found so far is of interest.
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: distance
 
-| If ``None`` was returned then the distance was greater than *min_distance_to_subducting_line*.
-| So a valid returned value means the current subducting line is the nearest one encountered so far.
-| In this case we record the nearest subducting line (shared sub-segment) and the new minimum distance.
+If ``None`` was returned, the current subducting line is further away than
+``min_distance_to_all_subducting_lines``, and is ignored.
+
+Otherwise the current subducting line is the nearest one found so far. It becomes the nearest
+subducting line (shared sub-segment), and its distance becomes the new minimum distance.
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: nearest-so-far
 
-| Now that we have found the nearest subducting line we can find its overriding plate using
-  :meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate`.
-| This uses the subduction polarity of the subducting line to determine whether the overriding
-  plate is on its left or right side, and then it searches the resolved topologies attached to
-  the subducting line to find the single plate (or deforming network) on the overriding side.
+Once the nearest subducting line is found,
+:meth:`pygplates.ResolvedTopologicalSharedSubSegment.get_overriding_plate` returns its overriding
+plate.
+
+The method uses the subduction polarity of the subducting line to decide whether the overriding
+plate is on its left or its right side. It then searches the resolved topologies that share the
+subducting line, to find the single plate (or deforming network) on that side.
+
+It returns ``None`` if the subducting line has no subduction polarity of ``'Left'`` or
+``'Right'``, or if it cannot find a single plate (or network) on the overriding side.
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: overriding-plate
 
-When we've found the overriding plate of the nearest subduction zone to the current feature we print out
-the overriding plate ID and the distance to nearest subducting line.
+Finally the script prints the plate ID of the overriding plate, and the distance from the current
+feature to its nearest subducting line.
 
 .. sample-code:: pygplates_find_overriding_plate_of_closest_subducting_line.py
    :fragment: print-result
@@ -140,7 +160,7 @@ the overriding plate ID and the distance to nearest subducting line.
 Output
 """"""
 
-When spreading ridges are used as the regular input features then we get output like the following:
+With spreading ridges as the regular features, the output is like the following:
 
 ::
 
