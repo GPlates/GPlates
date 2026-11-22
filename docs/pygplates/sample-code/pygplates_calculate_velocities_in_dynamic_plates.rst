@@ -203,4 +203,5 @@ See also
 - Sample code: :ref:`pygplates_calculate_velocities_in_static_polygons`,
   :ref:`pygplates_calculate_velocities_by_plate_id`,
   :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`,
+  :ref:`pygplates_find_plates_and_strain_rates_at_static_points`,
   :ref:`pygplates_reconstruct_strain_and_strain_rate`

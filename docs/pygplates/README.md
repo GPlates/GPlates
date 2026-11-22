@@ -378,7 +378,8 @@ holds files for one script: one whose page reproduces its own input in full
 (`create_topological_features` shows its `features.gpml`), or one that needs what the other
 samples must not have (`calculate_velocities_of_plate_boundaries` has a `topologies.gpml` whose
 trench and ridge move, where the shared one keeps them still so that its plates stay closed for
-140 My).
+140 My; `clamp_and_smooth_strain_rates_and_set_rift_parameters_rift` has one that is a rift between
+two plates, with a deforming network on each side of its axis).
 
 To run a sample by hand, run it in a copy of the layered fixtures, not in `fixtures/` itself: the
 scripts write their output files into the working directory, and pyGPlates writes a

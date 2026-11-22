@@ -131,4 +131,4 @@ See also
 - Reference: :meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics`, :class:`pygplates.PlateBoundaryStatistic`,
   :meth:`pygplates.Feature.set_geometry`
 - Sample code: :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`,
-  :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`
+  :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`, :ref:`pygplates_find_distance_and_strain_rate_along_subduction_zones`

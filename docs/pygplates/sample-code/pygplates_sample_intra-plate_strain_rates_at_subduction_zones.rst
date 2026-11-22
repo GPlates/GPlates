@@ -158,4 +158,5 @@ See also
   :class:`pygplates.TopologyPointLocation`, :meth:`pygplates.ResolvedTopologicalNetwork.get_point_strain_rate`,
   :class:`pygplates.StrainRate`
 - Sample code: :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`,
-  :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`, :ref:`pygplates_reconstruct_strain_and_strain_rate`
+  :ref:`pygplates_find_overriding_plate_of_closest_subducting_line`, :ref:`pygplates_reconstruct_strain_and_strain_rate`,
+  :ref:`pygplates_find_distance_and_strain_rate_along_subduction_zones`

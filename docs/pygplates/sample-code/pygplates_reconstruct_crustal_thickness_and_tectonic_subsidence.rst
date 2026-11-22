@@ -108,4 +108,4 @@ See also
   :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors`,
   :meth:`pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences`,
   :meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values`, :class:`pygplates.ScalarType`
-- Sample code: :ref:`pygplates_reconstruct_strain_and_strain_rate`
+- Sample code: :ref:`pygplates_reconstruct_strain_and_strain_rate`, :ref:`pygplates_reconstruct_points_step_by_step_through_topologies`

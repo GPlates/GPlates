@@ -96,6 +96,8 @@ at past geological times, how to query their topologies, and how to track quanti
    sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths
    sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges
    sample-code/pygplates_detect_topology_gaps_and_overlaps
+   sample-code/pygplates_query_network_triangulation_and_rigid_blocks
+   sample-code/pygplates_reconstruct_points_step_by_step_through_topologies
    sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence
 
 .. _velocities:
@@ -115,8 +117,11 @@ rate in deforming regions, and the net rotation of the lithosphere.
    sample-code/pygplates_calculate_velocities_in_static_polygons
    sample-code/pygplates_calculate_velocities_of_plate_boundaries
    sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points
+   sample-code/pygplates_find_plates_and_strain_rates_at_static_points
    sample-code/pygplates_reconstruct_strain_and_strain_rate
    sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones
+   sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones
+   sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters
    sample-code/pygplates_calculate_net_rotation
    sample-code/pygplates_calculate_net_rotation_from_point_samples
 

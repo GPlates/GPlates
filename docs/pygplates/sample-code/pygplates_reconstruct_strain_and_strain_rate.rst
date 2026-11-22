@@ -138,4 +138,4 @@ See also
 - Reference: :meth:`pygplates.TopologicalModel.reconstruct_geometry`, :class:`pygplates.ReconstructedGeometryTimeSpan`,
   :class:`pygplates.Strain`, :class:`pygplates.StrainRate`
 - Sample code: :ref:`pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence`,
-  :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`
+  :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`, :ref:`pygplates_reconstruct_points_step_by_step_through_topologies`

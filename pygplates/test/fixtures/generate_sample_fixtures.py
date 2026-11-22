@@ -58,7 +58,10 @@ def subset(path, plates, feature_type=None, max_points=20, per_plate=3, key=lamb
 
 
 def write(name, features):
-    pygplates.FeatureCollection(features).write(os.path.join(OUT, name))
+    path = os.path.join(OUT, name)
+    # A scratch directory has no 'sample-code/' (or the per-script directories under it) to begin with.
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    pygplates.FeatureCollection(features).write(path)
     print('%-40s %3d features' % (name, len(features)))
 
 
@@ -140,9 +143,10 @@ write('lat_lon_velocity_domain_9_18.gpml', [pygplates.Feature.create_reconstruct
 # point every 30 degrees along its northern and southern edges. Without them an edge that should run
 # more than 180 degrees round a parallel runs the other way instead: with four points each, the
 # Antarctic box is the same region as the Australian one, and the African one the same as the Pacific
-# one, which leaves half the globe in no polygon.
+# one, which leaves half the globe in no polygon. The last point is always at 'lon1', so a box whose
+# span is not a multiple of 30 degrees ends with a shorter step rather than short of 'lon1'.
 def box(plate_id, lat0, lat1, lon0, lon1, hole=None):
-    lons = list(range(lon0, lon1 + 1, 30))
+    lons = list(range(lon0, lon1, 30)) + [lon1]
     polygon = pygplates.PolygonOnSphere(
         [(lat0, lon) for lon in lons] + [(lat1, lon) for lon in reversed(lons)],
         [hole] if hole else [])
@@ -424,7 +428,6 @@ long_eurasia_sides = band_sides(40, 10, 'Eurasia')
 long_pacific_sides = band_sides(30, -30, 'Pacific')
 long_nazca_sides = band_sides(-10, -35, 'Nazca')
 plate_boundary_velocities_dir = os.path.join('sample-code', 'pygplates_calculate_velocities_of_plate_boundaries')
-os.makedirs(os.path.join(OUT, plate_boundary_velocities_dir), exist_ok=True)
 write(os.path.join(plate_boundary_velocities_dir, 'topologies.gpml'),
       [leading_edge, moving_trench, moving_ridge, trailing_edge] + deforming_zone_edges + deforming_zone_blocks +
       long_eurasia_sides + long_pacific_sides + long_nazca_sides + [
@@ -437,6 +440,81 @@ write(os.path.join(plate_boundary_velocities_dir, 'topologies.gpml'),
                    ([moving_trench], moving_ridge, long_pacific_sides), 'Pacific', 901),
           topology(closed_plate_boundary, pygplates.GpmlTopologicalPolygon,
                    ([moving_ridge], trailing_edge, long_nazca_sides), 'Nazca', 911)])
+
+# Topologies for the one sample that gives a rift an exponential stretching profile. The rift
+# parameters need the plate IDs of the two plates that a rift is between, and a network whose
+# un-stretched side moves exactly as one of those plates does: that is how the side is recognised
+# (the stage rotation of each vertex is compared with those of the two plates).
+#
+# The deforming zone above can be given rift parameters (plates 0 and 201, which its two sides are
+# on), and its triangulation is then refined. But it makes a poor example. Plate 0 is not a plate
+# that a reader's rift is between. The zone is one network right across the stretching, where a rift
+# is usually a network on each side of an axis. And its leading edge slides sideways as it moves
+# ahead, so the profile across it is not a clean one.
+#
+# This is the rift between South America (201) and Africa (701), which 'rotations.rot' opens slowly
+# from 131.7 to 120.4 Ma (before then the two plates are fixed to each other, and after it they
+# spread fast). There is a network on each side of the rift axis, as rifts are usually modelled. Each
+# is the strip between an un-stretched margin, a line on its plate, and the rift axis, a line that
+# moves by half-stage rotation between the two plates and so stays midway between the margins. A
+# strip has one row of triangles across it, which is the case the rift parameters are for: without
+# them the strain rate is the same right across the strip.
+#
+# The three lines are laid out where they are at 122 Ma, the time the sample visits, as meridians 3
+# degrees apart from 30S to 20S. At that time South America moves relative to Africa about a stage
+# pole 36 degrees to the north (at 10N, 8E), so the rift opens nearly at right angles to the lines.
+# (The Primer says that the profile works less well for a rift that opens obliquely.) The ends of the
+# strips are not sections: each network's boundary is its margin and the axis, drawn in opposite
+# directions, and the resolver joins the end of one to the start of the other.
+#
+# The networks have no rift parameters. Adding them is what the sample does. With them the strain rate
+# across each strip at 122 Ma rises from 0.8e-15 to 1.4e-15 per second (it is 1.05e-15 to 1.1e-15
+# without), and each strip has 25 to 33 triangles in place of 8. Each strip widens steadily from 131
+# to 121 Ma, which is as far as this was checked. The features exist from 132 to 120 Ma.
+RIFT_TIME = 122
+RIFT_PLATES = 201, 701
+RIFT_AXIS_LON = 0
+RIFT_HALF_WIDTH = 3
+RIFT_LATS = [-30, -27.5, -25, -22.5, -20]
+RIFT_VALID_TIME = (132, 120)
+
+
+def rift_line(lon, lats):
+    return pygplates.PolylineOnSphere([(lat, lon) for lat in lats])
+
+
+def rift_margin(name, lon, plate_id):
+    """A line on a plate, drawn south to north where it is at the rift time."""
+    return pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_unclassified_feature, rift_line(lon, RIFT_LATS),
+        name=name, valid_time=RIFT_VALID_TIME, reconstruction_plate_id=plate_id,
+        reverse_reconstruct=(rotation_model, RIFT_TIME))
+
+
+def rift_network(margin, name, plate_id):
+    """The network between an un-stretched margin and the rift axis. It has no rift parameters."""
+    feature = pygplates.Feature.create_topological_network_feature(
+        pygplates.GpmlTopologicalNetwork(
+            [pygplates.GpmlTopologicalSection.create(section, topological_geometry_type=pygplates.GpmlTopologicalNetwork)
+             for section in (margin, rift_axis)]),
+        name=name, valid_time=RIFT_VALID_TIME)
+    feature.set_reconstruction_plate_id(plate_id)
+    return feature
+
+
+south_american_margin = rift_margin('un-stretched margin of South America', RIFT_AXIS_LON - RIFT_HALF_WIDTH, RIFT_PLATES[0])
+african_margin = rift_margin('un-stretched margin of Africa', RIFT_AXIS_LON + RIFT_HALF_WIDTH, RIFT_PLATES[1])
+# Drawn north to south, so that a margin followed by the axis goes round its network.
+rift_axis = pygplates.Feature.create_tectonic_section(
+    pygplates.FeatureType.gpml_continental_rift, rift_line(RIFT_AXIS_LON, RIFT_LATS[::-1]),
+    name='rift axis', valid_time=RIFT_VALID_TIME, left_plate=RIFT_PLATES[0], right_plate=RIFT_PLATES[1],
+    reconstruction_method='HalfStageRotationVersion3',
+    reverse_reconstruct=(rotation_model, RIFT_TIME))
+rift_dir = os.path.join('sample-code', 'pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters_rift')
+write(os.path.join(rift_dir, 'topologies.gpml'),
+      [south_american_margin, african_margin, rift_axis,
+       rift_network(south_american_margin, 'South American side of the rift', RIFT_PLATES[0]),
+       rift_network(african_margin, 'African side of the rift', RIFT_PLATES[1])])
 
 # Input text files for the import page: 'lon lat' per line (GMT order); polylines separated by '>'.
 # The points file has no '>' headers in either form: pyGPlates' GMT reader takes a header followed
