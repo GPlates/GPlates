@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0339" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0340" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-30625b4e-4c60-4bbd-9fc3-fb73e1ec73ee</gpml:identity>
-            <gpml:revision>GPlates-76456188-45bc-4418-9d96-1cc28840b94e</gpml:revision>
+            <gpml:identity>GPlates-ff500b7c-e48e-4577-bbe3-02a1bb945de1</gpml:identity>
+            <gpml:revision>GPlates-3408db82-6602-4bb0-b8c6-3af102d3dba8</gpml:revision>
             <gml:name>static polygon 801</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
@@ -31,7 +31,7 @@
                         <gml:Polygon>
                             <gml:exterior>
                                 <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">-79.999999999999986 90 -79.999999999999986 180 0 180 0 90 -79.999999999999986 90 </gml:posList>
+                                    <gml:posList gml:dimension="2">-79.999999999999986 90 -79.999999999999986 119.99999999999999 -79.999999999999986 150 -79.999999999999986 180 0 180 0 150 0 119.99999999999999 0 90 -79.999999999999986 90 </gml:posList>
                                 </gml:LinearRing>
                             </gml:exterior>
                         </gml:Polygon>
@@ -43,8 +43,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-b7242d6b-f364-4010-9b6e-493bcb7dcefe</gpml:identity>
-            <gpml:revision>GPlates-3763eacd-747b-4df6-84b6-e22d5f32d1df</gpml:revision>
+            <gpml:identity>GPlates-3b4e5d60-f99c-4176-b765-a41103b3a98b</gpml:identity>
+            <gpml:revision>GPlates-20636f4f-057d-4f68-bcbf-18723aa49e01</gpml:revision>
             <gml:name>static polygon 802</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
@@ -72,7 +72,7 @@
                         <gml:Polygon>
                             <gml:exterior>
                                 <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">-79.999999999999986 -180 -79.999999999999986 90 0 90 0 -180 -79.999999999999986 -180 </gml:posList>
+                                    <gml:posList gml:dimension="2">-79.999999999999986 -180 -79.999999999999986 -150 -79.999999999999986 -119.99999999999999 -79.999999999999986 -90 -79.999999999999986 -59.999999999999993 -79.999999999999986 -29.999999999999996 -79.999999999999986 0 -79.999999999999986 29.999999999999996 -79.999999999999986 59.999999999999993 -79.999999999999986 90 0 90 0 59.999999999999993 0 29.999999999999996 0 0 0 -29.999999999999996 0 -59.999999999999993 0 -90 0 -119.99999999999999 0 -150 0 -180 -79.999999999999986 -180 </gml:posList>
                                 </gml:LinearRing>
                             </gml:exterior>
                         </gml:Polygon>
@@ -84,8 +84,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-ec72075d-40f1-48f5-b35e-6605c2aa8eec</gpml:identity>
-            <gpml:revision>GPlates-684aef5e-c657-4c4b-9d79-c37742b48ae2</gpml:revision>
+            <gpml:identity>GPlates-864f88db-fa8e-4978-859c-2d59f12929ab</gpml:identity>
+            <gpml:revision>GPlates-ab8e4fd9-b27e-46fb-9ee7-63b6ebbfff7f</gpml:revision>
             <gml:name>static polygon 901</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
@@ -113,7 +113,7 @@
                         <gml:Polygon>
                             <gml:exterior>
                                 <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">0 -180 0 -59.999999999999993 79.999999999999986 -59.999999999999993 79.999999999999986 -180 0 -180 </gml:posList>
+                                    <gml:posList gml:dimension="2">0 -180 0 -150 0 -119.99999999999999 0 -90 0 -59.999999999999993 79.999999999999986 -59.999999999999993 79.999999999999986 -90 79.999999999999986 -119.99999999999999 79.999999999999986 -150 79.999999999999986 -180 0 -180 </gml:posList>
                                 </gml:LinearRing>
                             </gml:exterior>
                         </gml:Polygon>
@@ -125,8 +125,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-f6cbffc8-cc4d-40c2-a14e-aa4e6babb4bb</gpml:identity>
-            <gpml:revision>GPlates-e2b1e8a4-f78a-4e61-b108-723bf90145b3</gpml:revision>
+            <gpml:identity>GPlates-8d87716e-0a97-41c9-a799-7745a22c518c</gpml:identity>
+            <gpml:revision>GPlates-ecc467dc-9302-4d14-8b15-f34d427b72b8</gpml:revision>
             <gml:name>static polygon 701</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
@@ -154,7 +154,53 @@
                         <gml:Polygon>
                             <gml:exterior>
                                 <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">0 -59.999999999999993 0 180 79.999999999999986 180 79.999999999999986 -59.999999999999993 0 -59.999999999999993 </gml:posList>
+                                    <gml:posList gml:dimension="2">0 -59.999999999999993 0 -29.999999999999996 0 0 0 29.999999999999996 0 59.999999999999993 0 90 0 119.99999999999999 0 150 0 180 79.999999999999986 180 79.999999999999986 150 79.999999999999986 119.99999999999999 79.999999999999986 90 79.999999999999986 59.999999999999993 79.999999999999986 29.999999999999996 79.999999999999986 0 79.999999999999986 -29.999999999999996 79.999999999999986 -59.999999999999993 0 -59.999999999999993 </gml:posList>
+                                </gml:LinearRing>
+                            </gml:exterior>
+                            <gml:interior>
+                                <gml:LinearRing>
+                                    <gml:posList gml:dimension="2">20 59.999999999999993 20 90 50 90 50 59.999999999999993 20 59.999999999999993 </gml:posList>
+                                </gml:LinearRing>
+                            </gml:interior>
+                        </gml:Polygon>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-50abacb0-dec4-4639-8238-29c3425ac0e4</gpml:identity>
+            <gpml:revision>GPlates-c918d0d4-1996-4ded-ae4e-2bf8c8869b11</gpml:revision>
+            <gml:name>static polygon 501</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">200</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>501</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Polygon>
+                            <gml:exterior>
+                                <gml:LinearRing>
+                                    <gml:posList gml:dimension="2">20 59.999999999999993 20 90 50 90 50 59.999999999999993 20 59.999999999999993 </gml:posList>
                                 </gml:LinearRing>
                             </gml:exterior>
                         </gml:Polygon>

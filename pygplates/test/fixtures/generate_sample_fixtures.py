@@ -123,21 +123,43 @@ write('lat_lon_velocity_domain_9_18.gpml', [pygplates.Feature.create_reconstruct
     pygplates.FeatureType.create_gpml('MeshNode'), pygplates.MultiPointOnSphere(grid),
     name='lat/lon velocity domain 9x18')])
 
-# Static polygons: four synthetic plates tiling the sphere between +-80 degrees latitude, so that
-# the imported points and polylines below all get a plate ID.
-def box(plate_id, lat0, lat1, lon0, lon1):
+# Static polygons: five synthetic plates tiling the sphere between +-80 degrees latitude at present
+# day, so that the imported points and polylines below all get a plate ID. Four are boxes, and the
+# fifth is a small block in a hole in the largest box: a polygon partitioned over the block gets a
+# piece with an interior ring from the box around it.
+#
+# Reconstructed to a past time they move apart and over each other, as real static polygons do, which
+# is what the samples that partition, or calculate velocities and net rotation, without topologies
+# rely on. For example at 50 Ma, with Africa (701) as the anchor plate, the block has moved south
+# across its hole: it covers the south of the hole (and the hole's southern edge as far east as
+# longitude 87), lies over the box south of that, and leaves the north of the hole empty.
+#
+# An edge of a polygon is the shorter great circle arc between its two points, so each box has a
+# point every 30 degrees along its northern and southern edges. Without them an edge that should run
+# more than 180 degrees round a parallel runs the other way instead: with four points each, the
+# Antarctic box is the same region as the Australian one, and the African one the same as the Pacific
+# one, which leaves half the globe in no polygon.
+def box(plate_id, lat0, lat1, lon0, lon1, hole=None):
+    lons = list(range(lon0, lon1 + 1, 30))
     polygon = pygplates.PolygonOnSphere(
-        [(lat0, lon0), (lat0, lon1), (lat1, lon1), (lat1, lon0)])
+        [(lat0, lon) for lon in lons] + [(lat1, lon) for lon in reversed(lons)],
+        [hole] if hole else [])
     return pygplates.Feature.create_reconstructable_feature(
         pygplates.FeatureType.gpml_unclassified_feature, polygon,
         name='static polygon %d' % plate_id, valid_time=(200, pygplates.GeoTimeInstant.create_distant_future()),
         reconstruction_plate_id=plate_id)
 
-write('static_polygons.gpml', [
+# The block, and the hole it sits in at present day.
+BLOCK_LAT0, BLOCK_LAT1, BLOCK_LON0, BLOCK_LON1 = 20, 50, 60, 90
+static_polygons = [
     box(801, -80, 0, 90, 180),      # Australia-ish: south-east
     box(802, -80, 0, -180, 90),     # Antarctica-ish: the rest of the south
     box(901, 0, 80, -180, -60),     # Pacific-ish: north-west
-    box(701, 0, 80, -60, 180)])     # Africa/Eurasia-ish: north-east
+    box(701, 0, 80, -60, 180,       # Africa/Eurasia-ish: north-east, with a hole where the block is
+        hole=[(BLOCK_LAT0, BLOCK_LON0), (BLOCK_LAT0, BLOCK_LON1),
+              (BLOCK_LAT1, BLOCK_LON1), (BLOCK_LAT1, BLOCK_LON0)]),
+    box(501, BLOCK_LAT0, BLOCK_LAT1, BLOCK_LON0, BLOCK_LON1)]   # India-ish: the block in the hole
+write('static_polygons.gpml', static_polygons)
 
 # Topologies for the samples that resolve them. The shared 'topologies.gpml' beside this script belongs
 # to the unit tests: its sections are all unclassified and its plates do not move, so a sample that
