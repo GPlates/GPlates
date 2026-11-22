@@ -43,7 +43,7 @@ for feature in rotation_features:
     print('  time samples:')
     for time_sample in enabled_time_samples:
 
-        # Get the finite rotation from the GpmlFiniteRotation property value instead the GpmlTimeSample.
+        # Get the finite rotation from the GpmlFiniteRotation property value inside the GpmlTimeSample.
         finite_rotation = time_sample.get_value().get_finite_rotation()
 
         # Extract the pole and angle (in degrees) from the finite rotation.

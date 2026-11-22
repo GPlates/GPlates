@@ -3,16 +3,16 @@
 Create topological features
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example uses existing regular features to create the following new topological features:
+This example uses existing regular features to create three new topological features:
 
-- topological line feature
-- topological polygon feature (which also uses the topological line feature)
-- topological network feature (which also uses the topological line feature)
+- a topological line feature,
+- a topological polygon feature (which also uses the topological line feature), and
+- a topological network feature (which also uses the topological line feature).
 
-.. note:: Creating topological features is different than resolving/reconstructing them to a specific
+.. note:: Creating topological features is different from resolving them at a specific
    reconstruction time (which is done with a :class:`pygplates.TopologicalModel` or a
-   :class:`pygplates.TopologicalSnapshot`). Typically topological features are created/built using GPlates,
-   but they can also be created using pyGPlates and this section shows how to do that.
+   :class:`pygplates.TopologicalSnapshot`). Topological features are typically built using GPlates,
+   but they can also be created using pyGPlates, and this example shows how.
 
 .. contents::
    :local:
@@ -34,57 +34,72 @@ Sample code
 Details
 """""""
 
-First we load the GPML file `features.gpml` containing the regular features (see :ref:`pygplates_create_topological_features_input`):
+First the regular features are loaded from the GPML file ``features.gpml`` (see
+:ref:`pygplates_create_topological_features_input`):
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: load-features
 
-Then we collect a list of features ID strings identifying some of the regular features we just loaded
-(see the `gpml:identity` tags in :ref:`pygplates_create_topological_features_input`) that our new topological *line* will reference:
+A topology references the features it is built from by their feature IDs. So next comes a list of
+feature ID strings, identifying the regular features that the new topological *line* will reference
+(see the ``gpml:identity`` tags in :ref:`pygplates_create_topological_features_input`):
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: line-referenced-feature-ids
 
-Then we create the topological *line* feature by calling our own function :ref:`create_topological_line_feature<pygplates_create_topological_line_feature>`,
-passing the regular features, the list of features referenced by the topological line and the feature type of the topological line:
+The topological *line* feature is created by the script's own function
+:ref:`create_topological_line_feature<pygplates_create_topological_line_feature>`. It is passed the
+regular features, the list of feature IDs referenced by the topological line, and the feature type
+of the topological line:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-line
 
-Then we add the topological *line* feature to the list of features because it will be referenced in turn by our new topological polygon and topological network:
+The topological *line* feature is then added to the features, because the new topological polygon
+and topological network will reference it in turn:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: add-topological-line
 
-Then we collect a list of features ID strings that our new topological *polygon* will reference:
+Next comes the list of feature ID strings that the new topological *polygon* will reference:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: polygon-referenced-feature-ids
 
-.. note:: The topological *polygon* feature references the topological *line* feature that we just created (in addition to regular features) since
-   it forms part of the boundary of the *polygon*.
+.. note:: As well as regular features, the topological *polygon* references the topological *line*
+   feature that was just created, since the line forms part of the boundary of the *polygon*.
 
-Then we create the topological *polygon* feature by calling our own function :ref:`create_topological_polygon_feature<pygplates_create_topological_polygon_feature>`,
-passing the regular features (and topological *line*), the list of features referenced by the topological polygon and the feature type of the topological polygon:
+The topological *polygon* feature is created by the script's own function
+:ref:`create_topological_polygon_feature<pygplates_create_topological_polygon_feature>`. It is
+passed the features (the regular features and the topological *line*), the list of feature IDs
+referenced by the topological polygon, and the feature type of the topological polygon:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-polygon
 
-Then we collect a list of features ID strings that our new topological *network* will reference.
-A topological network has a boundary (which is a list of boundary sections) and interior geometries (which is a list of interior sections).
-So we have two lists of feature ID strings:
+Last come the feature ID strings that the new topological *network* will reference. A topological
+network has a boundary, which is a list of boundary sections, and interior geometries, which are a
+list of interior sections. So there are two lists of feature ID strings:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: network-referenced-feature-ids
 
-.. note:: The *boundary* of the topological network feature references the topological *line* feature that we created previously (in addition to regular features).
+.. note:: As well as regular features, the *boundary* of the topological network references the
+   topological *line* feature that was created earlier.
 
-Then we create the topological *network* feature by calling our own function :ref:`create_topological_network_feature<pygplates_create_topological_network_feature>`,
-passing the regular features (and topological *line*), the list of features referenced by the topological network *boundary*, the list of features referenced
-by the topological network *interior*:
+The topological *network* feature is created by the script's own function
+:ref:`create_topological_network_feature<pygplates_create_topological_network_feature>`. It is
+passed the features (the regular features and the topological *line*), the list of feature IDs
+referenced by the network *boundary*, and the list of feature IDs referenced by the network
+*interior*:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-network
+
+Finally the script saves the three topological features to ``topologies.gpml`` (see
+:ref:`Output<pygplates_create_topological_features_output>`). That file does not contain the
+regular features that the topologies reference. So, to resolve the topologies, load
+``features.gpml`` along with it.
 
 .. _pygplates_create_topological_line_feature:
 
@@ -94,20 +109,25 @@ Create a topological line feature
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-line-feature
 
-First we find the regular features referenced by our topological line by calling our own function :ref:`find_referenced_features<pygplates_find_referenced_features>`,
-passing the regular features and the list of features referenced by the topological line:
+First this function finds the regular features referenced by the topological line. It does so by
+calling the script's own function :ref:`find_referenced_features<pygplates_find_referenced_features>`,
+passing the regular features and the list of feature IDs referenced by the topological line:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: find-line-referenced-features
 
-Then we wrap each referenced feature into a topological section by calling our own function :ref:`create_topological_sections<pygplates_create_topological_sections>`,
-passing the features referenced by the topological line. We also specify the type of topological geometry we're creating, which is `pygplates.GpmlTopologicalLine`:
+Then it wraps each referenced feature in a topological section. It does so by calling the script's
+own function :ref:`create_topological_sections<pygplates_create_topological_sections>`, passing the
+features referenced by the topological line. It also passes the type of topological geometry being
+created, which is :class:`pygplates.GpmlTopologicalLine`:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-line-sections
 
-Finally we take our topological sections (that join together to form a line) and create a :class:`topological line geometry<pygplates.GpmlTopologicalLine>`.
-We then pass that, along with the feature type, into :meth:`pygplates.Feature.create_topological_feature` to create our topological line feature:
+Finally the topological sections (which join together to form a line) are used to create a
+:class:`topological line geometry<pygplates.GpmlTopologicalLine>`. That geometry is passed, along
+with the feature type, to :meth:`pygplates.Feature.create_topological_feature`, which creates the
+topological line feature:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-line
@@ -120,20 +140,26 @@ Create a topological polygon feature
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-polygon-feature
 
-First we find the regular features (and topological *line*) referenced by our topological polygon by calling our own function
-:ref:`find_referenced_features<pygplates_find_referenced_features>`, passing the regular features and the list of features referenced by the topological polygon:
+First this function finds the regular features (and the topological *line*) referenced by the
+topological polygon. It does so by calling the script's own function
+:ref:`find_referenced_features<pygplates_find_referenced_features>`, passing the features and the
+list of feature IDs referenced by the topological polygon:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: find-polygon-referenced-features
 
-Then we wrap each referenced feature into a topological section by calling our own function :ref:`create_topological_sections<pygplates_create_topological_sections>`,
-passing the features referenced by the topological polygon. We also specify the type of topological geometry we're creating, which is `pygplates.GpmlTopologicalPolygon`:
+Then it wraps each referenced feature in a topological section. It does so by calling the script's
+own function :ref:`create_topological_sections<pygplates_create_topological_sections>`, passing the
+features referenced by the topological polygon. It also passes the type of topological geometry
+being created, which is :class:`pygplates.GpmlTopologicalPolygon`:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-polygon-sections
 
-Finally we take our topological sections (that join together to form a polygon) and create a :class:`topological polygon geometry<pygplates.GpmlTopologicalPolygon>`.
-We then pass that, along with the feature type, into :meth:`pygplates.Feature.create_topological_feature` to create our topological polygon feature:
+Finally the topological sections (which join together to form a polygon) are used to create a
+:class:`topological polygon geometry<pygplates.GpmlTopologicalPolygon>`. That geometry is passed,
+along with the feature type, to :meth:`pygplates.Feature.create_topological_feature`, which creates
+the topological polygon feature:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-polygon
@@ -146,26 +172,37 @@ Create a topological network feature
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-network-feature
 
-First we find the regular features (and topological *line*) referenced by the *boundary* of our topological network by calling our own function
-:ref:`find_referenced_features<pygplates_find_referenced_features>`, passing the regular features and the list of features referenced by the network *boundary*.
-We then wrap each referenced *boundary* feature into a topological section by calling our own function :ref:`create_topological_sections<pygplates_create_topological_sections>`,
-passing the features referenced by the network *boundary*. We also specify the type of topological geometry we're creating, which is `pygplates.GpmlTopologicalNetwork`:
+First this function finds the regular features (and the topological *line*) referenced by the
+*boundary* of the topological network. It does so by calling the script's own function
+:ref:`find_referenced_features<pygplates_find_referenced_features>`, passing the features and the
+list of feature IDs referenced by the network *boundary*.
+
+It then wraps each referenced *boundary* feature in a topological section. It does so by calling
+the script's own function :ref:`create_topological_sections<pygplates_create_topological_sections>`,
+passing the features referenced by the network *boundary*. It also passes the type of topological
+geometry being created, which is :class:`pygplates.GpmlTopologicalNetwork`:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-network-boundary-sections
 
-Next we find the regular features referenced by the *interior* of our topological network by calling our own function
-:ref:`find_referenced_features<pygplates_find_referenced_features>`, passing the regular features and the list of features referenced by the network *interior*.
-We then wrap each referenced *interior* feature into a topological section by calling our own function
-:ref:`create_topological_network_interiors<pygplates_create_topological_network_interiors>` (similar to :ref:`create_topological_sections<pygplates_create_topological_sections>`
-but specific to the network *interior*), passing the features referenced by the network *interior*.
+Next it finds the regular features referenced by the *interior* of the topological network, again
+by calling :ref:`find_referenced_features<pygplates_find_referenced_features>`, passing the features
+and the list of feature IDs referenced by the network *interior*.
+
+It then wraps each referenced *interior* feature in a topological network interior. It does so by
+calling the script's own function
+:ref:`create_topological_network_interiors<pygplates_create_topological_network_interiors>`, which
+is similar to :ref:`create_topological_sections<pygplates_create_topological_sections>` but
+specific to the network *interior*:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-network-interiors
 
-Finally we take our topological *boundary* sections (that join together to form a polygon boundary) and our topological *interior* sections
-(that form interior constraints within the deforming region) and create a :class:`topological network geometry<pygplates.GpmlTopologicalNetwork>`.
-We then pass that into :meth:`pygplates.Feature.create_topological_network_feature` to create our topological network feature:
+Finally the topological *boundary* sections (which join together to form a polygon boundary) and
+the topological *interiors* (which form interior constraints within the deforming region) are used
+to create a :class:`topological network geometry<pygplates.GpmlTopologicalNetwork>`. That geometry
+is passed to :meth:`pygplates.Feature.create_topological_network_feature`, which creates the
+topological network feature:
 
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-network
@@ -178,8 +215,12 @@ Find features referenced by a topology
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: find-referenced-features
 
-This function simply iterates through the `features` and searches each feature's :meth:`feature ID<pygplates.Feature.get_feature_id>`
-in the list of feature IDs referenced by the topological geometry. Any features that match are returned.
+This function iterates over the feature ID strings referenced by the topological geometry. For
+each one it searches ``features`` for the feature with that
+:meth:`feature ID<pygplates.Feature.get_feature_id>`.
+
+The features that match are returned in the order of the feature ID strings, which is the order of
+the sections in the topological geometry.
 
 
 .. _pygplates_create_topological_sections:
@@ -190,19 +231,40 @@ Create a topological section for each referenced feature
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-sections
 
-This function wraps each referenced feature in a :class:`topological section<pygplates.GpmlTopologicalSection>` by calling :meth:`pygplates.GpmlTopologicalSection.create`.
-A topological section will be a :class:`pygplates.GpmlTopologicalPoint` if the referenced geometry is a point or a :class:`pygplates.GpmlTopologicalLineSection`
-if the referenced geometry is a polyline or a polygon (or a topological line, provided it's being added to a topological polygon or network as determined by `topological_geometry_type`).
-   
-.. note:: We are not specifying a geometry property name when calling :meth:`pygplates.GpmlTopologicalSection.create`. This means the *default* geometry property name
-  (for the referenced feature *type*) is used. However it is sometimes possible for geometry to be placed in two different properties (with different property names).
-  If the geometry happened to be in a non-default geometry property then we would need to explicitly specify that property name.
-  It is also possible for a feature to have more than one geometry under the *same* property name. :meth:`pygplates.GpmlTopologicalSection.create` then returns
-  ``None`` (and this function leaves the feature out), unless its *property_return* argument is set to ``pygplates.PropertyReturn.first`` to reference the first one found.
+This function wraps each referenced feature in a
+:class:`topological section<pygplates.GpmlTopologicalSection>`, by calling
+:meth:`pygplates.GpmlTopologicalSection.create`.
 
-.. note:: The `reverse_order` flag in :meth:`pygplates.GpmlTopologicalSection.create` is not needed (can be left as default, as we have done here)
-   if the topological sections always intersect each other (or if they’re points, and hence have no orientation). This flag is only used when a line section stops
-   intersecting both its neighbouring line sections (known as *rubber banding*).
+The type of topological section depends on the geometry that it references:
+
+- It is a :class:`pygplates.GpmlTopologicalPoint` if the referenced geometry is a point.
+- It is a :class:`pygplates.GpmlTopologicalLineSection` if the referenced geometry is a polyline or
+  a polygon. It is also one if the referenced geometry is a topological line, provided the section
+  is being added to a topological polygon or network (as determined by
+  ``topological_geometry_type``).
+
+:meth:`pygplates.GpmlTopologicalSection.create` returns ``None`` if it cannot create a section from
+a feature, and this function then leaves that feature out.
+
+.. note:: No geometry property name is specified when calling
+   :meth:`pygplates.GpmlTopologicalSection.create`. So the *default* geometry property name (for the
+   referenced feature *type*) is used.
+
+   A feature can have geometry in two different properties (with different property names). If the
+   geometry to reference were in a non-default geometry property, then that property name would
+   need to be specified explicitly.
+
+   A feature can also have more than one geometry under the *same* property name.
+   :meth:`pygplates.GpmlTopologicalSection.create` then returns ``None`` (and this function leaves
+   the feature out), unless its *property_return* argument is set to
+   ``pygplates.PropertyReturn.first`` to reference the first one found.
+
+.. note:: The *reverse_order* argument of :meth:`pygplates.GpmlTopologicalSection.create` is not
+   needed (it can be left as its default, as it is here) if the topological sections always
+   intersect each other (or if they are points, which have no orientation). It is only used when a
+   line section does not intersect both of its neighbouring sections. It then determines the
+   orientation of the line section when the sections are joined together (known as
+   *rubber banding*).
 
 
 .. _pygplates_create_topological_network_interiors:
@@ -213,19 +275,33 @@ Create a topological network interior for each referenced feature
 .. sample-code:: pygplates_create_topological_features.py
    :fragment: create-topological-network-interiors
 
-This function wraps each referenced feature in a topological network interior by calling :meth:`pygplates.GpmlTopologicalSection.create_network_interior`.
-A topological network interior is actually a :class:`pygplates.GpmlPropertyDelegate` (which is what is stored inside a :class:`pygplates.GpmlTopologicalSection`)
-and is what references a specific geometry property within a feature (since a :class:`property delegate<pygplates.GpmlPropertyDelegate>` contains a property name and feature ID).
+This function wraps each referenced feature in a topological network interior, by calling
+:meth:`pygplates.GpmlTopologicalSection.create_network_interior`.
 
-.. note:: Any regular geometry (point, multipoint, polyline, polygon) or topological line can be referenced by a topological network interior.
-   If a regular polygon geometry is referenced then it will be treated as a rigid interior block in the topological network and will not be part of the deforming region.
-   This means anything inside this interior polygon geometry will move rigidly using the plate ID of the referenced polygon feature.
-   
-.. note:: We are not specifying a geometry property name when calling :meth:`pygplates.GpmlTopologicalSection.create_network_interior`. This means the *default* geometry property name
-  (for the referenced feature *type*) is used. However it is sometimes possible for geometry to be placed in two different properties (with different property names).
-  If the geometry happened to be in a non-default geometry property then we would need to explicitly specify that property name.
-  It is also possible for a feature to have more than one geometry under the *same* property name. :meth:`pygplates.GpmlTopologicalSection.create_network_interior`
-  then returns ``None`` (and this function leaves the feature out), unless its *property_return* argument is set to ``pygplates.PropertyReturn.first`` to reference the first one found.
+A topological network interior is a :class:`pygplates.GpmlPropertyDelegate`. A property delegate
+references a specific geometry property within a feature: it contains a feature ID and a property
+name. It is also what a :class:`pygplates.GpmlTopologicalSection` stores inside it.
+
+.. note:: Any regular geometry (point, multipoint, polyline or polygon), or a topological line, can
+   be referenced by a topological network interior.
+
+   If a regular polygon geometry is referenced, it is treated as a rigid interior block in the
+   topological network, and is not part of the deforming region. Anything inside this interior
+   polygon moves rigidly, using the plate ID of the referenced polygon feature (see
+   :ref:`pygplates_primer_rigid_blocks`).
+
+.. note:: No geometry property name is specified when calling
+   :meth:`pygplates.GpmlTopologicalSection.create_network_interior`. So the *default* geometry
+   property name (for the referenced feature *type*) is used.
+
+   A feature can have geometry in two different properties (with different property names). If the
+   geometry to reference were in a non-default geometry property, then that property name would
+   need to be specified explicitly.
+
+   A feature can also have more than one geometry under the *same* property name.
+   :meth:`pygplates.GpmlTopologicalSection.create_network_interior` then returns ``None`` (and this
+   function leaves the feature out), unless its *property_return* argument is set to
+   ``pygplates.PropertyReturn.first`` to reference the first one found.
 
 
 .. _pygplates_create_topological_features_input:
@@ -233,7 +309,7 @@ and is what references a specific geometry property within a feature (since a :c
 Input
 """""
 
-The contents of the input file `features.gpml`:
+The contents of the input file ``features.gpml``:
 ::
 
     <?xml version="1.0" encoding="UTF-8"?>
@@ -905,10 +981,13 @@ The contents of the input file `features.gpml`:
     </gpml:FeatureCollection>
 
 
+.. _pygplates_create_topological_features_output:
+
 Output
 """"""
 
-The contents of the output file `topologies.gpml`. Note that the feature IDs of the topological features will differ for each run:
+The contents of the output file ``topologies.gpml``. The feature IDs and revision IDs of the
+topological features will differ for each run:
 ::
 
     <?xml version="1.0" encoding="UTF-8"?>

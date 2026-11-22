@@ -3,14 +3,14 @@
 Reconstruct regular features
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-| This example shows a couple of different scenarios involving the reconstruction of *regular* features to geological times.
-| Regular features exclude `topological <http://www.gplates.org/docs/gpgim/#gpml:TopologicalFeature>`_ features,
-  `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_ features and
-  `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_ features.
+This example shows two scenarios that reconstruct *regular* features to a past geological time.
 
-.. seealso:: :ref:`pygplates_reconstruct_motion_path_features`
+Regular features are all features except
+`topological <http://www.gplates.org/docs/gpgim/#gpml:TopologicalFeature>`_ features,
+`motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_ features and
+`flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_ features.
 
-.. seealso:: :ref:`pygplates_reconstruct_flowline_features`
+.. seealso:: :ref:`pygplates_reconstruct_motion_path_features` and :ref:`pygplates_reconstruct_flowline_features`
 
 .. contents::
    :local:
@@ -36,7 +36,7 @@ Files of these kinds are in the GPlates `sample data <https://www.gplates.org/do
 Exported reconstructed features to a file
 +++++++++++++++++++++++++++++++++++++++++
 
-In this example we reconstruct regular features and export the results to a Shapefile.
+This example reconstructs regular features and exports the results to a Shapefile.
 
 Sample code
 """""""""""
@@ -51,7 +51,8 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_reconstruct_regular_features_export.py
    :fragment: load-rotations
 
-Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the reconstructable features and the rotation model.
+A :class:`reconstruct model <pygplates.ReconstructModel>` is created from the reconstructable
+features and the rotation model.
 
 .. sample-code:: pygplates_reconstruct_regular_features_export.py
    :fragment: reconstruct-model
@@ -61,8 +62,13 @@ The features will be reconstructed to their 50Ma positions.
 .. sample-code:: pygplates_reconstruct_regular_features_export.py
    :fragment: reconstruction-time
 
-| All features are :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
-| We then :meth:`export the reconstructed geometries <pygplates.ReconstructSnapshot.export_reconstructed_geometries>` to a file.
+:meth:`pygplates.ReconstructModel.reconstruct_snapshot` reconstructs the features to 50Ma, and
+returns the result as a :class:`pygplates.ReconstructSnapshot`. A feature that does not exist at
+50Ma, according to its valid time period, is not reconstructed.
+
+:meth:`pygplates.ReconstructSnapshot.export_reconstructed_geometries` then exports the
+reconstructed geometries to a file. The filename extension selects the file format, here ``.shp``
+for a Shapefile.
 
 .. sample-code:: pygplates_reconstruct_regular_features_export.py
    :fragment: reconstruct-and-export
@@ -70,8 +76,13 @@ The features will be reconstructed to their 50Ma positions.
 Output
 """"""
 
-We should now have a file called ``reconstructed_50Ma.shp`` containing feature geometries reconstructed
-to their 50Ma positions.
+There should now be a file called ``reconstructed_50Ma.shp`` containing the feature geometries
+reconstructed to their 50Ma positions.
+
+A Shapefile holds only one type of geometry. If the reconstructed geometries are of more than one
+type (points, multipoints, polylines or polygons), a directory called ``reconstructed_50Ma`` is
+created instead. It contains a Shapefile for each type, such as ``reconstructed_50Ma_polyline.shp``
+and ``reconstructed_50Ma_polygon.shp``.
 
 
 .. _pygplates_calculate_distance_a_feature_is_reconstructed:
@@ -79,8 +90,8 @@ to their 50Ma positions.
 Calculate distance a feature is reconstructed
 +++++++++++++++++++++++++++++++++++++++++++++
 
-In this example we calculate the distance between a feature geometry's present day (centroid) location
-and its reconstructed (centroid) location.
+This example calculates the distance between the present day location of a feature geometry and
+its reconstructed location. Both locations are taken at the centroid of the geometry.
 
 Sample code
 """""""""""
@@ -95,7 +106,8 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py
    :fragment: load-rotations
 
-Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the reconstructable features and the rotation model.
+A :class:`reconstruct model <pygplates.ReconstructModel>` is created from the reconstructable
+features and the rotation model.
 
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py
    :fragment: reconstruct-model
@@ -105,24 +117,33 @@ The features will be reconstructed to their 50Ma positions.
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py
    :fragment: reconstruction-time
 
-| All features are :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
-| We then :meth:`query the reconstructed geometries <pygplates.ReconstructSnapshot.get_reconstructed_geometries>`.
+:meth:`pygplates.ReconstructModel.reconstruct_snapshot` reconstructs the features to 50Ma.
+
+:meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries` then returns the reconstructed
+geometries. There is a :class:`pygplates.ReconstructedFeatureGeometry` for each geometry of each
+feature that exists at 50Ma.
 
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py
    :fragment: reconstruct
 
-| We use ``get_centroid()``, which every geometry type has (a :class:`point<pygplates.PointOnSphere>` is its
-  own centroid), to find the centroid of the
-  :meth:`present day<pygplates.ReconstructedFeatureGeometry.get_present_day_geometry>` and
-  :meth:`reconstructed<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>` geometries.
-| We use the :meth:`distance()<pygplates.GeometryOnSphere.distance>` method of one centroid to calculate the shortest
-  distance between the two centroids and convert it to kilometres using :class:`pygplates.Earth`.
+A reconstructed feature geometry has both the
+:meth:`present day<pygplates.ReconstructedFeatureGeometry.get_present_day_geometry>` geometry and
+the :meth:`reconstructed<pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry>`
+geometry. The centroid of each is found with ``get_centroid()``, which every geometry type has (a
+:class:`point<pygplates.PointOnSphere>` is its own centroid).
+
+The :meth:`distance()<pygplates.GeometryOnSphere.distance>` method of one centroid returns the
+shortest distance to the other centroid, in radians. It is converted to kilometres by multiplying
+it by :attr:`pygplates.Earth.mean_radius_in_kms`.
 
 .. sample-code:: pygplates_reconstruct_regular_features_distance.py
    :fragment: distance-reconstructed
 
 Output
 """"""
+
+For each reconstructed geometry the script prints the name and plate ID of its feature, and the
+distance it was reconstructed.
 
 ::
 

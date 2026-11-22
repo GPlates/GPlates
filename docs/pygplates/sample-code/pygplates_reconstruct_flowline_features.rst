@@ -3,12 +3,10 @@
 Reconstruct flowline features
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example shows a couple of different scenarios involving the reconstruction of
-`flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_ features to geological times.
+This example shows two scenarios that reconstruct
+`flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_ features to a past geological time.
 
-.. seealso:: :ref:`pygplates_reconstruct_motion_path_features`
-
-.. seealso:: :ref:`pygplates_reconstruct_regular_features`
+.. seealso:: :ref:`pygplates_reconstruct_motion_path_features` and :ref:`pygplates_reconstruct_regular_features`
 
 .. contents::
    :local:
@@ -20,8 +18,8 @@ This example shows a couple of different scenarios involving the reconstruction 
 Exported reconstructed flowlines to a file
 ++++++++++++++++++++++++++++++++++++++++++
 
-In this example we reconstruct `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
-features and export the results to a Shapefile.
+This example reconstructs `flowline <http://www.gplates.org/docs/gpgim/#gpml:Flowline>`_
+features and exports the results to a Shapefile.
 
 .. seealso:: :ref:`pygplates_create_flowline_feature` and :ref:`pygplates_query_flowline_feature`
 
@@ -50,20 +48,23 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_reconstruct_flowline_features_export.py
    :fragment: load-rotations
 
-Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the flowline features and the rotation model.
+A :class:`reconstruct model <pygplates.ReconstructModel>` is created from the flowline features and
+the rotation model.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_export.py
    :fragment: reconstruct-model
 
-The flowline features will be reconstructed to their 50Ma positions.
+The flowline features will be reconstructed to 50Ma.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_export.py
    :fragment: reconstruction-time
 
-| All flowline features are :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
-| We then :meth:`export the reconstructed geometries <pygplates.ReconstructSnapshot.export_reconstructed_geometries>` to a file.
-| We specify we only want to reconstruct flowline features by specifying
-  ``pygplates.ReconstructType.flowline`` for the *reconstruct_type* argument.
+:meth:`pygplates.ReconstructModel.reconstruct_snapshot` reconstructs the flowline features to 50Ma,
+and returns the result as a :class:`pygplates.ReconstructSnapshot`.
+
+:meth:`pygplates.ReconstructSnapshot.export_reconstructed_geometries` then exports the reconstructed
+flowlines to a file. By default it exports only regular features. So the *reconstruct_type*
+argument is set to ``pygplates.ReconstructType.flowline``, to export the flowlines instead.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_export.py
    :fragment: reconstruct-and-export
@@ -71,8 +72,8 @@ The flowline features will be reconstructed to their 50Ma positions.
 Output
 """"""
 
-We should now have a file called ``flowline_output_50Ma.shp`` containing the flowlines
-reconstructed to their 50Ma positions.
+There should now be a file called ``flowline_output_50Ma.shp`` containing the flowlines
+reconstructed to 50Ma.
 
 
 .. _pygplates_query_reconstructed_flowline:
@@ -80,15 +81,16 @@ reconstructed to their 50Ma positions.
 Query a reconstructed flowline
 ++++++++++++++++++++++++++++++
 
-In this example we print out the point locations in a reconstructed flowline.
+This example prints the locations of the points in a reconstructed flowline.
 
 Data files
 """"""""""
 
 ``rotations.rot``
     A rotation file. It must contain rotations for plates 201 and 701 (the left and right plates of
-    the flowline the script creates) back to 90Ma. Rotation files are in the GPlates
-    `sample data <https://www.gplates.org/download/>`_.
+    the flowline the script creates) back to 90Ma.
+
+Rotation files are in the GPlates `sample data <https://www.gplates.org/download/>`_.
 
 Sample code
 """""""""""
@@ -98,9 +100,9 @@ Sample code
 Details
 """""""
 
-| The first part of this example comes from :ref:`pygplates_create_flowline_feature`.
-| It creates a flowline feature specifying the seed point locations that each flowline spreads
-  from as well as a list of times to plot points in the left/right paths.
+The first part of the script comes from :ref:`pygplates_create_flowline_feature`. It creates a
+flowline feature from two seed points and a list of times, here in 5My intervals. A flowline
+spreads from each seed point, and its left and right paths each have a point at each of the times.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_query.py
    :fragment: create-flowline
@@ -110,48 +112,61 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_reconstruct_flowline_features_query.py
    :fragment: load-rotations
 
-Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the flowline feature and the rotation model.
+A :class:`reconstruct model <pygplates.ReconstructModel>` is created from the flowline feature and
+the rotation model.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_query.py
    :fragment: reconstruct-model
 
-The flowline feature will be reconstructed to its 50Ma position.
+The flowline feature will be reconstructed to 50Ma.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_query.py
    :fragment: reconstruction-time
 
-| The flowline feature is :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
-| We then :meth:`query the reconstructed geometries <pygplates.ReconstructSnapshot.get_reconstructed_geometries>`.
-| We also specify we only want to reconstruct flowline features by specifying
-  ``pygplates.ReconstructType.flowline`` for the *reconstruct_types* argument.
+:meth:`pygplates.ReconstructModel.reconstruct_snapshot` reconstructs the flowline feature to 50Ma.
+
+:meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries` then returns the reconstructed
+flowlines. By default it returns only the reconstructed geometries of regular features. So the
+*reconstruct_types* argument is set to ``pygplates.ReconstructType.flowline``, to return the
+flowlines instead.
+
+There is a :class:`pygplates.ReconstructedFlowline` for each seed point, so there are two here.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_query.py
    :fragment: reconstruct
 
-| We iterate over the points in the :meth:`reconstructed left flowline<pygplates.ReconstructedFlowline.get_left_flowline>`
-  and print each point location and its associated time.
-| The first point in a flowline path is the youngest and the last point is the oldest.
-  We reverse that order so that we start with the oldest point first since there is always a point
-  in the path corresponding to the oldest time, but there is not always a point corresponding to the
-  youngest time (present day). However when we index into the flowline times we again need to
-  reverse our indexing order (since the times array goes from youngest to oldest).
-  So we need to start at the last (oldest) time and work our way backwards.
-  The last sample is at index ``-1`` and ``point_index`` starts at zero.
-  So our time indices are ``-1``, ``-2``, etc, which means last sample, then second last sample, etc.
-| This labelling assumes the reconstruction time is one of the flowline's times (as 50Ma is here), or is
-  younger than all of them (where the path starts at the youngest time). At any other time the path's
-  youngest point is at the reconstruction time itself, but is labelled with the next younger sample time.
+For each reconstructed flowline, the script first prints the plate IDs of its feature and the
+location of its :meth:`reconstructed seed point<pygplates.ReconstructedFlowline.get_reconstructed_seed_point>`.
+
+It then iterates over the points of the
+:meth:`left flowline<pygplates.ReconstructedFlowline.get_left_flowline>`, and prints the location
+of each point and the time associated with it.
+
+The first point of a flowline path is the youngest and the last point is the oldest. The script
+reverses that order, to start with the oldest point. It does this because the path always has a
+point at the oldest time, but does not always have one at the youngest time (present day).
+
+The times of the feature are from youngest to oldest. So, to match the reversed points, the script
+starts at the last (oldest) time and works backwards. The last time is at index ``-1`` and
+``point_index`` starts at zero, so the time indices are ``-1``, ``-2``, etc, which are the last
+time, then the second last time, etc.
+
+This labelling assumes that the reconstruction time is one of the times of the flowline (as 50Ma
+is here), or is younger than all of them (where the path starts at the youngest time). At any
+other reconstruction time the youngest point of the path is at the reconstruction time itself, but
+is labelled with the next younger time of the flowline.
 
 .. sample-code:: pygplates_reconstruct_flowline_features_query.py
    :fragment: left-flowline
 
-Then we do the same thing for the :meth:`reconstructed right flowline<pygplates.ReconstructedFlowline.get_right_flowline>`.
+The script then does the same for the
+:meth:`right flowline<pygplates.ReconstructedFlowline.get_right_flowline>`.
 
 Output
 """"""
 
-Our time range is 90Ma to 0Ma, but since the reconstruction time is 50Ma the output is only
-from 90Ma to 50Ma.
+The times of the flowline are from 90Ma to 0Ma. But the reconstruction time is 50Ma, so the
+output is only from 90Ma to 50Ma.
 
 ::
 

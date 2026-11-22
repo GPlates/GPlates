@@ -3,12 +3,11 @@
 Reconstruct motion path features
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example shows a couple of different scenarios involving the reconstruction of
-`motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_ features to geological times.
+This example shows two scenarios that reconstruct
+`motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_ features to a past geological
+time.
 
-.. seealso:: :ref:`pygplates_reconstruct_flowline_features`
-
-.. seealso:: :ref:`pygplates_reconstruct_regular_features`
+.. seealso:: :ref:`pygplates_reconstruct_flowline_features` and :ref:`pygplates_reconstruct_regular_features`
 
 .. contents::
    :local:
@@ -20,8 +19,8 @@ This example shows a couple of different scenarios involving the reconstruction 
 Exported reconstructed motion paths to a file
 +++++++++++++++++++++++++++++++++++++++++++++
 
-In this example we reconstruct `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
-features and export the results to a Shapefile.
+This example reconstructs `motion path <http://www.gplates.org/docs/gpgim/#gpml:MotionPath>`_
+features and exports the results to a Shapefile.
 
 .. seealso:: :ref:`pygplates_create_motion_path_feature` and :ref:`pygplates_query_motion_path_feature`
 
@@ -34,8 +33,9 @@ Data files
 ``motion_path_features.gpml``
     Motion path features, each with a reconstruction plate ID, a relative plate ID, a list of times, a
     valid time period and seed point geometry (see :ref:`pygplates_query_motion_path_feature`). Such a
-    file can be created as in :ref:`pygplates_create_motion_path_feature`. Rotation files are in the
-    GPlates `sample data <https://www.gplates.org/download/>`_.
+    file can be created as in :ref:`pygplates_create_motion_path_feature`.
+
+Rotation files are in the GPlates `sample data <https://www.gplates.org/download/>`_.
 
 Sample code
 """""""""""
@@ -50,20 +50,23 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_reconstruct_motion_path_features_export.py
    :fragment: load-rotations
 
-Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the motion path features and the rotation model.
+A :class:`reconstruct model <pygplates.ReconstructModel>` is created from the motion path features
+and the rotation model.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_export.py
    :fragment: reconstruct-model
 
-The motion path features will be reconstructed to their 50Ma positions.
+The motion path features will be reconstructed to 50Ma.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_export.py
    :fragment: reconstruction-time
 
-| All motion path features are :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
-| We then :meth:`export the reconstructed geometries <pygplates.ReconstructSnapshot.export_reconstructed_geometries>` to a file.
-| We specify we only want to reconstruct motion path features by specifying
-  ``pygplates.ReconstructType.motion_path`` for the *reconstruct_type* argument.
+:meth:`pygplates.ReconstructModel.reconstruct_snapshot` reconstructs the motion path features to
+50Ma, and returns the result as a :class:`pygplates.ReconstructSnapshot`.
+
+:meth:`pygplates.ReconstructSnapshot.export_reconstructed_geometries` then exports the reconstructed
+motion paths to a file. By default it exports only regular features. So the *reconstruct_type*
+argument is set to ``pygplates.ReconstructType.motion_path``, to export the motion paths instead.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_export.py
    :fragment: reconstruct-and-export
@@ -71,8 +74,8 @@ The motion path features will be reconstructed to their 50Ma positions.
 Output
 """"""
 
-We should now have a file called ``motion_path_output_50Ma.shp`` containing the motion paths
-reconstructed to their 50Ma positions.
+There should now be a file called ``motion_path_output_50Ma.shp`` containing the motion paths
+reconstructed to 50Ma.
 
 
 .. _pygplates_query_reconstructed_motion_path:
@@ -80,15 +83,16 @@ reconstructed to their 50Ma positions.
 Query a reconstructed motion path
 +++++++++++++++++++++++++++++++++
 
-In this example we print out the point locations in a reconstructed motion path.
+This example prints the locations of the points in a reconstructed motion path.
 
 Data files
 """"""""""
 
 ``rotations.rot``
     A rotation file. It must contain rotations for plates 701 and 201 (the reconstruction and relative
-    plates of the motion path the script creates) back to 90Ma. Rotation files are in the GPlates
-    `sample data <https://www.gplates.org/download/>`_.
+    plates of the motion path the script creates) back to 90Ma.
+
+Rotation files are in the GPlates `sample data <https://www.gplates.org/download/>`_.
 
 Sample code
 """""""""""
@@ -98,9 +102,9 @@ Sample code
 Details
 """""""
 
-| The first part of this example comes from :ref:`pygplates_create_motion_path_feature`.
-| It creates a motion path feature specifying the seed point locations that each motion path emanates
-  from as well as a list of times to plot points in the path.
+The first part of the script comes from :ref:`pygplates_create_motion_path_feature`. It creates a
+motion path feature from two seed points and a list of times. A motion path starts at each seed
+point, and has a point at each of the times.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_query.py
    :fragment: create-motion-path
@@ -110,33 +114,47 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_reconstruct_motion_path_features_query.py
    :fragment: load-rotations
 
-Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the motion path feature and the rotation model.
+A :class:`reconstruct model <pygplates.ReconstructModel>` is created from the motion path feature
+and the rotation model.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_query.py
    :fragment: reconstruct-model
 
-The motion path feature will be reconstructed to its 50Ma position.
+The motion path feature will be reconstructed to 50Ma.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_query.py
    :fragment: reconstruction-time
 
-| The motion path feature is :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
-| We then :meth:`query the reconstructed geometries <pygplates.ReconstructSnapshot.get_reconstructed_geometries>`.
-| We also specify we only want to reconstruct motion path features by specifying
-  ``pygplates.ReconstructType.motion_path`` for the *reconstruct_types* argument.
+:meth:`pygplates.ReconstructModel.reconstruct_snapshot` reconstructs the motion path feature to
+50Ma.
+
+:meth:`pygplates.ReconstructSnapshot.get_reconstructed_geometries` then returns the reconstructed
+motion paths. By default it returns only the reconstructed geometries of regular features. So the
+*reconstruct_types* argument is set to ``pygplates.ReconstructType.motion_path``, to return the
+motion paths instead.
+
+There is a :class:`pygplates.ReconstructedMotionPath` for each seed point, so there are two here.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_query.py
    :fragment: reconstruct
 
-| We iterate over the points in the :meth:`reconstructed motion path<pygplates.ReconstructedMotionPath.get_motion_path>`
-  and print each point location and its associated time.
-| The first point in the path is the oldest and the last point is the youngest.
-  So we need to start at the last (oldest) time and work our way backwards.
-  The last sample is at index ``-1`` and ``point_index`` starts at zero.
-  So our time indices are ``-1``, ``-2``, etc, which means last sample, then second last sample, etc.
-| This labelling assumes the reconstruction time is one of the motion path's times (as 50Ma is here). At any
-  other time the path's youngest point is at the reconstruction time itself, but is labelled with the
-  next younger sample time.
+For each reconstructed motion path, the script first prints the plate IDs of its feature and the
+location of its :meth:`reconstructed seed point<pygplates.ReconstructedMotionPath.get_reconstructed_seed_point>`.
+
+It then iterates over the points of the
+:meth:`motion path<pygplates.ReconstructedMotionPath.get_motion_path>`, and prints the location of
+each point and the time associated with it.
+
+The first point of the path is the oldest and the last point is the youngest. The times of the
+feature are in the opposite order, from youngest to oldest. So the script starts at the last
+(oldest) time and works backwards. The last time is at index ``-1`` and ``point_index`` starts at
+zero, so the time indices are ``-1``, ``-2``, etc, which are the last time, then the second last
+time, etc.
+
+This labelling assumes that the reconstruction time is one of the times of the motion path (as
+50Ma is here), or is younger than all of them (where the path ends at the youngest time). At any
+other reconstruction time the youngest point of the path is at the reconstruction time itself, but
+is labelled with the next younger time of the motion path.
 
 .. sample-code:: pygplates_reconstruct_motion_path_features_query.py
    :fragment: motion-path-points
@@ -144,8 +162,8 @@ The motion path feature will be reconstructed to its 50Ma position.
 Output
 """"""
 
-Our time range is 90Ma to 0Ma, but since the reconstruction time is 50Ma the output is only
-from 90Ma to 50Ma.
+The times of the motion path are from 90Ma to 0Ma. But the reconstruction time is 50Ma, so the
+output is only from 90Ma to 50Ma.
 
 ::
 
