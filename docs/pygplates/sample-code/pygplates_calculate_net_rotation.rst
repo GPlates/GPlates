@@ -109,5 +109,6 @@ See also
 - Primer: :ref:`pygplates_primer_topological_model`
 - Reference: :class:`pygplates.NetRotationModel`, :class:`pygplates.NetRotationSnapshot`, :class:`pygplates.NetRotation`,
   :class:`pygplates.TopologicalModel`
-- Sample code: :ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies`,
+- Sample code: :ref:`pygplates_calculate_net_rotation_from_point_samples`,
+  :ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies`,
   :ref:`pygplates_calculate_velocities_in_dynamic_plates`

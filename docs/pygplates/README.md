@@ -374,8 +374,11 @@ a ridge that diverges and a trench that converges at every time the samples visi
 network (with a rigid block in it) that overlays a plate and stretches from 30 Ma to present day,
 where the unit tests' one has only unclassified sections on plates that do not move. The comments
 in the generator say what a sample can rely on there. `fixtures/sample-code/<script>/`
-holds files for one script, whose page reproduces its own input in full
-(`create_topological_features` shows its `features.gpml`).
+holds files for one script: one whose page reproduces its own input in full
+(`create_topological_features` shows its `features.gpml`), or one that needs what the other
+samples must not have (`calculate_velocities_of_plate_boundaries` has a `topologies.gpml` whose
+trench and ridge move, where the shared one keeps them still so that its plates stay closed for
+140 My).
 
 To run a sample by hand, run it in a copy of the layered fixtures, not in `fixtures/` itself: the
 scripts write their output files into the working directory, and pyGPlates writes a

@@ -200,6 +200,7 @@ See also
 - Reference: :class:`pygplates.TopologicalModel`, :meth:`pygplates.TopologicalSnapshot.get_point_velocities`,
   :meth:`pygplates.TopologicalSnapshot.get_point_locations`, :class:`pygplates.TopologyPointLocation`,
   :class:`pygplates.LocalCartesian`
-- Sample code: :ref:`pygplates_calculate_velocities_by_plate_id`,
+- Sample code: :ref:`pygplates_calculate_velocities_in_static_polygons`,
+  :ref:`pygplates_calculate_velocities_by_plate_id`,
   :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`,
   :ref:`pygplates_reconstruct_strain_and_strain_rate`

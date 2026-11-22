@@ -12,11 +12,13 @@ coastlines, the Seton et al. 2020 isochrons, the Zahirovic et al. 2022 plate-bou
 Atlantic flowlines and the GPMDB virtual geomagnetic poles), keeping only features with few points, on a
 handful of plates that 'rotations.rot' knows. Re-run this only to regenerate them; the outputs are
 committed. Re-running reproduces the real features, but the synthetic ones (the motion paths, the
-velocity domain, the static polygons, the Southeast Indian Ridge in 'ridges.gpml' and
-'sample-code/topologies.gpml') come back with new feature IDs. A later pyGPlates changes more: every
-file gets its 'gpml:version' (1.6.0340 where most of these have 1.6.0339), and a property it writes
-differently changes too (it no longer gives a motion path a reconstruction method). So restore
-every file with git checkout unless it was meant to change.
+velocity domain, the static polygons, 'features_at_50Ma.gpml', the Southeast Indian Ridge in
+'ridges.gpml' and the topologies under 'sample-code/') come back with new feature IDs. A later
+pyGPlates changes more: every file gets its 'gpml:version' (1.6.0340 where most of these have
+1.6.0339), and a property it writes differently changes too (it no longer gives a motion path a
+reconstruction method). So restore every file with git checkout unless it was meant to change, or
+run a copy of this script (with 'rotations.rot' beside it) in a scratch directory and copy back
+only the files that were.
 
 Usage: generate_sample_fixtures.py [<GeoData/FeatureCollections directory>]
 """
@@ -160,6 +162,43 @@ static_polygons = [
               (BLOCK_LAT1, BLOCK_LON1), (BLOCK_LAT1, BLOCK_LON0)]),
     box(501, BLOCK_LAT0, BLOCK_LAT1, BLOCK_LON0, BLOCK_LON1)]   # India-ish: the block in the hole
 write('static_polygons.gpml', static_polygons)
+
+# Features to partition at a past time: their geometries are positions at 50 Ma in a reference frame
+# with Africa (701) fixed, as if digitised over a reconstruction to that time. With that anchor plate
+# the African box (and its hole) is where it is at present day, so these can be laid out against it.
+# Each is there for one thing the partitioning sample shows:
+# - a polygon around the whole hole: the box cuts a piece with an interior ring from it, the block
+#   takes the part of the hole it still covers, and the rest of the hole is in no plate;
+# - a profile (a polyline with a scalar value at each point) across the reconstructed eastern edge of
+#   the Pacific box, which lies over the African box there: each piece keeps its part of the values;
+# - a polygon south of the hole whose northern edge was drawn along the hole's southern edge, but 0.0003
+#   degrees (about 30 metres) over it. That strip is a sliver on the block, which a partitioner drops
+#   unless told to keep it.
+def hole_southern_edge_latitude(lon):
+    """The latitude of the hole's southern edge (a great circle arc, so it bows poleward) at 'lon'."""
+    mid_lon = 0.5 * (BLOCK_LON0 + BLOCK_LON1)
+    return math.degrees(math.atan(
+        math.tan(math.radians(BLOCK_LAT0)) / math.cos(math.radians(BLOCK_LON1 - mid_lon)) *
+        math.cos(math.radians(lon - mid_lon))))
+
+SLIVER_OVERSHOOT_DEGREES = 0.0003
+profile_points = [(30, lon) for lon in range(-45, -14, 5)]
+write('features_at_50Ma.gpml', [
+    pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_unclassified_feature,
+        pygplates.PolygonOnSphere([(15, 50), (15, 100), (55, 100), (55, 50)]),
+        name='polygon over several plates', valid_time=(55, 45)),
+    pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_unclassified_feature,
+        (pygplates.PolylineOnSphere(profile_points),
+         {pygplates.ScalarType.create_gpml('Depth'): [100.0 * index for index in range(len(profile_points))]}),
+        name='profile across a plate boundary', valid_time=(55, 45)),
+    pygplates.Feature.create_reconstructable_feature(
+        pygplates.FeatureType.gpml_unclassified_feature,
+        pygplates.PolygonOnSphere(
+            [(11, 65), (11, 85)] +
+            [(hole_southern_edge_latitude(lon) + SLIVER_OVERSHOOT_DEGREES, lon) for lon in range(85, 64, -5)]),
+        name='polygon digitised along a plate boundary', valid_time=(55, 45))])
 
 # Topologies for the samples that resolve them. The shared 'topologies.gpml' beside this script belongs
 # to the unit tests: its sections are all unclassified and its plates do not move, so a sample that
@@ -355,6 +394,49 @@ sample_topologies = [
 write(os.path.join('sample-code', 'topologies.gpml'),
       [leading_edge, trench, ridge, trailing_edge] + deforming_zone_edges + deforming_zone_blocks +
       eurasia_sides + pacific_sides + nazca_sides + sample_topologies)
+
+# Topologies for the one sample that calculates the velocities of the plate boundaries themselves.
+# In the topologies above every boundary section but the deforming zone's leading edge is on plate 0,
+# so that sample would report a velocity of zero along every plate boundary. Here the trench moves
+# with Eurasia (301), the plate that overrides it, and the ridge spreads by half-stage rotation
+# between the Pacific (901) and Nazca (911), as trenches and ridges do in real models.
+#
+# A section that moves no longer ends where its neighbours do, so here the trench and the ridge
+# overhang the sides by 10 degrees, and the sides overhang them by 10 degrees: the sections cross
+# wherever the moving ones have got to, and each resolved boundary is cut where they cross. (Sections
+# that only met end to end, as above, are joined across the gap when one of them moves, and the
+# resolved plates come out with pieces of their boundaries missing: Eurasia had a third of its area
+# at 5 Ma.) That is enough for 30 My, in which the trench and the ridge each move 4 to 5 degrees.
+# It is not a layout for the 140 My that the other samples cover. It is written to that sample's
+# own directory, which 'sample_code_test.py' lays over the others for that script alone.
+moving_trench = pygplates.Feature.create_reconstructable_feature(
+    pygplates.FeatureType.gpml_subduction_zone, across_line(20, half_width=40), name='trench',
+    reconstruction_plate_id=301,
+    other_properties=[(pygplates.PropertyName.gpml_subduction_polarity,
+                       pygplates.Enumeration(
+                           pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration'),
+                           'Left'))])
+# The Pacific is ahead of the ridge, so on its left.
+moving_ridge = pygplates.Feature.create_tectonic_section(
+    pygplates.FeatureType.gpml_mid_ocean_ridge, across_line(-20, half_width=40), name='East Pacific Rise',
+    left_plate=901, right_plate=911, reconstruction_method='HalfStageRotationVersion3')
+long_eurasia_sides = band_sides(40, 10, 'Eurasia')
+long_pacific_sides = band_sides(30, -30, 'Pacific')
+long_nazca_sides = band_sides(-10, -35, 'Nazca')
+plate_boundary_velocities_dir = os.path.join('sample-code', 'pygplates_calculate_velocities_of_plate_boundaries')
+os.makedirs(os.path.join(OUT, plate_boundary_velocities_dir), exist_ok=True)
+write(os.path.join(plate_boundary_velocities_dir, 'topologies.gpml'),
+      [leading_edge, moving_trench, moving_ridge, trailing_edge] + deforming_zone_edges + deforming_zone_blocks +
+      long_eurasia_sides + long_pacific_sides + long_nazca_sides + [
+          topology(closed_plate_boundary, pygplates.GpmlTopologicalPolygon,
+                   ([leading_edge], moving_trench, long_eurasia_sides), 'Eurasia', 301),
+          topology(pygplates.FeatureType.gpml_topological_network, pygplates.GpmlTopologicalNetwork,
+                   (deforming_zone_edges, moving_trench, long_eurasia_sides), 'deforming zone', 608,
+                   interiors=deforming_zone_blocks),
+          topology(closed_plate_boundary, pygplates.GpmlTopologicalPolygon,
+                   ([moving_trench], moving_ridge, long_pacific_sides), 'Pacific', 901),
+          topology(closed_plate_boundary, pygplates.GpmlTopologicalPolygon,
+                   ([moving_ridge], trailing_edge, long_nazca_sides), 'Nazca', 911)])
 
 # Input text files for the import page: 'lon lat' per line (GMT order); polylines separated by '>'.
 # The points file has no '>' headers in either form: pyGPlates' GMT reader takes a header followed
