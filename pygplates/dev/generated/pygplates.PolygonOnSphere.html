@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pygplates.PolygonOnSphere &mdash; pygplates 1.2.0.dev6 documentation</title>
+  <title>pygplates.PolygonOnSphere &mdash; pygplates 1.2.0.dev7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/generated/pygplates.PolygonOnSphere.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=f6e3f5cb"></script>
+      <script src="../_static/documentation_options.js?v=529b71d2"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -826,9 +826,9 @@
 </dl>
 <p>If this polygon is clockwise (when viewed from above the surface of the sphere) then <em>PolygonOnSphere.Orientation.clockwise</em> is returned, otherwise <em>PolygonOnSphere.Orientation.counter_clockwise</em> is returned.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">polygon</span><span class="o">.</span><span class="n">get_orientation</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="o">.</span><span class="n">Orientation</span><span class="o">.</span><span class="n">clockwise</span><span class="p">:</span>
-  <span class="nb">print</span> <span class="s1">'Orientation is clockwise'</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">'Orientation is clockwise'</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
-  <span class="nb">print</span> <span class="s1">'Orientation is counter-clockwise'</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">'Orientation is counter-clockwise'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Clockwise means that the exterior ring goes clockwise round the polygon’s interior, which is the ring’s smaller side (see <a class="reference internal" href="#pygplates.PolygonOnSphere.is_point_in_polygon" title="pygplates.PolygonOnSphere.is_point_in_polygon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">is_point_in_polygon()</span></code></a>).</p>

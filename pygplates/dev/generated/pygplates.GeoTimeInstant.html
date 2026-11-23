@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pygplates.GeoTimeInstant &mdash; pygplates 1.2.0.dev6 documentation</title>
+  <title>pygplates.GeoTimeInstant &mdash; pygplates 1.2.0.dev7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/generated/pygplates.GeoTimeInstant.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=f6e3f5cb"></script>
+      <script src="../_static/documentation_options.js?v=529b71d2"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -116,7 +116,7 @@
 <p>All comparison operators (==, !=, &lt;, &lt;=, &gt;, &gt;=) are supported (but GeoTimeInstant is not hashable - cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code>). The comparisons are such that times further in the past are <em>greater than</em> more recent times. Note that this is the opposite how we normally think of time (where future time values are greater than past values).</p>
 <p>So far this is the same as the native <code class="docutils literal notranslate"><span class="pre">float</span></code> type which can represent <em>distant past</em> as <code class="docutils literal notranslate"><span class="pre">float('inf')</span></code> and <em>distant future</em> as <code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code> (and support all comparisons with +/- infinity). The advantage with <a class="reference internal" href="#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a> is comparisons use a numerical tolerance such that they compare equal when close enough to each other, and there are explicit methods to create and test <em>distant past</em> and <em>distant future</em>. Note that due to the numerical tolerance in comparisons, a GeoTimeInstant is not hashable and hence cannot be used as a key in a <code class="docutils literal notranslate"><span class="pre">dict</span></code> - however the <code class="docutils literal notranslate"><span class="pre">float</span></code> returned by <a class="reference internal" href="#pygplates.GeoTimeInstant.get_value" title="pygplates.GeoTimeInstant.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_value()</span></code></a> can be.</p>
 <p>Comparisons can also be made between a GeoTimeInstant and a <code class="docutils literal notranslate"><span class="pre">float</span></code> (or <code class="docutils literal notranslate"><span class="pre">int</span></code>, etc). As between two <code class="docutils literal notranslate"><span class="pre">float</span></code> values, a comparison with <code class="docutils literal notranslate"><span class="pre">float('nan')</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, except <code class="docutils literal notranslate"><span class="pre">!=</span></code>, which is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span> <span class="s1">'Time instant is distant past: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="n">float_time</span><span class="p">)</span><span class="o">.</span><span class="n">is_distant_past</span><span class="p">()</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">'Time instant is distant past:'</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="n">float_time</span><span class="p">)</span><span class="o">.</span><span class="n">is_distant_past</span><span class="p">())</span>
 <span class="n">time10Ma</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 <span class="n">time20Ma</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
 <span class="c1"># assert(time20Ma &gt; time10Ma)</span>

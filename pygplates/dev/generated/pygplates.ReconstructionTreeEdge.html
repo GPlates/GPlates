@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pygplates.ReconstructionTreeEdge &mdash; pygplates 1.2.0.dev6 documentation</title>
+  <title>pygplates.ReconstructionTreeEdge &mdash; pygplates 1.2.0.dev7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/generated/pygplates.ReconstructionTreeEdge.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=f6e3f5cb"></script>
+      <script src="../_static/documentation_options.js?v=529b71d2"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -174,7 +174,7 @@ This class cannot be instantiated from Python</p>
 </table>
 <p>The following example demonstrates top-down (starting at the anchored plate) traversal of the reconstruction tree:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">traverse_sub_tree</span><span class="p">(</span><span class="n">edge</span><span class="p">):</span>
-    <span class="nb">print</span> <span class="s1">'Parent plate: </span><span class="si">%d</span><span class="s1">, child plate:</span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">edge</span><span class="o">.</span><span class="n">get_fixed_plate_id</span><span class="p">(),</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_moving_plate_id</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Parent plate: </span><span class="si">%d</span><span class="s1">, child plate: </span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">edge</span><span class="o">.</span><span class="n">get_fixed_plate_id</span><span class="p">(),</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_moving_plate_id</span><span class="p">()))</span>
     <span class="c1"># Recurse into the children sub-trees.</span>
     <span class="k">for</span> <span class="n">child_edge</span> <span class="ow">in</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_child_edges</span><span class="p">():</span>
         <span class="n">traverse_sub_tree</span><span class="p">(</span><span class="n">child_edge</span><span class="p">)</span>
@@ -242,9 +242,9 @@ This class cannot be instantiated from Python</p>
 <p><code class="docutils literal notranslate"><span class="pre">None</span></code> is returned if this edge is already at the top of the reconstruction tree (if its fixed plate id is the anchor plate id).</p>
 <p>The following example demonstrates following the plate circuit path from a plate (moving plate of an edge) to the anchor plate (at the top/root of the reconstruction tree):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-    <span class="nb">print</span> <span class="s1">'Plate: </span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_moving_plate_id</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Plate:'</span><span class="p">,</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_moving_plate_id</span><span class="p">())</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_parent_edge</span><span class="p">():</span>
-        <span class="nb">print</span> <span class="s1">'Anchored plate: </span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_fixed_plate_id</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Anchored plate:'</span><span class="p">,</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_fixed_plate_id</span><span class="p">())</span>
         <span class="k">break</span>
     <span class="n">edge</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">get_parent_edge</span><span class="p">()</span>
 </pre></div>

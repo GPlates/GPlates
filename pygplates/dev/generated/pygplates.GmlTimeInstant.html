@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pygplates.GmlTimeInstant &mdash; pygplates 1.2.0.dev6 documentation</title>
+  <title>pygplates.GmlTimeInstant &mdash; pygplates 1.2.0.dev7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/generated/pygplates.GmlTimeInstant.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=f6e3f5cb"></script>
+      <script src="../_static/documentation_options.js?v=529b71d2"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -194,12 +194,12 @@
 </dl>
 <p>You can use <a class="reference internal" href="pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoTimeInstant</span></code></a> with the returned <code class="docutils literal notranslate"><span class="pre">float</span></code> to check for <em>distant past</em> or <em>distant future</em> for example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">float_time</span> <span class="o">=</span> <span class="n">time_instant</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s1">'Time instant is distant past: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="n">float_time</span><span class="p">)</span><span class="o">.</span><span class="n">is_distant_past</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Time instant is distant past:'</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="n">float_time</span><span class="p">)</span><span class="o">.</span><span class="n">is_distant_past</span><span class="p">())</span>
 </pre></div>
 </div>
 <p>…or just test directly using <code class="docutils literal notranslate"><span class="pre">float</span></code> comparisons…</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">float_time</span> <span class="o">=</span> <span class="n">time_instant</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span>
-<span class="nb">print</span> <span class="s1">'Time instant is distant past: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">float_time</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s1">'inf'</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Time instant is distant past:'</span><span class="p">,</span> <span class="n">float_time</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s1">'inf'</span><span class="p">))</span>
 </pre></div>
 </div>
 </dd></dl>

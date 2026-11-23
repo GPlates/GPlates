@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pygplates.synchronise_crossovers &mdash; pygplates 1.2.0.dev6 documentation</title>
+  <title>pygplates.synchronise_crossovers &mdash; pygplates 1.2.0.dev7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/generated/pygplates.synchronise_crossovers.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=f6e3f5cb"></script>
+      <script src="../_static/documentation_options.js?v=529b71d2"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -336,8 +336,8 @@ rotation file) assuming all crossovers are of type <em>CrossoverType.synch_old_c
     <span class="mf">0.01</span><span class="p">,</span> <span class="c1"># Equivalent to 2 decimal places</span>
     <span class="n">pygplates</span><span class="o">.</span><span class="n">CrossoverType</span><span class="o">.</span><span class="n">synch_old_crossover_and_stages</span><span class="p">,</span>
     <span class="n">crossover_results</span><span class="p">)</span>
-<span class="nb">print</span> <span class="s1">'Fixed </span><span class="si">%d</span><span class="s1"> crossovers'</span> <span class="o">%</span> <span class="nb">sum</span><span class="p">(</span>
-    <span class="mi">1</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">crossover_results</span> <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="n">pygplates</span><span class="o">.</span><span class="n">CrossoverResult</span><span class="o">.</span><span class="n">synchronised</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Fixed </span><span class="si">%d</span><span class="s1"> crossovers'</span> <span class="o">%</span> <span class="nb">sum</span><span class="p">(</span>
+    <span class="mi">1</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">crossover_results</span> <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="n">pygplates</span><span class="o">.</span><span class="n">CrossoverResult</span><span class="o">.</span><span class="n">synchronised</span><span class="p">))</span>
 </pre></div>
 </div>
 <div class="versionchanged">

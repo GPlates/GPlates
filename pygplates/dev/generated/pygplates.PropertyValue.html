@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pygplates.PropertyValue &mdash; pygplates 1.2.0.dev6 documentation</title>
+  <title>pygplates.PropertyValue &mdash; pygplates 1.2.0.dev7 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/generated/pygplates.PropertyValue.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=f6e3f5cb"></script>
+      <script src="../_static/documentation_options.js?v=529b71d2"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -273,7 +273,7 @@ property value is interpolated (at reconstruction <em>time</em>) if property val
 <a class="reference internal" href="pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">total</span> <span class="pre">reconstruction</span> <span class="pre">pole</span></code></a> at time 20Ma:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gpml_finite_rotation_20Ma</span> <span class="o">=</span> <span class="n">total_reconstruction_pole</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">gpml_finite_rotation_20Ma</span><span class="p">:</span>
-  <span class="nb">print</span> <span class="s1">'Interpolated finite rotation at 20Ma: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">gpml_finite_rotation_20Ma</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">'Interpolated finite rotation at 20Ma:'</span><span class="p">,</span> <span class="n">gpml_finite_rotation_20Ma</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">())</span>
 </pre></div>
 </div>
 </dd></dl>
