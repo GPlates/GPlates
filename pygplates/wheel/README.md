@@ -434,8 +434,9 @@ The flow, end to end:
 2. Tag that commit `PyGPlates-<version>` (exactly the version string), check that
    `cmake -P cmake/modules/VersionFromGit.cmake pygplates` now gives exactly `<version>`, run
    `python pygplates/wheel/check_release_commit.py PyGPlates-<version> <version>`, and push the
-   tag. A local tag starts nothing; the push does. The run fails in its first minute if GPlates
-   is not frozen (the resolver refuses the release tag), and then - in `check_release_commit.py`,
+   tag. A local tag starts nothing; the push does. If it is the series' first tag, move `main`'s
+   target on as soon as it is pushed (step 7), not after the steps below. The run fails in its
+   first minute if GPlates is not frozen (the resolver refuses the release tag), and then - in `check_release_commit.py`,
    the same check as the local run - if the tag and the version disagree, if the version is a
    `.dev` one, if it does not sort above every earlier release in its history, or if a final
    release is not its last candidate unchanged (the script says how to override the last of
@@ -460,6 +461,23 @@ The flow, end to end:
    release's documentation from the wheels just uploaded (`docs/pygplates/README.md`,
    *Publishing*), so check that run too; for a candidate it does nothing. Create the release only
    after step 5, since that workflow installs the version from PyPI.
+
+   The release's notes are its description (`--notes-file`): a summary of its changelog section,
+   with a link to the changelog. The website's news item stays short (how to install, a few
+   highlights) and links to the GitHub release. The notes sit with the tag and the changelog
+   they summarise, a candidate needs them anyway (it has no news item), and they can be
+   corrected with `gh release edit` without a website change. Before 1.1 it was the other way
+   round: the news item held the description and the release linked to it.
+7. Move the version targets on. On `main`, after the *first* tag in a series (the first
+   candidate, or the release if there was none), set the next minor (`1.2.0` after `1.1.0rc1`),
+   with a `pyGPlates <next minor> (unreleased)` changelog section. This part can't wait for
+   steps 3-6, which can take days: push it straight after the tag, as a direct commit on `main`
+   (not a pull request) that is `main`'s next commit. Before the tag exists the resolver refuses
+   the new target as skipping a version, and once it exists any commit on `main` past the branch
+   point that still has the old target is refused for good (and a later `git bisect` could land
+   on it), so a pull request merged in between would leave such a commit. On the series branch,
+   after the release, set the next patch (`1.1.1`); after a candidate, nothing.
+   `docs/design/versioning/README.md` (7.2) has the rules.
 
 The conda-forge package is updated afterwards, by hand and from the sdist this run published -
 see `pygplates/conda/README.md`.
@@ -501,8 +519,9 @@ must exist - with their protection rules - before the first tag push.
 3. On **TestPyPI** (separate account from PyPI, 2FA required): pygplates doesn't exist there,
    so register a [pending publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/):
    owner `GPlates`, repository `GPlates`, workflow `build-wheels.yml`, environment `testpypi`.
-   (A pending publisher doesn't reserve the name, so do this close to first use; it becomes a
-   normal publisher on the first upload.)
+   (A pending publisher doesn't reserve the name, and it expires after 30 days if no upload has
+   used it, so do this close to first use; it becomes a normal publisher on the first upload. The
+   one registered for 1.1 expired before rc1, and had to be registered again.)
 4. On **PyPI**, in the pygplates project -> Settings -> Publishing, add the trusted publisher:
    owner `GPlates`, repository `GPlates`, workflow `build-wheels.yml`, environment `pypi`.
 5. After the first successful trusted publish, revoke any remaining pygplates API tokens.

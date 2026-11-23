@@ -126,7 +126,10 @@ is never copied there. Each key prevents a specific failure:
   conda-build's own default in place.
 - **`python`** - the interpreters to build. conda-forge's `python_min` is currently 3.11.
 
-The values track conda-forge's pinning as of September 2026; refresh them when it moves.
+The values track conda-forge's pinning as of September 2026; refresh them when it moves. Python
+3.15 was added in November 2026: the feedstock builds it through conda-forge's `python315`
+migration, although the pinning's own `python` list still stopped at 3.14. Keep it when
+refreshing, until that list includes it.
 
 ## The conda-forge feedstock
 

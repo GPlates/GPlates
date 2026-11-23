@@ -13,8 +13,11 @@ pyGPlates 1.1 (unreleased)
 
 Changes since 1.0.0:
 
-* Supports Python 3.9 to 3.15 (Python 3.8 is no longer supported).
-* The conda-forge package is no longer built for Linux (PPC64LE): it now uses Qt 6, which conda-forge doesn't build for that platform. pyGPlates 1.0.0 is still available there.
+* Supports Python 3.9 to 3.15 with the pip wheels, and Python 3.11 and up with the conda-forge package (Python 3.8 is no longer supported).
+* Uses Qt 6 instead of Qt 5:
+  * The pip wheels bundle Qt 6 (pyGPlates 1.0.0 bundled Qt 5).
+  * The conda-forge package depends on Qt 6 only, so it no longer mixes Qt 5 and Qt 6 in an environment that has other Qt packages.
+  * The conda-forge package is no longer built for Linux (PPC64LE), since conda-forge doesn't build Qt 6 for that platform. pyGPlates 1.0.0 is still available there.
 * Type stub included in the package (PEP 561), so editors and type checkers get completion, signature help and type checking for the whole API.
   * Forms that still work, for compatibility, are marked deprecated in it, so type checkers report a deprecation rather than an error (eg, the old argument names of `Vector3D.dot()`, and converting at a single origin with `LocalCartesian.convert_...()`).
 * The API reference documents every enumeration (eg, `PartitionMethod`) and exception (eg, `InvalidLatLonError`) on its own page, and parameter types and raised exceptions now link to those pages.
@@ -74,6 +77,7 @@ Changes since 1.0.0:
   * Requires NumPy 1.19 or later, and `pip` now enforces it: installing pyGPlates upgrades an older NumPy (previously the oldest NumPy that worked depended on the Python version, and an older one failed `import pygplates`).
 * Documentation: published for each release series at <https://gplates.github.io/GPlates/pygplates/> (eg, `1.1/`), with `stable/` for the latest release and `dev/` for the development version. The pyGPlates 1.0 documentation is there too, as `1.0/`.
 * Documentation: corrected the supported Python versions and platforms in *Getting started*, fixed the introductory examples (which raised `NameError`), and documented the Python console in GPlates.
+* Documentation: the examples in the API reference no longer use Python 2 `print` statements (which raise `SyntaxError`).
 * Documentation: methods a class inherits (eg, `distance()` listed on the `PointOnSphere` page) link to their documentation in the base class (previously they were listed without a link).
 * Documentation: parameter and return types corrected where they disagreed with what the functions accept and return, and the type stub with them. For example: points can be given as any sequence of coordinates (eg, a list); arguments read once accept any iterable (eg, a generator); optional arguments accept `None`; and `Feature.set_shapefile_attribute()` returns a `GpmlKeyValueDictionary`.
 * Documentation: the *Primer* is split into one page per topic (rotations, topologies and deformation). Links to sections of the old single-page Primer still work, redirecting to the section on its new page.

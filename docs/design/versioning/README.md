@@ -970,7 +970,7 @@ Rulesets*) are enforced on the server whatever the client does, so three protect
 - **A fourth ruleset has nothing to do with versioning.** *Published documentation* blocks deleting
   `gh-pages`, the generated branch GitHub Pages serves the pyGPlates documentation from (its
   design is in `docs/design/documentation-hosting/README.md`). Its `1.0/` is a copy of the pyGPlates
-  1.0 documentation the website served, and becomes the only live copy once the website deletes
+  1.0 documentation the website served, and has been the only live copy since the website deleted
   its own. Rebuilding it would be real work, since the `PyGPlates-1.0.0` tag predates
   `build_docs.py`. Force pushes are allowed, so that its history can be squashed if it grows too
   large: every clone downloads it.

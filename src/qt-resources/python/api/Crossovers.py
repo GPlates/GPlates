@@ -699,8 +699,8 @@ def synchronise_crossovers(
           0.01, # Equivalent to 2 decimal places
           pygplates.CrossoverType.synch_old_crossover_and_stages,
           crossover_results)
-      print 'Fixed %d crossovers' % sum(
-          1 for result in crossover_results if result[1]==pygplates.CrossoverResult.synchronised)
+      print('Fixed %d crossovers' % sum(
+          1 for result in crossover_results if result[1]==pygplates.CrossoverResult.synchronised))
 
     .. versionchanged:: 0.44
        Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_

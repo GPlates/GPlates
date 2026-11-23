@@ -91,7 +91,7 @@ Instructions for installing the [dependencies](#dependencies) and compiling GPla
 - `BUILD-macOS.md` (on macOS)
 - `BUILD-Windows.md` (on Windows)
 
-Developers will find a map of the source code, and the design documents for its parts, in [docs/design/architecture/README.md](docs/design/architecture/README.md).
+Developers will find a map of the source code, and the design documents for its parts, in [docs/design/architecture/README.md](https://github.com/GPlates/GPlates/blob/main/docs/design/architecture/README.md).
 
 GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw.html) (also known as [open-source](https://opensource.org/docs/definition.php) software), licensed for distribution under the GNU [General Public License](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) (GPL) version 2 (see `COPYING`).
 
@@ -103,7 +103,7 @@ GPlates and pyGPlates are [free software](https://www.gnu.org/philosophy/free-sw
 * [GDAL](https://gdal.org/) 2.0 or above
 * [GLEW](http://glew.sourceforge.net/)
 * [PROJ](https://proj.org/) 6 or above
-* [Python](http://python.org/) 3.8 or above
+* [Python](https://www.python.org/) 3.9 or above
 * [Qt](https://www.qt.io/) 6.x recommended (5.15 also supported)
 * [Qwt](https://qwt.sourceforge.io/) 6.0.1 or above (preferably 6.1 or above)
 
@@ -141,7 +141,7 @@ writes to it.
 > the default branch, and releases are tagged on permanent per-series branches. There is no
 > separate 'production' branch and no `hotfix` branch (a patch release is simply a further commit
 > on the release series branch). The reasoning, and what was considered instead, is in
-> [docs/design/versioning/README.md](docs/design/versioning/README.md).
+> [docs/design/versioning/README.md](https://github.com/GPlates/GPlates/blob/main/docs/design/versioning/README.md).
 
 #### Versioning
 
@@ -157,4 +157,4 @@ a build standing on a release tag has exactly the release version.
 
 How the version is derived, how to see what a checkout resolves to, how to find the commit that a
 version was built from, and how a fork can keep its own version numbers, are all described in
-[docs/design/versioning/README.md](docs/design/versioning/README.md).
+[docs/design/versioning/README.md](https://github.com/GPlates/GPlates/blob/main/docs/design/versioning/README.md).

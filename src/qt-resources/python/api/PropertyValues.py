@@ -100,7 +100,7 @@ def property_value_get_value(property_value, time=0):
     
       gpml_finite_rotation_20Ma = total_reconstruction_pole.get_value(20)
       if gpml_finite_rotation_20Ma:
-        print 'Interpolated finite rotation at 20Ma: %s' % gpml_finite_rotation_20Ma.get_finite_rotation()
+        print('Interpolated finite rotation at 20Ma:', gpml_finite_rotation_20Ma.get_finite_rotation())
     """
     
     # By default we assume the property value is not time-dependent.

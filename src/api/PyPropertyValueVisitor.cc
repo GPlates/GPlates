@@ -810,7 +810,7 @@ export_property_value_visitor()
 			"\n"
 			"    # If we found a 'GpmlPlateId' then print its plate id.\n"
 			"    if plate_id is not None:\n"
-			"        print 'plate id: %d' % plate_id\n"
+			"        print('plate id:', plate_id)\n"
 			"\n"
 			".. warning:: You must call the base class *__init__* method otherwise you will get a *Boost.Python.ArgumentError* exception. "
 			"Note that if you do not define an *__init__* method in your derived class then Python will call the base class *__init__* "

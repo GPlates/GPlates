@@ -1,6 +1,7 @@
 # LOCAL BUILDS ONLY - never copy this file to the conda-forge feedstock, which re-renders these
-# values from conda-forge-pinning (the values here track it as of September 2026; refresh them when
-# they move).
+# values from conda-forge-pinning (the values here track it as of September 2026, plus Python 3.15
+# from its python315 migration, which the feedstock builds; refresh them when they move, keeping
+# 3.15 until the pinning's own python list includes it).
 #
 #  - python: the interpreters to build (conda-forge's python_min is 3.11). Pass '--python 3.13' to
 #    'conda build' to build just one of them.
@@ -19,6 +20,7 @@ python:
   - 3.12
   - 3.13
   - 3.14
+  - 3.15
 numpy:
   - 2
 c_stdlib:

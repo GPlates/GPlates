@@ -1407,14 +1407,14 @@ export_gml_time_instant()
 				"  ::\n"
 				"\n"
 				"    float_time = time_instant.get_time()\n"
-				"    print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()\n"
+				"    print('Time instant is distant past:', pygplates.GeoTimeInstant(float_time).is_distant_past())\n"
 				"\n"
 				"  ...or just test directly using ``float`` comparisons...\n"
 				"\n"
 				"  ::\n"
 				"\n"
 				"    float_time = time_instant.get_time()\n"
-				"    print 'Time instant is distant past: %s' % (float_time == float('inf'))\n")
+				"    print('Time instant is distant past:', float_time == float('inf'))\n")
 		.def("set_time",
 				&GPlatesPropertyValues::GmlTimeInstant::set_time_position,
 				(bp::arg("time_position")),
