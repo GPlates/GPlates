@@ -242,8 +242,8 @@ was accepted: very little links to `1.0/` itself, since the old addresses redire
 Until 1.1 the documentation was served unversioned at `www.gplates.org/docs/pygplates/`, and
 those addresses are in papers, notebooks and other projects' pages. They come in four shapes: the
 directory itself, the top-level pages (often with a fragment), `generated/<name>.html` and
-`sample-code/<name>.html`. Each is to keep working, by redirecting to the same path below
-`stable/`.
+`sample-code/<name>.html`. Each keeps working, by redirecting to the same path below `stable/`,
+though some forms of them redirect only in a browser (see *What the website does*).
 
 ### An unversioned link means the current documentation
 
@@ -260,10 +260,10 @@ name now have to exist in every future release.
 ### What the website does
 
 The website is itself a GitHub Pages site (built by Gatsby from `GPlates/new-gplates-website`),
-and Pages serves static files only: it cannot answer with an HTTP redirect. Its part is the pull
-request GPlates/new-gplates-website#10. Until that is deployed, the website goes on serving its
-own copy of the 1.0 documentation at the old addresses (the same tree as `1.0/` here), and nothing
-redirects. The pull request replaces that copy with three things:
+and Pages serves static files only: it cannot answer with an HTTP redirect. Until
+GPlates/new-gplates-website#10 it served its own copy of the 1.0 documentation at the old
+addresses (the same tree as `1.0/` here). That pull request removed the copy and left three
+things in its place:
 
 - **A stub at each of the 129 pages of the 1.0 documentation**, at the page's own path. A stub
   redirects to the same path below `stable/` with a script, which keeps the query and the
@@ -280,10 +280,12 @@ redirects. The pull request replaces that copy with three things:
 
 Why this shape:
 
-- **Stubs, rather than the 404 page alone.** A stub answers 200, so a search engine treats its
-  immediate refresh as a permanent redirect and passes the old address's ranking on, where a 404
-  is simply dropped, and a crawler may not run the 404 page's script at all. Tools that run no
-  JavaScript (a link checker, `curl`) reach the right page too.
+- **Stubs, rather than the 404 page alone.** A stub answers 200, and Google treats an immediate
+  meta refresh as a permanent redirect ([Redirects and Google Search][google-redirects]), so the
+  old address passes its ranking on. A 404 is simply dropped, and a crawler may never run the 404
+  page's script: Google may not render a page that answers 404
+  ([JavaScript SEO basics][google-javascript]). Tools that run no JavaScript (a link checker,
+  `curl`) get a page that answers 200 and names the new address, rather than a 404.
 - **Stubs with their real `.html` names.** The website once had stubs without an extension, for
   old lowercase addresses, and removed them: Pages serves a file without an extension as
   `application/octet-stream`, so a browser downloads it instead of following it.
@@ -300,9 +302,24 @@ Why this shape:
 
 What remains unredirected: an old address that is not one of the 129 pages (a wrongly cased name,
 an image) answers 404 to anything that does not run JavaScript, and redirects only in a browser.
+A search engine is likely to drop such an address rather than pass its ranking on. That includes
+the lowercase `generated/` names, which a web search index still held in November 2026; they
+answered 404 to a crawler before #10 as well.
+
+The stubs and the script are permanent. A search engine that re-crawls an old address finds the
+redirect and lists the new address instead, but the old addresses still matter after that.
+Papers, notebooks and other sites keep their links, and a search engine passes those links'
+weight on to the new pages only while the redirects stay: Google's guidance for a site move is to
+keep redirects as long as possible, and at least a year
+([Site moves and migrations][google-site-moves]). Removing them would break every link to the old
+addresses.
 
 The website has no checks on pull requests. It builds and deploys on each push to its `main`, so
 a mistake in the redirect goes live at the merge.
+
+[google-redirects]: https://developers.google.com/search/docs/crawling-indexing/301-redirects
+[google-javascript]: https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics
+[google-site-moves]: https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes
 
 ### What the website now relies on, for good
 
@@ -328,7 +345,7 @@ wants one should name `https://gplates.github.io/GPlates/pygplates/stable/`.
 
 New links are `gplates.github.io` ones: whoever copies a link copies it from the site they are
 reading. The repository's own links (the package metadata, `README.md`) name `stable/` directly,
-and the website's pull request points its current pages there too. A redirect is only for links
+and the website's current pages link there too. A redirect is only for links
 already published.
 
 ## How published pages may change
@@ -420,8 +437,9 @@ release workflow cannot build it; and the copy is exactly what 1.0's users have 
   works from page text and object names. `publish_docs.py` now refuses such a build.
 - It has no canonical URL (see above).
 - No workflow can rewrite it: the release workflow refuses a tag without `build_docs.py`.
-- Once the website deletes its copy, this is the only one being served, which is why the branch
-  is protected from deletion. The website repository's history still holds the tree.
+- Since the website deleted its copy (GPlates/new-gplates-website#10), this is the only one
+  being served, which is why the branch is protected from deletion. The website repository's
+  history still holds the tree.
 
 Copying such a tree has a trap on Windows. A checkout there converts every HTML file to CRLF line
 endings (`core.autocrlf` is on by default), and a `diff -r` between the copy and that same
