@@ -3,20 +3,21 @@
 Import geometries and assign plate IDs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example shows how to import points or polylines from a text file and assign plate IDs to them.
-The resulting feature data is then saved to a file format that pyGPlates can load directly.
+This example imports points or polylines from a text file, assigns plate IDs to them, and saves
+them as features in a file format that pyGPlates can load directly.
 
-.. note:: Importing features is different than :ref:`loading<pygplates_load_and_save_feature_collections>` features.
-   When feature data is not in a file format that pyGPlates can load then it needs to be imported into a
-   GPlates-compatible file format. This usually involves more than just importing the geometry data.
-   For example, plate IDs need to be assigned so that pyGPlates can reconstruct the feature data
-   to geological times. And other feature metadata such as :meth:`name<pygplates.Feature.set_name>` and
-   :meth:`description<pygplates.Feature.set_description>` should also be assigned.
+Importing features is different from :ref:`loading<pygplates_load_and_save_feature_collections>`
+them. Data that is not in a file format that pyGPlates can load has to be imported: read some other
+way, made into features, and saved in a format that pyGPlates (and GPlates) can load. That usually
+takes more than reading the geometries:
+
+- Each feature needs a plate ID, so that pyGPlates can reconstruct it to past geological times.
+- Other feature metadata, such as a :meth:`name<pygplates.Feature.set_name>` and a
+  :meth:`description<pygplates.Feature.set_description>`, should be set too.
+
+The first two examples import *points*, and the last two import *polylines*.
 
 .. seealso:: :ref:`pygplates_load_and_save_feature_collections`
-
-| The first two examples import *points*.
-| The second two examples import *polylines*.
 
 .. contents::
    :local:
@@ -29,15 +30,17 @@ Import *points* from a text file and assign plate IDs
 
 This example:
 
-- reads some point locations from a text file,
-- assigns a plate ID and valid time period to each point, and
-- writes the assigned points to a GPML file ready for use in `GPlates <http://www.gplates.org>`_.
+- reads point locations from a text file,
+- assigns a plate ID and a valid time period to each point, and
+- writes the points to a GPML file, ready for use in `GPlates <http://www.gplates.org>`_.
 
 Data files
 """"""""""
 
 ``rotations.rot``
-    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+    A rotation file, with rotations for the plate IDs of the static polygons. Nothing is rotated
+    here, since the points are partitioned at present day, but these are the plate IDs that the
+    points are given, and will later be reconstructed with.
 
 ``static_polygons.gpml``
     Static polygon features, each with a reconstruction plate ID and a valid time period, which are
@@ -60,7 +63,7 @@ Sample code
 Input
 """""
 
-An example input text file (in longitude/latitude order) looks like:
+An example input file, with the longitude and then the latitude of one point on each line:
 ::
 
   -79.747867      -1.444159
@@ -91,60 +94,72 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: load-rotations
 
-The points will be read from an input text file and written to an output GPML file.
+The points are read from a text file and written to a GPML file. The static polygons file is used
+to assign the plate IDs and valid time periods.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: filenames
 
-The input points file is opened and read line-by-line.
+The input file is opened and read line by line.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: read-lines
 
-| Each line contains a longitude string and a latitude string (GMT order).
-| We attempt to convert them to floating-point numbers.
-| If that fails then we catch the ``ValueError`` exception that Python raises and ignore that line in the file.
+Each line holds a longitude and then a latitude, which is the order that GMT uses. Both are
+converted to floating-point numbers. If either cannot be converted, Python raises ``ValueError``.
+The script catches it and ignores that line.
+
+pyGPlates takes the latitude first, so the script swaps the two when it creates each
+:class:`pygplates.PointOnSphere`.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: parse-lon-lat
 
-| An unclassified feature is created for each point we read from the input file.
-  Leaving the feature type empty in :meth:`pygplates.Feature()<pygplates.Feature.__init__>`
-  defaults to a feature type of ``pygplates.FeatureType.gpml_unclassified_feature``.
-| Ideally we should pick a specific feature type such as
-  `pygplates.FeatureType.gpml_hot_spot <http://www.gplates.org/docs/gpgim/#gpml:HotSpot>`_,
-  perhaps reading it from the input file (as an extra column).
-| And ideally we should also import extra metadata such as feature :meth:`name<pygplates.Feature.set_name>`
-  and :meth:`description<pygplates.Feature.set_description>`.
+A feature is created for each point. :meth:`pygplates.Feature()<pygplates.Feature.__init__>` with
+no feature type creates an *unclassified* feature
+(:attr:`pygplates.FeatureType.gpml_unclassified_feature`).
+
+A real import should do more than this. It should give each feature a specific feature type, such
+as `pygplates.FeatureType.gpml_hot_spot <http://www.gplates.org/docs/gpgim/#gpml:HotSpot>`_,
+perhaps reading it from an extra column of the input file. It should also set other metadata, such
+as the :meth:`name<pygplates.Feature.set_name>` and
+:meth:`description<pygplates.Feature.set_description>` of each feature.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: create-point-feature
 
-| The point geometry is set on the point feature using :meth:`pygplates.Feature.set_geometry`.
-| If we don't do this then the feature cannot be used in spatial calculations and
-  will not display on the globe in GPlates.
+:meth:`pygplates.Feature.set_geometry` sets the point as the geometry of its feature. A feature
+without a geometry cannot be used in spatial calculations, and GPlates does not display it on the
+globe.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: set-point-geometry
 
-| Each point feature is partitioned into one of the static polygons and assigned its
-  reconstruction plate ID and valid time period using :func:`pygplates.partition_into_plates`.
-| The static polygons have global coverage at present day (the default reconstruction time
-  for :func:`pygplates.partition_into_plates`) and should therefore partition all the input points.
-| We also explicitly specify the argument *properties_to_copy* to assign both the reconstruction plate
-  ID and valid time period (the default is just to assign the reconstruction plate ID).
-| This page calls the function :func:`pygplates.partition_into_plates`, rather than creating a
-  :class:`pygplates.PlatePartitioner`, because it partitions only once. The function creates a
-  partitioner, partitions the features with :meth:`pygplates.PlatePartitioner.partition_features`
-  and discards the partitioner. To partition more than one set of features with the same plates,
-  create a :class:`pygplates.PlatePartitioner` once and use it for each set
-  (:ref:`pygplates_calculate_velocities_in_dynamic_plates` creates one for each time).
+:func:`pygplates.partition_into_plates` partitions each point feature into the static polygon that
+contains it, and assigns the feature the reconstruction plate ID and valid time period of that
+polygon. It does not change the features it is given: it returns new ones.
+
+The static polygons are used at present day, which is the default reconstruction time of
+:func:`pygplates.partition_into_plates`. They cover the globe at present day, so they should
+partition all of the points. (A point outside every static polygon is still returned, but it is
+not assigned a plate ID.)
+
+By default only the reconstruction plate ID is assigned. The *properties_to_copy* argument is
+specified here so that the valid time period is assigned as well.
+
+This page calls the function :func:`pygplates.partition_into_plates`, rather than creating a
+:class:`pygplates.PlatePartitioner`, because it partitions only once. The function creates a
+partitioner, partitions the features with :meth:`pygplates.PlatePartitioner.partition_features`
+and discards the partitioner. To partition more than one set of features with the same plates,
+create a :class:`pygplates.PlatePartitioner` once and use it for each set, as
+:ref:`pygplates_partition_features_into_plates` does (it also partitions at a past time, and
+partitions polygons).
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: partition-into-plates
 
-Finally we put the list of assigned features into a :class:`pygplates.FeatureCollection` so that
-we can write them out to a file using :meth:`pygplates.FeatureCollection.write`.
+Finally the assigned features are put into a :class:`pygplates.FeatureCollection`, which writes
+them to the output file using :meth:`pygplates.FeatureCollection.write`.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_txt.py
    :fragment: write-output
@@ -154,14 +169,16 @@ we can write them out to a file using :meth:`pygplates.FeatureCollection.write`.
 Load *points* from a GMT file and assign plate IDs
 ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-This example is similiar to :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids` except it
-takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.
+This example does the same as :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids`,
+but lets pyGPlates load the points from a GMT file, instead of parsing a text file line by line.
 
 Data files
 """"""""""
 
 ``rotations.rot``
-    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+    A rotation file, with rotations for the plate IDs of the static polygons. Nothing is rotated
+    here, since the points are partitioned at present day, but these are the plate IDs that the
+    points are given, and will later be reconstructed with.
 
 ``static_polygons.gpml``
     Static polygon features, each with a reconstruction plate ID and a valid time period, which are
@@ -184,7 +201,8 @@ Sample code
 Input
 """""
 
-An example input text file (in longitude/latitude order) looks like:
+An example input file. It is the text file of the previous example (longitude then latitude on
+each line), with the filename extension ``.gmt``:
 ::
 
   -79.747867      -1.444159
@@ -210,21 +228,26 @@ An example input text file (in longitude/latitude order) looks like:
 Details
 """""""
 
-| Since `GPlates <http://www.gplates.org>`_ can directly load GMT ``'.gmt'`` files, an alternative is to
-  change the filename extension, of your text file, to ``'.gmt'``. The feature metadata will be missing
-  from your text file so only the geometry data will get loaded, but this achieves the same effect
-  as the above example.
-| As with the previous example, there can be more than two numbers per line, but only the first two
-  are used (as longitude and latitude) - note that if you were to load your ``'.gmt'`` file into GPlates
-  the extra data would cause it to give a warning about flattening 2.5D to 2D.
-| Note that, as with the previous example, the data should be in GMT (longitude/latitude) order.
+pyGPlates (like `GPlates <http://www.gplates.org>`_) can load a GMT file directly. So an
+alternative to parsing a text file of points is to change its filename extension to ``.gmt``, and
+load it into a :class:`pygplates.FeatureCollection`. Each point becomes an unclassified feature
+with that point as its geometry, which is what the previous example creates line by line. The file
+has no feature metadata, so only the geometries are loaded.
+
+As in the previous example, the points must be in GMT (longitude/latitude) order. A line can have
+more than two numbers, but only the first two are used, as the longitude and latitude. (If you
+load such a file into GPlates, the extra numbers make it warn that it flattened 2.5D geometry to
+2D.)
+
+Loading a ``.gmt`` file also writes a small file beside it, if it is not already there. Here it is
+``input_points.gmt.gplates.xml``. It records how attributes in the file map to feature properties.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_points_gmt.py
    :fragment: load-gmt
 
-The rest of the sample code is similar to :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids`.
-
-.. seealso:: :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids`
+The rest of the script is the same as in
+:ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids`: the features are partitioned
+into the static polygons, and written to a GPML file.
 
 
 .. _pygplates_import_polylines_from_a_text_file_and_assign_plate_ids:
@@ -232,14 +255,16 @@ The rest of the sample code is similar to :ref:`pygplates_import_points_from_a_t
 Import *polylines* from a text file and assign plate IDs
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-This example is similiar to :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids` except
-it imports *polylines* instead of *points*.
+This example is like :ref:`pygplates_import_points_from_a_text_file_and_assign_plate_ids`, but
+imports *polylines* instead of *points*.
 
 Data files
 """"""""""
 
 ``rotations.rot``
-    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+    A rotation file, with rotations for the plate IDs of the static polygons. Nothing is rotated
+    here, since the polylines are partitioned at present day, but these are the plate IDs that the
+    polylines are given, and will later be reconstructed with.
 
 ``static_polygons.gpml``
     Static polygon features, each with a reconstruction plate ID and a valid time period, which are
@@ -247,8 +272,9 @@ Data files
     every polyline is assigned a plate ID.
 
 ``input_polylines.txt``
-    A text file with one point per line, as longitude then latitude, with a line beginning with ``>`` separating one polyline from the next. The
-    format is shown under :ref:`Input<pygplates_import_polylines_txt_input>` below.
+    A text file with one point per line, as longitude then latitude, with a line beginning with
+    ``>`` separating one polyline from the next. The format is shown under
+    :ref:`Input<pygplates_import_polylines_txt_input>` below.
 
 Rotation files and static polygons are in the GPlates `sample data <https://www.gplates.org/download/>`_.
 
@@ -262,7 +288,8 @@ Sample code
 Input
 """""
 
-An example input text file (in longitude/latitude order) containing three polylines looks like:
+An example input file containing three polylines, with the longitude and then the latitude of one
+point on each line. The ``>`` symbol groups the points into polylines:
 ::
 
   >
@@ -288,8 +315,6 @@ An example input text file (in longitude/latitude order) containing three polyli
     -70.107565      -20.531859
     -70.059697      -22.248895
 
-.. note:: The ``>`` symbol is used to group points into polylines.
-
 Details
 """""""
 
@@ -298,81 +323,96 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: load-rotations
 
-The polylines will be read from an input text file and written to an output GPML file.
+The polylines are read from a text file and written to a GPML file. The static polygons file is
+used to assign the plate IDs and valid time periods.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: filenames
 
-The input polylines file is opened and read line-by-line.
+The input file is opened and read line by line.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: read-lines
 
-| If a line begins with a ``'>'`` character then it separates those points in lines before it
-  into one polyline and those points in lines after it into another polyline.
-| Here the points in prior lines are used to create a new polyline feature.
+A line that begins with ``>`` separates two polylines: the points on the lines before it belong to
+one polyline, and the points on the lines after it to the next. So when the script reaches such a
+line, it creates a polyline feature from the points it has read since the last one. It does this
+with its own function ``add_polyline_feature_from_points``, described below.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: polyline-separator
 
-| Each line contains a longitude string and a latitude string (GMT order).
-| We attempt to convert them to floating-point numbers.
-| If that fails then we catch the ``ValueError`` exception that Python raises and ignore that line in the file.
+Each other line holds a longitude and then a latitude, which is the order that GMT uses. Both are
+converted to floating-point numbers. If either cannot be converted, Python raises ``ValueError``.
+The script catches it and ignores that line.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: parse-lon-lat
 
-Keep track of the points for the current polyline so we can create the polyline once we've
-reached the last point (of the current polyline).
+Each point is added to the list of points of the current polyline, which is created once its last
+point has been read. pyGPlates takes the latitude first, so the script swaps the two when it
+creates each :class:`pygplates.PointOnSphere`.
+
+After the last line of the file, any points left in the list are made into the last polyline.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: append-polyline-point
 
-Then function ``add_polyline_feature_from_points`` creates a polyline feature from a list
-of points and adds it to a list of polyline features.
+The function ``add_polyline_feature_from_points`` creates a polyline feature from a list of points,
+and adds it to a list of polyline features. It then empties the list of points, ready for the next
+polyline.
 ::
 
     def add_polyline_feature_from_points(polyline_features, points, line_number):
         ...
 
-If there are at least two points (required for a polyline) then a :class:`pygplates.PolylineOnSphere`
-geometry is created from the points.
+A polyline needs at least two points. If there are that many, a
+:class:`pygplates.PolylineOnSphere` is created from them. A single point is ignored, with a
+warning.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: create-polyline
 
-| An unclassified feature is created for each polyline we read from the input file.
-  Leaving the feature type empty in :meth:`pygplates.Feature()<pygplates.Feature.__init__>`
-  defaults to a feature type of ``pygplates.FeatureType.gpml_unclassified_feature``.
-| Ideally we should pick a specific feature type such as
-  `pygplates.FeatureType.gpml_subduction_zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_.
-| And ideally we should also import extra metadata such as feature :meth:`name<pygplates.Feature.set_name>`
-  and :meth:`description<pygplates.Feature.set_description>`.
+A feature is created for each polyline. :meth:`pygplates.Feature()<pygplates.Feature.__init__>`
+with no feature type creates an *unclassified* feature
+(:attr:`pygplates.FeatureType.gpml_unclassified_feature`).
+
+A real import should do more than this. It should give each feature a specific feature type, such
+as `pygplates.FeatureType.gpml_subduction_zone <http://www.gplates.org/docs/gpgim/#gpml:SubductionZone>`_.
+It should also set other metadata, such as the :meth:`name<pygplates.Feature.set_name>` and
+:meth:`description<pygplates.Feature.set_description>` of each feature.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: create-polyline-feature
 
-| The polyline geometry is set on the polyline feature using :meth:`pygplates.Feature.set_geometry`.
-| If we don't do this then the feature cannot be used in spatial calculations and
-  will not display on the globe in GPlates.
+:meth:`pygplates.Feature.set_geometry` sets the polyline as the geometry of its feature. A feature
+without a geometry cannot be used in spatial calculations, and GPlates does not display it on the
+globe.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: set-polyline-geometry
 
-| Each polyline feature is partitioned into one or more of the static polygons and assigned their
-  reconstruction plate IDs and valid time periods using :func:`pygplates.partition_into_plates`.
-| Note that the default argument for the *partition_method* parameter is *pygplates.PartitionMethod.split_into_plates*
-  which results in two polylines being generated (returned) when one polyline intersects two static polygons (plates).
-| The static polygons have global coverage at present day (the default reconstruction time
-  for :func:`pygplates.partition_into_plates`) and should therefore partition all the input polylines.
-| We also explicitly specify the argument *properties_to_copy* to assign both the reconstruction plate
-  ID and valid time period (the default is just to assign the reconstruction plate ID).
+:func:`pygplates.partition_into_plates` partitions each polyline feature into the static polygons
+that it overlaps, and assigns their reconstruction plate IDs and valid time periods. It does not
+change the features it is given: it returns new ones.
+
+A polyline that crosses from one static polygon into another is split in two. This is the default
+*partition_method*, :class:`PartitionMethod.split_into_plates<pygplates.PartitionMethod>`. Each
+part is returned in a feature of its own, with the plate ID and valid time period of the static
+polygon that it is inside. So more features can be returned than were passed in.
+
+The static polygons are used at present day, which is the default reconstruction time of
+:func:`pygplates.partition_into_plates`. They cover the globe at present day, so they should
+partition all of the polylines.
+
+By default only the reconstruction plate ID is assigned. The *properties_to_copy* argument is
+specified here so that the valid time period is assigned as well.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: partition-into-plates
 
-Finally we put the list of assigned features into a :class:`pygplates.FeatureCollection` so that
-we can write them out to a file using :meth:`pygplates.FeatureCollection.write`.
+Finally the assigned features are put into a :class:`pygplates.FeatureCollection`, which writes
+them to the output file using :meth:`pygplates.FeatureCollection.write`.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_txt.py
    :fragment: write-output
@@ -382,14 +422,17 @@ we can write them out to a file using :meth:`pygplates.FeatureCollection.write`.
 Load *polylines* from a GMT file and assign plate IDs
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-This example is similiar to :ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids` except it
-takes advantage of the ability of pyGPlates to load a GMT file to avoid having to manually parse a text file line-by-line.
+This example does the same as
+:ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids`, but lets pyGPlates load
+the polylines from a GMT file, instead of parsing a text file line by line.
 
 Data files
 """"""""""
 
 ``rotations.rot``
-    A rotation file. It must contain rotations for the plate IDs of the static polygons.
+    A rotation file, with rotations for the plate IDs of the static polygons. Nothing is rotated
+    here, since the polylines are partitioned at present day, but these are the plate IDs that the
+    polylines are given, and will later be reconstructed with.
 
 ``static_polygons.gpml``
     Static polygon features, each with a reconstruction plate ID and a valid time period, which are
@@ -412,7 +455,8 @@ Sample code
 Input
 """""
 
-An example input text file (in longitude/latitude order) containing three polylines looks like:
+An example input file containing three polylines. It is the text file of the previous example,
+with the filename extension ``.gmt``. GMT uses the ``>`` symbol to group points into polylines:
 ::
 
   >
@@ -438,31 +482,35 @@ An example input text file (in longitude/latitude order) containing three polyli
     -70.107565      -20.531859
     -70.059697      -22.248895
 
-.. note:: The ``>`` symbol is used by GMT to group points into polylines.
-
 Details
 """""""
 
-| Since `GPlates <http://www.gplates.org>`_ can directly load GMT ``'.gmt'`` files, an alternative is to
-  change the filename extension, of your text file, to ``'.gmt'``. The feature metadata will be missing
-  from your text file so only the geometry data will get loaded, but this achieves the same effect
-  as the above example.
-| As with the previous example, there can be more than two numbers per line, but only the first two
-  are used (as longitude and latitude) - note that if you were to load your ``'.gmt'`` file into GPlates
-  the extra data would cause it to give a warning about flattening 2.5D to 2D.
-| Note that, as with the previous example, the data should be in GMT (longitude/latitude) order.
+pyGPlates (like `GPlates <http://www.gplates.org>`_) can load a GMT file directly. So an
+alternative to parsing a text file of polylines is to change its filename extension to ``.gmt``,
+and load it into a :class:`pygplates.FeatureCollection`. Each polyline becomes an unclassified
+feature with that polyline as its geometry, which is what the previous example creates line by
+line. The file has no feature metadata, so only the geometries are loaded.
+
+As in the previous example, the points must be in GMT (longitude/latitude) order. A line can have
+more than two numbers, but only the first two are used, as the longitude and latitude. (If you
+load such a file into GPlates, the extra numbers make it warn that it flattened 2.5D geometry to
+2D.)
+
+Loading a ``.gmt`` file also writes a small file beside it, if it is not already there. Here it is
+``input_polylines.gmt.gplates.xml``. It records how attributes in the file map to feature
+properties.
 
 .. sample-code:: pygplates_import_geometries_and_assign_plate_ids_polylines_gmt.py
    :fragment: load-gmt
 
-The rest of the sample code is similar to :ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids`.
-
-.. seealso:: :ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids`
+The rest of the script is the same as in
+:ref:`pygplates_import_polylines_from_a_text_file_and_assign_plate_ids`: the features are
+partitioned into the static polygons, and written to a GPML file.
 
 See also
 ++++++++
 
 - Reference: :func:`pygplates.partition_into_plates`, :class:`pygplates.PlatePartitioner`,
   :meth:`pygplates.Feature.set_geometry`, :class:`pygplates.FeatureCollection`, :meth:`pygplates.FeatureCollection.write`
-- Sample code: :ref:`pygplates_load_and_save_feature_collections`, :ref:`pygplates_create_common_feature_types`,
-  :ref:`pygplates_calculate_velocities_in_dynamic_plates`
+- Sample code: :ref:`pygplates_partition_features_into_plates`,
+  :ref:`pygplates_load_and_save_feature_collections`, :ref:`pygplates_create_common_feature_types`

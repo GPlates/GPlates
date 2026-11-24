@@ -61,7 +61,7 @@ for time in range(num_time_steps + 1):
             for shared_boundary_section in shared_boundary_sections:
 
                 # Skip sections that are not subduction zones.
-                # We're only interesting in closeness to subducting lines.
+                # We're only interested in closeness to subducting lines.
                 if shared_boundary_section.get_feature().get_feature_type() != pygplates.FeatureType.gpml_subduction_zone:
                     continue
 

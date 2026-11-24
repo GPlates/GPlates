@@ -16,6 +16,8 @@ This document contains sample code that shows pyGPlates solving common plate tec
 Each sample is a complete script that runs in a directory containing the data files it names
 (such as ``rotations.rot`` or ``topologies.gpml``). The GPlates
 `sample data <https://www.gplates.org/download/>`_ provides files of every kind the samples use.
+Where a sample has an *Output* section, it shows what the script printed for one particular model
+and version of pyGPlates, so running it on other data (the sample data included) gives other numbers.
 
 .. contents::
    :local:
@@ -34,6 +36,7 @@ and how to load and save collections of features from/to files.
    :maxdepth: 3
 
    sample-code/pygplates_import_geometries_and_assign_plate_ids
+   sample-code/pygplates_partition_features_into_plates
    sample-code/pygplates_load_and_save_feature_collections
 
 .. _create-query-features:
@@ -93,6 +96,8 @@ at past geological times, how to query their topologies, and how to track quanti
    sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths
    sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges
    sample-code/pygplates_detect_topology_gaps_and_overlaps
+   sample-code/pygplates_query_network_triangulation_and_rigid_blocks
+   sample-code/pygplates_reconstruct_points_step_by_step_through_topologies
    sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence
 
 .. _velocities:
@@ -101,30 +106,38 @@ Velocities, strain and net rotation
 -----------------------------------
 
 This section covers how to calculate velocities of features as they move through geological time,
-velocities of plates at non-moving point locations, strain and strain rate in deforming regions,
-and the net rotation of the lithosphere.
+velocities of plates at non-moving point locations, velocities of plate boundaries, strain and strain
+rate in deforming regions, and the net rotation of the lithosphere.
 
 .. toctree::
    :maxdepth: 3
 
    sample-code/pygplates_calculate_velocities_by_plate_id
    sample-code/pygplates_calculate_velocities_in_dynamic_plates
+   sample-code/pygplates_calculate_velocities_in_static_polygons
+   sample-code/pygplates_calculate_velocities_of_plate_boundaries
+   sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points
+   sample-code/pygplates_find_plates_and_strain_rates_at_static_points
    sample-code/pygplates_reconstruct_strain_and_strain_rate
    sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones
+   sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones
+   sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters
    sample-code/pygplates_calculate_net_rotation
+   sample-code/pygplates_calculate_net_rotation_from_point_samples
 
 .. _spatial-proximity:
 
 Spatial queries
 ---------------
 
-This section covers queries involving distances between geometries.
+This section covers queries involving distances between geometries, and the overlap of polygons.
 
 .. toctree::
    :maxdepth: 3
 
    sample-code/pygplates_find_nearest_feature_to_a_point
    sample-code/pygplates_find_features_overlapping_a_polygon
+   sample-code/pygplates_find_overlap_union_and_difference_of_polygons
    sample-code/pygplates_find_overriding_plate_of_closest_subducting_line
 
 .. seealso:: :ref:`pygplates_calculate_distance_a_feature_is_reconstructed`
@@ -139,3 +152,13 @@ This section covers some use cases specific to the isochron feature type.
 
    sample-code/pygplates_create_conjugate_isochrons_from_ridge
    sample-code/pygplates_split_isochron_into_ridges_and_transforms
+
+Parallel processing
+-------------------
+
+This section covers sharing work among several processes.
+
+.. toctree::
+   :maxdepth: 3
+
+   sample-code/pygplates_process_times_in_parallel_with_multiprocessing

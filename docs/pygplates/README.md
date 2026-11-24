@@ -87,7 +87,7 @@ publishing it. Three things can fail it:
 - **A Sphinx warning.** A docstring or page that makes Sphinx warn fails the build (`-W`).
 - **A lost anchor.** Links to some sections of the pyGPlates 1.0 documentation are published, so
   the build keeps their anchors: those of the old single-page Primer (`write_primer_anchors` in
-  `conf.py.in`) and fifteen section anchors on other pages (`check_old_anchors`). A rewrite that
+  `conf.py.in`) and seventeen section anchors on other pages (`check_old_anchors`). A rewrite that
   drops one gets a warning naming it. A local build checks this too.
 - **A dropped page.** Every page of the release series `stable` points at must still be built,
   since links to `stable/` follow it to the next release. To run the check on a local build,
@@ -370,10 +370,16 @@ the generator if it is cut from real data) rather than special-casing the test.
 
 The test lays two more directories over the shared fixtures. `fixtures/sample-code/` holds files for
 every sample that must differ from the unit tests' files of the same name: its `topologies.gpml` has
-a ridge that diverges and a trench that converges at every time the samples visit, where the unit
-tests' one has only unclassified sections on plates that do not move. `fixtures/sample-code/<script>/`
-holds files for one script, whose page reproduces its own input in full
-(`create_topological_features` shows its `features.gpml`).
+a ridge that diverges and a trench that converges at every time the samples visit, and a deforming
+network (with a rigid block in it) that overlays a plate and stretches from 30 Ma to present day,
+where the unit tests' one has only unclassified sections on plates that do not move. The comments
+in the generator say what a sample can rely on there. `fixtures/sample-code/<script>/`
+holds files for one script: one whose page reproduces its own input in full
+(`create_topological_features` shows its `features.gpml`), or one that needs what the other
+samples must not have (`calculate_velocities_of_plate_boundaries` has a `topologies.gpml` whose
+trench and ridge move, where the shared one keeps them still so that its plates stay closed for
+140 My; `clamp_and_smooth_strain_rates_and_set_rift_parameters_rift` has one that is a rift between
+two plates, with a deforming network on each side of its axis).
 
 To run a sample by hand, run it in a copy of the layered fixtures, not in `fixtures/` itself: the
 scripts write their output files into the working directory, and pyGPlates writes a

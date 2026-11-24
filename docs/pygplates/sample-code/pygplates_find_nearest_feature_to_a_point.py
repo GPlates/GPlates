@@ -23,6 +23,12 @@ point_longitude = 0
 point = pygplates.PointOnSphere(point_latitude, point_longitude)
 # [end: point]
 
+# [fragment: polygons-are-solid]
+# Whether polygons are filled, so that a point inside a polygon is at distance zero from it (True),
+# or are only their outlines, so that the distance is to the outline even from inside (False).
+polygons_are_solid = False
+# [end: polygons-are-solid]
+
 # [fragment: reconstruct]
 # Reconstruct the features to 10Ma.
 reconstruct_snapshot = pygplates.ReconstructSnapshot(features, rotation_model, reconstruction_time)
@@ -49,7 +55,8 @@ for feature, feature_reconstructed_geometries in reconstructed_features:
         # Get the minimum distance from point to the current reconstructed geometry.
         min_distance_to_feature = point.distance(
                 feature_reconstructed_geometry.get_reconstructed_geometry(),
-                min_distance_to_all_features)
+                min_distance_to_all_features,
+                other_geometry_is_solid=polygons_are_solid)
         # [end: distance]
 
         # [fragment: nearest-so-far]

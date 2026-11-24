@@ -1,3 +1,4 @@
+import sys
 import pygplates
 
 
@@ -6,12 +7,24 @@ import pygplates
 topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 # [end: create-topological-model]
 
-# The initial points that we will reconstruct (and deform) through the topological model.
-initial_points = [(-20, 130), (-30, 150), (10, 100), (40, -110)]
-
-# Our reconstruction will span from 250Ma to present day in 1 Myr intervals.
-initial_time = 250
+# Our reconstruction will span from 30Ma to present day in 1 Myr intervals.
+initial_time = 30
+# The time increment must divide 'initial_time' exactly ('reconstruct_geometry()' raises ValueError otherwise).
 time_increment = 1
+
+# [fragment: initial-points]
+# The initial points that we will reconstruct (and deform) through the topological model.
+# They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from latitude -60 to 60
+# (south to north): the first four that are in the deforming region of a network at the initial time.
+grid_points = [(latitude, longitude) for latitude in range(-60, 70, 10) for longitude in range(-180, 180, 10)]
+grid_point_locations = topological_model.topological_snapshot(initial_time).get_point_locations(grid_points)
+initial_points = [point for point, point_location in zip(grid_points, grid_point_locations)
+                  if point_location.located_in_resolved_network_deforming_region()][:4]
+
+# Stop if there are none: there are no deforming networks at the initial time, or they are too small for the grid.
+if not initial_points:
+    sys.exit(f'No grid point is in the deforming region of a network at {initial_time}Ma')
+# [end: initial-points]
 
 # [fragment: reconstruct-geometry]
 # Reconstruct the initial points through the topological model from initial time to present day.
@@ -27,6 +40,12 @@ for time in range(initial_time, -1, -time_increment):  # initial_time, initial_t
     # Reconstructed positions at the current 'time'.
     reconstructed_points = reconstructed_time_span.get_geometry_points(time)
     # [end: reconstructed-points]
+
+    # [fragment: no-active-points]
+    # If every point has been deactivated by the current 'time' then there are no positions (or anything else) to get.
+    if reconstructed_points is None:
+        continue
+    # [end: no-active-points]
 
     # [fragment: topology-point-locations]
     # The resolved topologies (rigid plates and deforming networks) in which the reconstructed positions are located at the current 'time'.
@@ -75,3 +94,10 @@ for time in range(initial_time, -1, -time_increment):  # initial_time, initial_t
         # A value of -1 represents contraction (eg, pure reverse faulting), 0 represents pure strike-slip faulting and 1 represents extension (eg, pure normal faulting).
         strain_rate_style = reconstructed_strain_rates[reconstructed_point_index].get_strain_rate_style()
         # [end: strain-rate-style]
+
+        # [fragment: print-values]
+        # Print the dilatation, dilatation rate, total strain rate and strain rate style of the current point.
+        print(f'Time {time}Ma, point {reconstructed_point_index}: dilatation {dilatation:.3f}, '
+              f'dilatation rate {dilatation_rate:.3e} 1/s, total strain rate {total_strain_rate:.3e} 1/s, '
+              f'strain rate style {strain_rate_style:.2f}')
+        # [end: print-values]

@@ -53,7 +53,7 @@ for time in range(num_time_steps + 1):
             total_subduction_zone_length += shared_sub_segments_length
 
     # [fragment: convert-to-kms]
-    # The lengths are for a unit-length sphere so we must multiple by the Earth's radius.
+    # The lengths are for a unit-radius sphere so we must multiply by the Earth's radius.
     total_ridge_length_in_kms = total_ridge_length * pygplates.Earth.mean_radius_in_kms
     total_subduction_zone_length_in_kms = total_subduction_zone_length * pygplates.Earth.mean_radius_in_kms
     # [end: convert-to-kms]

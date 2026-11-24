@@ -40,7 +40,8 @@ def run_sample(sample_path, fixtures_dir):
         # - 'fixtures/sample-code/', for every sample (eg, a 'topologies.gpml' with ridges and subduction
         #   zones, where the unit tests' one has only unclassified sections),
         # - 'fixtures/sample-code/<script>/', for a script whose page shows its own input (eg,
-        #   'create_topological_features' reproduces its 'features.gpml' in full).
+        #   'create_topological_features' reproduces its 'features.gpml' in full), or that needs a file
+        #   unlike the one the other samples share (eg, 'calculate_velocities_of_plate_boundaries').
         sample_code_fixtures_dir = os.path.join(fixtures_dir, 'sample-code')
         copy_files(fixtures_dir, working_dir)
         copy_files(sample_code_fixtures_dir, working_dir)

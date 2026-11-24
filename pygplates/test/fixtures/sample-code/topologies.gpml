@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0339" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0340" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-56c5059a-6392-461e-9382-eb3912394dd7</gpml:identity>
-            <gpml:revision>GPlates-c54cd94d-4574-422d-bb15-666d8bd0ced0</gpml:revision>
+            <gpml:identity>GPlates-488684a2-3612-4814-bf91-1e99c5de5104</gpml:identity>
+            <gpml:revision>GPlates-3670b94a-a16f-41cd-bf96-36c202ecb136</gpml:revision>
             <gml:name>leading edge of the model</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -28,36 +28,9 @@
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
-        <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-0810ae9c-c3b8-4281-8cfd-68c3d608ff77</gpml:identity>
-            <gpml:revision>GPlates-aaeba768-3544-4a7b-a970-bdce7d795ff5</gpml:revision>
-            <gml:name>leading edge of the deforming zone</gml:name>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>0</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
-            <gpml:unclassifiedGeometry>
-                <gpml:ConstantValue>
-                    <gpml:value>
-                        <gml:OrientableCurve gml:orientation="+">
-                            <gml:baseCurve>
-                                <gml:LineString>
-                                    <gml:posList gml:dimension="2">-16.789037694370428 141.57222623059826 -9.0151663603100065 145.48484530651109 -0.90817665982901341 148.53681127343592 7.4354722261318384 150.85257373597182 15.94229293588918 152.49653892065851 24.551749436736234 153.46862069791175 33.207152362597824 153.68662360526989 </gml:posList>
-                                </gml:LineString>
-                            </gml:baseCurve>
-                        </gml:OrientableCurve>
-                    </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:unclassifiedGeometry>
-        </gpml:UnclassifiedFeature>
-    </gml:featureMember>
-    <gml:featureMember>
         <gpml:SubductionZone>
-            <gpml:identity>GPlates-f718942d-092e-4491-b1b5-627618170a03</gpml:identity>
-            <gpml:revision>GPlates-95390280-1b76-4e16-8cfd-7d6295a5017a</gpml:revision>
+            <gpml:identity>GPlates-0c57e5ed-f5b7-4193-8ca4-f0645251047b</gpml:identity>
+            <gpml:revision>GPlates-7a6eb1ef-2ff7-41ec-a7e6-32468c17c89d</gpml:revision>
             <gml:name>trench</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -89,8 +62,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:MidOceanRidge>
-            <gpml:identity>GPlates-b2cc9c22-fb0d-4398-a3d3-8d45a4dcd6a7</gpml:identity>
-            <gpml:revision>GPlates-88feac75-e20c-45f7-b698-6c7d9974b818</gpml:revision>
+            <gpml:identity>GPlates-fcbb9bb8-e5c3-4e1b-9533-1111dc5a8121</gpml:identity>
+            <gpml:revision>GPlates-0142d1bb-adc6-41b1-a2f0-1f45875a0ed6</gpml:revision>
             <gml:name>East Pacific Rise</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -116,8 +89,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-5a49afe1-ed8f-463d-a17e-a864002c58cd</gpml:identity>
-            <gpml:revision>GPlates-52bf785f-9ba6-4e28-ac95-0d9590978878</gpml:revision>
+            <gpml:identity>GPlates-e658de8c-23f5-44e6-aa48-2e4d18eaf3d1</gpml:identity>
+            <gpml:revision>GPlates-b428e54c-fbca-437b-bb60-f9dfcf4335c3</gpml:revision>
             <gml:name>trailing edge of the model</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -143,60 +116,182 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:UnclassifiedFeature>
-            <gpml:identity>GPlates-7abbe8d2-2e84-4c3e-9796-c17d1ce3e853</gpml:identity>
-            <gpml:revision>GPlates-96b575ac-ac4c-4d5f-975e-b26c94d2eab6</gpml:revision>
-            <gml:name>deforming zone interior</gml:name>
+            <gpml:identity>GPlates-2667fd45-91c6-4a71-9e5d-af43629c186b</gpml:identity>
+            <gpml:revision>GPlates-17e61796-b7df-4484-88e5-52ba1b5a26c7</gpml:revision>
+            <gml:name>leading edge of the deforming zone (until 30.5 Ma)</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">30.5</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
-                    <gpml:value>608</gpml:value>
+                    <gpml:value>0</gpml:value>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
             <gpml:unclassifiedGeometry>
                 <gpml:ConstantValue>
                     <gpml:value>
-                        <gml:MultiPoint>
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-13.823209370194016 145.49633149838311</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-5.6947582934450942 148.99161636267456</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>2.7040105787163067 151.71097599797352</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>11.293797785433966 153.76085228569823</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>20.013715625538023 155.18611049258865</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>28.812391782451659 155.96328969901077</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-                        </gml:MultiPoint>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-24.097635743684961 136.6145736746721 -9.0151663603100065 145.48484530651109 7.4354722261318384 150.85257373597182 24.551749436736234 153.46862069791175 41.844544513279573 152.9410844402459 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
                     </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:MultiPoint</gpml:valueType>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-4936ea90-3e73-4624-a2f7-818a556e1d6e</gpml:identity>
+            <gpml:revision>GPlates-a83ec710-bd63-4920-aeea-3403c987ae1c</gpml:revision>
+            <gml:name>leading edge of the deforming zone (from 30.5 Ma)</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">30.5</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>201</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:geometryImportTime>
+                <gml:TimeInstant>
+                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">30.5</gml:timePosition>
+                </gml:TimeInstant>
+            </gpml:geometryImportTime>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-27.251349415923055 132.13410350241887 -11.735373647635157 140.2819835912845 4.992599604065183 144.71092604455689 22.230463437562605 146.20443067536195 39.448930408604738 144.25536913811374 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-53b6f006-021d-462e-aff4-258ce0417206</gpml:identity>
+            <gpml:revision>GPlates-c01a05ab-abba-476d-b13d-9fffce5f514b</gpml:revision>
+            <gml:name>rigid block in the deforming zone (until 30.5 Ma)</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">30.5</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>0</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Polygon>
+                            <gml:exterior>
+                                <gml:LinearRing>
+                                    <gml:posList gml:dimension="2">11.783087874404725 155.9389730161632 24.229328553346839 157.84649635291592 24.445603951510634 155.11290286885296 12.253013838611865 153.42849541765338 11.783087874404725 155.9389730161632 </gml:posList>
+                                </gml:LinearRing>
+                            </gml:exterior>
+                        </gml:Polygon>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-6efd7e37-9fc1-4f2b-b9ec-90eb62458a99</gpml:identity>
+            <gpml:revision>GPlates-3cc685d2-9731-4bdf-83ff-4d5b88aa76ea</gpml:revision>
+            <gml:name>rigid block in the deforming zone (from 30.5 Ma)</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">30.5</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>201</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:geometryImportTime>
+                <gml:TimeInstant>
+                    <gml:timePosition gml:frame="http://gplates.org/TRS/flat">30.5</gml:timePosition>
+                </gml:TimeInstant>
+            </gpml:geometryImportTime>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Polygon>
+                            <gml:exterior>
+                                <gml:LinearRing>
+                                    <gml:posList gml:dimension="2">9.6375276158474268 149.49076961158445 22.175442522929117 150.52451747869367 22.223194127558145 147.82482602733154 9.95381903181468 146.97415887359108 9.6375276158474268 149.49076961158445 </gml:posList>
+                                </gml:LinearRing>
+                            </gml:exterior>
+                        </gml:Polygon>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:unclassifiedGeometry>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>
         <gpml:Transform>
-            <gpml:identity>GPlates-14bdc1a0-6fd2-46da-a301-1f0590663cbb</gpml:identity>
-            <gpml:revision>GPlates-c0e797f2-0bcb-47dd-b1e2-e51f3848df3d</gpml:revision>
+            <gpml:identity>GPlates-9cac6086-8f8e-4409-9239-48da2b9eb695</gpml:identity>
+            <gpml:revision>GPlates-4a70f6e2-542e-4d88-8762-65918799b0f7</gpml:revision>
             <gml:name>Eurasia left edge</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -210,7 +305,7 @@
                         <gml:OrientableCurve gml:orientation="+">
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">-11.747871522873897 132.65698764986837 -16.789037694370428 141.57222623059826 </gml:posList>
+                                    <gml:posList gml:dimension="2">-11.747871522873897 132.65698764986837 -21.426991701176959 150.95285102147764 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -222,8 +317,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:Transform>
-            <gpml:identity>GPlates-cacdb2e0-0579-4258-a13e-65e9d783d401</gpml:identity>
-            <gpml:revision>GPlates-8fc7afdb-788e-4527-a0e4-9650e97097d2</gpml:revision>
+            <gpml:identity>GPlates-d7c5f41c-84ba-4eed-9af2-4650d1d6ddac</gpml:identity>
+            <gpml:revision>GPlates-32181431-3e8f-42b9-8f82-8a54ccf07b09</gpml:revision>
             <gml:name>Eurasia right edge</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -237,7 +332,7 @@
                         <gml:OrientableCurve gml:orientation="+">
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">32.434610718115657 141.81619611991059 33.207152362597824 153.68662360526989 </gml:posList>
+                                    <gml:posList gml:dimension="2">32.434610718115657 141.81619611991059 32.844303695560598 165.61233999017676 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -249,62 +344,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:Transform>
-            <gpml:identity>GPlates-f3862227-ae4b-4c2c-9369-0f26e979723d</gpml:identity>
-            <gpml:revision>GPlates-f6d13da6-30a2-4802-8392-b3178c1816c3</gpml:revision>
-            <gml:name>deforming zone left edge</gml:name>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>0</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
-            <gpml:centerLineOf>
-                <gpml:ConstantValue>
-                    <gpml:value>
-                        <gml:OrientableCurve gml:orientation="+">
-                            <gml:baseCurve>
-                                <gml:LineString>
-                                    <gml:posList gml:dimension="2">-16.789037694370428 141.57222623059826 -21.426991701176959 150.95285102147764 </gml:posList>
-                                </gml:LineString>
-                            </gml:baseCurve>
-                        </gml:OrientableCurve>
-                    </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:centerLineOf>
-        </gpml:Transform>
-    </gml:featureMember>
-    <gml:featureMember>
-        <gpml:Transform>
-            <gpml:identity>GPlates-f3fc1eb8-9985-4c5b-a508-a73ef65b8085</gpml:identity>
-            <gpml:revision>GPlates-1686ab93-2cb5-437d-84a4-4d31c9e4593b</gpml:revision>
-            <gml:name>deforming zone right edge</gml:name>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>0</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
-            <gpml:centerLineOf>
-                <gpml:ConstantValue>
-                    <gpml:value>
-                        <gml:OrientableCurve gml:orientation="+">
-                            <gml:baseCurve>
-                                <gml:LineString>
-                                    <gml:posList gml:dimension="2">33.207152362597824 153.68662360526989 32.844303695560598 165.61233999017676 </gml:posList>
-                                </gml:LineString>
-                            </gml:baseCurve>
-                        </gml:OrientableCurve>
-                    </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:centerLineOf>
-        </gpml:Transform>
-    </gml:featureMember>
-    <gml:featureMember>
-        <gpml:Transform>
-            <gpml:identity>GPlates-576b9496-e5c4-4eb8-916a-131e0e91e181</gpml:identity>
-            <gpml:revision>GPlates-70dd40e9-e6db-4b49-a7b4-c1c027460360</gpml:revision>
+            <gpml:identity>GPlates-9f971337-7e76-44e3-b708-fb42f3cc6940</gpml:identity>
+            <gpml:revision>GPlates-3548eb01-0848-4a57-a909-6a0ef81e11bc</gpml:revision>
             <gml:name>Pacific left edge</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -330,8 +371,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:Transform>
-            <gpml:identity>GPlates-a12675fb-5c05-47cf-8b35-6c2849686d73</gpml:identity>
-            <gpml:revision>GPlates-5db6c922-b269-4830-a770-b9c66c6c9266</gpml:revision>
+            <gpml:identity>GPlates-78902d3a-035d-48bb-aa3c-acbf34206201</gpml:identity>
+            <gpml:revision>GPlates-ecc5a6f7-cf44-4527-b6fa-b184f9f1a7bc</gpml:revision>
             <gml:name>Pacific right edge</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -357,8 +398,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:Transform>
-            <gpml:identity>GPlates-10a43623-6db4-46c8-b4fe-49f0b3fd55af</gpml:identity>
-            <gpml:revision>GPlates-4ea11f72-7d84-40c8-a399-85ff6881abf2</gpml:revision>
+            <gpml:identity>GPlates-63c33e7b-94a3-4442-ad50-61ef7ad1d21e</gpml:identity>
+            <gpml:revision>GPlates-f9b78c2d-05da-4ff9-985c-d819453d7be4</gpml:revision>
             <gml:name>Nazca left edge</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -384,8 +425,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:Transform>
-            <gpml:identity>GPlates-486130dd-cb0f-4143-a4a1-f8eb227ef054</gpml:identity>
-            <gpml:revision>GPlates-83eae4f1-8c74-40fe-a53e-d3c9585e63b3</gpml:revision>
+            <gpml:identity>GPlates-a508d7e9-5162-4c31-bb0a-49705c1715ef</gpml:identity>
+            <gpml:revision>GPlates-40605e6c-de91-4aa2-bd6b-721fe5f227b3</gpml:revision>
             <gml:name>Nazca right edge</gml:name>
             <gpml:reconstructionPlateId>
                 <gpml:ConstantValue>
@@ -411,8 +452,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:TopologicalClosedPlateBoundary>
-            <gpml:identity>GPlates-16596534-9d17-4764-89d8-6f2c119e3d2b</gpml:identity>
-            <gpml:revision>GPlates-33f1cd67-f0eb-4d08-a081-4c513c6d09bc</gpml:revision>
+            <gpml:identity>GPlates-a547d5e3-6a19-44c7-810d-b1b4d3a75094</gpml:identity>
+            <gpml:revision>GPlates-bd6613c9-a6de-49ef-89c6-bba8439b6e90</gpml:revision>
             <gml:name>Eurasia</gml:name>
             <gpml:boundary>
                 <gpml:ConstantValue>
@@ -424,7 +465,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-56c5059a-6392-461e-9382-eb3912394dd7</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-488684a2-3612-4814-bf91-1e99c5de5104</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -436,7 +477,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-cacdb2e0-0579-4258-a13e-65e9d783d401</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-d7c5f41c-84ba-4eed-9af2-4650d1d6ddac</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -448,8 +489,8 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-0810ae9c-c3b8-4281-8cfd-68c3d608ff77</gpml:targetFeature>
-                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
+                                                    <gpml:targetFeature>GPlates-0c57e5ed-f5b7-4193-8ca4-f0645251047b</gpml:targetFeature>
+                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
                                             </gpml:sourceGeometry>
@@ -460,7 +501,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-14bdc1a0-6fd2-46da-a301-1f0590663cbb</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-9cac6086-8f8e-4409-9239-48da2b9eb695</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -485,8 +526,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:TopologicalNetwork>
-            <gpml:identity>GPlates-ae3dc879-da4e-4a9c-be81-72dd33e6ee3e</gpml:identity>
-            <gpml:revision>GPlates-4103156b-eff9-42e7-b361-ff10405f5386</gpml:revision>
+            <gpml:identity>GPlates-5585ec4d-bc29-4cac-ab6b-76116a298788</gpml:identity>
+            <gpml:revision>GPlates-090d1634-06cf-4d65-9572-b465b83354ae</gpml:revision>
             <gml:name>deforming zone</gml:name>
             <gpml:network>
                 <gpml:ConstantValue>
@@ -498,7 +539,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-0810ae9c-c3b8-4281-8cfd-68c3d608ff77</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-2667fd45-91c6-4a71-9e5d-af43629c186b</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -510,7 +551,19 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-f3fc1eb8-9985-4c5b-a508-a73ef65b8085</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-4936ea90-3e73-4624-a2f7-818a556e1d6e</gpml:targetFeature>
+                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
+                                                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
+                                                </gpml:PropertyDelegate>
+                                            </gpml:sourceGeometry>
+                                            <gpml:reverseOrder>false</gpml:reverseOrder>
+                                        </gpml:TopologicalLineSection>
+                                    </gpml:section>
+                                    <gpml:section>
+                                        <gpml:TopologicalLineSection>
+                                            <gpml:sourceGeometry>
+                                                <gpml:PropertyDelegate>
+                                                    <gpml:targetFeature>GPlates-d7c5f41c-84ba-4eed-9af2-4650d1d6ddac</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -522,7 +575,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-f718942d-092e-4491-b1b5-627618170a03</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-0c57e5ed-f5b7-4193-8ca4-f0645251047b</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -534,7 +587,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-f3862227-ae4b-4c2c-9369-0f26e979723d</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-9cac6086-8f8e-4409-9239-48da2b9eb695</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -548,9 +601,20 @@
                                 <gpml:TopologicalNetworkInterior>
                                     <gpml:sourceGeometry>
                                         <gpml:PropertyDelegate>
-                                            <gpml:targetFeature>GPlates-7abbe8d2-2e84-4c3e-9796-c17d1ce3e853</gpml:targetFeature>
+                                            <gpml:targetFeature>GPlates-53b6f006-021d-462e-aff4-258ce0417206</gpml:targetFeature>
                                             <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
-                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:MultiPoint</gpml:valueType>
+                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LinearRing</gpml:valueType>
+                                        </gpml:PropertyDelegate>
+                                    </gpml:sourceGeometry>
+                                </gpml:TopologicalNetworkInterior>
+                            </gpml:interior>
+                            <gpml:interior>
+                                <gpml:TopologicalNetworkInterior>
+                                    <gpml:sourceGeometry>
+                                        <gpml:PropertyDelegate>
+                                            <gpml:targetFeature>GPlates-6efd7e37-9fc1-4f2b-b9ec-90eb62458a99</gpml:targetFeature>
+                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
+                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LinearRing</gpml:valueType>
                                         </gpml:PropertyDelegate>
                                     </gpml:sourceGeometry>
                                 </gpml:TopologicalNetworkInterior>
@@ -570,8 +634,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:TopologicalClosedPlateBoundary>
-            <gpml:identity>GPlates-04b3f0a7-b78b-4bbc-b2e1-b4496bde4d64</gpml:identity>
-            <gpml:revision>GPlates-3ea6f8b8-d4e2-4c37-8353-1aa41935ab9d</gpml:revision>
+            <gpml:identity>GPlates-5b5bba75-d6f7-4034-9d55-d5481dd2e05a</gpml:identity>
+            <gpml:revision>GPlates-7a3455a1-b631-4262-9f09-b175ee77f414</gpml:revision>
             <gml:name>Pacific</gml:name>
             <gpml:boundary>
                 <gpml:ConstantValue>
@@ -583,7 +647,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-f718942d-092e-4491-b1b5-627618170a03</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-0c57e5ed-f5b7-4193-8ca4-f0645251047b</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -595,7 +659,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-a12675fb-5c05-47cf-8b35-6c2849686d73</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-78902d3a-035d-48bb-aa3c-acbf34206201</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -607,7 +671,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-b2cc9c22-fb0d-4398-a3d3-8d45a4dcd6a7</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-fcbb9bb8-e5c3-4e1b-9533-1111dc5a8121</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -619,7 +683,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-576b9496-e5c4-4eb8-916a-131e0e91e181</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-9f971337-7e76-44e3-b708-fb42f3cc6940</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -644,8 +708,8 @@
     </gml:featureMember>
     <gml:featureMember>
         <gpml:TopologicalClosedPlateBoundary>
-            <gpml:identity>GPlates-32dcb7df-3bf6-4aa6-9cc1-1f81fc8b95c5</gpml:identity>
-            <gpml:revision>GPlates-9efca588-bc89-4f32-aaf5-7a4804d1795f</gpml:revision>
+            <gpml:identity>GPlates-51ba15b3-dcaf-411a-9730-095f81d6e2e7</gpml:identity>
+            <gpml:revision>GPlates-4593a42e-b914-4dc0-b425-2c21f9ef6e2f</gpml:revision>
             <gml:name>Nazca</gml:name>
             <gpml:boundary>
                 <gpml:ConstantValue>
@@ -657,7 +721,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-b2cc9c22-fb0d-4398-a3d3-8d45a4dcd6a7</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-fcbb9bb8-e5c3-4e1b-9533-1111dc5a8121</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -669,7 +733,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-486130dd-cb0f-4143-a4a1-f8eb227ef054</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-a508d7e9-5162-4c31-bb0a-49705c1715ef</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -681,7 +745,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-5a49afe1-ed8f-463d-a17e-a864002c58cd</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-e658de8c-23f5-44e6-aa48-2e4d18eaf3d1</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>
@@ -693,7 +757,7 @@
                                         <gpml:TopologicalLineSection>
                                             <gpml:sourceGeometry>
                                                 <gpml:PropertyDelegate>
-                                                    <gpml:targetFeature>GPlates-10a43623-6db4-46c8-b4fe-49f0b3fd55af</gpml:targetFeature>
+                                                    <gpml:targetFeature>GPlates-63c33e7b-94a3-4442-ad50-61ef7ad1d21e</gpml:targetFeature>
                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                 </gpml:PropertyDelegate>

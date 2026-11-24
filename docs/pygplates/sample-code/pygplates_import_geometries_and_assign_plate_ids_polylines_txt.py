@@ -1,7 +1,7 @@
 import pygplates
 
 
-# A function that create a polyline feature from some points and adds to a list of features.
+# A function that creates a polyline feature from some points and adds it to a list of features.
 def add_polyline_feature_from_points(polyline_features, points, line_number):
 
     # If have no points then nothing to do.
@@ -65,7 +65,7 @@ with open(input_polylines_filename, 'r') as input_polylines_file:
 
         # [fragment: polyline-separator]
         # See if line begins with '>'.
-        # This is was separates groups of points into polylines.
+        # This is what separates groups of points into polylines.
         if line.strip().startswith('>'):
 
             # Generate the previous polyline feature if we have two or more points.

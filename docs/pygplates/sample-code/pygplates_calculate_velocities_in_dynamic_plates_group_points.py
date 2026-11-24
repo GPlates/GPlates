@@ -2,15 +2,23 @@ import pygplates
 
 
 # [fragment: load-inputs]
-# Load one or more rotation files into a rotation model.
-rotation_model = pygplates.RotationModel('rotations.rot')
-
-# Load the topological plate polygon features.
-topology_features = pygplates.FeatureCollection('topologies.gpml')
+# Create a topological model from the topological plate polygon features (can also include deforming networks)
+# and rotation file(s).
+topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 
 # Load the features that contain the geometries we will calculate velocities at.
 # These can be generated in GPlates via the menu 'Features > Generate Velocity Domain Points'.
 velocity_domain_features = pygplates.FeatureCollection('lat_lon_velocity_domain_9_18.gpml')
+
+# The static points at which velocities are calculated.
+domain_points = []
+for velocity_domain_feature in velocity_domain_features:
+
+    # A velocity domain feature usually has a single geometry but we'll assume it can be any number.
+    # Iterate over them all.
+    for velocity_domain_geometry in velocity_domain_feature.get_geometries():
+
+        domain_points.extend(velocity_domain_geometry.get_points())
 
 # Calculate velocities using a delta time interval of 1My.
 delta_time = 1
@@ -24,70 +32,64 @@ for time in range(num_time_steps + 1):
 
     print(f'Time: {time}')
 
-    # All domain points and associated (magnitude, azimuth, inclination) velocities for the current time.
-    all_domain_points = {}
-    all_velocities = {}
+    # Get a snapshot of our resolved topologies at the current 'time'.
+    topological_snapshot = topological_model.topological_snapshot(time)
 
-    # [fragment: partition-features]
-    # Partition our velocity domain features into our topological plate polygons at the current 'time'.
-    # Note that we don't copy plate IDs - we rely on the returned partition grouping instead.
-    plate_partitioner = pygplates.PlatePartitioner(topology_features, rotation_model, time)
-    partitioned_domain_feature_groups, unpartitioned_domain_features = plate_partitioner.partition_features(
-        velocity_domain_features,
-        # We'll get plate ID directly from partitioning plate instead of assigned plate ID in partitioned feature...
-        properties_to_copy = [],
-        partition_return = pygplates.PartitionReturn.partitioned_groups_and_unpartitioned)
-    # [end: partition-features]
+    # [fragment: point-velocities]
+    # Calculate a velocity at each domain point, from 'time + delta_time' to 'time',
+    # and find the resolved plate (or deforming network) that contains each domain point.
+    domain_velocity_vectors, domain_point_locations = topological_snapshot.get_point_velocities(
+            domain_points,
+            velocity_delta_time=delta_time,
+            return_point_locations=True)
+    # [end: point-velocities]
 
-    # [fragment: iterate-groups]
-    for partitioning_plate, partitioned_domain_features in partitioned_domain_feature_groups:
-        # [end: iterate-groups]
+    # The domain points in each resolved plate (or deforming network), and their velocity vectors.
+    # Each is a dictionary mapping a resolved plate to a list.
+    points_in_plates = {}
+    velocity_vectors_in_plates = {}
 
-        # All domain points and associated velocities in the current partitioning plate.
-        all_domain_points_in_partitioning_plate = []
-        all_velocities_in_partitioning_plate = []
+    # [fragment: iterate-points]
+    for point_index, domain_point in enumerate(domain_points):
+        domain_velocity_vector = domain_velocity_vectors[point_index]
+        domain_point_location = domain_point_locations[point_index]
+        # [end: iterate-points]
 
-        # [fragment: partitioning-plate-id]
-        # We need the partitioning plate ID to get the equivalent stage rotation of that tectonic plate.
-        partitioning_plate_id = partitioning_plate.get_feature().get_reconstruction_plate_id()
-        # [end: partitioning-plate-id]
+        # [fragment: containing-plate]
+        # The resolved plate that contains the point or, if the point is in a deforming network, the resolved network.
+        containing_plate = (domain_point_location.located_in_resolved_boundary() or
+                            domain_point_location.located_in_resolved_network())
+        if not containing_plate:
+            # The point is outside all the resolved plates (and deforming networks), so it has no velocity.
+            continue
+        # [end: containing-plate]
 
-        # [fragment: equivalent-stage-rotation]
-        # Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.
-        equivalent_stage_rotation = rotation_model.get_rotation(time, partitioning_plate_id, time + delta_time)
-        # [end: equivalent-stage-rotation]
+        # [fragment: group-points]
+        # Add the point, and its velocity, to those of the plate that contains it.
+        if containing_plate not in points_in_plates:
+            points_in_plates[containing_plate] = []
+            velocity_vectors_in_plates[containing_plate] = []
+        points_in_plates[containing_plate].append(domain_point)
+        velocity_vectors_in_plates[containing_plate].append(domain_velocity_vector)
+        # [end: group-points]
 
-        # [fragment: partitioned-domain-points]
-        for partitioned_domain_feature in partitioned_domain_features:
+    # All (magnitude, azimuth, inclination) velocities for the current time, grouped by resolved plate.
+    velocities_in_plates = {}
 
-            # A velocity domain feature usually has a single geometry but we'll assume it can be any number.
-            # Iterate over them all.
-            for partitioned_domain_geometry in partitioned_domain_feature.get_geometries():
+    # [fragment: iterate-plates]
+    for containing_plate, points_in_plate in points_in_plates.items():
+        # [end: iterate-plates]
 
-                partitioned_domain_points = partitioned_domain_geometry.get_points()
-                # [end: partitioned-domain-points]
+        # [fragment: convert-velocities]
+        # Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).
+        velocities_in_plates[containing_plate] = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
+                points_in_plate,
+                velocity_vectors_in_plates[containing_plate])
+        # [end: convert-velocities]
 
-                # [fragment: calculate-velocities]
-                # Calculate velocities at the velocity domain geometry points.
-                # This is from 'time + delta_time' to 'time' on the partitioning plate.
-                partitioned_domain_velocity_vectors = pygplates.calculate_velocities(
-                    partitioned_domain_points,
-                    equivalent_stage_rotation,
-                    delta_time)
-
-                # Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).
-                partitioned_domain_velocities = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
-                        partitioned_domain_points,
-                        partitioned_domain_velocity_vectors)
-                # [end: calculate-velocities]
-
-                # [fragment: append-results]
-                # Append results for the current geometry to the final results.
-                all_domain_points_in_partitioning_plate.extend(partitioned_domain_points)
-                all_velocities_in_partitioning_plate.extend(partitioned_domain_velocities)
-                # [end: append-results]
-
-        # [fragment: store-results]
-        all_domain_points[partitioning_plate_id] = all_domain_points_in_partitioning_plate
-        all_velocities[partitioning_plate_id] = all_velocities_in_partitioning_plate
-        # [end: store-results]
+        # [fragment: plate-id]
+        # The plate ID (and name) of the plate come from its feature.
+        containing_plate_feature = containing_plate.get_feature()
+        print(f'  Plate {containing_plate_feature.get_reconstruction_plate_id()} '
+              f'({containing_plate_feature.get_name()}), number of points: {len(points_in_plate)}')
+        # [end: plate-id]

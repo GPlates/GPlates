@@ -62,7 +62,7 @@ for time in range(num_time_steps + 1):
 
     num_topologies = len(resolved_topologies)
 
-    # The area is for a unit-length sphere so we must multiple by the Earth's radius squared.
+    # The area is for a unit-radius sphere so we must multiply by the Earth's radius squared.
     average_area = total_area / num_topologies
     # [fragment: convert-to-sq-kms]
     average_area_in_sq_kms = average_area * pygplates.Earth.mean_radius_in_kms * pygplates.Earth.mean_radius_in_kms

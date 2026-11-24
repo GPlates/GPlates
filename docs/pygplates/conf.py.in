@@ -884,7 +884,10 @@ _OLD_PAGE_ANCHORS = {
                                  'file-i-o', 'string', 'feature-property-value'],
     'pygplates_sample_code.html': ['load-save', 'import', 'create-query-features',
                                    'reconstruct-features', 'topologies', 'velocities',
-                                   'spatial-proximity']}
+                                   'spatial-proximity'],
+    'sample-code/pygplates_calculate_velocities_in_dynamic_plates.html': [
+        'calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points',
+        'calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates']}
 
 def check_old_anchors(app, exception):
     """

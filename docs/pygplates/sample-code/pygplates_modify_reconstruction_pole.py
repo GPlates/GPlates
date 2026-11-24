@@ -88,7 +88,7 @@ if reconstructed_position != desired_reconstructed_position:
             # All time samples are disabled.
             continue
 
-        # Match sure the time span of the rotation feature's enabled samples spans the reconstruction time.
+        # Make sure the time span of the rotation feature's enabled samples includes the reconstruction time.
         if not (enabled_rotation_samples[0].get_time() <= reconstruction_time and
                 enabled_rotation_samples[-1].get_time() >= reconstruction_time):
             continue

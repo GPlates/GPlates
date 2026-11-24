@@ -3,12 +3,12 @@
 Plate circuits to anchored plate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example finds and prints the plate circuit paths from all plates in the
+This example prints the plate circuit path from each plate in the
 :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
-to the anchored plate (for a particular reconstruction time).
+to the anchor plate, at a reconstruction time.
 
-The output of this example is similar to the output of the ``Total Reconstruction Poles`` dialog
-(under the ``Plate Circuits to Anchored Plate`` tab) in `GPlates <http://www.gplates.org>`_.
+The output is similar to the ``Plate Circuits to Anchored Plate`` tab of the
+``Total Reconstruction Poles`` dialog in `GPlates <http://www.gplates.org>`_.
 
 .. seealso:: :ref:`pygplates_plate_rotation_hierarchy`
 
@@ -36,22 +36,24 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 .. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
    :fragment: load-rotations
 
-| The :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
-  is encapsulated in a :class:`reconstruction tree<pygplates.ReconstructionTree>` which we obtain
-  from the :class:`rotation model<pygplates.RotationModel>` using
-  :meth:`pygplates.RotationModel.get_reconstruction_tree` and the desired reconstruction time.
-| The hierarchy can change from one reconstruction time to the next depending on how the rotations
-  are arranged in the rotation file(s).
+The :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>` at a
+reconstruction time is held in a :class:`reconstruction tree<pygplates.ReconstructionTree>`.
+:meth:`pygplates.RotationModel.get_reconstruction_tree` returns the tree at the reconstruction
+time, here 60Ma.
+
+The hierarchy can differ from one reconstruction time to the next, depending on how the rotations
+are arranged in the rotation file.
 
 .. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
    :fragment: reconstruction-tree
 
-| An edge in a :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
-  represents the rotation of a moving plate relative to a fixed plate. These edges are arranged in
-  a tree-like structure (hierarchy) rooted at the anchor plate (usually plate ID zero).
-| We get all the edges in the reconstruction tree because all the plates in the reconstruction tree
-  (except the anchor plate) are in fact the moving plates of all the edges.
-| All the edges are obtained using :meth:`pygplates.ReconstructionTree.get_edges`.
+An :class:`edge<pygplates.ReconstructionTreeEdge>` of the reconstruction tree is the rotation of a
+moving plate relative to a fixed plate. The edges form a tree whose root is the anchor plate
+(plate ID zero, unless another is asked for).
+
+Every plate in the tree, except the anchor plate, is the moving plate of exactly one edge. So
+iterating over all the edges visits every plate. :meth:`pygplates.ReconstructionTree.get_edges`
+returns all the edges.
 
 ::
 
@@ -59,40 +61,47 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
     for edge in all_edges:
         ...
 
-Print the (moving) plate ID corresponding to the current edge before we print its plate circuit to the anchored plate.
+For each edge, the script first prints its moving plate ID. This is the plate whose plate circuit
+is printed next.
 
 .. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
    :fragment: print-plate-id
 
-Iterate over the edges in the plate circuit path between the current ``edge`` and the anchored plate.
+The plate circuit path is the sequence of edges from that plate up to the anchor plate. The script
+starts at the plate's own edge and follows the path one edge at a time.
+
 ::
 
     edge_in_circuit = edge
     while edge_in_circuit:
         ...
 
-| Get the :ref:`relative<pygplates_primer_relative_total_rotation>` and
-  :ref:`equivalent<pygplates_primer_equivalent_total_rotation>` total rotations of the current edge
-  in the plate circuit path using :meth:`pygplates.ReconstructionTreeEdge.get_relative_total_rotation`
-  and :meth:`pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation`.
-| The relative rotation is the total rotation of the edge's moving plate relative to its fixed plate.
-| The equivalent total rotation is the total rotation of the edge's moving plate relative to anchored plate.
-| A *total* rotation means a rotation at the reconstruction time relative to *present day* (0Ma).
-| The pole and angle of each rotation is obtained using
-  :meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees`.
+For each edge in the path, the script gets the :ref:`relative<pygplates_primer_relative_total_rotation>`
+and :ref:`equivalent<pygplates_primer_equivalent_total_rotation>` total rotations of the edge, with
+:meth:`pygplates.ReconstructionTreeEdge.get_relative_total_rotation` and
+:meth:`pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation`:
+
+- The relative total rotation is the rotation of the moving plate of the edge relative to its fixed plate.
+- The equivalent total rotation is the rotation of the moving plate of the edge relative to the anchor plate.
+
+A *total* rotation is a rotation from present day (0Ma) to the reconstruction time.
+
+:meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees` returns the pole and
+angle of each rotation.
 
 .. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
    :fragment: relative-and-equivalent-rotations
 
-Print the relative and equivalent total rotations of the moving plate of the current edge in the plate circuit path.
+The script then prints the moving and fixed plate IDs of that edge, and its two rotations.
 
 .. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
    :fragment: print-rotations
 
-| Follow the plate circuit one step closer to the anchored plate using
-  :meth:`pygplates.ReconstructionTreeEdge.get_parent_edge`.
-| The ``while`` loop stops when an edge has no parent edge. This means we've reached an anchored plate edge
-  (an edge whose fixed plate is the anchored plate).
+:meth:`pygplates.ReconstructionTreeEdge.get_parent_edge` returns the next edge in the path, which
+is one step closer to the anchor plate.
+
+An anchor plate edge (an edge whose fixed plate is the anchor plate) has no parent edge, so
+``get_parent_edge()`` returns ``None`` and the ``while`` loop stops.
 
 .. sample-code:: pygplates_plate_circuits_to_anchored_plate.py
    :fragment: parent-edge
@@ -156,9 +165,10 @@ Output
   
   ...
 
-...where ``lat: 90.000000, lon: 0.000000:, angle:0.000000`` is the default representation that
-:meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees` returns for an
-:meth:`identity rotation<pygplates.FiniteRotation.represents_identity_rotation>` (zero rotation angle).
+Here ``lat: 90.000000, lon: 0.000000:, angle:0.000000`` is what
+:meth:`pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees` returns, by default, for
+an :meth:`identity rotation<pygplates.FiniteRotation.represents_identity_rotation>`: the north
+pole and an angle of zero. An identity rotation has no pole of its own, since it does not rotate.
 
 See also
 """"""""

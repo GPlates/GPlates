@@ -3,15 +3,13 @@
 Find divergence at subduction zones and convergence at ridges
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example finds points on plate boundaries:
+This example finds points on plate boundaries, over a series of geological times:
 
-- where there's *convergence* along boundary sections labelled as *mid-ocean ridges*, and
-- where there's *divergence* along boundary sections labelled as *subduction zones*
+- where the plates *converge* along boundary sections labelled as *mid-ocean ridges*, and
+- where the plates *diverge* along boundary sections labelled as *subduction zones*.
 
-...over a series of geological times.
-
-This is useful to locate regions along *mid-ocean ridges* that are **not** diverging as expected.
-Or regions along *subduction zones* that are **not** converging as expected.
+This is useful for locating the parts of mid-ocean ridges that are **not** diverging as expected,
+and the parts of subduction zones that are **not** converging as expected.
 
 .. contents::
    :local:
@@ -21,9 +19,10 @@ Data files
 """"""""""
 
 ``topologies.gpml``
-    Topological plate polygon and/or deforming network features. Mid-ocean ridges and subduction
-    zones are recognised by the feature type (``gpml_mid_ocean_ridge`` or ``gpml_subduction_zone``)
-    of the boundary section features.
+    Topological plate polygon and/or deforming network features, and the boundary section features
+    that they reference. Mid-ocean ridges and subduction zones are recognised by the feature type
+    (:attr:`pygplates.FeatureType.gpml_mid_ocean_ridge` or
+    :attr:`pygplates.FeatureType.gpml_subduction_zone`) of the boundary section features.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological features.
@@ -38,91 +37,101 @@ Sample code
 Details
 """""""
 
-| First create a :class:`topological model<pygplates.TopologicalModel>` from topological features and rotation files.
-| The topological features can be plate polygons and/or deforming networks.
-| More than one file containing topological features can be specified here, however we're only specifying one file.
-| Also note that more than one rotation file (or even a single :class:`pygplates.RotationModel`) can be specified here,
-  however we're only specifying a single rotation file.
+A :class:`topological model<pygplates.TopologicalModel>` is created from the topological features
+and the rotation file. The topological features can be plate polygons, deforming networks or both.
+
+Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a :class:`pygplates.RotationModel` can be given in place of the rotation files.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: create-topological-model
 
-.. note:: We create our :class:`pygplates.TopologicalModel` **outside** the time loop since that does not require ``time``.
+.. note:: The :class:`pygplates.TopologicalModel` is created **outside** the time loop, since it does not depend on ``time``.
 
-| Get a snapshot of our resolved topologies.
-| Here the topological features are resolved to the current ``time``
-  using :func:`pygplates.TopologicalModel.topological_snapshot`.
+:meth:`pygplates.TopologicalModel.topological_snapshot` resolves the topological features at the
+current ``time``, and returns the result as a :class:`pygplates.TopologicalSnapshot`.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: topological-snapshot
 
-| Next we define a function to calculate plate boundary statistics.
-| We use a function so that we don't have to write very similar code twice.
-  Once for diverging regions and again for converging regions.
-| The function accepts an argument that determines the type of boundary to look at
-  (for example, mid-ocean ridges or subduction zones).
-  The second function argument is a divergence/convergence velocity threshold.
-  And a third function argument is whether to detect converging points (or diverging points).
+Next a function is defined that finds the converging, or the diverging, points along one type of
+plate boundary. It is a function so that very similar code is not written twice: once for
+converging points and once for diverging points.
+
+The function has three arguments:
+
+- the feature type of the boundary sections to look at (mid-ocean ridges or subduction zones, for example),
+- a velocity threshold, which the plates must converge or diverge faster than, and
+- whether to find converging points (``True``) or diverging points (``False``).
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: define-function
 
-| Within this function we first :meth:`calculate boundary statistics <pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics>`
-  along the requested boundary type. Only boundaries of the requested :class:`feature type <pygplates.FeatureType>` are looked at.
-| Also the sample points are spaced 1 degree apart along the plate boundaries.
-  And velocities are calculated in cms/yr.
+The function first calls :meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics`.
+It generates points along the plate boundaries, and returns a
+:class:`pygplates.PlateBoundaryStatistic` for each point.
+
+Here the points are spaced 1 degree apart, and velocities are in centimetres per year. With
+*boundary_section_filter* set to a :class:`feature type<pygplates.FeatureType>`, there are only
+points along the boundary sections of that feature type.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: plate-boundary-statistics
 
-| Next we iterate over the :class:`pygplates.PlateBoundaryStatistic`'s of the sampled points along the plate boundaries to
-  collect their point locations and associated convergence velocities.
+The function then iterates over the statistics, to collect the locations and convergence
+velocities of the points it is looking for.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: iterate-statistics
 
-| At some sample locations along the plate boundaries there might not be a plate (or network) on one side of the boundary.
-  This can happen when the topological model does not have global coverage or if there are inadvertent cracks/gaps between plates.
-  In this case the convergence velocity will be ``float('nan')``, and we ignore these sample locations.
+At some points there might be no plate (or network) on one side of the boundary. This happens
+where the topological model does not cover the whole globe, or where there is an unintended gap
+between plates. The convergence velocity is then ``float('nan')``, and the point is skipped.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: skip-nan
 
-| Next we detect if the convergence velocity is above the threshold (if we're looking for converging locations) or
-  below minus the threshold, that is, diverging faster than the threshold (if we're looking for diverging locations).
-  If found then these points and associated convergence velocities are added to the output.
-| Note that ``stat.convergence_velocity_signed_magnitude`` is a *signed* magnitude, and so it's positive if the plates
-  are converging and negative if they’re diverging.
+``stat.convergence_velocity_signed_magnitude`` is a *signed* magnitude. It is positive where the
+plates are converging and negative where they are diverging.
+
+So a converging point is one where it is greater than the threshold. And a diverging point is
+one where it is less than minus the threshold (the plates are diverging faster than the
+threshold). The location and convergence velocity of each such point are added to two lists.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: test-threshold
 
-| Then we create a :class:`feature <pygplates.Feature>` containing the output points and their convergence velocities.
-| Note that each feature only exists at the current ``time``. This makes it easier when visualising over a range of times in GPlates.
-| We also :meth:`set the geometry <pygplates.Feature.set_geometry>` as a coverage geometry (ie, a multipoint and scalar values).
-  This causes the convergence velocity scalar values to show up in GPlates as a separate layer.
+If any points were found, a :class:`feature<pygplates.Feature>` is created to hold them and their
+convergence velocities.
+
+The feature is given a valid time that extends half a million years either side of the current
+``time``. So when the features of all the times are loaded into GPlates, each one is only visible
+at its own time.
+
+Its :meth:`geometry is set<pygplates.Feature.set_geometry>` as a coverage: a multipoint, and a
+scalar value at each of its points. GPlates displays the scalar values, here the convergence
+velocities, in a separate layer.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: create-points-feature
 
-| So that ends the definition of our function called ``calculate_converging_or_diverging_points``.
-| Next we call that function twice.
-  Once to find converging points along mid-ocean ridges.
-  And again to find diverging points along subduction zones.
+That is the end of the function ``calculate_converging_or_diverging_points``. It is called twice at
+each time: once to find the converging points along mid-ocean ridges, and once to find the
+diverging points along subduction zones.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: call-function
 
-| Finally we write the output points to two separate files.
-  The first file contains all points at all times along mid-ocean ridges that are converging.
-  And the second file contains all points at all times along subduction zones that are diverging.
+Finally the features are written to two files. The first file has the points along mid-ocean
+ridges that are converging, at all times. The second file has the points along subduction zones
+that are diverging, at all times.
 
 .. sample-code:: pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.py
    :fragment: write-output
 
-| We can now load these two files into GPlates (along with the topological model used to generate them) and
-  see what parts of mid-ocean ridges are unexpectedly converging and what parts of subduction zones are
-  unexpectedly diverging.
+The two files can now be loaded into GPlates, along with the topological model they were generated
+from. This shows which parts of mid-ocean ridges are unexpectedly converging, and which parts of
+subduction zones are unexpectedly diverging.
 
 See also
 """"""""
@@ -131,4 +140,4 @@ See also
 - Reference: :meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics`, :class:`pygplates.PlateBoundaryStatistic`,
   :meth:`pygplates.Feature.set_geometry`
 - Sample code: :ref:`pygplates_sample_intra-plate_strain_rates_at_subduction_zones`,
-  :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`
+  :ref:`pygplates_find_total_ridge_and_subduction_zone_lengths`, :ref:`pygplates_find_distance_and_strain_rate_along_subduction_zones`
