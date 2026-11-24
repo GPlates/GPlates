@@ -7,6 +7,33 @@ import pygplates
 topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 # [end: create-topological-model]
 
+
+# [fragment: is-side-covered]
+# A point-in-polygon test counts a point within about 9 metres (1.4e-6 radians) of a polygon's outline as
+# being on the outline, and so inside the polygon. So a test point beside a network's edge must be further
+# away than that, or it would be found inside the network itself, and no gap beside a network would ever be
+# found. The test point is 10 times that distance (about 90 metres) off the sub-segment.
+TEST_POINT_DISTANCE_RADIANS = 10 * 1.4e-6
+
+def is_side_covered(topological_snapshot, shared_sub_segment, side):
+    """Whether a resolved plate or network contains a point just off one side ('left' or 'right') of a shared sub-segment."""
+
+    # Use the middle of the sub-segment's longest arc (an arc of zero length has no direction).
+    arcs = shared_sub_segment.get_resolved_geometry().get_segments()
+    arc = max(arcs, key=lambda arc: arc.get_arc_length())
+    if arc.is_zero_length():
+        return True  # Too short to test, so don't report it.
+
+    # An arc's great circle normal points to its left (when following the sub-segment's vertices).
+    distance = TEST_POINT_DISTANCE_RADIANS if side == 'left' else -TEST_POINT_DISTANCE_RADIANS
+    test_vector = pygplates.Vector3D(*arc.get_arc_point(0.5).to_xyz()) + arc.get_great_circle_normal() * distance
+    test_point = pygplates.PointOnSphere(*test_vector.to_xyz(), normalise=True)
+
+    # Is the test point inside any resolved plate or network (whether or not it shares the sub-segment)?
+    test_point_location = topological_snapshot.get_point_locations([test_point])[0]
+    return not test_point_location.not_located_in_resolved_topology()
+# [end: is-side-covered]
+
 # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
 num_time_steps = 140
 
@@ -65,12 +92,14 @@ for time in range(num_time_steps + 1):
             # [end: overlap]
 
             # [fragment: gap]
-            # A side of the sub-segment with neither a plate nor a network is a gap.
-            # But only if the sub-segment is part of a plate boundary. A sub-segment shared only by networks
-            # can cross the interior of a plate, and that plate (which does not share the sub-segment) is not counted.
+            # A side of the sub-segment that no plate or network shares is a gap. Except where only networks share
+            # the sub-segment: then that side can be the interior of a plate (that a network overlays), so test it.
             is_plate_boundary = num_plates['left'] + num_plates['right'] > 0
-            is_gap = is_plate_boundary and (num_plates['left'] + num_networks['left'] == 0 or
-                                            num_plates['right'] + num_networks['right'] == 0)
+            is_gap = False
+            for side in ('left', 'right'):
+                if num_plates[side] + num_networks[side] == 0:
+                    if is_plate_boundary or not is_side_covered(topological_snapshot, shared_sub_segment, side):
+                        is_gap = True
             # [end: gap]
 
             # [fragment: record-anomalous-feature]

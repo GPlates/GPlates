@@ -114,21 +114,44 @@ There is an overlap if either side of the sub-segment has more than one plate, o
 .. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
    :fragment: overlap
 
-There is a gap if either side of the sub-segment has neither a plate nor a network.
+There is a gap if a side of the sub-segment has neither a plate nor a network on it.
 
-This is tested only for a sub-segment that at least one plate shares. A sub-segment shared only by
-networks is not tested for a gap, because the lists cannot tell whether it has one beside it.
+For a sub-segment that a plate shares, the lists answer that. Plates (and the networks between them)
+cover the globe, so a side with nothing on it is a gap.
 
-Where a network overlays a plate, the parts of the network's boundary that cross the plate's
-interior have the network on one side only, with the plate lying beneath on both sides. But the
-plate does not share those sub-segments (they are not part of its boundary), so it is not in the
-lists. (:meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics` also leaves out
-such sub-segments by default, since they are not necessarily plate boundaries.)
+A sub-segment shared only by networks is different, because models use deforming networks in two
+ways:
 
-This means a gap beside a network is only found where the network's boundary is also the boundary of a plate.
+- In most recent models, networks *overlay* plates. The parts of a network's boundary that cross a
+  plate's interior have the network on one side only, with the plate lying beneath on both sides.
+  But the plate doesn't share those sub-segments (they aren't part of its boundary), so it isn't in
+  the lists, and the other side looks empty when it isn't.
+- In older models, networks *abut* plates (and each other, such as two rift networks along a rift
+  axis), and no plate lies beneath them. There a side with nothing on it is a gap.
+
+The lists (which hold only the topologies that share a sub-segment) can't tell the two apart. So for
+a side of such a sub-segment with nothing on it, the script tests a point just off that side, and
+reports a gap only if no plate or network contains it.
+:meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics` does the same, when it
+finds nothing sharing a side of a sub-segment.
 
 .. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
    :fragment: gap
+
+The test point is in the middle of the sub-segment's longest arc, moved off it along the arc's
+great circle normal, which points to the left of the arc.
+
+How far matters. A point-in-polygon test counts a point within about 9 metres (1.4e-6 radians) of
+a polygon's outline as being on it, and so inside. So a test point closer than that to a network's
+edge would be found inside the network itself, and a gap beside a network would never be found.
+The script uses 10 times that distance (about 90 metres), as the plate boundary statistics do.
+Don't make it smaller.
+
+:meth:`pygplates.TopologicalSnapshot.get_point_locations` searches every resolved plate and
+network, whether or not it shares the sub-segment.
+
+.. sample-code:: pygplates_detect_topology_gaps_and_overlaps.py
+   :fragment: is-side-covered
 
 If a gap or an overlap was found, the script records the sub-segment's feature, with a description
 saying which was found (it can be both).
