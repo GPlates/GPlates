@@ -20,8 +20,11 @@ Data files
 """"""""""
 
 ``topologies.gpml``
-    Topological plate polygon and deforming network features. Strain only accumulates, and the strain
-    rate is only non-zero, while a point is inside a deforming network.
+    Topological plate polygon and deforming network features. There must be networks at 30Ma,
+    since the initial points are chosen from them. Leave out inactive networks, such as those in
+    ``Zahirovic_etal_2022_Deforming_Networks_Inactive.gpml`` in the GPlates sample data, so that
+    the points are chosen from networks that are deforming. Strain only accumulates, and
+    the strain rate is only non-zero, while a point is inside a deforming network.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological features.
@@ -44,6 +47,25 @@ given, and a :class:`pygplates.RotationModel` can be given in place of the rotat
 
 .. sample-code:: pygplates_reconstruct_strain_and_strain_rate.py
    :fragment: create-topological-model
+
+The initial points are chosen from the networks, rather than written into the script, so that the
+example works with any topological features that have deforming networks at the initial time, 30Ma.
+
+They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from
+latitude -60 to 60. It stops at 60 degrees because, in the GPlates sample data, the grid points
+nearer the poles happen to fall where the networks barely deform at 30Ma, so they would make poor
+examples. The grid is scanned from south to north, and the first points found are used. In the
+GPlates sample data, three of the first four points found from north to south barely deform.
+
+:meth:`pygplates.TopologicalModel.topological_snapshot` resolves the topologies at the initial
+time, and :meth:`pygplates.TopologicalSnapshot.get_point_locations` returns the
+:class:`location<pygplates.TopologyPointLocation>` of each grid point in them. The first four
+points that :meth:`pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region`
+places in the deforming region of a network are kept. If there are none, the script stops with an
+error message that says so.
+
+.. sample-code:: pygplates_reconstruct_strain_and_strain_rate.py
+   :fragment: initial-points
 
 :meth:`pygplates.TopologicalModel.reconstruct_geometry` reconstructs (and deforms) the
 ``initial_points`` from their positions at ``initial_time`` to present day, in 1 Myr intervals.

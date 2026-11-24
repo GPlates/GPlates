@@ -1,3 +1,4 @@
+import sys
 import pygplates
 
 
@@ -9,16 +10,33 @@ topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot
 time = 10
 topological_snapshot = topological_model.topological_snapshot(time)
 
-# The points to locate. Each is the (latitude, longitude) of a point at 10Ma.
-points = [(0, 152), (15, 157), (20, 151), (5, 170)]
+# The points to locate are chosen from a coarse grid of points, 10 degrees apart,
+# from latitude 60 to -60 (north to south).
+# Each is the (latitude, longitude) of a point at 10Ma.
+grid_points = [(latitude, longitude) for latitude in range(60, -70, -10) for longitude in range(-180, 180, 10)]
 # [end: load-inputs]
 
 # [fragment: point-locations]
 # Find the resolved plate (or deforming network) that contains each point.
-point_locations = topological_snapshot.get_point_locations(points)
+grid_point_locations = topological_snapshot.get_point_locations(grid_points)
 # [end: point-locations]
 
-for point, point_location in zip(points, point_locations):
+# [fragment: deforming-points]
+# Keep the points in the deforming region of a network, each with its location,
+# and take the first four of them, so that the output stays short.
+points_and_locations = [(point, point_location) for point, point_location in zip(grid_points, grid_point_locations)
+                        if point_location.located_in_resolved_network_deforming_region()][:4]
+
+# Stop if there are none: there are no deforming networks at 10Ma, or they are too small for the grid.
+if not points_and_locations:
+    sys.exit(f'No grid point is in the deforming region of a network at {time}Ma')
+
+# Also take the first point in a rigid block of a network, if there is one.
+points_and_locations += [(point, point_location) for point, point_location in zip(grid_points, grid_point_locations)
+                         if point_location.located_in_resolved_network_rigid_block()][:1]
+# [end: deforming-points]
+
+for point, point_location in points_and_locations:
 
     # [fragment: rigid-block]
     # See if the point is in an interior rigid block of a deforming network.
@@ -31,14 +49,10 @@ for point, point_location in zip(points, point_locations):
     # [end: rigid-block]
 
     # [fragment: network-triangle]
-    # See if the point is in the deforming region of a deforming network.
-    # If it is then also get the triangle, of the network's triangulation, that contains the point.
-    network_and_triangle = point_location.located_in_resolved_network_deforming_region(
+    # Otherwise the point is in the deforming region of a network, since the points were chosen that way.
+    # Get the network, and the triangle (of the network's triangulation) that contains the point.
+    resolved_network, triangle = point_location.located_in_resolved_network_deforming_region(
             return_network_triangle=True)
-    if not network_and_triangle:
-        print(f'{point} is not in a deforming network')
-        continue
-    resolved_network, triangle = network_and_triangle
     # [end: network-triangle]
 
     # [fragment: triangle-vertices]

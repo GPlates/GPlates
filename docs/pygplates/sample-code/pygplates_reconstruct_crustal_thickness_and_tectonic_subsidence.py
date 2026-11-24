@@ -1,19 +1,31 @@
+import sys
 import pygplates
 
 
 # [fragment: create-topological-model]
-# Create a topological model from our topological features (can be plate polygons and/or deforming networks)
+# Create a topological model from our topological features (plate polygons and deforming networks)
 # and rotation file(s).
 topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 # [end: create-topological-model]
 
-# The initial points that we will reconstruct (and deform) through the topological model.
-# Each is the (latitude, longitude) of a point at the initial time.
-initial_points = [(0, 155), (15, 160), (20, 155), (5, 170)]
-
-# Our reconstruction will span from 250Ma to present day in 1 Myr intervals.
-initial_time = 250
+# Our reconstruction will span from 30Ma to present day in 1 Myr intervals.
+initial_time = 30
+# The time increment must divide 'initial_time' exactly ('reconstruct_geometry()' raises ValueError otherwise).
 time_increment = 1
+
+# [fragment: initial-points]
+# The initial points that we will reconstruct (and deform) through the topological model.
+# They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from latitude -60 to 60
+# (south to north): the first four that are in the deforming region of a network at the initial time.
+grid_points = [(latitude, longitude) for latitude in range(-60, 70, 10) for longitude in range(-180, 180, 10)]
+grid_point_locations = topological_model.topological_snapshot(initial_time).get_point_locations(grid_points)
+initial_points = [point for point, point_location in zip(grid_points, grid_point_locations)
+                  if point_location.located_in_resolved_network_deforming_region()][:4]
+
+# Stop if there are none: there are no deforming networks at the initial time, or they are too small for the grid.
+if not initial_points:
+    sys.exit(f'No grid point is in the deforming region of a network at {initial_time}Ma')
+# [end: initial-points]
 
 # [fragment: reconstruct-geometry]
 # Reconstruct the initial points through the topological model from initial time to present day.

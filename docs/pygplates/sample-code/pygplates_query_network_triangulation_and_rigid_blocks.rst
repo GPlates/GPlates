@@ -28,7 +28,10 @@ Both scripts read the same files:
 
 ``topologies.gpml``
     Deforming network features, and the features that their boundaries and interiors are built from.
-    Topological plate polygon features can be in the file too.
+    Topological plate polygon features can be in the file too. There must be networks at 10Ma,
+    since the second script chooses its points from them. Leave out inactive networks, such as
+    those in ``Zahirovic_etal_2022_Deforming_Networks_Inactive.gpml`` in the GPlates sample data,
+    so that the points are chosen from networks that are deforming.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the features that the deforming
@@ -155,9 +158,10 @@ only printed.
 Find the triangle that contains a point
 +++++++++++++++++++++++++++++++++++++++
 
-This example finds where each of four points is in the networks at 10Ma. For a point in the
-deforming region of a network it finds the triangle that contains the point, and for a point in a
-rigid block it finds the block.
+This example finds where points are in the networks at 10Ma. For a point in the deforming region
+of a network it finds the triangle that contains the point, and for a point in a rigid block it
+finds the block. It chooses four points in the deforming regions, and one in a rigid block if
+there is one, to run with.
 
 Sample code
 """""""""""
@@ -168,6 +172,13 @@ Details
 """""""
 
 The topological model and the snapshot at 10Ma are the same as in the first example.
+
+The points are chosen from the networks, rather than written into the script, so that the example
+works with any topological features that have deforming networks at 10Ma. They are chosen from a
+coarse grid of points, 10 degrees apart, from latitude 60 to -60. It stops at 60 degrees because,
+in the GPlates sample data, the grid points nearer the poles happen to fall where the networks
+barely deform at 10Ma, so they would make poor examples. The grid is scanned from north to south,
+and the first points found are used.
 
 The points are given as (latitude, longitude) tuples. They are positions at 10Ma, since they are
 located in the topologies resolved at that time.
@@ -182,7 +193,20 @@ order of the points.
 .. sample-code:: pygplates_query_network_triangulation_and_rigid_blocks_locate_points.py
    :fragment: point-locations
 
-A point that is in a network is either in one of its rigid blocks or in its deforming region.
+The grid points in the deforming region of a network, which
+:meth:`pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region` finds (see
+below), are kept with their locations, and the first four of them are taken. If there are none,
+the script stops with an error message that says so.
+
+The first grid point in a rigid block of a network, which
+:meth:`pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block` finds (see below),
+is taken too, if there is one.
+
+.. sample-code:: pygplates_query_network_triangulation_and_rigid_blocks_locate_points.py
+   :fragment: deforming-points
+
+So each point is in a network, and a point in a network is either in one of its rigid blocks or in
+its deforming region.
 
 For a point in a rigid block,
 :meth:`pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block` returns a 2-tuple:
@@ -201,8 +225,9 @@ With *return_network_triangle* set to ``True`` it returns a 2-tuple instead: the
 and the :class:`triangle<pygplates.NetworkTriangulation.Triangle>` of its triangulation that
 contains the point.
 
-Either way it returns ``None`` for a point that is not in the deforming region of a network.
-Here that leaves the points in rigid plates, and the points outside every plate and network.
+Either way it returns ``None`` for a point that is not in the deforming region of a network. The
+script does not test for that: a point here that is not in a rigid block is in a deforming region,
+since that is how the points were chosen.
 
 .. sample-code:: pygplates_query_network_triangulation_and_rigid_blocks_locate_points.py
    :fragment: network-triangle

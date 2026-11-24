@@ -1,3 +1,4 @@
+import sys
 import pygplates
 
 
@@ -8,11 +9,25 @@ rotation_model = pygplates.RotationModel('rotations.rot')
 # [end: load-features]
 
 # [fragment: time-and-points]
-# The strain rates are compared at these points at 10Ma.
-# Each is the (latitude, longitude) of a point inside a deforming network at that time.
+# The strain rates are compared at 10Ma, at points in the deforming networks.
+# The points are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart,
+# from latitude 60 to -60 (north to south).
 time = 10
-points = [(0, 152), (15, 157), (5, 158), (25, 149)]
+grid_points = [(latitude, longitude) for latitude in range(60, -70, -10) for longitude in range(-180, 180, 10)]
 # [end: time-and-points]
+
+# [fragment: deforming-points]
+# Find where each grid point is in the topologies resolved at 10Ma. Keep the points in the deforming region of a
+# network, and take the first four of them, so that the output stays short.
+grid_point_locations = pygplates.TopologicalSnapshot(
+        topological_features, rotation_model, time).get_point_locations(grid_points)
+points = [point for point, point_location in zip(grid_points, grid_point_locations)
+          if point_location.located_in_resolved_network_deforming_region()][:4]
+
+# Stop if there are none: there are no deforming networks at 10Ma, or they are too small for the grid.
+if not points:
+    sys.exit(f'No grid point is in the deforming region of a network at {time}Ma')
+# [end: deforming-points]
 
 # [fragment: default-parameters]
 # The default parameters for resolving topologies:

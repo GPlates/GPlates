@@ -38,7 +38,10 @@ Data files
 
 ``topologies.gpml``
     Topological features that include deforming networks. The parameters in this example only
-    affect deforming networks.
+    affect deforming networks. There must be networks at 10Ma, since the points are chosen from
+    them. Leave out inactive networks, such as those in
+    ``Zahirovic_etal_2022_Deforming_Networks_Inactive.gpml`` in the GPlates sample data, so that
+    the points are chosen from networks that are deforming.
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the features that the deforming
@@ -63,10 +66,36 @@ topological models, and this way the files are only read once.
 .. sample-code:: pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.py
    :fragment: load-features
 
-The strain rates are compared at four points at 10Ma. Each point is inside a deforming network at that time.
+The strain rates are compared at 10Ma, at four points in deforming networks. The points are chosen
+from the networks, rather than written into the script, so that the example works with any
+topological features that have deforming networks at that time.
+
+They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from
+latitude 60 to -60. It stops at 60 degrees because, in the GPlates sample data, the grid points
+nearer the poles happen to fall where the networks barely deform at 10Ma, so they would make poor
+examples. The grid is scanned from north to south, and the first points found are used.
 
 .. sample-code:: pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.py
    :fragment: time-and-points
+
+A :class:`pygplates.TopologicalSnapshot` resolves the topologies at one time, here 10Ma, and
+:meth:`pygplates.TopologicalSnapshot.get_point_locations` returns the
+:class:`location<pygplates.TopologyPointLocation>` of each grid point in them.
+
+:meth:`pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region` returns the
+network whose deforming region contains a point. It returns ``None`` for a point anywhere else: in
+a rigid plate, in a rigid block of a network, or outside all the topologies. The first four points
+in a deforming region are kept.
+
+The snapshot resolves the topologies with the default parameters. That does not change which
+points are found: the parameters below change the strain rates in a network, not where its
+deforming region is.
+
+If no grid point is in a deforming region, there is nothing to compare, so the script stops with
+an error message that says so.
+
+.. sample-code:: pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.py
+   :fragment: deforming-points
 
 A :class:`pygplates.ResolveTopologyParameters` holds the parameters that topologies are resolved with.
 
