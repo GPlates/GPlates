@@ -50,6 +50,14 @@ script finds the reconstructed feature that is closest to it.
 .. sample-code:: pygplates_find_nearest_feature_to_a_point.py
    :fragment: point
 
+``polygons_are_solid`` says how the distance to a polygon is measured. With ``False``, as here, a
+polygon is only its outline: the distance to it is the distance to its outline, even where the
+point is inside the polygon. With ``True`` a polygon is filled, so a point inside it is at a
+distance of zero from it. The distance to any other type of geometry is the same either way.
+
+.. sample-code:: pygplates_find_nearest_feature_to_a_point.py
+   :fragment: polygons-are-solid
+
 The features are reconstructed to 10Ma by creating a :class:`pygplates.ReconstructSnapshot`. A
 feature that does not exist at 10Ma, according to its valid time period, is not reconstructed.
 
@@ -82,9 +90,8 @@ A feature can have more than one geometry, and so more than one *reconstructed* 
    :fragment: iterate-geometries
 
 The :meth:`distance()<pygplates.GeometryOnSphere.distance>` method of the point returns the
-minimum distance, in radians, from the point to a reconstructed geometry. The distance to a
-polygon is the distance to its outline, even where the point is inside the polygon (unless
-*other_geometry_is_solid* is ``True``).
+minimum distance, in radians, from the point to a reconstructed geometry. ``polygons_are_solid``
+is passed as its *other_geometry_is_solid* argument.
 
 ``min_distance_to_all_features`` is the distance threshold. With a threshold, the method returns
 ``None`` for a geometry that is further away than the threshold. Only a geometry that is nearer
@@ -122,12 +129,14 @@ To also find the nearest position on the nearest feature, set *return_closest_po
     min_distance_to_feature_and_closest_positions = point.distance(
             feature_reconstructed_geometry.get_reconstructed_geometry(),
             min_distance_to_all_features,
+            other_geometry_is_solid=polygons_are_solid,
             return_closest_positions=True)
 
 When *return_closest_positions* is ``True``, the :meth:`distance()<pygplates.GeometryOnSphere.distance>`
 method returns a 3-tuple: the distance, the closest point on the geometry it is called on, and the
 closest point on the other geometry. It still returns ``None`` if the distance is greater than
-the threshold.
+the threshold. The closest point on a polygon is always on its outline, even when the polygon is
+filled (``polygons_are_solid = True``) and the point is inside it, at a distance of zero.
 
 Otherwise the tuple can be unpacked into its three elements.
 
