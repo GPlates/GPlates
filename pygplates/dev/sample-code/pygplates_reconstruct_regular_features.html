@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reconstruct regular features &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Reconstruct regular features &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_reconstruct_regular_features.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -68,6 +68,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -100,19 +101,14 @@
              
   <section id="reconstruct-regular-features">
 <span id="pygplates-reconstruct-regular-features"></span><h1>Reconstruct regular features<a class="headerlink" href="#reconstruct-regular-features" title="Link to this heading"></a></h1>
-<div class="line-block">
-<div class="line">This example shows a couple of different scenarios involving the reconstruction of <em>regular</em> features to geological times.</div>
-<div class="line">Regular features exclude <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TopologicalFeature">topological</a> features,
+<p>This example shows two scenarios that reconstruct <em>regular</em> features to a past geological time.</p>
+<p>Regular features are all features except
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TopologicalFeature">topological</a> features,
 <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">motion path</a> features and
-<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a> features.</div>
-</div>
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_reconstruct_motion_path_features.html#pygplates-reconstruct-motion-path-features"><span class="std std-ref">Reconstruct motion path features</span></a></p>
-</div>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_reconstruct_flowline_features.html#pygplates-reconstruct-flowline-features"><span class="std std-ref">Reconstruct flowline features</span></a></p>
+<p><a class="reference internal" href="pygplates_reconstruct_motion_path_features.html#pygplates-reconstruct-motion-path-features"><span class="std std-ref">Reconstruct motion path features</span></a> and <a class="reference internal" href="pygplates_reconstruct_flowline_features.html#pygplates-reconstruct-flowline-features"><span class="std std-ref">Reconstruct flowline features</span></a></p>
 </div>
 <nav class="contents local" id="contents">
 <ul class="simple">
@@ -148,7 +144,7 @@ below was captured with coastlines.</p>
 </section>
 <section id="exported-reconstructed-features-to-a-file">
 <span id="pygplates-export-reconstructed-features-to-a-file"></span><h2><a class="toc-backref" href="#id5" role="doc-backlink">Exported reconstructed features to a file</a><a class="headerlink" href="#exported-reconstructed-features-to-a-file" title="Link to this heading"></a></h2>
-<p>In this example we reconstruct regular features and export the results to a Shapefile.</p>
+<p>This example reconstructs regular features and exports the results to a Shapefile.</p>
 <section id="sample-code">
 <h3><a class="toc-backref" href="#id6" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
@@ -180,7 +176,8 @@ below was captured with coastlines.</p>
 <span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Create a <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> from the reconstructable features and the rotation model.</p>
+<p>A <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> is created from the reconstructable
+features and the rotation model.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a reconstruct model from some reconstructable features and the rotation model.</span>
 <span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'features.gpml'</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
 </pre></div>
@@ -190,10 +187,12 @@ below was captured with coastlines.</p>
 <span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">All features are <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel.reconstruct_snapshot" title="pygplates.ReconstructModel.reconstruct_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span></code></a> to 50Ma.</div>
-<div class="line">We then <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.export_reconstructed_geometries" title="pygplates.ReconstructSnapshot.export_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export</span> <span class="pre">the</span> <span class="pre">reconstructed</span> <span class="pre">geometries</span></code></a> to a file.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel.reconstruct_snapshot" title="pygplates.ReconstructModel.reconstruct_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructModel.reconstruct_snapshot()</span></code></a> reconstructs the features to 50Ma, and
+returns the result as a <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>. A feature that does not exist at
+50Ma, according to its valid time period, is not reconstructed.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.export_reconstructed_geometries" title="pygplates.ReconstructSnapshot.export_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.export_reconstructed_geometries()</span></code></a> then exports the
+reconstructed geometries to a file. The filename extension selects the file format, here <code class="docutils literal notranslate"><span class="pre">.shp</span></code>
+for a Shapefile.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the features to the reconstruction time and export them to a shapefile.</span>
 <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
 <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">export_reconstructed_geometries</span><span class="p">(</span><span class="n">export_filename</span><span class="p">)</span>
@@ -202,14 +201,18 @@ below was captured with coastlines.</p>
 </section>
 <section id="output">
 <h3><a class="toc-backref" href="#id8" role="doc-backlink">Output</a><a class="headerlink" href="#output" title="Link to this heading"></a></h3>
-<p>We should now have a file called <code class="docutils literal notranslate"><span class="pre">reconstructed_50Ma.shp</span></code> containing feature geometries reconstructed
-to their 50Ma positions.</p>
+<p>There should now be a file called <code class="docutils literal notranslate"><span class="pre">reconstructed_50Ma.shp</span></code> containing the feature geometries
+reconstructed to their 50Ma positions.</p>
+<p>A Shapefile holds only one type of geometry. If the reconstructed geometries are of more than one
+type (points, multipoints, polylines or polygons), a directory called <code class="docutils literal notranslate"><span class="pre">reconstructed_50Ma</span></code> is
+created instead. It contains a Shapefile for each type, such as <code class="docutils literal notranslate"><span class="pre">reconstructed_50Ma_polyline.shp</span></code>
+and <code class="docutils literal notranslate"><span class="pre">reconstructed_50Ma_polygon.shp</span></code>.</p>
 </section>
 </section>
 <section id="calculate-distance-a-feature-is-reconstructed">
 <span id="pygplates-calculate-distance-a-feature-is-reconstructed"></span><h2><a class="toc-backref" href="#id9" role="doc-backlink">Calculate distance a feature is reconstructed</a><a class="headerlink" href="#calculate-distance-a-feature-is-reconstructed" title="Link to this heading"></a></h2>
-<p>In this example we calculate the distance between a feature geometry’s present day (centroid) location
-and its reconstructed (centroid) location.</p>
+<p>This example calculates the distance between the present day location of a feature geometry and
+its reconstructed location. Both locations are taken at the centroid of the geometry.</p>
 <section id="id1">
 <h3><a class="toc-backref" href="#id10" role="doc-backlink">Sample code</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
@@ -256,7 +259,8 @@ and its reconstructed (centroid) location.</p>
 <span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Create a <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> from the reconstructable features and the rotation model.</p>
+<p>A <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> is created from the reconstructable
+features and the rotation model.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a reconstruct model from some reconstructable features and the rotation model.</span>
 <span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'features.gpml'</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
 </pre></div>
@@ -266,23 +270,23 @@ and its reconstructed (centroid) location.</p>
 <span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">All features are <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel.reconstruct_snapshot" title="pygplates.ReconstructModel.reconstruct_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span></code></a> to 50Ma.</div>
-<div class="line">We then <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">query</span> <span class="pre">the</span> <span class="pre">reconstructed</span> <span class="pre">geometries</span></code></a>.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel.reconstruct_snapshot" title="pygplates.ReconstructModel.reconstruct_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructModel.reconstruct_snapshot()</span></code></a> reconstructs the features to 50Ma.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_reconstructed_geometries()</span></code></a> then returns the reconstructed
+geometries. There is a <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a> for each geometry of each
+feature that exists at 50Ma.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the features to the reconstruction time.</span>
 <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
 <span class="n">reconstructed_feature_geometries</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">We use <code class="docutils literal notranslate"><span class="pre">get_centroid()</span></code>, which every geometry type has (a <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">point</span></code></a> is its
-own centroid), to find the centroid of the
-<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_present_day_geometry" title="pygplates.ReconstructedFeatureGeometry.get_present_day_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">present</span> <span class="pre">day</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry" title="pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span></code></a> geometries.</div>
-<div class="line">We use the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method of one centroid to calculate the shortest
-distance between the two centroids and convert it to kilometres using <a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Earth</span></code></a>.</div>
-</div>
+<p>A reconstructed feature geometry has both the
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_present_day_geometry" title="pygplates.ReconstructedFeatureGeometry.get_present_day_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">present</span> <span class="pre">day</span></code></a> geometry and
+the <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry" title="pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span></code></a>
+geometry. The centroid of each is found with <code class="docutils literal notranslate"><span class="pre">get_centroid()</span></code>, which every geometry type has (a
+<a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">point</span></code></a> is its own centroid).</p>
+<p>The <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method of one centroid returns the
+shortest distance to the other centroid, in radians. It is converted to kilometres by multiplying
+it by <a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth.mean_radius_in_kms" title="pygplates.Earth.mean_radius_in_kms"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate distance between:</span>
 <span class="c1">#  - the centroid of the present-day geometry, and</span>
 <span class="c1">#  - the centroid of the reconstructed geometry.</span>
@@ -298,6 +302,8 @@ distance between the two centroids and convert it to kilometres using <a class="
 </section>
 <section id="id3">
 <h3><a class="toc-backref" href="#id12" role="doc-backlink">Output</a><a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<p>For each reconstructed geometry the script prints the name and plate ID of its feature, and the
+distance it was reconstructed.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Feature</span><span class="p">:</span> <span class="n">Pacific</span>
   <span class="n">plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">982</span>
   <span class="n">distance</span> <span class="n">reconstructed</span><span class="p">:</span> <span class="mf">3815.013838</span> <span class="n">kms</span>

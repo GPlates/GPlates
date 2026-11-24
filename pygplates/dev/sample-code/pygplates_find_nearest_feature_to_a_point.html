@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Find nearest reconstructed feature to a point &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Find nearest reconstructed feature to a point &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,14 +15,14 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_find_nearest_feature_to_a_point.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Find reconstructed features overlapping a polygon" href="pygplates_find_features_overlapping_a_polygon.html" />
-    <link rel="prev" title="Calculate net rotation" href="pygplates_calculate_net_rotation.html" /> 
+    <link rel="prev" title="Calculate net rotation from point samples" href="pygplates_calculate_net_rotation_from_point_samples.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -65,10 +65,12 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_find_features_overlapping_a_polygon.html">Find reconstructed features overlapping a polygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_overlap_union_and_difference_of_polygons.html">Find the overlap, union and difference of polygons</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -101,7 +103,8 @@
              
   <section id="find-nearest-reconstructed-feature-to-a-point">
 <span id="pygplates-find-nearest-feature-to-a-point"></span><h1>Find nearest reconstructed feature to a point<a class="headerlink" href="#find-nearest-reconstructed-feature-to-a-point" title="Link to this heading"></a></h1>
-<p>This example iterates over a collection of reconstructed features and finds the feature that is nearest to a point.</p>
+<p>This example reconstructs a collection of features, and finds the reconstructed feature that is
+nearest to a point.</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
@@ -140,6 +143,10 @@
 <span class="n">point_longitude</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">point_latitude</span><span class="p">,</span> <span class="n">point_longitude</span><span class="p">)</span>
 
+<span class="c1"># Whether polygons are filled, so that a point inside a polygon is at distance zero from it (True),</span>
+<span class="c1"># or are only their outlines, so that the distance is to the outline even from inside (False).</span>
+<span class="n">polygons_are_solid</span> <span class="o">=</span> <span class="kc">False</span>
+
 <span class="c1"># Reconstruct the features to 10Ma.</span>
 <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
 <span class="n">reconstructed_features</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_features</span><span class="p">()</span>
@@ -157,7 +164,8 @@
         <span class="c1"># Get the minimum distance from point to the current reconstructed geometry.</span>
         <span class="n">min_distance_to_feature</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span>
                 <span class="n">feature_reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">(),</span>
-                <span class="n">min_distance_to_all_features</span><span class="p">)</span>
+                <span class="n">min_distance_to_all_features</span><span class="p">,</span>
+                <span class="n">other_geometry_is_solid</span><span class="o">=</span><span class="n">polygons_are_solid</span><span class="p">)</span>
 
         <span class="c1"># If the current geometry is nearer than all previous geometries then</span>
         <span class="c1"># its associated feature is the nearest feature so far.</span>
@@ -183,71 +191,76 @@
 <span class="n">features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'features.gpml'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The features are reconstructed to their 10Ma positions.</p>
+<p>The features will be reconstructed to their 10Ma positions.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct features to 10Ma.</span>
 <span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">10</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The test point has zero latitude and zero longitude.</div>
-<div class="line">All features are tested to see which one is closest to this <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">point</span></code></a>.</div>
-</div>
+<p>The test <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">point</span></code></a> is at zero latitude and zero longitude. The
+script finds the reconstructed feature that is closest to it.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># All features have their distance calculated relative to this point.</span>
 <span class="n">point_latitude</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">point_longitude</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">point_latitude</span><span class="p">,</span> <span class="n">point_longitude</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">All features are reconstructed to 10Ma in a <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>.</div>
-<div class="line">We ask the snapshot for its <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_features" title="pygplates.ReconstructSnapshot.get_reconstructed_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">features</span></code></a>
-(rather than its reconstructed geometries) so that our
-<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometries</span></code></a>
-are grouped with their <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a>. This isn’t strictly necessary
-in this particular example though.</div>
+<p><code class="docutils literal notranslate"><span class="pre">polygons_are_solid</span></code> says how the distance to a polygon is measured. With <code class="docutils literal notranslate"><span class="pre">False</span></code>, as here, a
+polygon is only its outline: the distance to it is the distance to its outline, even where the
+point is inside the polygon. With <code class="docutils literal notranslate"><span class="pre">True</span></code> a polygon is filled, so a point inside it is at a
+distance of zero from it. The distance to any other type of geometry is the same either way.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Whether polygons are filled, so that a point inside a polygon is at distance zero from it (True),</span>
+<span class="c1"># or are only their outlines, so that the distance is to the outline even from inside (False).</span>
+<span class="n">polygons_are_solid</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
 </div>
+<p>The features are reconstructed to 10Ma by creating a <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>. A
+feature that does not exist at 10Ma, according to its valid time period, is not reconstructed.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_features" title="pygplates.ReconstructSnapshot.get_reconstructed_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_reconstructed_features()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">feature</span> <span class="pre">geometries</span></code></a> grouped by
+their <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a>. This example does not strictly need the grouping:
+<a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_reconstructed_geometries()</span></code></a> would also do.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the features to 10Ma.</span>
 <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
 <span class="n">reconstructed_features</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_features</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Initially we don’t have a minimum distance of the point to all features.</div>
-<div class="line">This value is also used as the threshold to the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a>
-method and initially this will be <code class="docutils literal notranslate"><span class="pre">None</span></code> which means no threshold.</div>
-</div>
+<p><code class="docutils literal notranslate"><span class="pre">min_distance_to_all_features</span></code> is the distance from the point to the nearest geometry found so
+far. It starts as <code class="docutils literal notranslate"><span class="pre">None</span></code>, since nothing has been found yet.</p>
+<p>It is also passed to the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method below as
+the distance threshold, where <code class="docutils literal notranslate"><span class="pre">None</span></code> means there is no threshold.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The minimum distance to all features and the nearest feature.</span>
 <span class="n">min_distance_to_all_features</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="n">nearest_feature</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 </div>
-<p>Each item in the <em>reconstructed_features</em> list is a tuple containing a feature and its associated
+<p>Each item in the <code class="docutils literal notranslate"><span class="pre">reconstructed_features</span></code> list is a tuple of a feature and a list of its
 reconstructed geometries.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over all reconstructed features.</span>
 <span class="k">for</span> <span class="n">feature</span><span class="p">,</span> <span class="n">feature_reconstructed_geometries</span> <span class="ow">in</span> <span class="n">reconstructed_features</span><span class="p">:</span>
 </pre></div>
 </div>
-<p>A feature can have more than one geometry and hence will have more than one <em>reconstructed</em> geometry.</p>
+<p>A feature can have more than one geometry, and so more than one <em>reconstructed</em> geometry.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over all reconstructed geometries of the current feature.</span>
 <span class="k">for</span> <span class="n">feature_reconstructed_geometry</span> <span class="ow">in</span> <span class="n">feature_reconstructed_geometries</span><span class="p">:</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Calculate the minimum distance from the point to a reconstructed feature geometry using the point’s <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method.</div>
-<div class="line"><em>min_distance_to_all_features</em> is specified as the distance threshold since we’re only interested
-in geometries that are nearer than the closest geometry encountered so far.</div>
-</div>
+<p>The <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method of the point returns the
+minimum distance, in radians, from the point to a reconstructed geometry. <code class="docutils literal notranslate"><span class="pre">polygons_are_solid</span></code>
+is passed as its <em>other_geometry_is_solid</em> argument.</p>
+<p><code class="docutils literal notranslate"><span class="pre">min_distance_to_all_features</span></code> is the distance threshold. With a threshold, the method returns
+<code class="docutils literal notranslate"><span class="pre">None</span></code> for a geometry that is further away than the threshold. Only a geometry that is nearer
+than the nearest one found so far is of interest.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the minimum distance from point to the current reconstructed geometry.</span>
 <span class="n">min_distance_to_feature</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span>
         <span class="n">feature_reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">(),</span>
-        <span class="n">min_distance_to_all_features</span><span class="p">)</span>
+        <span class="n">min_distance_to_all_features</span><span class="p">,</span>
+        <span class="n">other_geometry_is_solid</span><span class="o">=</span><span class="n">polygons_are_solid</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">If <code class="docutils literal notranslate"><span class="pre">None</span></code> was returned then the distance was greater than <em>min_distance_to_all_features</em>.</div>
-<div class="line">So a valid returned value means the current geometry is the nearest geometry encountered so far.</div>
-<div class="line">In this case we record the nearest feature and the new minimum distance.</div>
-</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">None</span></code> was returned, the current geometry is further away than
+<code class="docutils literal notranslate"><span class="pre">min_distance_to_all_features</span></code>, and is ignored.</p>
+<p>Otherwise the current geometry is the nearest one found so far. Its feature becomes the nearest
+feature, and its distance becomes the new minimum distance.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If the current geometry is nearer than all previous geometries then</span>
 <span class="c1"># its associated feature is the nearest feature so far.</span>
 <span class="k">if</span> <span class="n">min_distance_to_feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -255,8 +268,8 @@ in geometries that are nearer than the closest geometry encountered so far.</div
     <span class="n">nearest_feature</span> <span class="o">=</span> <span class="n">feature</span>
 </pre></div>
 </div>
-<p>Once we’ve tested all features (if any were in the file) we print out the nearest feature and its
-(minimum) distance to the point.</p>
+<p>Once all the features have been tested, the script prints the nearest feature and its distance
+from the point, converted to kilometres. Nothing is printed if no feature was reconstructed.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">nearest_feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'The nearest feature, to point </span><span class="si">{</span><span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span><span class="si">}</span><span class="s1">, has feature ID </span><span class="si">{</span><span class="n">nearest_feature</span><span class="o">.</span><span class="n">get_feature_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> '</span>
           <span class="sa">f</span><span class="s1">'and a minimum distance of </span><span class="si">{</span><span class="n">min_distance_to_all_features</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">kms'</span><span class="p">)</span>
@@ -265,8 +278,8 @@ in geometries that are nearer than the closest geometry encountered so far.</div
 </section>
 <section id="advanced">
 <h2><a class="toc-backref" href="#id4" role="doc-backlink">Advanced</a><a class="headerlink" href="#advanced" title="Link to this heading"></a></h2>
-<p>If we also want to find the nearest position on the nearest feature then we can specify
-<code class="docutils literal notranslate"><span class="pre">return_closest_positions</span></code> as <code class="docutils literal notranslate"><span class="pre">True</span></code> when calculating the geometry distance:</p>
+<p>To also find the nearest position on the nearest feature, set <em>return_closest_positions</em> to
+<code class="docutils literal notranslate"><span class="pre">True</span></code> when calculating the distance to a geometry:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nearest_point_on_nearest_feature</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="o">...</span>
@@ -274,25 +287,24 @@ in geometries that are nearer than the closest geometry encountered so far.</div
 <span class="n">min_distance_to_feature_and_closest_positions</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span>
         <span class="n">feature_reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">(),</span>
         <span class="n">min_distance_to_all_features</span><span class="p">,</span>
+        <span class="n">other_geometry_is_solid</span><span class="o">=</span><span class="n">polygons_are_solid</span><span class="p">,</span>
         <span class="n">return_closest_positions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">When <code class="docutils literal notranslate"><span class="pre">return_closest_positions</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a>
-method returns a 3-tuple of (distance, closest point on the geometry it’s called on, closest point on the other geometry).</div>
-<div class="line">If the geometry distance is below the threshold then we can extract that tuple into its individual elements.</div>
-</div>
+<p>When <em>return_closest_positions</em> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a>
+method returns a 3-tuple: the distance, the closest point on the geometry it is called on, and the
+closest point on the other geometry. It still returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if the distance is greater than
+the threshold. The closest point on a polygon is always on its outline, even when the polygon is
+filled (<code class="docutils literal notranslate"><span class="pre">polygons_are_solid</span> <span class="pre">=</span> <span class="pre">True</span></code>) and the point is inside it, at a distance of zero.</p>
+<p>Otherwise the tuple can be unpacked into its three elements.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">min_distance_to_feature_and_closest_positions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">min_distance_to_all_features</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">nearest_point_on_nearest_feature</span> <span class="o">=</span> <span class="n">min_distance_to_feature_and_closest_positions</span>
     <span class="n">nearest_feature</span> <span class="o">=</span> <span class="n">feature</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">…where the <code class="docutils literal notranslate"><span class="pre">_</span></code> is just a placeholder to ignore the second element of the tuple returned
-by the <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.distance" title="pygplates.GeometryOnSphere.distance"><code class="xref py py-meth docutils literal notranslate"><span class="pre">distance()</span></code></a> method.</div>
-<div class="line">We ignore it because it’s the closest distance to the test point which is just the test point itself.
-And we are only interested in the closest point on the feature’s geometry.</div>
-</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">_</span></code> is just a placeholder for the second element of the tuple, which is ignored. It is the
+closest point on the test point, which is the test point itself. Only the closest point on the
+geometry of the feature is of interest.</p>
 </section>
 <section id="see-also">
 <h2><a class="toc-backref" href="#id5" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
@@ -309,7 +321,7 @@ And we are only interested in the closest point on the feature’s geometry.</di
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pygplates_calculate_net_rotation.html" class="btn btn-neutral float-left" title="Calculate net rotation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_calculate_net_rotation_from_point_samples.html" class="btn btn-neutral float-left" title="Calculate net rotation from point samples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="pygplates_find_features_overlapping_a_polygon.html" class="btn btn-neutral float-right" title="Find reconstructed features overlapping a polygon" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

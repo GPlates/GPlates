@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculate velocities in dynamic plates &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Calculate velocities in dynamic plates &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,13 +15,13 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_calculate_velocities_in_dynamic_plates.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Reconstruct strain and strain rate" href="pygplates_reconstruct_strain_and_strain_rate.html" />
+    <link rel="next" title="Calculate velocities in static polygons" href="pygplates_calculate_velocities_in_static_polygons.html" />
     <link rel="prev" title="Calculate velocities by plate ID" href="pygplates_calculate_velocities_by_plate_id.html" /> 
 </head>
 
@@ -58,19 +58,26 @@
 <li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Calculate velocities in dynamic plates</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points">Calculate velocities by assigning plate IDs of dynamic plates to static points</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#calculate-velocities-of-dynamic-plates-at-static-points">Calculate velocities of dynamic plates at static points</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#calculate-velocities-by-grouping-static-points-into-dynamic-plates">Calculate velocities by grouping static points into dynamic plates</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates">Calculate velocities by individually partitioning each static point into dynamic plates</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -103,54 +110,43 @@
              
   <section id="calculate-velocities-in-dynamic-plates">
 <span id="pygplates-calculate-velocities-in-dynamic-plates"></span><h1>Calculate velocities in dynamic plates<a class="headerlink" href="#calculate-velocities-in-dynamic-plates" title="Link to this heading"></a></h1>
-<p>This example shows three similar ways to calculate velocities of topological plates at static point locations.</p>
-<div class="line-block">
-<div class="line">All three read the same files and calculate the same velocities: at each time the topological plates
-are resolved, each point is matched to the plate containing it, and the velocity of that plate is
-calculated at the point.</div>
-<div class="line">All three treat every plate as rigid: a point’s velocity comes from the stage rotation of its plate’s
-reconstruction plate ID. That is wrong inside a deforming network, whose velocity varies across it.
-For velocities that account for deforming networks use
-<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a> instead.</div>
-<div class="line">They differ in how the points are matched to plates. The first partitions the point features and
-reads the plate ID assigned to each partitioned feature. The second partitions the point features but
-keeps them grouped by partitioning plate, and reads the plate ID from the plate. The third partitions
-each point individually.</div>
-</div>
+<p>This example shows two similar ways to calculate velocities of topological plates at static point locations.</p>
+<p>Both read the same files and calculate the same velocities: at each time the topological plates
+(and deforming networks) are resolved, and <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a>
+calculates the velocity at each point from the plate or network that contains it.</p>
+<p>Inside a rigid plate that is the velocity of the plate, which comes from the motion of its
+reconstruction plate ID. Inside a deforming network it is the velocity of the network at the point,
+which varies across the network.</p>
+<p>The first example calculates a velocity at each point, keeping the points in their order. The second
+also finds which plate contains each point, and groups the points and their velocities by plate.</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#data-files" id="id5">Data files</a></p></li>
-<li><p><a class="reference internal" href="#calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points" id="id6">Calculate velocities by assigning plate IDs of dynamic plates to static points</a></p>
+<li><p><a class="reference internal" href="#data-files" id="id3">Data files</a></p></li>
+<li><p><a class="reference internal" href="#calculate-velocities-of-dynamic-plates-at-static-points" id="id4">Calculate velocities of dynamic plates at static points</a></p>
 <ul>
-<li><p><a class="reference internal" href="#sample-code" id="id7">Sample code</a></p></li>
-<li><p><a class="reference internal" href="#details" id="id8">Details</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id5">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id6">Details</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#calculate-velocities-by-grouping-static-points-into-dynamic-plates" id="id9">Calculate velocities by grouping static points into dynamic plates</a></p>
+<li><p><a class="reference internal" href="#calculate-velocities-by-grouping-static-points-into-dynamic-plates" id="id7">Calculate velocities by grouping static points into dynamic plates</a></p>
 <ul>
-<li><p><a class="reference internal" href="#id1" id="id10">Sample code</a></p></li>
-<li><p><a class="reference internal" href="#id2" id="id11">Details</a></p></li>
+<li><p><a class="reference internal" href="#id1" id="id8">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id9">Details</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates" id="id12">Calculate velocities by individually partitioning each static point into dynamic plates</a></p>
-<ul>
-<li><p><a class="reference internal" href="#id3" id="id13">Sample code</a></p></li>
-<li><p><a class="reference internal" href="#id4" id="id14">Details</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#see-also" id="id15">See also</a></p></li>
+<li><p><a class="reference internal" href="#see-also" id="id10">See also</a></p></li>
 </ul>
 </nav>
 <section id="data-files">
-<h2><a class="toc-backref" href="#id5" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
-<p>All three scripts read the same files:</p>
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<p>Both scripts read the same files:</p>
 <dl class="simple">
 <dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological plates in
-<code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code>, since the velocity of a plate comes from its stage rotation.</p>
+<code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code>, since the velocity of a plate comes from the motion of its plate ID.</p>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon features. They are resolved at each time to give the partitioning plates,
-and each must have a reconstruction plate ID, since that is the plate ID whose stage rotation is used.
-A deforming network would be treated as a rigid plate (see above).</p>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon features, with or without deforming network features. They are resolved
+at each time. Each plate polygon should have a reconstruction plate ID, since that is the plate ID
+whose motion gives its velocity (a plate polygon without one is given plate ID zero).</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">lat_lon_velocity_domain_9_18.gpml</span></code></dt><dd><p>The velocity domain: features whose geometries contain the static points at which velocities are
 calculated. Any geometry type will do, since only its points are used. Such a file can be
@@ -159,22 +155,30 @@ generated in GPlates using the menu <code class="docutils literal notranslate"><
 </dl>
 <p>Rotation files and topological plate polygons are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
 </section>
-<section id="calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points">
-<h2><a class="toc-backref" href="#id6" role="doc-backlink">Calculate velocities by assigning plate IDs of dynamic plates to static points</a><a class="headerlink" href="#calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points" title="Link to this heading"></a></h2>
+<section id="calculate-velocities-of-dynamic-plates-at-static-points">
+<span id="calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates"></span><span id="calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink">Calculate velocities of dynamic plates at static points</a><a class="headerlink" href="#calculate-velocities-of-dynamic-plates-at-static-points" title="Link to this heading"></a></h2>
 <section id="sample-code">
-<h3><a class="toc-backref" href="#id7" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
 
 
-<span class="c1"># Load one or more rotation files into a rotation model.</span>
-<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
-
-<span class="c1"># Load the topological plate polygon features.</span>
-<span class="n">topology_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">)</span>
+<span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 
 <span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
 <span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
 <span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points at which velocities are calculated.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+
+    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
 
 <span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
 <span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
@@ -185,61 +189,40 @@ generated in GPlates using the menu <code class="docutils literal notranslate"><
 <span class="c1"># 'time' = 0, 1, 2, ... , 140</span>
 <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time: </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    <span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 
-    <span class="c1"># All domain points and associated (magnitude, azimuth, inclination) velocities for the current time.</span>
-    <span class="n">all_domain_points</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">all_velocities</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Calculate a velocity at each domain point, from 'time + delta_time' to 'time'.</span>
+    <span class="c1"># The velocities are in the same order as the domain points.</span>
+    <span class="c1"># A velocity is None if its point is outside all the resolved plates (and deforming networks).</span>
+    <span class="n">domain_velocity_vectors</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+            <span class="n">domain_points</span><span class="p">,</span>
+            <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">)</span>
 
-    <span class="c1"># Partition our velocity domain features into our topological plate polygons at the current 'time'.</span>
-    <span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-    <span class="n">partitioned_domain_features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span><span class="n">velocity_domain_features</span><span class="p">)</span>
+    <span class="c1"># Keep the domain points that are inside a plate (or deforming network), and their velocities.</span>
+    <span class="n">points_in_plates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">velocity_vectors_in_plates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">domain_point</span><span class="p">,</span> <span class="n">domain_velocity_vector</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">domain_points</span><span class="p">,</span> <span class="n">domain_velocity_vectors</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">domain_velocity_vector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">points_in_plates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_point</span><span class="p">)</span>
+            <span class="n">velocity_vectors_in_plates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_velocity_vector</span><span class="p">)</span>
 
-    <span class="k">for</span> <span class="n">partitioned_domain_feature</span> <span class="ow">in</span> <span class="n">partitioned_domain_features</span><span class="p">:</span>
+    <span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+    <span class="n">velocities_in_plates</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+            <span class="n">points_in_plates</span><span class="p">,</span>
+            <span class="n">velocity_vectors_in_plates</span><span class="p">)</span>
 
-        <span class="c1"># We need the newly assigned plate ID to get the equivalent stage rotation of that tectonic plate.</span>
-        <span class="n">partitioning_plate_id</span> <span class="o">=</span> <span class="n">partitioned_domain_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
-
-        <span class="c1"># Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.</span>
-        <span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">partitioning_plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
-
-        <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
-        <span class="c1"># Iterate over them all.</span>
-        <span class="k">for</span> <span class="n">partitioned_domain_geometry</span> <span class="ow">in</span> <span class="n">partitioned_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
-
-            <span class="n">partitioned_domain_points</span> <span class="o">=</span> <span class="n">partitioned_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
-
-            <span class="c1"># Calculate velocities at the velocity domain geometry points.</span>
-            <span class="c1"># This is from 'time + delta_time' to 'time' on the partitioning plate.</span>
-            <span class="n">partitioned_domain_velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span>
-                <span class="n">partitioned_domain_points</span><span class="p">,</span>
-                <span class="n">equivalent_stage_rotation</span><span class="p">,</span>
-                <span class="n">delta_time</span><span class="p">)</span>
-
-            <span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
-            <span class="n">partitioned_domain_velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
-                    <span class="n">partitioned_domain_points</span><span class="p">,</span>
-                    <span class="n">partitioned_domain_velocity_vectors</span><span class="p">)</span>
-
-            <span class="c1"># Append results for the current geometry to the final results.</span>
-            <span class="n">all_domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_points</span><span class="p">)</span>
-            <span class="n">all_velocities</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_velocities</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">: calculated velocities at </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">points_in_plates</span><span class="p">)</span><span class="si">}</span><span class="s1"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">domain_points</span><span class="p">)</span><span class="si">}</span><span class="s1"> points'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="details">
-<h3><a class="toc-backref" href="#id8" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
-<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
-<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The topological plate polygon features are loaded into a <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>.</div>
-<div class="line">They are not resolved here. That happens at each time, when the plate partitioner is created.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the topological plate polygon features.</span>
-<span class="n">topology_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">)</span>
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features and the rotation file.</p>
+<p>The topological features are not resolved here. That happens at each time, in the loop below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The velocity domain features contain the static points at which velocities are calculated.</p>
@@ -248,455 +231,279 @@ generated in GPlates using the menu <code class="docutils literal notranslate"><
 <span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The velocities at each <code class="docutils literal notranslate"><span class="pre">time</span></code> are calculated over a 1My interval, from <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">+</span> <span class="pre">delta_time</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
-<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">A <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner" title="pygplates.PlatePartitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner</span></code></a> is created from the topological features, the rotation model and
-the current <code class="docutils literal notranslate"><span class="pre">time</span></code>. It resolves the topological features to <code class="docutils literal notranslate"><span class="pre">time</span></code>, and the resolved plate polygons
-(and deforming networks) become the partitioning plates.</div>
-<div class="line"><a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner.partition_features" title="pygplates.PlatePartitioner.partition_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner.partition_features()</span></code></a> then partitions the velocity domain features
-into those plates. The partitioner does not reconstruct the features it is given (they are taken to
-be at the reconstruction time already), which is what we want for static points.</div>
-<div class="line">By default a feature whose geometry lies in more than one plate is split into one feature per plate
-(<code class="docutils literal notranslate"><span class="pre">pygplates.PartitionMethod.split_into_plates</span></code>), and the only property copied from a partitioning
-plate to the features it partitions is its reconstruction plate ID (the <em>properties_to_copy</em> argument).</div>
-<div class="line">The returned list contains new features (the originals are not modified): the partitioned features,
-each carrying the plate ID of its partitioning plate, together with any features (or parts of
-features) that were outside all the plates.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Partition our velocity domain features into our topological plate polygons at the current 'time'.</span>
-<span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-<span class="n">partitioned_domain_features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span><span class="n">velocity_domain_features</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>A new partitioner is created at each <code class="docutils literal notranslate"><span class="pre">time</span></code> because the plates are dynamic: which plate
-contains a point changes as the plate boundaries move.</p>
-</div>
-<div class="line-block">
-<div class="line">The plate ID assigned to a partitioned feature is retrieved with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_plate_id()</span></code></a>.</div>
-<div class="line">A feature that was outside all the plates had no plate ID copied to it, so this returns its own
-plate ID, which is zero for velocity domain features generated in GPlates. The
-rotation of plate zero relative to the anchor plate (also zero, the default) is the identity rotation,
-so the velocities calculated for such a feature below are zero.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We need the newly assigned plate ID to get the equivalent stage rotation of that tectonic plate.</span>
-<span class="n">partitioning_plate_id</span> <span class="o">=</span> <span class="n">partitioned_domain_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">equivalent stage rotation</span></a> of the partitioning
-plate, from <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">+</span> <span class="pre">delta_time</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>, is obtained using <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a>.</div>
-<div class="line">This is the same rotation used in <a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html#pygplates-calculate-velocities-by-plate-id"><span class="std std-ref">Calculate velocities by plate ID</span></a>, except that there
-the plate ID came from the feature itself.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.</span>
-<span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">partitioning_plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">A velocity domain feature usually has a single geometry, but <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a>
-handles any number.</div>
-<div class="line">Each geometry is reduced to its points using <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a>.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
-<span class="c1"># Iterate over them all.</span>
-<span class="k">for</span> <span class="n">partitioned_domain_geometry</span> <span class="ow">in</span> <span class="n">partitioned_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
-
-    <span class="n">partitioned_domain_points</span> <span class="o">=</span> <span class="n">partitioned_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The velocities are <a class="reference internal" href="../generated/pygplates.calculate_velocities.html#pygplates.calculate_velocities" title="pygplates.calculate_velocities"><code class="xref py py-func docutils literal notranslate"><span class="pre">calculated</span></code></a> at the points using the stage rotation.</div>
-<div class="line">This returns one <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Vector3D</span></code></a> per point (a global cartesian velocity vector).</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocities at the velocity domain geometry points.</span>
-<span class="c1"># This is from 'time + delta_time' to 'time' on the partitioning plate.</span>
-<span class="n">partitioned_domain_velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span>
-    <span class="n">partitioned_domain_points</span><span class="p">,</span>
-    <span class="n">equivalent_stage_rotation</span><span class="p">,</span>
-    <span class="n">delta_time</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The vectors are converted to local (magnitude, azimuth, inclination) tuples, one per point, using
-<a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination" title="pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination()</span></code></a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
-<span class="n">partitioned_domain_velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
-        <span class="n">partitioned_domain_points</span><span class="p">,</span>
-        <span class="n">partitioned_domain_velocity_vectors</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">Finally the points and their velocities are appended to lists covering all features at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>.</div>
-<div class="line">Since features that crossed plate boundaries were split, the points are not in the same order as in
-the velocity domain file. The third example below keeps that order.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Append results for the current geometry to the final results.</span>
-<span class="n">all_domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_points</span><span class="p">)</span>
-<span class="n">all_velocities</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_velocities</span><span class="p">)</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="calculate-velocities-by-grouping-static-points-into-dynamic-plates">
-<h2><a class="toc-backref" href="#id9" role="doc-backlink">Calculate velocities by grouping static points into dynamic plates</a><a class="headerlink" href="#calculate-velocities-by-grouping-static-points-into-dynamic-plates" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">This example is similar to the above example except it groups velocities by partitioning plates.</div>
-<div class="line">It is also slightly faster than the above example, but only by one or two percent.</div>
-</div>
-<section id="id1">
-<h3><a class="toc-backref" href="#id10" role="doc-backlink">Sample code</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
-
-
-<span class="c1"># Load one or more rotation files into a rotation model.</span>
-<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
-
-<span class="c1"># Load the topological plate polygon features.</span>
-<span class="n">topology_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
-<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
-<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
-<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
-
-<span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
-<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">140</span>
-
-<span class="c1"># 'time' = 0, 1, 2, ... , 140</span>
-<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time: </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
-
-    <span class="c1"># All domain points and associated (magnitude, azimuth, inclination) velocities for the current time.</span>
-    <span class="n">all_domain_points</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">all_velocities</span> <span class="o">=</span> <span class="p">{}</span>
-
-    <span class="c1"># Partition our velocity domain features into our topological plate polygons at the current 'time'.</span>
-    <span class="c1"># Note that we don't copy plate IDs - we rely on the returned partition grouping instead.</span>
-    <span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-    <span class="n">partitioned_domain_feature_groups</span><span class="p">,</span> <span class="n">unpartitioned_domain_features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span>
-        <span class="n">velocity_domain_features</span><span class="p">,</span>
-        <span class="c1"># We'll get plate ID directly from partitioning plate instead of assigned plate ID in partitioned feature...</span>
-        <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[],</span>
-        <span class="n">partition_return</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionReturn</span><span class="o">.</span><span class="n">partitioned_groups_and_unpartitioned</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">partitioning_plate</span><span class="p">,</span> <span class="n">partitioned_domain_features</span> <span class="ow">in</span> <span class="n">partitioned_domain_feature_groups</span><span class="p">:</span>
-
-        <span class="c1"># All domain points and associated velocities in the current partitioning plate.</span>
-        <span class="n">all_domain_points_in_partitioning_plate</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">all_velocities_in_partitioning_plate</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="c1"># We need the partitioning plate ID to get the equivalent stage rotation of that tectonic plate.</span>
-        <span class="n">partitioning_plate_id</span> <span class="o">=</span> <span class="n">partitioning_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
-
-        <span class="c1"># Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.</span>
-        <span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">partitioning_plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">partitioned_domain_feature</span> <span class="ow">in</span> <span class="n">partitioned_domain_features</span><span class="p">:</span>
-
-            <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
-            <span class="c1"># Iterate over them all.</span>
-            <span class="k">for</span> <span class="n">partitioned_domain_geometry</span> <span class="ow">in</span> <span class="n">partitioned_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
-
-                <span class="n">partitioned_domain_points</span> <span class="o">=</span> <span class="n">partitioned_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
-
-                <span class="c1"># Calculate velocities at the velocity domain geometry points.</span>
-                <span class="c1"># This is from 'time + delta_time' to 'time' on the partitioning plate.</span>
-                <span class="n">partitioned_domain_velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span>
-                    <span class="n">partitioned_domain_points</span><span class="p">,</span>
-                    <span class="n">equivalent_stage_rotation</span><span class="p">,</span>
-                    <span class="n">delta_time</span><span class="p">)</span>
-
-                <span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
-                <span class="n">partitioned_domain_velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
-                        <span class="n">partitioned_domain_points</span><span class="p">,</span>
-                        <span class="n">partitioned_domain_velocity_vectors</span><span class="p">)</span>
-
-                <span class="c1"># Append results for the current geometry to the final results.</span>
-                <span class="n">all_domain_points_in_partitioning_plate</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_points</span><span class="p">)</span>
-                <span class="n">all_velocities_in_partitioning_plate</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_velocities</span><span class="p">)</span>
-
-        <span class="n">all_domain_points</span><span class="p">[</span><span class="n">partitioning_plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_domain_points_in_partitioning_plate</span>
-        <span class="n">all_velocities</span><span class="p">[</span><span class="n">partitioning_plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_velocities_in_partitioning_plate</span>
-</pre></div>
-</div>
-</section>
-<section id="id2">
-<h3><a class="toc-backref" href="#id11" role="doc-backlink">Details</a><a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
-<p>The rotation model, topological features, velocity domain features and time interval are the same as
-in the first example.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
-<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
-
-<span class="c1"># Load the topological plate polygon features.</span>
-<span class="n">topology_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
-<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
-<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
-<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner" title="pygplates.PlatePartitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner</span></code></a> is created as before, but
-<a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner.partition_features" title="pygplates.PlatePartitioner.partition_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner.partition_features()</span></code></a> is called with two extra arguments.</div>
-<div class="line"><em>properties_to_copy</em> is an empty list, so no plate IDs are copied to the partitioned features. The
-plate ID will instead come from the partitioning plate itself.</div>
-<div class="line"><em>partition_return</em> is <code class="docutils literal notranslate"><span class="pre">pygplates.PartitionReturn.partitioned_groups_and_unpartitioned</span></code>, so instead
-of a single combined list the call returns a 2-tuple: a list of groups, each a 2-tuple of a
-partitioning plate and the list of features it partitioned, and a list of the unpartitioned features.
-This example ignores the unpartitioned features (the first example would have given them zero velocities).</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Partition our velocity domain features into our topological plate polygons at the current 'time'.</span>
-<span class="c1"># Note that we don't copy plate IDs - we rely on the returned partition grouping instead.</span>
-<span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-<span class="n">partitioned_domain_feature_groups</span><span class="p">,</span> <span class="n">unpartitioned_domain_features</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_features</span><span class="p">(</span>
-    <span class="n">velocity_domain_features</span><span class="p">,</span>
-    <span class="c1"># We'll get plate ID directly from partitioning plate instead of assigned plate ID in partitioned feature...</span>
-    <span class="n">properties_to_copy</span> <span class="o">=</span> <span class="p">[],</span>
-    <span class="n">partition_return</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PartitionReturn</span><span class="o">.</span><span class="n">partitioned_groups_and_unpartitioned</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Iterating over the groups visits each partitioning plate once.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">partitioning_plate</span><span class="p">,</span> <span class="n">partitioned_domain_features</span> <span class="ow">in</span> <span class="n">partitioned_domain_feature_groups</span><span class="p">:</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The partitioning plate is a resolved <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">boundary</span></code></a>
-(or <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">network</span></code></a>), so its plate ID is obtained from its feature
-using <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary.get_feature" title="pygplates.ResolvedTopologicalBoundary.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalBoundary.get_feature()</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_plate_id()</span></code></a>.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We need the partitioning plate ID to get the equivalent stage rotation of that tectonic plate.</span>
-<span class="n">partitioning_plate_id</span> <span class="o">=</span> <span class="n">partitioning_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">equivalent stage rotation</span></a> is obtained as before,
-but once per partitioning plate rather than once per partitioned feature.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.</span>
-<span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">partitioning_plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The points of every geometry of every feature in the group are gathered.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">partitioned_domain_feature</span> <span class="ow">in</span> <span class="n">partitioned_domain_features</span><span class="p">:</span>
-
-    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
-    <span class="c1"># Iterate over them all.</span>
-    <span class="k">for</span> <span class="n">partitioned_domain_geometry</span> <span class="ow">in</span> <span class="n">partitioned_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
-
-        <span class="n">partitioned_domain_points</span> <span class="o">=</span> <span class="n">partitioned_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>The velocities are calculated and converted exactly as in the first example.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocities at the velocity domain geometry points.</span>
-<span class="c1"># This is from 'time + delta_time' to 'time' on the partitioning plate.</span>
-<span class="n">partitioned_domain_velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span>
-    <span class="n">partitioned_domain_points</span><span class="p">,</span>
-    <span class="n">equivalent_stage_rotation</span><span class="p">,</span>
-    <span class="n">delta_time</span><span class="p">)</span>
-
-<span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
-<span class="n">partitioned_domain_velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
-        <span class="n">partitioned_domain_points</span><span class="p">,</span>
-        <span class="n">partitioned_domain_velocity_vectors</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The points and velocities of each geometry are appended to lists for the current partitioning plate.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Append results for the current geometry to the final results.</span>
-<span class="n">all_domain_points_in_partitioning_plate</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_points</span><span class="p">)</span>
-<span class="n">all_velocities_in_partitioning_plate</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">partitioned_domain_velocities</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Finally those lists are stored in dictionaries keyed by the plate ID of the partitioning plate, so the
-results for the current <code class="docutils literal notranslate"><span class="pre">time</span></code> are grouped by plate.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">all_domain_points</span><span class="p">[</span><span class="n">partitioning_plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_domain_points_in_partitioning_plate</span>
-<span class="n">all_velocities</span><span class="p">[</span><span class="n">partitioning_plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_velocities_in_partitioning_plate</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates">
-<h2><a class="toc-backref" href="#id12" role="doc-backlink">Calculate velocities by individually partitioning each static point into dynamic plates</a><a class="headerlink" href="#calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">This example is <strong>ten times slower</strong> than the above two examples.</div>
-<div class="line">However it has the advantage of keeping the output velocities (and domain positions) in the same
-order as the input domain points (ie, the order of points in each domain multipoint).</div>
-</div>
-<section id="id3">
-<h3><a class="toc-backref" href="#id13" role="doc-backlink">Sample code</a><a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
-
-
-<span class="c1"># Load one or more rotation files into a rotation model.</span>
-<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
-
-<span class="c1"># Load the topological plate polygon features.</span>
-<span class="n">topology_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
-<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
-<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
-<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
-
-<span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
-<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">140</span>
-
-<span class="c1"># 'time' = 0, 1, 2, ... , 140</span>
-<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time: </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
-
-    <span class="c1"># All domain points and associated (magnitude, azimuth, inclination) velocities for the current time.</span>
-    <span class="n">all_domain_points</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">all_velocities</span> <span class="o">=</span> <span class="p">[]</span>
-
-    <span class="c1"># Partition our velocity domain features into our topological plate polygons at the current 'time'.</span>
-    <span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
-
-        <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
-        <span class="c1"># Iterate over them all.</span>
-        <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
-
-            <span class="k">for</span> <span class="n">velocity_domain_point</span> <span class="ow">in</span> <span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">():</span>
-
-                <span class="n">all_domain_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">velocity_domain_point</span><span class="p">)</span>
-
-                <span class="n">partitioning_plate</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_point</span><span class="p">(</span><span class="n">velocity_domain_point</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">partitioning_plate</span><span class="p">:</span>
-
-                    <span class="c1"># We need the newly assigned plate ID to get the equivalent stage rotation of that tectonic plate.</span>
-                    <span class="n">partitioning_plate_id</span> <span class="o">=</span> <span class="n">partitioning_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
-
-                    <span class="c1"># Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.</span>
-                    <span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">partitioning_plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
-
-                    <span class="c1"># Calculate velocity at the velocity domain point.</span>
-                    <span class="c1"># This is from 'time + delta_time' to 'time' on the partitioning plate.</span>
-                    <span class="n">velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span>
-                        <span class="p">[</span><span class="n">velocity_domain_point</span><span class="p">],</span>
-                        <span class="n">equivalent_stage_rotation</span><span class="p">,</span>
-                        <span class="n">delta_time</span><span class="p">)</span>
-
-                    <span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
-                    <span class="n">velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
-                            <span class="p">[</span><span class="n">velocity_domain_point</span><span class="p">],</span>
-                            <span class="n">velocity_vectors</span><span class="p">)</span>
-                    <span class="n">all_velocities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">velocities</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">all_velocities</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
-</pre></div>
-</div>
-</section>
-<section id="id4">
-<h3><a class="toc-backref" href="#id14" role="doc-backlink">Details</a><a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
-<p>The rotation model, topological features, velocity domain features and time interval are the same as
-in the first example.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
-<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
-
-<span class="c1"># Load the topological plate polygon features.</span>
-<span class="n">topology_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
-<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
-<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
-
-<span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
-<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
-</pre></div>
-</div>
-<p>The <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner" title="pygplates.PlatePartitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner</span></code></a> is created as before, but
-<a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner.partition_features" title="pygplates.PlatePartitioner.partition_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner.partition_features()</span></code></a> is not called. Instead each point is partitioned on its own.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Partition our velocity domain features into our topological plate polygons at the current 'time'.</span>
-<span class="n">plate_partitioner</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PlatePartitioner</span><span class="p">(</span><span class="n">topology_features</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The velocity domain features themselves are iterated over (rather than features returned by the
-partitioner), so the points are visited in the order they appear in the velocity domain file.</div>
-<div class="line">Each point is appended to the output points before it is partitioned, so the output always has one
-entry per input point, in the same order.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+<p>The points of all the velocity domain features are gathered into one list.</p>
+<p>A velocity domain feature usually has a single geometry, but <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a>
+handles any number, and <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a> reduces each geometry to its points.</p>
+<p>The points are not reconstructed. They stay where they are while the plates move over them, so the
+same list is used at every time.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The static points at which velocities are calculated.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
 
     <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
     <span class="c1"># Iterate over them all.</span>
     <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
 
-        <span class="k">for</span> <span class="n">velocity_domain_point</span> <span class="ow">in</span> <span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">():</span>
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>The velocities at each <code class="docutils literal notranslate"><span class="pre">time</span></code> are calculated over a 1My interval, from <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">+</span> <span class="pre">delta_time</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>The topological features are resolved to the current <code class="docutils literal notranslate"><span class="pre">time</span></code> using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
+<span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A new snapshot is needed at each <code class="docutils literal notranslate"><span class="pre">time</span></code> because the plates are dynamic: which plate
+contains a point changes as the plate boundaries move.</p>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a> returns one velocity for each point, in the
+order of the points. Each is a <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Vector3D</span></code></a> (a global cartesian velocity vector), in
+kilometres per million years unless the <em>velocity_units</em> argument says otherwise.</p>
+<p>A point that is outside all the resolved plates and networks has no velocity: its entry in the list is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>Where a deforming network overlays a rigid plate, a point inside both gets the velocity of the network.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate a velocity at each domain point, from 'time + delta_time' to 'time'.</span>
+<span class="c1"># The velocities are in the same order as the domain points.</span>
+<span class="c1"># A velocity is None if its point is outside all the resolved plates (and deforming networks).</span>
+<span class="n">domain_velocity_vectors</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+        <span class="n">domain_points</span><span class="p">,</span>
+        <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The points that have no velocity are left out before the velocities are converted, since the
+conversion below raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> if it is given <code class="docutils literal notranslate"><span class="pre">None</span></code> in place of a vector.</p>
+<p>The points that remain are still in the order of the velocity domain points. A script that needs
+an entry for every velocity domain point can use <code class="docutils literal notranslate"><span class="pre">domain_velocity_vectors</span></code> instead, which lines
+up with <code class="docutils literal notranslate"><span class="pre">domain_points</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Keep the domain points that are inside a plate (or deforming network), and their velocities.</span>
+<span class="n">points_in_plates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">velocity_vectors_in_plates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">domain_point</span><span class="p">,</span> <span class="n">domain_velocity_vector</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">domain_points</span><span class="p">,</span> <span class="n">domain_velocity_vectors</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">domain_velocity_vector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">points_in_plates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_point</span><span class="p">)</span>
+        <span class="n">velocity_vectors_in_plates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_velocity_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The vectors are converted to local (magnitude, azimuth, inclination) tuples, one per point, using
+<a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination" title="pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination()</span></code></a>.</p>
+<p>Each point determines its own local coordinate system. For example, the velocity <em>azimuth</em> is
+relative to North as viewed from that point.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+<span class="n">velocities_in_plates</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+        <span class="n">points_in_plates</span><span class="p">,</span>
+        <span class="n">velocity_vectors_in_plates</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html#pygplates-calculate-velocities-by-plate-id"><span class="std std-ref">Calculate velocities by plate ID</span></a>, whose alternate sample code calculates
+the velocity of a rigid plate by hand, from the stage rotation of its plate ID.</p>
+</div>
+</section>
+</section>
+<section id="calculate-velocities-by-grouping-static-points-into-dynamic-plates">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Calculate velocities by grouping static points into dynamic plates</a><a class="headerlink" href="#calculate-velocities-by-grouping-static-points-into-dynamic-plates" title="Link to this heading"></a></h2>
+<p>This example is like the one above, except that it groups the points, and their velocities, by
+the plate that contains them.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Sample code</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
 
-            <span class="n">all_domain_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">velocity_domain_point</span><span class="p">)</span>
-</pre></div>
-</div>
-<p><a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner.partition_point" title="pygplates.PlatePartitioner.partition_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner.partition_point()</span></code></a> returns the first partitioning plate containing the
-point, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no plate contains it.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">partitioning_plate</span> <span class="o">=</span> <span class="n">plate_partitioner</span><span class="o">.</span><span class="n">partition_point</span><span class="p">(</span><span class="n">velocity_domain_point</span><span class="p">)</span>
-<span class="k">if</span> <span class="n">partitioning_plate</span><span class="p">:</span>
-</pre></div>
-</div>
-<p>If a plate was found then its plate ID, and the
-<a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">equivalent stage rotation</span></a> of that plate, are
-obtained from the partitioning plate as in the second example.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We need the newly assigned plate ID to get the equivalent stage rotation of that tectonic plate.</span>
-<span class="n">partitioning_plate_id</span> <span class="o">=</span> <span class="n">partitioning_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
 
-<span class="c1"># Get the stage rotation of partitioning plate from 'time + delta_time' to 'time'.</span>
-<span class="n">equivalent_stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">partitioning_plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line">The velocity is calculated and converted as in the first example, but for a single point.</div>
-<div class="line"><a class="reference internal" href="../generated/pygplates.calculate_velocities.html#pygplates.calculate_velocities" title="pygplates.calculate_velocities"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.calculate_velocities()</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination" title="pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination()</span></code></a>
-are given one-element lists, and the single resulting tuple is appended to the output velocities.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocity at the velocity domain point.</span>
-<span class="c1"># This is from 'time + delta_time' to 'time' on the partitioning plate.</span>
-<span class="n">velocity_vectors</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">calculate_velocities</span><span class="p">(</span>
-    <span class="p">[</span><span class="n">velocity_domain_point</span><span class="p">],</span>
-    <span class="n">equivalent_stage_rotation</span><span class="p">,</span>
-    <span class="n">delta_time</span><span class="p">)</span>
+<span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 
-<span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
-<span class="n">velocities</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">velocity_domain_point</span><span class="p">],</span>
-        <span class="n">velocity_vectors</span><span class="p">)</span>
-<span class="n">all_velocities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">velocities</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points at which velocities are calculated.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+
+    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+
+<span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
+<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">140</span>
+
+<span class="c1"># 'time' = 0, 1, 2, ... , 140</span>
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time: </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Calculate a velocity at each domain point, from 'time + delta_time' to 'time',</span>
+    <span class="c1"># and find the resolved plate (or deforming network) that contains each domain point.</span>
+    <span class="n">domain_velocity_vectors</span><span class="p">,</span> <span class="n">domain_point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+            <span class="n">domain_points</span><span class="p">,</span>
+            <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">,</span>
+            <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># The domain points in each resolved plate (or deforming network), and their velocity vectors.</span>
+    <span class="c1"># Each is a dictionary mapping a resolved plate to a list.</span>
+    <span class="n">points_in_plates</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">velocity_vectors_in_plates</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">domain_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">domain_points</span><span class="p">):</span>
+        <span class="n">domain_velocity_vector</span> <span class="o">=</span> <span class="n">domain_velocity_vectors</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+        <span class="n">domain_point_location</span> <span class="o">=</span> <span class="n">domain_point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+        <span class="c1"># The resolved plate that contains the point or, if the point is in a deforming network, the resolved network.</span>
+        <span class="n">containing_plate</span> <span class="o">=</span> <span class="p">(</span><span class="n">domain_point_location</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">()</span> <span class="ow">or</span>
+                            <span class="n">domain_point_location</span><span class="o">.</span><span class="n">located_in_resolved_network</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">containing_plate</span><span class="p">:</span>
+            <span class="c1"># The point is outside all the resolved plates (and deforming networks), so it has no velocity.</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Add the point, and its velocity, to those of the plate that contains it.</span>
+        <span class="k">if</span> <span class="n">containing_plate</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">points_in_plates</span><span class="p">:</span>
+            <span class="n">points_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">velocity_vectors_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">points_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_point</span><span class="p">)</span>
+        <span class="n">velocity_vectors_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_velocity_vector</span><span class="p">)</span>
+
+    <span class="c1"># All (magnitude, azimuth, inclination) velocities for the current time, grouped by resolved plate.</span>
+    <span class="n">velocities_in_plates</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">containing_plate</span><span class="p">,</span> <span class="n">points_in_plate</span> <span class="ow">in</span> <span class="n">points_in_plates</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+        <span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+        <span class="n">velocities_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+                <span class="n">points_in_plate</span><span class="p">,</span>
+                <span class="n">velocity_vectors_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">])</span>
+
+        <span class="c1"># The plate ID (and name) of the plate come from its feature.</span>
+        <span class="n">containing_plate_feature</span> <span class="o">=</span> <span class="n">containing_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Plate </span><span class="si">{</span><span class="n">containing_plate_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> '</span>
+              <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">containing_plate_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">), number of points: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">points_in_plate</span><span class="p">)</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>If no plate contains the point then a zero velocity is appended instead, so that the output
-velocities stay aligned with the output points.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">else</span><span class="p">:</span>
-    <span class="n">all_velocities</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Details</a><a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>The topological model, velocity domain points and time interval are the same as in the first example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points at which velocities are calculated.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+
+    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+
+<span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a> is called as before, but with
+<em>return_point_locations</em> set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>It then returns a 2-tuple: the list of velocities, and a list with the
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">location</span></code></a> of each point in the resolved topologies.
+Both lists are in the order of the points.</p>
+<p>This is more efficient than getting the locations in a separate call to
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate a velocity at each domain point, from 'time + delta_time' to 'time',</span>
+<span class="c1"># and find the resolved plate (or deforming network) that contains each domain point.</span>
+<span class="n">domain_velocity_vectors</span><span class="p">,</span> <span class="n">domain_point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+        <span class="n">domain_points</span><span class="p">,</span>
+        <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">,</span>
+        <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each point is visited with its velocity and its location.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">domain_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">domain_points</span><span class="p">):</span>
+    <span class="n">domain_velocity_vector</span> <span class="o">=</span> <span class="n">domain_velocity_vectors</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">domain_point_location</span> <span class="o">=</span> <span class="n">domain_point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_boundary" title="pygplates.TopologyPointLocation.located_in_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_boundary()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a> (the rigid plate) that
+contains the point, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p><a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network" title="pygplates.TopologyPointLocation.located_in_resolved_network"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a> that contains the point,
+or <code class="docutils literal notranslate"><span class="pre">None</span></code>. That includes a point inside one of the network’s interior rigid blocks.</p>
+<p>A point is located in one or the other, not both: where a network overlays a plate, the point is
+located in the network.</p>
+<p>A point located in neither is outside all the plates and networks. Its velocity is <code class="docutils literal notranslate"><span class="pre">None</span></code>, and it is skipped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The resolved plate that contains the point or, if the point is in a deforming network, the resolved network.</span>
+<span class="n">containing_plate</span> <span class="o">=</span> <span class="p">(</span><span class="n">domain_point_location</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">()</span> <span class="ow">or</span>
+                    <span class="n">domain_point_location</span><span class="o">.</span><span class="n">located_in_resolved_network</span><span class="p">())</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">containing_plate</span><span class="p">:</span>
+    <span class="c1"># The point is outside all the resolved plates (and deforming networks), so it has no velocity.</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>The point and its velocity are appended to the lists of the plate that contains the point.</p>
+<p>The lists are kept in two dictionaries whose keys are the resolved plates themselves. A plate’s
+plate ID would not do as the key, since nothing stops two topologies from having the same plate ID.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add the point, and its velocity, to those of the plate that contains it.</span>
+<span class="k">if</span> <span class="n">containing_plate</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">points_in_plates</span><span class="p">:</span>
+    <span class="n">points_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">velocity_vectors_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_point</span><span class="p">)</span>
+<span class="n">velocity_vectors_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_velocity_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Iterating over a dictionary visits each plate that contains a point once.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">containing_plate</span><span class="p">,</span> <span class="n">points_in_plate</span> <span class="ow">in</span> <span class="n">points_in_plates</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</pre></div>
+</div>
+<p>The velocities are converted as in the first example, but one plate at a time.</p>
+<p>No point here is without a velocity, since every point in the dictionaries is inside a plate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+<span class="n">velocities_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+        <span class="n">points_in_plate</span><span class="p">,</span>
+        <span class="n">velocity_vectors_in_plates</span><span class="p">[</span><span class="n">containing_plate</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Finally the plate ID and name of each plate are read from its feature
+(<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary.get_feature" title="pygplates.ResolvedTopologicalBoundary.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalBoundary.get_feature()</span></code></a>, or
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_feature" title="pygplates.ResolvedTopologicalNetwork.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_feature()</span></code></a> for a network), and printed with the number
+of points in the plate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The plate ID (and name) of the plate come from its feature.</span>
+<span class="n">containing_plate_feature</span> <span class="o">=</span> <span class="n">containing_plate</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Plate </span><span class="si">{</span><span class="n">containing_plate_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> '</span>
+      <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">containing_plate_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">), number of points: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">points_in_plate</span><span class="p">)</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 </section>
 <section id="see-also">
-<h2><a class="toc-backref" href="#id15" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<h2><a class="toc-backref" href="#id10" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">Equivalent stage rotation</span></a></p></li>
-<li><p>Reference: <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner" title="pygplates.PlatePartitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner</span></code></a>, <a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner.partition_features" title="pygplates.PlatePartitioner.partition_features"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner.partition_features()</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.PlatePartitioner.html#pygplates.PlatePartitioner.partition_point" title="pygplates.PlatePartitioner.partition_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PlatePartitioner.partition_point()</span></code></a>, <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.calculate_velocities.html#pygplates.calculate_velocities" title="pygplates.calculate_velocities"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.calculate_velocities()</span></code></a>, <a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian" title="pygplates.LocalCartesian"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.LocalCartesian</span></code></a></p></li>
-<li><p>Sample code: <a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html#pygplates-calculate-velocities-by-plate-id"><span class="std std-ref">Calculate velocities by plate ID</span></a>,
-<a class="reference internal" href="pygplates_import_geometries_and_assign_plate_ids.html#pygplates-import-geometries-and-assign-plate-ids"><span class="std std-ref">Import geometries and assign plate IDs</span></a>,
-<a class="reference internal" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html#pygplates-find-divergence-at-subduction-zones-and-convergence-at-ridges"><span class="std std-ref">Find divergence at subduction zones and convergence at ridges</span></a></p></li>
+<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-model"><span class="std std-ref">Topological model</span></a>, <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-snapshot"><span class="std std-ref">Topological snapshot</span></a></p></li>
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian" title="pygplates.LocalCartesian"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.LocalCartesian</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html#pygplates-calculate-velocities-in-static-polygons"><span class="std std-ref">Calculate velocities in static polygons</span></a>,
+<a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html#pygplates-calculate-velocities-by-plate-id"><span class="std std-ref">Calculate velocities by plate ID</span></a>,
+<a class="reference internal" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html#pygplates-find-divergence-at-subduction-zones-and-convergence-at-ridges"><span class="std std-ref">Find divergence at subduction zones and convergence at ridges</span></a>,
+<a class="reference internal" href="pygplates_find_plates_and_strain_rates_at_static_points.html#pygplates-find-plates-and-strain-rates-at-static-points"><span class="std std-ref">Find plates and strain rates at static points</span></a>,
+<a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html#pygplates-reconstruct-strain-and-strain-rate"><span class="std std-ref">Reconstruct strain and strain rate</span></a></p></li>
 </ul>
 </section>
 </section>
@@ -706,7 +513,7 @@ velocities stay aligned with the output points.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="pygplates_calculate_velocities_by_plate_id.html" class="btn btn-neutral float-left" title="Calculate velocities by plate ID" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="pygplates_reconstruct_strain_and_strain_rate.html" class="btn btn-neutral float-right" title="Reconstruct strain and strain rate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pygplates_calculate_velocities_in_static_polygons.html" class="btn btn-neutral float-right" title="Calculate velocities in static polygons" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

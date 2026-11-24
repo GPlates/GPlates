@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sample code &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Sample code &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/pygplates_sample_code.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ba81d210"></script>
+      <script src="_static/documentation_options.js?v=1ef95609"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -51,6 +51,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Sample code</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#load-and-save">Load and save</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html">Import geometries and assign plate IDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html">Partition features into plates</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html">Load and save feature collections</a></li>
 </ul>
 </li>
@@ -77,26 +78,40 @@
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html">Find the total length of ridges and subduction zones</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html">Query the triangulation and rigid blocks of deforming networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#spatial-queries">Spatial queries</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html">Find nearest reconstructed feature to a point</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html">Find reconstructed features overlapping a polygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html">Find the overlap, union and difference of polygons</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#isochrons">Isochrons</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_conjugate_isochrons_from_ridge.html">Create conjugate isochrons from a ridge</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html">Split an isochron into ridge and transform segments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#parallel-processing">Parallel processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html">Process times in parallel with multiprocessing</a></li>
 </ul>
 </li>
 </ul>
@@ -139,7 +154,9 @@
 </div>
 <p>Each sample is a complete script that runs in a directory containing the data files it names
 (such as <code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code> or <code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code>). The GPlates
-<a class="reference external" href="https://www.gplates.org/download/">sample data</a> provides files of every kind the samples use.</p>
+<a class="reference external" href="https://www.gplates.org/download/">sample data</a> provides files of every kind the samples use.
+Where a sample has an <em>Output</em> section, it shows what the script printed for one particular model
+and version of pyGPlates, so running it on other data (the sample data included) gives other numbers.</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#load-and-save" id="id1">Load and save</a></p></li>
@@ -150,6 +167,7 @@
 <li><p><a class="reference internal" href="#velocities-strain-and-net-rotation" id="id6">Velocities, strain and net rotation</a></p></li>
 <li><p><a class="reference internal" href="#spatial-queries" id="id7">Spatial queries</a></p></li>
 <li><p><a class="reference internal" href="#isochrons" id="id8">Isochrons</a></p></li>
+<li><p><a class="reference internal" href="#parallel-processing" id="id9">Parallel processing</a></p></li>
 </ul>
 </nav>
 <section id="load-and-save">
@@ -188,6 +206,22 @@ and how to load and save collections of features from/to files.</p>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html">Partition features into plates</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#partition-features-at-a-past-time">Partition features at a past time</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#data-files">Data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#partition-a-polygon-into-resolved-plates">Partition a polygon into resolved plates</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#id1">Data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#id3">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#id4">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html#see-also">See also</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html">Load and save feature collections</a><ul>
@@ -480,6 +514,37 @@ at past geological times, how to query their topologies, and how to track quanti
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html#see-also">See also</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html">Query the triangulation and rigid blocks of deforming networks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#list-the-rigid-blocks-vertices-and-triangles-of-each-network">List the rigid blocks, vertices and triangles of each network</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#find-the-triangle-that-contains-a-point">Find the triangle that contains a point</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#id2">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#step-by-step-or-over-a-time-span">Step by step, or over a time span</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#reconstruct-points-one-time-step-at-a-time">Reconstruct points one time step at a time</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#reconstruct-each-point-using-the-plate-or-network-that-contains-it">Reconstruct each point using the plate or network that contains it</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#id2">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html#see-also">See also</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html#data-files">Data files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html#sample-code">Sample code</a></li>
@@ -493,20 +558,21 @@ at past geological times, how to query their topologies, and how to track quanti
 <section id="velocities-strain-and-net-rotation">
 <span id="velocities"></span><h2><a class="toc-backref" href="#id6" role="doc-backlink">Velocities, strain and net rotation</a><a class="headerlink" href="#velocities-strain-and-net-rotation" title="Link to this heading"></a></h2>
 <p>This section covers how to calculate velocities of features as they move through geological time,
-velocities of plates at non-moving point locations, strain and strain rate in deforming regions,
-and the net rotation of the lithosphere.</p>
+velocities of plates at non-moving point locations, velocities of plate boundaries, strain and strain
+rate in deforming regions, and the net rotation of the lithosphere.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html#data-files">Data files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html#alternate-sample-code">Alternate sample code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html#details">Details</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html#see-also">See also</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#data-files">Data files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points">Calculate velocities by assigning plate IDs of dynamic plates to static points</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#calculate-velocities-of-dynamic-plates-at-static-points">Calculate velocities of dynamic plates at static points</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#sample-code">Sample code</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#details">Details</a></li>
 </ul>
@@ -516,12 +582,51 @@ and the net rotation of the lithosphere.</p>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#id2">Details</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates">Calculate velocities by individually partitioning each static point into dynamic plates</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#id3">Sample code</a></li>
-<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#id4">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#see-also">See also</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html#see-also">See also</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#calculate-velocities-of-static-polygons-at-static-points">Calculate velocities of static polygons at static points</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#find-the-static-polygon-containing-each-static-point">Find the static polygon containing each static point</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#id2">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_plate_boundaries.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_plate_boundaries.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_plate_boundaries.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_plate_boundaries.html#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#find-the-plate-or-network-containing-each-static-point">Find the plate or network containing each static point</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#calculate-strain-rates-at-static-points">Calculate strain rates at static points</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#id2">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html#see-also">See also</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a><ul>
@@ -538,6 +643,29 @@ and the net rotation of the lithosphere.</p>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html#see-also">See also</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones.html#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#clamp-and-smooth-strain-rates">Clamp and smooth strain rates</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#data-files">Data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#give-a-rift-an-exponential-stretching-profile">Give a rift an exponential stretching profile</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#id1">Data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#id2">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#id3">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#see-also">See also</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html">Calculate net rotation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html#data-files">Data files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html#sample-code">Sample code</a></li>
@@ -545,12 +673,28 @@ and the net rotation of the lithosphere.</p>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html#see-also">See also</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#calculate-net-rotation-of-static-polygons">Calculate net rotation of static polygons</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#data-files">Data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#calculate-net-rotation-from-velocities">Calculate net rotation from velocities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#id1">Data files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#id3">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#id4">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html#see-also">See also</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </section>
 <section id="spatial-queries">
 <span id="spatial-proximity"></span><h2><a class="toc-backref" href="#id7" role="doc-backlink">Spatial queries</a><a class="headerlink" href="#spatial-queries" title="Link to this heading"></a></h2>
-<p>This section covers queries involving distances between geometries.</p>
+<p>This section covers queries involving distances between geometries, and the overlap of polygons.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html">Find nearest reconstructed feature to a point</a><ul>
@@ -566,6 +710,21 @@ and the net rotation of the lithosphere.</p>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html#sample-code">Sample code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html#details">Details</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html">Find the overlap, union and difference of polygons</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#find-the-overlap-of-reconstructed-polygons-with-a-region">Find the overlap of reconstructed polygons with a region</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#sample-code">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#details">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#compare-two-positions-of-a-polygon">Compare two positions of a polygon</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#id1">Sample code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#id2">Details</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html#see-also">See also</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a><ul>
@@ -601,6 +760,21 @@ and the net rotation of the lithosphere.</p>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html#sample-code">Sample code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html#details">Details</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="parallel-processing">
+<h2><a class="toc-backref" href="#id9" role="doc-backlink">Parallel processing</a><a class="headerlink" href="#parallel-processing" title="Link to this heading"></a></h2>
+<p>This section covers sharing work among several processes.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html">Process times in parallel with multiprocessing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html#data-files">Data files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html#sample-code">Sample code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html#details">Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html#see-also">See also</a></li>
 </ul>
 </li>
 </ul>

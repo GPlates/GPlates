@@ -1,0 +1,483 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find the overlap, union and difference of polygons &mdash; pygplates 1.2.0.dev9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+    <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Find overriding plate of closest subducting line" href="pygplates_find_overriding_plate_of_closest_subducting_line.html" />
+    <link rel="prev" title="Find reconstructed features overlapping a polygon" href="pygplates_find_features_overlapping_a_polygon.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_nearest_feature_to_a_point.html">Find nearest reconstructed feature to a point</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_features_overlapping_a_polygon.html">Find reconstructed features overlapping a polygon</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Find the overlap, union and difference of polygons</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#find-the-overlap-of-reconstructed-polygons-with-a-region">Find the overlap of reconstructed polygons with a region</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compare-two-positions-of-a-polygon">Compare two positions of a polygon</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Find the overlap, union and difference of polygons</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_find_overlap_union_and_difference_of_polygons.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="find-the-overlap-union-and-difference-of-polygons">
+<span id="pygplates-find-overlap-union-and-difference-of-polygons"></span><h1>Find the overlap, union and difference of polygons<a class="headerlink" href="#find-the-overlap-union-and-difference-of-polygons" title="Link to this heading"></a></h1>
+<p>This example combines pairs of polygons using the four Boolean operations of
+<a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere</span></code></a>, which were added in pyGPlates 1.1:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.intersection" title="pygplates.PolygonOnSphere.intersection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">intersection()</span></code></a>: the region inside both polygons (their overlap),</p></li>
+<li><p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.union" title="pygplates.PolygonOnSphere.union"><code class="xref py py-meth docutils literal notranslate"><span class="pre">union()</span></code></a>: the region inside either polygon,</p></li>
+<li><p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.difference" title="pygplates.PolygonOnSphere.difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">difference()</span></code></a>: the region inside the first polygon but outside the second, and</p></li>
+<li><p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.symmetric_difference" title="pygplates.PolygonOnSphere.symmetric_difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">symmetric_difference()</span></code></a>: the region inside exactly one of them.</p></li>
+</ul>
+<p>Each returns a list of polygons, since the result can be in several pieces, or empty. The polygons
+in a list do not overlap each other, and they have interior rings where the region has holes.</p>
+<p>The first example finds how much of a region of interest each reconstructed static polygon covers,
+and how much of the region none of them covers.</p>
+<p>The second example compares two positions of the same polygon using all four operations.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id3">Data files</a></p></li>
+<li><p><a class="reference internal" href="#find-the-overlap-of-reconstructed-polygons-with-a-region" id="id4">Find the overlap of reconstructed polygons with a region</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sample-code" id="id5">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id6">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#compare-two-positions-of-a-polygon" id="id7">Compare two positions of a polygon</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id8">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id9">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id10">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<p>Both scripts read the same files:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the static polygons.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">static_polygons.gpml</span></code></dt><dd><p>Polygon features, each with a reconstruction plate ID. Static polygons are used here, but any
+polygon features will do, such as continental polygons.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="find-the-overlap-of-reconstructed-polygons-with-a-region">
+<span id="pygplates-find-overlap-of-reconstructed-polygons-with-a-region"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink">Find the overlap of reconstructed polygons with a region</a><a class="headerlink" href="#find-the-overlap-of-reconstructed-polygons-with-a-region" title="Link to this heading"></a></h2>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Reconstruct the static polygons to 50Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
+
+<span class="c1"># The region of interest: a polygon that stays where it is (it is not reconstructed).</span>
+<span class="n">region</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">([(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">45</span><span class="p">)])</span>
+
+<span class="c1"># The polygons that make up the part of the region that no reconstructed polygon covers.</span>
+<span class="c1"># To begin with that is the whole region.</span>
+<span class="n">uncovered_polygons</span> <span class="o">=</span> <span class="p">[</span><span class="n">region</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">reconstructed_geometry</span> <span class="ow">in</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">():</span>
+
+    <span class="c1"># Only polygons can overlap the region.</span>
+    <span class="n">reconstructed_polygon</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reconstructed_polygon</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">):</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># The part of the reconstructed polygon that is inside the region, as a list of polygons.</span>
+    <span class="c1"># The list is empty if the two do not overlap.</span>
+    <span class="n">polygons_inside_region</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">polygons_inside_region</span><span class="p">:</span>
+        <span class="n">area_inside_region</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons_inside_region</span><span class="p">)</span>
+        <span class="n">area_inside_region_in_square_kms</span> <span class="o">=</span> <span class="n">area_inside_region</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">num_interior_rings</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons_inside_region</span><span class="p">)</span>
+
+        <span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1"> covers </span><span class="si">{</span><span class="n">area_inside_region_in_square_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms of the region, '</span>
+              <span class="sa">f</span><span class="s1">'in </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">polygons_inside_region</span><span class="p">)</span><span class="si">}</span><span class="s1"> polygons with </span><span class="si">{</span><span class="n">num_interior_rings</span><span class="si">}</span><span class="s1"> interior rings'</span><span class="p">)</span>
+
+    <span class="c1"># Remove the reconstructed polygon from what is left of the region.</span>
+    <span class="n">remaining_uncovered_polygons</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">uncovered_polygon</span> <span class="ow">in</span> <span class="n">uncovered_polygons</span><span class="p">:</span>
+        <span class="n">remaining_uncovered_polygons</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">uncovered_polygon</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">reconstructed_polygon</span><span class="p">))</span>
+    <span class="n">uncovered_polygons</span> <span class="o">=</span> <span class="n">remaining_uncovered_polygons</span>
+
+<span class="n">uncovered_area</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">uncovered_polygons</span><span class="p">)</span>
+<span class="n">uncovered_area_in_square_kms</span> <span class="o">=</span> <span class="n">uncovered_area</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">region_area_in_square_kms</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No plate covers </span><span class="si">{</span><span class="n">uncovered_area_in_square_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> of the </span><span class="si">{</span><span class="n">region_area_in_square_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms of the region, '</span>
+      <span class="sa">f</span><span class="s1">'in </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">uncovered_polygons</span><span class="p">)</span><span class="si">}</span><span class="s1"> polygons'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>The rotations are loaded from a rotation file into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The static polygons are reconstructed to 50Ma by creating a <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the static polygons to 50Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The region of interest is a <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere</span></code></a> created from four points. It is not
+reconstructed: it stays where it is while the static polygons move across it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The region of interest: a polygon that stays where it is (it is not reconstructed).</span>
+<span class="n">region</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">([(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">45</span><span class="p">)])</span>
+</pre></div>
+</div>
+<p>The part of the region that no reconstructed polygon covers is kept as a list of polygons. It starts
+as the whole region, and each reconstructed polygon is removed from it in the loop below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The polygons that make up the part of the region that no reconstructed polygon covers.</span>
+<span class="c1"># To begin with that is the whole region.</span>
+<span class="n">uncovered_polygons</span> <span class="o">=</span> <span class="p">[</span><span class="n">region</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_reconstructed_geometries" title="pygplates.ReconstructSnapshot.get_reconstructed_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_reconstructed_geometries()</span></code></a> returns a
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a> for each geometry of each feature that exists at 50Ma.</p>
+<p>The Boolean operations are methods of polygons, so a reconstructed geometry of another type is skipped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">reconstructed_geometry</span> <span class="ow">in</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">():</span>
+
+    <span class="c1"># Only polygons can overlap the region.</span>
+    <span class="n">reconstructed_polygon</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reconstructed_polygon</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">):</span>
+        <span class="k">continue</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.intersection" title="pygplates.PolygonOnSphere.intersection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.intersection()</span></code></a> returns the polygons that cover the region inside
+both the reconstructed polygon and the region of interest.</p>
+<p>The list is empty if the two are apart, and also if they only touch (along an edge, or at points).</p>
+<p>If the reconstructed polygon is entirely inside the region of interest, the list contains the
+reconstructed polygon itself.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The part of the reconstructed polygon that is inside the region, as a list of polygons.</span>
+<span class="c1"># The list is empty if the two do not overlap.</span>
+<span class="n">polygons_inside_region</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The area of the overlap is the sum of the areas of the polygons in the list, since they do not
+overlap each other. <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.get_area()</span></code></a> returns an area on a sphere of unit
+radius, which is multiplied by the square of the Earth’s radius to convert it to square kilometres.</p>
+<p>The interior rings of both polygons take part in the operation. So where the region of interest
+covers a hole in a reconstructed polygon, the polygon returned has that hole as an interior ring,
+and its area does not include it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">polygons_inside_region</span><span class="p">:</span>
+    <span class="n">area_inside_region</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons_inside_region</span><span class="p">)</span>
+    <span class="n">area_inside_region_in_square_kms</span> <span class="o">=</span> <span class="n">area_inside_region</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">num_interior_rings</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons_inside_region</span><span class="p">)</span>
+
+    <span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1"> covers </span><span class="si">{</span><span class="n">area_inside_region_in_square_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms of the region, '</span>
+          <span class="sa">f</span><span class="s1">'in </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">polygons_inside_region</span><span class="p">)</span><span class="si">}</span><span class="s1"> polygons with </span><span class="si">{</span><span class="n">num_interior_rings</span><span class="si">}</span><span class="s1"> interior rings'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.difference" title="pygplates.PolygonOnSphere.difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.difference()</span></code></a> returns the polygons that cover the region inside one
+polygon but outside another.</p>
+<p>Here the reconstructed polygon is removed from each polygon of what is left of the region of
+interest, and the pieces that are returned become what is left.</p>
+<p>If the two polygons are apart (or only touch) the list contains the first polygon itself, and if
+the first is entirely inside the second the list is empty.</p>
+<p>Where the second polygon is entirely inside the first, the polygon returned has a hole where
+the second is.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Remove the reconstructed polygon from what is left of the region.</span>
+<span class="n">remaining_uncovered_polygons</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">uncovered_polygon</span> <span class="ow">in</span> <span class="n">uncovered_polygons</span><span class="p">:</span>
+    <span class="n">remaining_uncovered_polygons</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">uncovered_polygon</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">reconstructed_polygon</span><span class="p">))</span>
+<span class="n">uncovered_polygons</span> <span class="o">=</span> <span class="n">remaining_uncovered_polygons</span>
+</pre></div>
+</div>
+<p>What is left after every reconstructed polygon has been removed is the part of the region of
+interest that no polygon covers: the gaps between the reconstructed static polygons.</p>
+<p>The areas that the plates cover can add up to more than the rest of the region, because
+reconstructed static polygons also move over each other, and the area where two overlap is
+counted for both.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">uncovered_area</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">uncovered_polygons</span><span class="p">)</span>
+<span class="n">uncovered_area_in_square_kms</span> <span class="o">=</span> <span class="n">uncovered_area</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">region_area_in_square_kms</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No plate covers </span><span class="si">{</span><span class="n">uncovered_area_in_square_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> of the </span><span class="si">{</span><span class="n">region_area_in_square_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms of the region, '</span>
+      <span class="sa">f</span><span class="s1">'in </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">uncovered_polygons</span><span class="p">)</span><span class="si">}</span><span class="s1"> polygons'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="compare-two-positions-of-a-polygon">
+<span id="pygplates-compare-two-positions-of-a-polygon"></span><h2><a class="toc-backref" href="#id7" role="doc-backlink">Compare two positions of a polygon</a><a class="headerlink" href="#compare-two-positions-of-a-polygon" title="Link to this heading"></a></h2>
+<p>This example compares where each static polygon was at 50Ma with where it is at present day. Two
+polygons to compare could equally be the positions that two rotation models give the same feature,
+or a reconstructed outline and one digitised from a map.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Sample code</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Reconstruct the static polygons to 50Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The total area of a list of polygons that do not overlap each other."""</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons</span><span class="p">)</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+
+
+<span class="k">for</span> <span class="n">reconstructed_geometry</span> <span class="ow">in</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">():</span>
+
+    <span class="c1"># The two polygons to compare: where the static polygon is at present day, and where it was at 50Ma.</span>
+    <span class="n">present_day_polygon</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_present_day_geometry</span><span class="p">()</span>
+    <span class="n">reconstructed_polygon</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reconstructed_polygon</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">):</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># The region inside both polygons.</span>
+    <span class="n">polygons_in_both</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+
+    <span class="c1"># The region inside the reconstructed polygon but outside the present day polygon.</span>
+    <span class="n">polygons_in_reconstructed_only</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+
+    <span class="c1"># The region inside exactly one of the two polygons.</span>
+    <span class="n">polygons_in_one_only</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">symmetric_difference</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+
+    <span class="c1"># The region inside either polygon (or both).</span>
+    <span class="n">polygons_in_either</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+
+    <span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Polygon of plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1"> at </span><span class="si">{</span><span class="n">reconstruction_time</span><span class="si">}</span><span class="s1">Ma and at present day:'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_both</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside both'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_reconstructed_only</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside the reconstructed polygon only'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_one_only</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside one only'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_either</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside either'</span><span class="p">)</span>
+
+    <span class="c1"># The polygons returned have interior rings where the region has holes.</span>
+    <span class="n">num_interior_rings</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons_in_either</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  the region inside either is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">polygons_in_either</span><span class="p">)</span><span class="si">}</span><span class="s1"> polygons with </span><span class="si">{</span><span class="n">num_interior_rings</span><span class="si">}</span><span class="s1"> interior rings'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Details</a><a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>The static polygons are reconstructed to 50Ma, as in the first example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the static polygons to 50Ma.</span>
+<span class="n">reconstruction_time</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each of the four operations returns a list of polygons that do not overlap each other, so one
+function finds the area of any of the results.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The total area of a list of polygons that do not overlap each other."""</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons</span><span class="p">)</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+</pre></div>
+</div>
+<p>A <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a> has both of the polygons to compare:
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_present_day_geometry" title="pygplates.ReconstructedFeatureGeometry.get_present_day_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry.get_present_day_geometry()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry" title="pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">reconstructed_geometry</span> <span class="ow">in</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">():</span>
+
+    <span class="c1"># The two polygons to compare: where the static polygon is at present day, and where it was at 50Ma.</span>
+    <span class="n">present_day_polygon</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_present_day_geometry</span><span class="p">()</span>
+    <span class="n">reconstructed_polygon</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reconstructed_polygon</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">):</span>
+        <span class="k">continue</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.intersection" title="pygplates.PolygonOnSphere.intersection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.intersection()</span></code></a> returns the region that the polygon covers at both times.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The region inside both polygons.</span>
+<span class="n">polygons_in_both</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.difference" title="pygplates.PolygonOnSphere.difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.difference()</span></code></a> returns the region that the polygon covered at 50Ma but
+does not cover now.</p>
+<p>Unlike the other three operations, the order of the two polygons matters:
+<code class="docutils literal notranslate"><span class="pre">present_day_polygon.difference(reconstructed_polygon)</span></code> is the region that it covers now but
+did not cover at 50Ma.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The region inside the reconstructed polygon but outside the present day polygon.</span>
+<span class="n">polygons_in_reconstructed_only</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.symmetric_difference" title="pygplates.PolygonOnSphere.symmetric_difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.symmetric_difference()</span></code></a> returns the region that the polygon covers
+at one of the times but not the other. This is both of the differences above.</p>
+<p>Its area measures how much two outlines of the same thing disagree: it is zero if they are identical.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The region inside exactly one of the two polygons.</span>
+<span class="n">polygons_in_one_only</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">symmetric_difference</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.union" title="pygplates.PolygonOnSphere.union"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.union()</span></code></a> returns the region that the polygon covers at either time.</p>
+<p>Two polygons that overlap, or share an edge, are merged into one polygon. Two that are apart, or
+touch only at points, are returned as they are, so the list then has two polygons.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The region inside either polygon (or both).</span>
+<span class="n">polygons_in_either</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">present_day_polygon</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The four areas are related: the area inside either polygon is the area inside both plus the area
+inside one only.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_geometry</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Polygon of plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1"> at </span><span class="si">{</span><span class="n">reconstruction_time</span><span class="si">}</span><span class="s1">Ma and at present day:'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_both</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside both'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_reconstructed_only</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside the reconstructed polygon only'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_one_only</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside one only'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="n">get_area_in_square_kms</span><span class="p">(</span><span class="n">polygons_in_either</span><span class="p">)</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> square kms are inside either'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A polygon returned by any of the operations has an interior ring wherever the region it covers has
+a hole. For example, the union of two positions of a polygon that has a hole in it has a hole where
+the two positions of that hole overlap.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The polygons returned have interior rings where the region has holes.</span>
+<span class="n">num_interior_rings</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">get_number_of_interior_rings</span><span class="p">()</span> <span class="k">for</span> <span class="n">polygon</span> <span class="ow">in</span> <span class="n">polygons_in_either</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  the region inside either is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">polygons_in_either</span><span class="p">)</span><span class="si">}</span><span class="s1"> polygons with </span><span class="si">{</span><span class="n">num_interior_rings</span><span class="si">}</span><span class="s1"> interior rings'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each ring of a polygon bounds the smaller of its two sides, so no ring can enclose more
+than a hemisphere. <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.union" title="pygplates.PolygonOnSphere.union"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.union()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.symmetric_difference" title="pygplates.PolygonOnSphere.symmetric_difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.symmetric_difference()</span></code></a> raise <a class="reference internal" href="../generated/pygplates.PartitionError.html#pygplates.PartitionError" title="pygplates.PartitionError"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PartitionError</span></code></a> if
+an outer ring of their result would (two very large polygons that overlap, say).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Pieces of a result that are narrower than about 9 metres are dropped. The
+<em>sliver_width_threshold_radians</em> argument of each operation changes that width, and zero keeps
+every piece.</p>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id10" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.intersection" title="pygplates.PolygonOnSphere.intersection"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.intersection()</span></code></a>, <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.union" title="pygplates.PolygonOnSphere.union"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.union()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.difference" title="pygplates.PolygonOnSphere.difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.difference()</span></code></a>, <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.symmetric_difference" title="pygplates.PolygonOnSphere.symmetric_difference"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.symmetric_difference()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.partition" title="pygplates.PolygonOnSphere.partition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.partition()</span></code></a>, <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.get_area()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_partition_features_into_plates.html#pygplates-partition-features-into-plates"><span class="std std-ref">Partition features into plates</span></a>,
+<a class="reference internal" href="pygplates_find_features_overlapping_a_polygon.html#pygplates-find-features-overlapping-a-polygon"><span class="std std-ref">Find reconstructed features overlapping a polygon</span></a>, <a class="reference internal" href="pygplates_reconstruct_regular_features.html#pygplates-reconstruct-regular-features"><span class="std std-ref">Reconstruct regular features</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_find_features_overlapping_a_polygon.html" class="btn btn-neutral float-left" title="Find reconstructed features overlapping a polygon" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_find_overriding_plate_of_closest_subducting_line.html" class="btn btn-neutral float-right" title="Find overriding plate of closest subducting line" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,626 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Query the triangulation and rigid blocks of deforming networks &mdash; pygplates 1.2.0.dev9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+    <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Reconstruct points step by step through topologies" href="pygplates_reconstruct_points_step_by_step_through_topologies.html" />
+    <link rel="prev" title="Find gaps and overlaps in global topological boundaries" href="pygplates_detect_topology_gaps_and_overlaps.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html">Find average area and subducting boundary proportion of topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html">Find the total length of ridges and subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Query the triangulation and rigid blocks of deforming networks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#list-the-rigid-blocks-vertices-and-triangles-of-each-network">List the rigid blocks, vertices and triangles of each network</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#find-the-triangle-that-contains-a-point">Find the triangle that contains a point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Query the triangulation and rigid blocks of deforming networks</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_query_network_triangulation_and_rigid_blocks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="query-the-triangulation-and-rigid-blocks-of-deforming-networks">
+<span id="pygplates-query-network-triangulation-and-rigid-blocks"></span><h1>Query the triangulation and rigid blocks of deforming networks<a class="headerlink" href="#query-the-triangulation-and-rigid-blocks-of-deforming-networks" title="Link to this heading"></a></h1>
+<p>This example looks inside resolved deforming networks: at the triangulation that deforms each
+network, and at the rigid blocks inside it.</p>
+<p>A deforming network, resolved at a geological time, has a boundary polygon, any number of interior
+rigid blocks, and a triangulation. The vertices of the triangulation are the points of the boundary,
+of the rigid blocks and of any other interior geometries, and each moves with the feature it comes from.</p>
+<p>The network deforms as its vertices move together or apart, and the strain rate of each triangle
+is calculated from the velocities of its three vertices.</p>
+<p>The first example lists the rigid blocks, vertices and triangles of each network. The second finds
+the triangle that contains a point, and compares the strain rate of that triangle with the strain
+rate at the point.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id3">Data files</a></p></li>
+<li><p><a class="reference internal" href="#list-the-rigid-blocks-vertices-and-triangles-of-each-network" id="id4">List the rigid blocks, vertices and triangles of each network</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sample-code" id="id5">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id6">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#find-the-triangle-that-contains-a-point" id="id7">Find the triangle that contains a point</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id8">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id9">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id10">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<p>Both scripts read the same files:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Deforming network features, and the features that their boundaries and interiors are built from.
+Topological plate polygon features can be in the file too. There must be networks at 10Ma,
+since the second script chooses its points from them. Leave out inactive networks, such as
+those in <code class="docutils literal notranslate"><span class="pre">Zahirovic_etal_2022_Deforming_Networks_Inactive.gpml</span></code> in the GPlates sample data,
+so that the points are chosen from networks that are deforming.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the features that the deforming
+networks are built from, since those are what move the vertices of each triangulation.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="list-the-rigid-blocks-vertices-and-triangles-of-each-network">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">List the rigid blocks, vertices and triangles of each network</a><a class="headerlink" href="#list-the-rigid-blocks-vertices-and-triangles-of-each-network" title="Link to this heading"></a></h2>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks) and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Get a snapshot of our resolved topologies at 10Ma.</span>
+<span class="n">time</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+<span class="c1"># Get the resolved deforming networks (and not the resolved rigid plates).</span>
+<span class="n">resolved_networks</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_resolved_topologies</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ResolveTopologyType</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">resolved_network</span> <span class="ow">in</span> <span class="n">resolved_networks</span><span class="p">:</span>
+
+    <span class="n">network_feature</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Network </span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">) at </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma:'</span><span class="p">)</span>
+
+    <span class="c1"># The interior rigid blocks of the network. This is an empty list if the network has none.</span>
+    <span class="k">for</span> <span class="n">rigid_block</span> <span class="ow">in</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_rigid_blocks</span><span class="p">():</span>
+        <span class="n">rigid_block_feature</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+        <span class="c1"># The outline of the rigid block at 10Ma, which is a polygon.</span>
+        <span class="n">rigid_block_polygon</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+        <span class="n">rigid_block_area_in_sq_kms</span> <span class="o">=</span> <span class="n">rigid_block_polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Rigid block "</span><span class="si">{</span><span class="n">rigid_block_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">" moves with plate '</span>
+              <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">rigid_block_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> and has area </span><span class="si">{</span><span class="n">rigid_block_area_in_sq_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> km^2'</span><span class="p">)</span>
+
+    <span class="c1"># The triangulation of the network, and its vertices and triangles.</span>
+    <span class="n">network_triangulation</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_network_triangulation</span><span class="p">()</span>
+    <span class="n">vertices</span> <span class="o">=</span> <span class="n">network_triangulation</span><span class="o">.</span><span class="n">get_vertices</span><span class="p">()</span>
+    <span class="n">triangles</span> <span class="o">=</span> <span class="n">network_triangulation</span><span class="o">.</span><span class="n">get_triangles</span><span class="p">()</span>
+
+    <span class="c1"># The position and speed of each vertex.</span>
+    <span class="c1"># Each vertex is also mapped to its index, so that a triangle can refer to its vertices by index (below).</span>
+    <span class="n">vertex_indices</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">vertex_lat_lons</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">vertex_speeds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">vertex_index</span><span class="p">,</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vertices</span><span class="p">):</span>
+        <span class="n">vertex_indices</span><span class="p">[</span><span class="n">vertex</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertex_index</span>
+        <span class="n">vertex_lat_lons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vertex</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">())</span>
+        <span class="c1"># The velocity of the vertex is a vector (in cms/yr here), and the speed is its magnitude.</span>
+        <span class="n">vertex_velocity</span> <span class="o">=</span> <span class="n">vertex</span><span class="o">.</span><span class="n">get_velocity</span><span class="p">(</span><span class="n">velocity_units</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityUnits</span><span class="o">.</span><span class="n">cms_per_yr</span><span class="p">)</span>
+        <span class="n">vertex_speeds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vertex_velocity</span><span class="o">.</span><span class="n">get_magnitude</span><span class="p">())</span>
+
+    <span class="c1"># The vertices (as indices into the vertex lists) and the strain rate of each triangle in the deforming region.</span>
+    <span class="n">triangle_vertex_indices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">triangle_strain_rates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="n">triangles</span><span class="p">:</span>
+
+        <span class="c1"># Skip triangles that are outside the network's boundary, or inside one of its rigid blocks.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">triangle</span><span class="o">.</span><span class="n">is_in_deforming_region</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">triangle_vertex_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="nb">tuple</span><span class="p">(</span><span class="n">vertex_indices</span><span class="p">[</span><span class="n">triangle</span><span class="o">.</span><span class="n">get_vertex</span><span class="p">(</span><span class="n">index</span><span class="p">)]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+        <span class="c1"># The strain rate is constant across the triangle.</span>
+        <span class="n">triangle_strain_rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">triangle</span><span class="o">.</span><span class="n">strain_rate</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span><span class="si">}</span><span class="s1"> vertices:'</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">vertex_index</span><span class="p">,</span> <span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vertex_lat_lons</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'    Vertex </span><span class="si">{</span><span class="n">vertex_index</span><span class="si">}</span><span class="s1"> at (</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">) has speed </span><span class="si">{</span><span class="n">vertex_speeds</span><span class="p">[</span><span class="n">vertex_index</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> cms/yr'</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangles</span><span class="p">)</span><span class="si">}</span><span class="s1"> triangles, of which </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangle_vertex_indices</span><span class="p">)</span><span class="si">}</span><span class="s1"> are in the deforming region:'</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">vertex_index_triple</span><span class="p">,</span> <span class="n">triangle_strain_rate</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">triangle_vertex_indices</span><span class="p">,</span> <span class="n">triangle_strain_rates</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'    Triangle with vertices </span><span class="si">{</span><span class="n">vertex_index_triple</span><span class="si">}</span><span class="s1"> has dilatation rate '</span>
+              <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">triangle_strain_rate</span><span class="o">.</span><span class="n">get_dilatation_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s and total strain rate '</span>
+              <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">triangle_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features and the rotation file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks) and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The topological features are resolved at 10Ma using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a snapshot of our resolved topologies at 10Ma.</span>
+<span class="n">time</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_resolved_topologies" title="pygplates.TopologicalSnapshot.get_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_resolved_topologies()</span></code></a> returns the resolved topologies of the
+types it is asked for.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code> those are the deforming networks only, each a
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the resolved deforming networks (and not the resolved rigid plates).</span>
+<span class="n">resolved_networks</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_resolved_topologies</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ResolveTopologyType</span><span class="o">.</span><span class="n">network</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The plate ID and name of each network are read from its feature
+(<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_feature" title="pygplates.ResolvedTopologicalNetwork.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_feature()</span></code></a>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">network_feature</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Network </span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">) at </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma:'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_rigid_blocks" title="pygplates.ResolvedTopologicalNetwork.get_rigid_blocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_rigid_blocks()</span></code></a> returns the interior rigid blocks of the
+network, as a list of <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a>. The list is empty if the
+network has none.</p>
+<p>A rigid block is a polygon feature inside the network that does not deform. It moves as one piece,
+with the reconstruction plate ID of its feature.</p>
+<p>Its <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry" title="pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">geometry</span></code></a>
+is its outline at 10Ma, which is a <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere" title="pygplates.PolygonOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.get_area()</span></code></a> returns an area on a sphere of unit radius, so it is
+multiplied by the square of the Earth’s radius to get square kilometres.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The interior rigid blocks of the network. This is an empty list if the network has none.</span>
+<span class="k">for</span> <span class="n">rigid_block</span> <span class="ow">in</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_rigid_blocks</span><span class="p">():</span>
+    <span class="n">rigid_block_feature</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+    <span class="c1"># The outline of the rigid block at 10Ma, which is a polygon.</span>
+    <span class="n">rigid_block_polygon</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+    <span class="n">rigid_block_area_in_sq_kms</span> <span class="o">=</span> <span class="n">rigid_block_polygon</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Rigid block "</span><span class="si">{</span><span class="n">rigid_block_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">" moves with plate '</span>
+          <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">rigid_block_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> and has area </span><span class="si">{</span><span class="n">rigid_block_area_in_sq_kms</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}</span><span class="s1"> km^2'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_network_triangulation" title="pygplates.ResolvedTopologicalNetwork.get_network_triangulation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_network_triangulation()</span></code></a> returns the triangulation of
+the network, a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation" title="pygplates.NetworkTriangulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation</span></code></a>.</p>
+<p>Its <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.get_vertices" title="pygplates.NetworkTriangulation.get_vertices"><code class="xref py py-meth docutils literal notranslate"><span class="pre">vertices</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.get_triangles" title="pygplates.NetworkTriangulation.get_triangles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">triangles</span></code></a> are each a read-only sequence: it
+has a length, and it can be iterated over and indexed.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The triangulation of the network, and its vertices and triangles.</span>
+<span class="n">network_triangulation</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_network_triangulation</span><span class="p">()</span>
+<span class="n">vertices</span> <span class="o">=</span> <span class="n">network_triangulation</span><span class="o">.</span><span class="n">get_vertices</span><span class="p">()</span>
+<span class="n">triangles</span> <span class="o">=</span> <span class="n">network_triangulation</span><span class="o">.</span><span class="n">get_triangles</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Each vertex is a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex" title="pygplates.NetworkTriangulation.Vertex"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Vertex</span></code></a>. Its
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex.position" title="pygplates.NetworkTriangulation.Vertex.position"><code class="xref py py-attr docutils literal notranslate"><span class="pre">position</span></code></a> is a
+<a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a>. Its
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex.get_velocity" title="pygplates.NetworkTriangulation.Vertex.get_velocity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">velocity</span></code></a> is a
+<a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Vector3D</span></code></a>, in kilometres per million years unless the <em>velocity_units</em> argument
+says otherwise. It is the velocity of the feature that the vertex comes from. (A vertex where two
+sections of the boundary meet comes from two features, and has the average of their velocities.)</p>
+<p>A vertex can be used as a key in a dictionary. Here a dictionary maps each vertex to its index in
+the sequence of vertices, which the triangles need below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The position and speed of each vertex.</span>
+<span class="c1"># Each vertex is also mapped to its index, so that a triangle can refer to its vertices by index (below).</span>
+<span class="n">vertex_indices</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">vertex_lat_lons</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">vertex_speeds</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">vertex_index</span><span class="p">,</span> <span class="n">vertex</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vertices</span><span class="p">):</span>
+    <span class="n">vertex_indices</span><span class="p">[</span><span class="n">vertex</span><span class="p">]</span> <span class="o">=</span> <span class="n">vertex_index</span>
+    <span class="n">vertex_lat_lons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vertex</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">())</span>
+    <span class="c1"># The velocity of the vertex is a vector (in cms/yr here), and the speed is its magnitude.</span>
+    <span class="n">vertex_velocity</span> <span class="o">=</span> <span class="n">vertex</span><span class="o">.</span><span class="n">get_velocity</span><span class="p">(</span><span class="n">velocity_units</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityUnits</span><span class="o">.</span><span class="n">cms_per_yr</span><span class="p">)</span>
+    <span class="n">vertex_speeds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vertex_velocity</span><span class="o">.</span><span class="n">get_magnitude</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Each triangle is a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Triangle</span></code></a>. Two more lists are filled from
+the triangles.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The vertices (as indices into the vertex lists) and the strain rate of each triangle in the deforming region.</span>
+<span class="n">triangle_vertex_indices</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">triangle_strain_rates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">triangle</span> <span class="ow">in</span> <span class="n">triangles</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>Not every triangle is part of the deforming region of the network.</p>
+<p>The triangulation covers the convex hull of its vertices, so where the boundary of the network is
+concave there are triangles outside the boundary. There are also triangles inside each rigid block.</p>
+<p><a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.is_in_deforming_region" title="pygplates.NetworkTriangulation.Triangle.is_in_deforming_region"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Triangle.is_in_deforming_region</span></code></a> is <code class="docutils literal notranslate"><span class="pre">False</span></code> for those, and
+their strain rate is zero. They are skipped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Skip triangles that are outside the network's boundary, or inside one of its rigid blocks.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">triangle</span><span class="o">.</span><span class="n">is_in_deforming_region</span><span class="p">:</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.get_vertex" title="pygplates.NetworkTriangulation.Triangle.get_vertex"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Triangle.get_vertex()</span></code></a> returns one of the three vertices of a
+triangle, given an index of 0, 1 or 2. The dictionary turns each vertex into its index.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.strain_rate" title="pygplates.NetworkTriangulation.Triangle.strain_rate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span></code></a> of a triangle is a
+<a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.StrainRate</span></code></a>. It is the same everywhere in the triangle.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">triangle_vertex_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="nb">tuple</span><span class="p">(</span><span class="n">vertex_indices</span><span class="p">[</span><span class="n">triangle</span><span class="o">.</span><span class="n">get_vertex</span><span class="p">(</span><span class="n">index</span><span class="p">)]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)))</span>
+<span class="c1"># The strain rate is constant across the triangle.</span>
+<span class="n">triangle_strain_rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">triangle</span><span class="o">.</span><span class="n">strain_rate</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The script now has the triangulation as three lists: the positions of the vertices, the three
+vertex indices of each triangle, and a value (the strain rate) for each triangle.</p>
+<p>That is the form in which plotting libraries usually take a triangular mesh. Here the lists are
+only printed.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span><span class="si">}</span><span class="s1"> vertices:'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">vertex_index</span><span class="p">,</span> <span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vertex_lat_lons</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'    Vertex </span><span class="si">{</span><span class="n">vertex_index</span><span class="si">}</span><span class="s1"> at (</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">) has speed </span><span class="si">{</span><span class="n">vertex_speeds</span><span class="p">[</span><span class="n">vertex_index</span><span class="p">]</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> cms/yr'</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangles</span><span class="p">)</span><span class="si">}</span><span class="s1"> triangles, of which </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">triangle_vertex_indices</span><span class="p">)</span><span class="si">}</span><span class="s1"> are in the deforming region:'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">vertex_index_triple</span><span class="p">,</span> <span class="n">triangle_strain_rate</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">triangle_vertex_indices</span><span class="p">,</span> <span class="n">triangle_strain_rates</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'    Triangle with vertices </span><span class="si">{</span><span class="n">vertex_index_triple</span><span class="si">}</span><span class="s1"> has dilatation rate '</span>
+          <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">triangle_strain_rate</span><span class="o">.</span><span class="n">get_dilatation_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s and total strain rate '</span>
+          <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">triangle_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A vertex also has a <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex.strain_rate" title="pygplates.NetworkTriangulation.Vertex.strain_rate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span></code></a>,
+which is an average of the strain rates of the deforming triangles around it, and it can list the
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex.get_incident_vertices" title="pygplates.NetworkTriangulation.Vertex.get_incident_vertices"><code class="xref py py-meth docutils literal notranslate"><span class="pre">vertices</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex.get_incident_triangles" title="pygplates.NetworkTriangulation.Vertex.get_incident_triangles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">triangles</span></code></a> that it is joined to.</p>
+</div>
+</section>
+</section>
+<section id="find-the-triangle-that-contains-a-point">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Find the triangle that contains a point</a><a class="headerlink" href="#find-the-triangle-that-contains-a-point" title="Link to this heading"></a></h2>
+<p>This example finds where points are in the networks at 10Ma. For a point in the deforming region
+of a network it finds the triangle that contains the point, and for a point in a rigid block it
+finds the block. It chooses four points in the deforming regions, and one in a rigid block if
+there is one, to run with.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Sample code</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks) and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Get a snapshot of our resolved topologies at 10Ma.</span>
+<span class="n">time</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+<span class="c1"># The points to locate are chosen from a coarse grid of points, 10 degrees apart,</span>
+<span class="c1"># from latitude 60 to -60 (north to south).</span>
+<span class="c1"># Each is the (latitude, longitude) of a point at 10Ma.</span>
+<span class="n">grid_points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">latitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="o">-</span><span class="mi">70</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+
+<span class="c1"># Find the resolved plate (or deforming network) that contains each point.</span>
+<span class="n">grid_point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">grid_points</span><span class="p">)</span>
+
+<span class="c1"># Keep the points in the deforming region of a network, each with its location,</span>
+<span class="c1"># and take the first four of them, so that the output stays short.</span>
+<span class="n">points_and_locations</span> <span class="o">=</span> <span class="p">[(</span><span class="n">point</span><span class="p">,</span> <span class="n">point_location</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()][:</span><span class="mi">4</span><span class="p">]</span>
+
+<span class="c1"># Stop if there are none: there are no deforming networks at 10Ma, or they are too small for the grid.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">points_and_locations</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No grid point is in the deforming region of a network at </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma'</span><span class="p">)</span>
+
+<span class="c1"># Also take the first point in a rigid block of a network, if there is one.</span>
+<span class="n">points_and_locations</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">point</span><span class="p">,</span> <span class="n">point_location</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                         <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_rigid_block</span><span class="p">()][:</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="n">points_and_locations</span><span class="p">:</span>
+
+    <span class="c1"># See if the point is in an interior rigid block of a deforming network.</span>
+    <span class="n">network_and_rigid_block</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_rigid_block</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">network_and_rigid_block</span><span class="p">:</span>
+        <span class="n">resolved_network</span><span class="p">,</span> <span class="n">rigid_block</span> <span class="o">=</span> <span class="n">network_and_rigid_block</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">point</span><span class="si">}</span><span class="s1"> is in a rigid block of network "</span><span class="si">{</span><span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">" '</span>
+              <span class="sa">f</span><span class="s1">'that moves with plate </span><span class="si">{</span><span class="n">rigid_block</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># Otherwise the point is in the deforming region of a network, since the points were chosen that way.</span>
+    <span class="c1"># Get the network, and the triangle (of the network's triangulation) that contains the point.</span>
+    <span class="n">resolved_network</span><span class="p">,</span> <span class="n">triangle</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">(</span>
+            <span class="n">return_network_triangle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># The positions of the three vertices of the triangle.</span>
+    <span class="n">triangle_lat_lons</span> <span class="o">=</span> <span class="p">[</span><span class="n">triangle</span><span class="o">.</span><span class="n">get_vertex</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+
+    <span class="c1"># The strain rate of the triangle, which is constant across the triangle.</span>
+    <span class="n">triangle_strain_rate</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">strain_rate</span>
+    <span class="c1"># The strain rate at the point itself. By default this is smoothed, so it can differ from that of the triangle.</span>
+    <span class="n">point_strain_rate</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_point_strain_rate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+
+    <span class="c1"># The strain rates of the triangles that share an edge with the triangle and are in the deforming region.</span>
+    <span class="n">adjacent_triangle_strain_rates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="c1"># The adjacent triangle opposite the vertex at 'index' (None if the triangulation ends at that edge).</span>
+        <span class="n">adjacent_triangle</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">get_adjacent_triangle</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">adjacent_triangle</span> <span class="ow">and</span> <span class="n">adjacent_triangle</span><span class="o">.</span><span class="n">is_in_deforming_region</span><span class="p">:</span>
+            <span class="n">adjacent_triangle_strain_rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">adjacent_triangle</span><span class="o">.</span><span class="n">strain_rate</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">point</span><span class="si">}</span><span class="s1"> is in the deforming region of network "</span><span class="si">{</span><span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">":'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'  it is in the triangle with vertices at '</span> <span class="o">+</span>
+          <span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">)'</span> <span class="k">for</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="n">triangle_lat_lons</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  total strain rate at the point: </span><span class="si">{</span><span class="n">point_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  total strain rate of the triangle: </span><span class="si">{</span><span class="n">triangle_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'  total strain rates of the adjacent triangles: '</span> <span class="o">+</span>
+          <span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">strain_rate</span> <span class="ow">in</span> <span class="n">adjacent_triangle_strain_rates</span><span class="p">)</span> <span class="o">+</span> <span class="s1">' 1/s'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Details</a><a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>The topological model and the snapshot at 10Ma are the same as in the first example.</p>
+<p>The points are chosen from the networks, rather than written into the script, so that the example
+works with any topological features that have deforming networks at 10Ma. They are chosen from a
+coarse grid of points, 10 degrees apart, from latitude 60 to -60. It stops at 60 degrees because,
+in the GPlates sample data, the grid points nearer the poles happen to fall where the networks
+barely deform at 10Ma, so they would make poor examples. The grid is scanned from north to south,
+and the first points found are used.</p>
+<p>The points are given as (latitude, longitude) tuples. They are positions at 10Ma, since they are
+located in the topologies resolved at that time.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks) and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Get a snapshot of our resolved topologies at 10Ma.</span>
+<span class="n">time</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+<span class="c1"># The points to locate are chosen from a coarse grid of points, 10 degrees apart,</span>
+<span class="c1"># from latitude 60 to -60 (north to south).</span>
+<span class="c1"># Each is the (latitude, longitude) of a point at 10Ma.</span>
+<span class="n">grid_points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">latitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="o">-</span><span class="mi">70</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">location</span></code></a> of each point in the resolved topologies, in the
+order of the points.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find the resolved plate (or deforming network) that contains each point.</span>
+<span class="n">grid_point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">grid_points</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The grid points in the deforming region of a network, which
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region()</span></code></a> finds (see
+below), are kept with their locations, and the first four of them are taken. If there are none,
+the script stops with an error message that says so.</p>
+<p>The first grid point in a rigid block of a network, which
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block" title="pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block()</span></code></a> finds (see below),
+is taken too, if there is one.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Keep the points in the deforming region of a network, each with its location,</span>
+<span class="c1"># and take the first four of them, so that the output stays short.</span>
+<span class="n">points_and_locations</span> <span class="o">=</span> <span class="p">[(</span><span class="n">point</span><span class="p">,</span> <span class="n">point_location</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()][:</span><span class="mi">4</span><span class="p">]</span>
+
+<span class="c1"># Stop if there are none: there are no deforming networks at 10Ma, or they are too small for the grid.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">points_and_locations</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No grid point is in the deforming region of a network at </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma'</span><span class="p">)</span>
+
+<span class="c1"># Also take the first point in a rigid block of a network, if there is one.</span>
+<span class="n">points_and_locations</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">point</span><span class="p">,</span> <span class="n">point_location</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                         <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_rigid_block</span><span class="p">()][:</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>So each point is in a network, and a point in a network is either in one of its rigid blocks or in
+its deforming region.</p>
+<p>For a point in a rigid block,
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block" title="pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block()</span></code></a> returns a 2-tuple:
+the resolved network, and the rigid block (one of those that
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_rigid_blocks" title="pygplates.ResolvedTopologicalNetwork.get_rigid_blocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_rigid_blocks()</span></code></a> returns). For any other point it
+returns <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># See if the point is in an interior rigid block of a deforming network.</span>
+<span class="n">network_and_rigid_block</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_rigid_block</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">network_and_rigid_block</span><span class="p">:</span>
+    <span class="n">resolved_network</span><span class="p">,</span> <span class="n">rigid_block</span> <span class="o">=</span> <span class="n">network_and_rigid_block</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">point</span><span class="si">}</span><span class="s1"> is in a rigid block of network "</span><span class="si">{</span><span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">" '</span>
+          <span class="sa">f</span><span class="s1">'that moves with plate </span><span class="si">{</span><span class="n">rigid_block</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>For a point in the deforming region of a network,
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region()</span></code></a> returns the
+resolved network.</p>
+<p>With <em>return_network_triangle</em> set to <code class="docutils literal notranslate"><span class="pre">True</span></code> it returns a 2-tuple instead: the resolved network,
+and the <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">triangle</span></code></a> of its triangulation that
+contains the point.</p>
+<p>Either way it returns <code class="docutils literal notranslate"><span class="pre">None</span></code> for a point that is not in the deforming region of a network. The
+script does not test for that: a point here that is not in a rigid block is in a deforming region,
+since that is how the points were chosen.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Otherwise the point is in the deforming region of a network, since the points were chosen that way.</span>
+<span class="c1"># Get the network, and the triangle (of the network's triangulation) that contains the point.</span>
+<span class="n">resolved_network</span><span class="p">,</span> <span class="n">triangle</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">(</span>
+        <span class="n">return_network_triangle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The positions of the three vertices of the triangle are converted to (latitude, longitude) tuples.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The positions of the three vertices of the triangle.</span>
+<span class="n">triangle_lat_lons</span> <span class="o">=</span> <span class="p">[</span><span class="n">triangle</span><span class="o">.</span><span class="n">get_vertex</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>The strain rate of the triangle is compared with the strain rate at the point, which
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_point_strain_rate" title="pygplates.ResolvedTopologicalNetwork.get_point_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_point_strain_rate()</span></code></a> returns.</p>
+<p>The two usually differ. By default the strain rate at a point is smoothed: it is interpolated from
+the strain rates of the vertices near the point, each of which is an average over the triangles
+around that vertex. So it varies from place to place within a triangle.</p>
+<p>Without smoothing, the strain rate at a point is the strain rate of the triangle that contains it
+(see <a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#pygplates-clamp-and-smooth-strain-rates-and-set-rift-parameters"><span class="std std-ref">Clamp and smooth strain rates, and set rift parameters</span></a>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The strain rate of the triangle, which is constant across the triangle.</span>
+<span class="n">triangle_strain_rate</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">strain_rate</span>
+<span class="c1"># The strain rate at the point itself. By default this is smoothed, so it can differ from that of the triangle.</span>
+<span class="n">point_strain_rate</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_point_strain_rate</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.get_adjacent_triangle" title="pygplates.NetworkTriangulation.Triangle.get_adjacent_triangle"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Triangle.get_adjacent_triangle()</span></code></a> returns the triangle on the
+other side of one edge: the edge opposite the vertex at the given index.</p>
+<p>It returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if there is no triangle there, which happens at the outer edge of the triangulation.</p>
+<p>The neighbours that are not in the deforming region are left out.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The strain rates of the triangles that share an edge with the triangle and are in the deforming region.</span>
+<span class="n">adjacent_triangle_strain_rates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="c1"># The adjacent triangle opposite the vertex at 'index' (None if the triangulation ends at that edge).</span>
+    <span class="n">adjacent_triangle</span> <span class="o">=</span> <span class="n">triangle</span><span class="o">.</span><span class="n">get_adjacent_triangle</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">adjacent_triangle</span> <span class="ow">and</span> <span class="n">adjacent_triangle</span><span class="o">.</span><span class="n">is_in_deforming_region</span><span class="p">:</span>
+        <span class="n">adjacent_triangle_strain_rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">adjacent_triangle</span><span class="o">.</span><span class="n">strain_rate</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally the vertices of the triangle are printed, with the three kinds of strain rate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">point</span><span class="si">}</span><span class="s1"> is in the deforming region of network "</span><span class="si">{</span><span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">":'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'  it is in the triangle with vertices at '</span> <span class="o">+</span>
+      <span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">)'</span> <span class="k">for</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="n">triangle_lat_lons</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  total strain rate at the point: </span><span class="si">{</span><span class="n">point_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  total strain rate of the triangle: </span><span class="si">{</span><span class="n">triangle_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'  total strain rates of the adjacent triangles: '</span> <span class="o">+</span>
+      <span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1">'</span> <span class="k">for</span> <span class="n">strain_rate</span> <span class="ow">in</span> <span class="n">adjacent_triangle_strain_rates</span><span class="p">)</span> <span class="o">+</span> <span class="s1">' 1/s'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The triangle that contains a point is found in a flat map projection of the network, where
+the edges of the triangles are not quite where they are on the globe. So a point near an edge can
+be given the triangle on the other side of that edge. For the same reason, a point in the
+deforming region is occasionally given a triangle whose
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle.is_in_deforming_region" title="pygplates.NetworkTriangulation.Triangle.is_in_deforming_region"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Triangle.is_in_deforming_region</span></code></a> is <code class="docutils literal notranslate"><span class="pre">False</span></code>. The strain
+rate of such a triangle is zero, while the smoothed strain rate at the point need not be. See
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region()</span></code></a>.</p>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id10" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_deformation.html#pygplates-primer-topological-network"><span class="std std-ref">Topological network</span></a>, <a class="reference internal" href="../primer/pygplates_primer_deformation.html#pygplates-primer-rigid-blocks"><span class="std std-ref">Rigid blocks</span></a>,
+<a class="reference internal" href="../primer/pygplates_primer_deformation.html#pygplates-primer-network-triangulation"><span class="std std-ref">Network triangulation</span></a>, <a class="reference internal" href="../primer/pygplates_primer_deformation.html#pygplates-primer-strain-rates-in-triangulation"><span class="std std-ref">Strain rates in triangulation</span></a></p></li>
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_network_triangulation" title="pygplates.ResolvedTopologicalNetwork.get_network_triangulation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_network_triangulation()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_rigid_blocks" title="pygplates.ResolvedTopologicalNetwork.get_rigid_blocks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_rigid_blocks()</span></code></a>, <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation" title="pygplates.NetworkTriangulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Triangle" title="pygplates.NetworkTriangulation.Triangle"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Triangle</span></code></a>, <a class="reference internal" href="../generated/pygplates.NetworkTriangulation.html#pygplates.NetworkTriangulation.Vertex" title="pygplates.NetworkTriangulation.Vertex"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetworkTriangulation.Vertex</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block" title="pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_point_strain_rate" title="pygplates.ResolvedTopologicalNetwork.get_point_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_point_strain_rate()</span></code></a>, <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.StrainRate</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_find_plates_and_strain_rates_at_static_points.html#pygplates-find-plates-and-strain-rates-at-static-points"><span class="std std-ref">Find plates and strain rates at static points</span></a>,
+<a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#pygplates-clamp-and-smooth-strain-rates-and-set-rift-parameters"><span class="std std-ref">Clamp and smooth strain rates, and set rift parameters</span></a>,
+<a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html#pygplates-reconstruct-strain-and-strain-rate"><span class="std std-ref">Reconstruct strain and strain rate</span></a>, <a class="reference internal" href="pygplates_create_topological_features.html#pygplates-create-topological-features"><span class="std std-ref">Create topological features</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_detect_topology_gaps_and_overlaps.html" class="btn btn-neutral float-left" title="Find gaps and overlaps in global topological boundaries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_reconstruct_points_step_by_step_through_topologies.html" class="btn btn-neutral float-right" title="Reconstruct points step by step through topologies" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

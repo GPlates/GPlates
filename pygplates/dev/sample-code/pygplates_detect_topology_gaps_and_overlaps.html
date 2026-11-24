@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Find gaps and overlaps in global topological boundaries &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Find gaps and overlaps in global topological boundaries &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,13 +15,13 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_detect_topology_gaps_and_overlaps.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Reconstruct crustal thickness and tectonic subsidence" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html" />
+    <link rel="next" title="Query the triangulation and rigid blocks of deforming networks" href="pygplates_query_network_triangulation_and_rigid_blocks.html" />
     <link rel="prev" title="Find divergence at subduction zones and convergence at ridges" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html" /> 
 </head>
 
@@ -65,12 +65,15 @@
 <li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_query_network_triangulation_and_rigid_blocks.html">Query the triangulation and rigid blocks of deforming networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -103,19 +106,20 @@
              
   <section id="find-gaps-and-overlaps-in-global-topological-boundaries">
 <span id="pygplates-detect-topology-gaps-and-overlaps"></span><h1>Find gaps and overlaps in global topological boundaries<a class="headerlink" href="#find-gaps-and-overlaps-in-global-topological-boundaries" title="Link to this heading"></a></h1>
-<div class="line-block">
-<div class="line">This example resolves topological plate polygons (and deforming networks) and detects any gaps and
-overlaps in their global coverage.</div>
-<div class="line">Anomalous sub-segments, locating the gaps/overlaps, are written to a file that can be loaded into
-<a class="reference external" href="http://www.gplates.org">GPlates</a> to visualise alongside the dynamic plate polygons.</div>
-</div>
-<p>Gaps and overlaps are caused when:</p>
+<p>This example resolves topological plate polygons (and deforming networks) over a series of
+geological times, and detects any gaps and overlaps in their coverage of the globe.</p>
+<p>The sub-segments beside a gap or an overlap are written to a file for each time. The files can be
+loaded into <a class="reference external" href="http://www.gplates.org">GPlates</a>, to see where the gaps and overlaps are alongside
+the dynamic plate polygons.</p>
+<p>There is a gap or an overlap where:</p>
 <ul class="simple">
-<li><p>there is an area of the globe not covered by a topological boundary or network, or</p></li>
-<li><p>two (or more) topological boundary polygons overlap in some area of the globe.</p></li>
+<li><p>an area of the globe is not covered by a topological boundary or network, or</p></li>
+<li><p>two (or more) topological boundary polygons overlap in an area of the globe.</p></li>
 </ul>
-<p>This can also happen if two topological line sections are <em>identical</em> when ideally there should
-only be one of them (and it should be shared by two neighbouring topological boundaries).</p>
+<p>A gap is also reported where a boundary is made of two <em>identical</em> boundary sections, one used by
+each of the neighbouring topological boundaries. There should be only one section, shared by both.</p>
+<p>A deforming network that lies over a topological boundary polygon is not an overlap. Networks
+usually do overlay the rigid plates.</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#data-files" id="id5">Data files</a></p></li>
@@ -128,7 +132,8 @@ only be one of them (and it should be shared by two neighbouring topological bou
 <section id="data-files">
 <h2><a class="toc-backref" href="#id5" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
 <dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and/or deforming network features, intended to cover the globe.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon features, intended to cover the globe. There can also be deforming
+network features, which can overlay the plate polygons.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological features.</p>
 </dd>
@@ -143,6 +148,31 @@ only be one of them (and it should be shared by two neighbouring topological bou
 <span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
 <span class="c1"># and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+
+<span class="c1"># A point-in-polygon test counts a point within about 9 metres (1.4e-6 radians) of a polygon's outline as</span>
+<span class="c1"># being on the outline, and so inside the polygon. So a test point beside a network's edge must be further</span>
+<span class="c1"># away than that, or it would be found inside the network itself, and no gap beside a network would ever be</span>
+<span class="c1"># found. The test point is 10 times that distance (about 90 metres) off the sub-segment.</span>
+<span class="n">TEST_POINT_DISTANCE_RADIANS</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="mf">1.4e-6</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_side_covered</span><span class="p">(</span><span class="n">topological_snapshot</span><span class="p">,</span> <span class="n">shared_sub_segment</span><span class="p">,</span> <span class="n">side</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Whether a resolved plate or network contains a point just off one side ('left' or 'right') of a shared sub-segment."""</span>
+
+    <span class="c1"># Use the middle of the sub-segment's longest arc (an arc of zero length has no direction).</span>
+    <span class="n">arcs</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_segments</span><span class="p">()</span>
+    <span class="n">arc</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">arcs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">arc</span><span class="p">:</span> <span class="n">arc</span><span class="o">.</span><span class="n">get_arc_length</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">is_zero_length</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># Too short to test, so don't report it.</span>
+
+    <span class="c1"># An arc's great circle normal points to its left (when following the sub-segment's vertices).</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">TEST_POINT_DISTANCE_RADIANS</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="s1">'left'</span> <span class="k">else</span> <span class="o">-</span><span class="n">TEST_POINT_DISTANCE_RADIANS</span>
+    <span class="n">test_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="p">(</span><span class="o">*</span><span class="n">arc</span><span class="o">.</span><span class="n">get_arc_point</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">())</span> <span class="o">+</span> <span class="n">arc</span><span class="o">.</span><span class="n">get_great_circle_normal</span><span class="p">()</span> <span class="o">*</span> <span class="n">distance</span>
+    <span class="n">test_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">*</span><span class="n">test_vector</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">normalise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Is the test point inside any resolved plate or network (whether or not it shares the sub-segment)?</span>
+    <span class="n">test_point_location</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">([</span><span class="n">test_point</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">test_point_location</span><span class="o">.</span><span class="n">not_located_in_resolved_topology</span><span class="p">()</span>
 
 <span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
 <span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">140</span>
@@ -159,18 +189,63 @@ only be one of them (and it should be shared by two neighbouring topological bou
     <span class="c1"># We'll create a feature for any anomalous sub-segment we find.</span>
     <span class="n">anomalous_features</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="c1"># The number of sub-segments that have a gap beside them, and the number where topologies overlap.</span>
+    <span class="n">num_gap_sub_segments</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_overlap_sub_segments</span> <span class="o">=</span> <span class="mi">0</span>
+
     <span class="c1"># Iterate over the shared boundary sections.</span>
     <span class="k">for</span> <span class="n">shared_boundary_section</span> <span class="ow">in</span> <span class="n">shared_boundary_sections</span><span class="p">:</span>
 
         <span class="c1"># Iterate over the sub-segments that actually contribute to a topology boundary.</span>
         <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
 
-            <span class="c1"># If the resolved topologies have global coverage with no gaps/overlaps then</span>
-            <span class="c1"># each sub-segment should be shared by exactly two resolved boundaries.</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topologies</span><span class="p">())</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># The resolved topologies that share the sub-segment, and whether each one is on the left side</span>
+            <span class="c1"># of the sub-segment (as opposed to the right side).</span>
+            <span class="n">sharing_resolved_topologies</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topologies</span><span class="p">()</span>
+            <span class="n">resolved_topology_on_left_flags</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topology_on_left_flags</span><span class="p">()</span>
 
-                <span class="c1"># We keep track of any anomalous sub-segment features.</span>
-                <span class="n">anomalous_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_feature</span><span class="p">())</span>
+            <span class="c1"># Count the plates, and the deforming networks, on each side of the sub-segment.</span>
+            <span class="n">num_plates</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'left'</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'right'</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+            <span class="n">num_networks</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'left'</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'right'</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">sharing_resolved_topology</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sharing_resolved_topologies</span><span class="p">):</span>
+                <span class="n">side</span> <span class="o">=</span> <span class="s1">'left'</span> <span class="k">if</span> <span class="n">resolved_topology_on_left_flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">else</span> <span class="s1">'right'</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sharing_resolved_topology</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ResolvedTopologicalNetwork</span><span class="p">):</span>
+                    <span class="n">num_networks</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">num_plates</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># Two (or more) plates on the same side of the sub-segment overlap each other, and so do two networks.</span>
+            <span class="c1"># One plate and one network on the same side do not, since a network can overlay a plate.</span>
+            <span class="n">is_overlap</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_plates</span><span class="p">[</span><span class="s1">'left'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">num_plates</span><span class="p">[</span><span class="s1">'right'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
+                          <span class="n">num_networks</span><span class="p">[</span><span class="s1">'left'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">num_networks</span><span class="p">[</span><span class="s1">'right'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># A side of the sub-segment that no plate or network shares is a gap. Except where only networks share</span>
+            <span class="c1"># the sub-segment: then that side can be the interior of a plate (that a network overlays), so test it.</span>
+            <span class="n">is_plate_boundary</span> <span class="o">=</span> <span class="n">num_plates</span><span class="p">[</span><span class="s1">'left'</span><span class="p">]</span> <span class="o">+</span> <span class="n">num_plates</span><span class="p">[</span><span class="s1">'right'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="n">is_gap</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'left'</span><span class="p">,</span> <span class="s1">'right'</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">num_plates</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">+</span> <span class="n">num_networks</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">is_plate_boundary</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">is_side_covered</span><span class="p">(</span><span class="n">topological_snapshot</span><span class="p">,</span> <span class="n">shared_sub_segment</span><span class="p">,</span> <span class="n">side</span><span class="p">):</span>
+                        <span class="n">is_gap</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">if</span> <span class="n">is_gap</span> <span class="ow">or</span> <span class="n">is_overlap</span><span class="p">:</span>
+                <span class="c1"># We keep track of any anomalous sub-segment features, and describe what was found beside each one.</span>
+                <span class="n">anomalous_feature</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_feature</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">is_gap</span> <span class="ow">and</span> <span class="n">is_overlap</span><span class="p">:</span>
+                    <span class="n">anomalous_feature</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="s1">'gap and overlap'</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">is_gap</span><span class="p">:</span>
+                    <span class="n">anomalous_feature</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="s1">'gap'</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">anomalous_feature</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="s1">'overlap'</span><span class="p">)</span>
+                <span class="n">anomalous_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">anomalous_feature</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">is_gap</span><span class="p">:</span>
+                <span class="n">num_gap_sub_segments</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">is_overlap</span><span class="p">:</span>
+                <span class="n">num_overlap_sub_segments</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma: sub-segments beside a gap: </span><span class="si">{</span><span class="n">num_gap_sub_segments</span><span class="si">}</span><span class="s1">, '</span>
+          <span class="sa">f</span><span class="s1">'sub-segments beside an overlap: </span><span class="si">{</span><span class="n">num_overlap_sub_segments</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
     <span class="c1"># If there are any anomalous features for the current 'time' then write them to a file</span>
     <span class="c1"># so we can load them into GPlates and see where the errors are located.</span>
@@ -189,13 +264,10 @@ only be one of them (and it should be shared by two neighbouring topological bou
 </section>
 <section id="details">
 <h2><a class="toc-backref" href="#id7" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">First create a <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> from topological features and rotation files.</div>
-<div class="line">The topological features can be plate polygons and/or deforming networks.</div>
-<div class="line">More than one file containing topological features can be specified here, however we’re only specifying one file.</div>
-<div class="line">Also note that more than one rotation file (or even a single <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>) can be specified here,
-however we’re only specifying a single rotation file.</div>
-</div>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features
+and the rotation file. The topological features can be plate polygons, deforming networks or both.</p>
+<p>Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> can be given in place of the rotation files.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
 <span class="c1"># and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
@@ -203,54 +275,150 @@ however we’re only specifying a single rotation file.</div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>We create our <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a> <strong>outside</strong> the time loop since that does not require <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a> is created <strong>outside</strong> the time loop, since it does not depend on <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
 </div>
-<div class="line-block">
-<div class="line">Get a snapshot of our resolved topologies.</div>
-<div class="line">Here the topological features are resolved to the current <code class="docutils literal notranslate"><span class="pre">time</span></code>
-using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a>.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a> resolves the topological features at the
+current <code class="docutils literal notranslate"><span class="pre">time</span></code>, and returns the result as a <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
 <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.</div>
-<div class="line">By default both <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalBoundary</span></code></a> (used for dynamic plate polygons) and
-<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork</span></code></a> (used for deforming regions) are listed in the boundary sections.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_resolved_topological_sections" title="pygplates.TopologicalSnapshot.get_resolved_topological_sections"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_resolved_topological_sections()</span></code></a> returns the boundary
+sections of the resolved topologies in the snapshot. By default these are the sections on the
+boundaries of both the resolved plate polygons (<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalBoundary</span></code></a>) and
+the resolved deforming networks (<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork</span></code></a>).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.</span>
 <span class="n">shared_boundary_sections</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_resolved_topological_sections</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>These <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection" title="pygplates.ResolvedTopologicalSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">boundary</span> <span class="pre">sections</span></code></a> are actually what
-we’re interested in because their sub-segments have a list of topologies on them.</p>
-<div class="line-block">
-<div class="line">Not all parts of a topological section feature’s geometry contribute to the boundaries of topologies.</div>
-<div class="line">Little bits at the ends get clipped off.</div>
-<div class="line">The parts that do contribute can be found using <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection.get_shared_sub_segments" title="pygplates.ResolvedTopologicalSection.get_shared_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSection.get_shared_sub_segments()</span></code></a>.</div>
-</div>
+<p>These <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection" title="pygplates.ResolvedTopologicalSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">boundary</span> <span class="pre">sections</span></code></a> are used because each of
+their sub-segments has a list of the topologies that share it.</p>
+<p>Not all of the geometry of a boundary section feature is on the boundary of a topology. For
+example, the ends of a section that extend past its neighbouring sections are clipped off.
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection.get_shared_sub_segments" title="pygplates.ResolvedTopologicalSection.get_shared_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSection.get_shared_sub_segments()</span></code></a> returns the parts that are on
+a boundary.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over the sub-segments that actually contribute to a topology boundary.</span>
 <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The list of topologies that share a <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment" title="pygplates.ResolvedTopologicalSharedSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">sub-segment</span></code></a>
-is obtained using <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies</span></code></a>.</div>
-<div class="line">If the resolved topologies have global coverage with no gaps/overlaps then each sub-segment should be
-shared by exactly two resolved boundaries.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If the resolved topologies have global coverage with no gaps/overlaps then</span>
-<span class="c1"># each sub-segment should be shared by exactly two resolved boundaries.</span>
-<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topologies</span><span class="p">())</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+<p><a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies()</span></code></a> returns the
+list of topologies that share a <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment" title="pygplates.ResolvedTopologicalSharedSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">sub-segment</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags()</span></code></a>
+returns a list in the same order, with <code class="docutils literal notranslate"><span class="pre">True</span></code> for each topology that is on the left side of the
+sub-segment and <code class="docutils literal notranslate"><span class="pre">False</span></code> for each one on the right. The left side is the one on the left when
+following the points of the sub-segment from its first to its last.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The resolved topologies that share the sub-segment, and whether each one is on the left side</span>
+<span class="c1"># of the sub-segment (as opposed to the right side).</span>
+<span class="n">sharing_resolved_topologies</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topologies</span><span class="p">()</span>
+<span class="n">resolved_topology_on_left_flags</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_sharing_resolved_topology_on_left_flags</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>If a sub-segment is not shared by exactly two resolved boundaries then we record its feature.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># We keep track of any anomalous sub-segment features.</span>
-<span class="n">anomalous_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_feature</span><span class="p">())</span>
+<p>If the resolved topologies cover the globe with no gaps or overlaps, then each side of a
+sub-segment has one resolved boundary (a plate) on it, or one resolved network, or one of each.</p>
+<p>So it is not enough to count the topologies that share a sub-segment:</p>
+<ul class="simple">
+<li><p>A subduction zone whose overriding plate has a deforming network lying over it is shared by
+three topologies (two plates and the network), with nothing wrong.</p></li>
+<li><p>Two topologies sharing a sub-segment could both be on the same side of it, which is an overlap
+on that side and a gap on the other.</p></li>
+</ul>
+<p>Instead the script counts the plates and the networks separately, on each side.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Count the plates, and the deforming networks, on each side of the sub-segment.</span>
+<span class="n">num_plates</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'left'</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'right'</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="n">num_networks</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'left'</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'right'</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">sharing_resolved_topology</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sharing_resolved_topologies</span><span class="p">):</span>
+    <span class="n">side</span> <span class="o">=</span> <span class="s1">'left'</span> <span class="k">if</span> <span class="n">resolved_topology_on_left_flags</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">else</span> <span class="s1">'right'</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sharing_resolved_topology</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ResolvedTopologicalNetwork</span><span class="p">):</span>
+        <span class="n">num_networks</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">num_plates</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 </pre></div>
 </div>
-<p>Finally we write the anomalous features to a file.</p>
+<p>There is an overlap if either side of the sub-segment has more than one plate, or more than one network.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Two (or more) plates on the same side of the sub-segment overlap each other, and so do two networks.</span>
+<span class="c1"># One plate and one network on the same side do not, since a network can overlay a plate.</span>
+<span class="n">is_overlap</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_plates</span><span class="p">[</span><span class="s1">'left'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">num_plates</span><span class="p">[</span><span class="s1">'right'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span>
+              <span class="n">num_networks</span><span class="p">[</span><span class="s1">'left'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">num_networks</span><span class="p">[</span><span class="s1">'right'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There is a gap if a side of the sub-segment has neither a plate nor a network on it.</p>
+<p>For a sub-segment that a plate shares, the lists answer that. Plates (and the networks between them)
+cover the globe, so a side with nothing on it is a gap.</p>
+<p>A sub-segment shared only by networks is different, because models use deforming networks in two
+ways:</p>
+<ul class="simple">
+<li><p>In most recent models, networks <em>overlay</em> plates. The parts of a network’s boundary that cross a
+plate’s interior have the network on one side only, with the plate lying beneath on both sides.
+But the plate doesn’t share those sub-segments (they aren’t part of its boundary), so it isn’t in
+the lists, and the other side looks empty when it isn’t.</p></li>
+<li><p>In older models, networks <em>abut</em> plates (and each other, such as two rift networks along a rift
+axis), and no plate lies beneath them. There a side with nothing on it is a gap.</p></li>
+</ul>
+<p>The lists (which hold only the topologies that share a sub-segment) can’t tell the two apart. So for
+a side of such a sub-segment with nothing on it, the script tests a point just off that side, and
+reports a gap only if no plate or network contains it.
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics" title="pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics()</span></code></a> does the same, when it
+finds nothing sharing a side of a sub-segment.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A side of the sub-segment that no plate or network shares is a gap. Except where only networks share</span>
+<span class="c1"># the sub-segment: then that side can be the interior of a plate (that a network overlays), so test it.</span>
+<span class="n">is_plate_boundary</span> <span class="o">=</span> <span class="n">num_plates</span><span class="p">[</span><span class="s1">'left'</span><span class="p">]</span> <span class="o">+</span> <span class="n">num_plates</span><span class="p">[</span><span class="s1">'right'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+<span class="n">is_gap</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'left'</span><span class="p">,</span> <span class="s1">'right'</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">num_plates</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">+</span> <span class="n">num_networks</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_plate_boundary</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">is_side_covered</span><span class="p">(</span><span class="n">topological_snapshot</span><span class="p">,</span> <span class="n">shared_sub_segment</span><span class="p">,</span> <span class="n">side</span><span class="p">):</span>
+            <span class="n">is_gap</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>The test point is in the middle of the sub-segment’s longest arc, moved off it along the arc’s
+great circle normal, which points to the left of the arc.</p>
+<p>How far matters. A point-in-polygon test counts a point within about 9 metres (1.4e-6 radians) of
+a polygon’s outline as being on it, and so inside. So a test point closer than that to a network’s
+edge would be found inside the network itself, and a gap beside a network would never be found.
+The script uses 10 times that distance (about 90 metres), as the plate boundary statistics do.
+Don’t make it smaller.</p>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a> searches every resolved plate and
+network, whether or not it shares the sub-segment.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A point-in-polygon test counts a point within about 9 metres (1.4e-6 radians) of a polygon's outline as</span>
+<span class="c1"># being on the outline, and so inside the polygon. So a test point beside a network's edge must be further</span>
+<span class="c1"># away than that, or it would be found inside the network itself, and no gap beside a network would ever be</span>
+<span class="c1"># found. The test point is 10 times that distance (about 90 metres) off the sub-segment.</span>
+<span class="n">TEST_POINT_DISTANCE_RADIANS</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="mf">1.4e-6</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_side_covered</span><span class="p">(</span><span class="n">topological_snapshot</span><span class="p">,</span> <span class="n">shared_sub_segment</span><span class="p">,</span> <span class="n">side</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Whether a resolved plate or network contains a point just off one side ('left' or 'right') of a shared sub-segment."""</span>
+
+    <span class="c1"># Use the middle of the sub-segment's longest arc (an arc of zero length has no direction).</span>
+    <span class="n">arcs</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_segments</span><span class="p">()</span>
+    <span class="n">arc</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">arcs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">arc</span><span class="p">:</span> <span class="n">arc</span><span class="o">.</span><span class="n">get_arc_length</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">arc</span><span class="o">.</span><span class="n">is_zero_length</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># Too short to test, so don't report it.</span>
+
+    <span class="c1"># An arc's great circle normal points to its left (when following the sub-segment's vertices).</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">TEST_POINT_DISTANCE_RADIANS</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="s1">'left'</span> <span class="k">else</span> <span class="o">-</span><span class="n">TEST_POINT_DISTANCE_RADIANS</span>
+    <span class="n">test_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="p">(</span><span class="o">*</span><span class="n">arc</span><span class="o">.</span><span class="n">get_arc_point</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">())</span> <span class="o">+</span> <span class="n">arc</span><span class="o">.</span><span class="n">get_great_circle_normal</span><span class="p">()</span> <span class="o">*</span> <span class="n">distance</span>
+    <span class="n">test_point</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="o">*</span><span class="n">test_vector</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">(),</span> <span class="n">normalise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Is the test point inside any resolved plate or network (whether or not it shares the sub-segment)?</span>
+    <span class="n">test_point_location</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">([</span><span class="n">test_point</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">test_point_location</span><span class="o">.</span><span class="n">not_located_in_resolved_topology</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If a gap or an overlap was found, the script records the sub-segment’s feature, with a description
+saying which was found (it can be both).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">is_gap</span> <span class="ow">or</span> <span class="n">is_overlap</span><span class="p">:</span>
+    <span class="c1"># We keep track of any anomalous sub-segment features, and describe what was found beside each one.</span>
+    <span class="n">anomalous_feature</span> <span class="o">=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_feature</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">is_gap</span> <span class="ow">and</span> <span class="n">is_overlap</span><span class="p">:</span>
+        <span class="n">anomalous_feature</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="s1">'gap and overlap'</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">is_gap</span><span class="p">:</span>
+        <span class="n">anomalous_feature</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="s1">'gap'</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">anomalous_feature</span><span class="o">.</span><span class="n">set_description</span><span class="p">(</span><span class="s1">'overlap'</span><span class="p">)</span>
+    <span class="n">anomalous_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">anomalous_feature</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, if any anomalous features were found at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>, they are written to a file
+with that time in its name.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a filename (for anomalous features) with the current 'time' in it.</span>
 <span class="n">anomalous_features_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'anomalous_sub_segments_at_</span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma.gpml'</span>
 
@@ -261,8 +429,8 @@ shared by exactly two resolved boundaries.</div>
 </section>
 <section id="visualising-gaps-and-overlaps-in-gplates">
 <h2><a class="toc-backref" href="#id8" role="doc-backlink">Visualising gaps and overlaps in GPlates</a><a class="headerlink" href="#visualising-gaps-and-overlaps-in-gplates" title="Link to this heading"></a></h2>
-<p>The resulting output files such as <code class="docutils literal notranslate"><span class="pre">anomalous_sub_segments_at_10Ma.gpml</span></code> can be loaded into
-<a class="reference external" href="http://www.gplates.org">GPlates</a> to see where the topological errors are located on the globe.</p>
+<p>The output files, such as <code class="docutils literal notranslate"><span class="pre">anomalous_sub_segments_at_10Ma.gpml</span></code>, can be loaded into
+<a class="reference external" href="http://www.gplates.org">GPlates</a> to see where the topological errors are on the globe.</p>
 <figure class="align-default" id="id2">
 <img alt="../_images/anomalous_sub_segments.png" src="../_images/anomalous_sub_segments.png" />
 <figcaption>
@@ -289,7 +457,8 @@ shared by exactly two resolved boundaries.</div>
 <li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-snapshot"><span class="std std-ref">Topological snapshot</span></a></p></li>
 <li><p>Reference: <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_resolved_topological_sections" title="pygplates.TopologicalSnapshot.get_resolved_topological_sections"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_resolved_topological_sections()</span></code></a>,
 <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection.get_shared_sub_segments" title="pygplates.ResolvedTopologicalSection.get_shared_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSection.get_shared_sub_segments()</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies()</span></code></a></p></li>
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags" title="pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topology_on_left_flags()</span></code></a></p></li>
 <li><p>Sample code: <a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html#pygplates-find-total-ridge-and-subduction-zone-lengths"><span class="std std-ref">Find the total length of ridges and subduction zones</span></a>,
 <a class="reference internal" href="pygplates_find_overriding_plate_of_closest_subducting_line.html#pygplates-find-overriding-plate-of-closest-subducting-line"><span class="std std-ref">Find overriding plate of closest subducting line</span></a></p></li>
 </ul>
@@ -301,7 +470,7 @@ shared by exactly two resolved boundaries.</div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html" class="btn btn-neutral float-left" title="Find divergence at subduction zones and convergence at ridges" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html" class="btn btn-neutral float-right" title="Reconstruct crustal thickness and tectonic subsidence" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pygplates_query_network_triangulation_and_rigid_blocks.html" class="btn btn-neutral float-right" title="Query the triangulation and rigid blocks of deforming networks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

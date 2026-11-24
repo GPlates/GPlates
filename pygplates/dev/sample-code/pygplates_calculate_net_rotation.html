@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculate net rotation &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Calculate net rotation &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,14 +15,14 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_calculate_net_rotation.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Find nearest reconstructed feature to a point" href="pygplates_find_nearest_feature_to_a_point.html" />
-    <link rel="prev" title="Sample strain rates inside the overriding plate at subduction zones" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html" /> 
+    <link rel="next" title="Calculate net rotation from point samples" href="pygplates_calculate_net_rotation_from_point_samples.html" />
+    <link rel="prev" title="Clamp and smooth strain rates, and set rift parameters" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -57,8 +57,14 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Calculate net rotation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
@@ -66,10 +72,12 @@
 <li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -102,8 +110,9 @@
              
   <section id="calculate-net-rotation">
 <span id="pygplates-calculate-net-rotation"></span><h1>Calculate net rotation<a class="headerlink" href="#calculate-net-rotation" title="Link to this heading"></a></h1>
-<p>This example calculates the total net rotation of a topological model at each geological time over a time period.
-It also calculates the individual net rotation of each topological plate polygon (and deforming network) at each time.</p>
+<p>This example calculates the total net rotation of a topological model at each geological time in
+a time period. At each time it also calculates the individual net rotation of each topological
+plate polygon (and deforming network).</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
@@ -184,78 +193,87 @@ reconstruction plate ID: one without is treated as plate zero, and still contrib
 </section>
 <section id="details">
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">First create a <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> from topological features and rotation files.</div>
-<div class="line">The topological features can be plate polygons and/or deforming networks.</div>
-<div class="line">More than one file containing topological features can be specified here, however we’re only specifying one file.</div>
-<div class="line">Also note that more than one rotation file (or even a single <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>) can be specified here,
-however we’re only specifying a single rotation file.</div>
-</div>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features
+and the rotation file. The topological features can be plate polygons, deforming networks or both.</p>
+<p>Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> can be given in place of the rotation files.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from our topological features (can be plate polygons and/or deforming networks)</span>
 <span class="c1"># and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Next we create a <a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel" title="pygplates.NetRotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">net</span> <span class="pre">rotation</span> <span class="pre">model</span></code></a> from the topological model. We also specify the
-time interval used to calculate net rotation (in this case we have [time + 1.0, time]). We also could have specified
-the distribution of points at which net rotation is calculated (see the <em>point_distribution</em> argument of
-<a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel.__init__" title="pygplates.NetRotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotationModel.__init__()</span></code></a>) but we leave it as the default which is the same as the GPlates net rotation export
-(180 x 360 uniformly spaced latitude-longitude points).</p>
+<p>A <a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel" title="pygplates.NetRotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">net</span> <span class="pre">rotation</span> <span class="pre">model</span></code></a> is created from the topological model.
+The other two arguments give the time interval over which net rotation is calculated: here from
+<code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">+</span> <span class="pre">1.0</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<p>Net rotation is calculated at a distribution of points over the globe. The <em>point_distribution</em>
+argument of <a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel.__init__" title="pygplates.NetRotationModel.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotationModel.__init__()</span></code></a> can change it. It is left as the default
+here, which is the same as the GPlates net rotation export: 180 x 360 uniformly spaced
+latitude-longitude points.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a net rotation model from the topological model.</span>
 <span class="c1"># Net rotations will be calculated with a velocity delta from 'time + 1.0' to 'time'.</span>
 <span class="n">net_rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotationModel</span><span class="p">(</span><span class="n">topological_model</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityDeltaTimeType</span><span class="o">.</span><span class="n">t_plus_delta_t_to_t</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Next we iterate over a sequence of times and calculate a <a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot" title="pygplates.NetRotationSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">net</span> <span class="pre">rotation</span> <span class="pre">snapshot</span></code></a> at each time
-using the net rotation model.</p>
+<p>The script then iterates over a sequence of times. At each time it gets a
+<a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot" title="pygplates.NetRotationSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">net</span> <span class="pre">rotation</span> <span class="pre">snapshot</span></code></a> from the net rotation model.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_time</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">time_increment</span><span class="p">):</span>
     <span class="o">...</span>
     <span class="n">net_rotation_snapshot</span> <span class="o">=</span> <span class="n">net_rotation_model</span><span class="o">.</span><span class="n">net_rotation_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Then we calculate the <a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.get_total_net_rotation" title="pygplates.NetRotationSnapshot.get_total_net_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">total</span> <span class="pre">net</span> <span class="pre">rotation</span></code></a> over the entire globe at the current time.
-This returns a <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation" title="pygplates.NetRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotation</span></code></a> object that we can use to extract the net rotation as either a
-<a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_finite_rotation" title="pygplates.NetRotation.get_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a> or a <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_rotation_rate_vector" title="pygplates.NetRotation.get_rotation_rate_vector"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rotation</span> <span class="pre">rate</span> <span class="pre">vector</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.get_total_net_rotation" title="pygplates.NetRotationSnapshot.get_total_net_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotationSnapshot.get_total_net_rotation()</span></code></a> returns the <em>total</em> net rotation, over
+the entire globe, at the current time.</p>
+<p>It is a <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation" title="pygplates.NetRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotation</span></code></a>. This can give the net rotation either as a
+<a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_finite_rotation" title="pygplates.NetRotation.get_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a> or as a
+<a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_rotation_rate_vector" title="pygplates.NetRotation.get_rotation_rate_vector"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rotation</span> <span class="pre">rate</span> <span class="pre">vector</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The total net rotation over the entire globe (over all topologies) at the current 'time'.</span>
 <span class="n">total_net_rotation</span> <span class="o">=</span> <span class="n">net_rotation_snapshot</span><span class="o">.</span><span class="n">get_total_net_rotation</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>We arbitrarily choose to extract the net rotation as a rotation rate vector (alternatively we could have extracted it as a finite rotation).
-The rotation rate vector is a <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">3D</span> <span class="pre">vector</span></code></a> with a magnitude equal to the rotation rate in radians per million years
-and a vector direction representing the rotation pole. Here we only extract the rotation rate.</p>
+<p>Here the script gets the total net rotation as a rotation rate vector (the choice is arbitrary).
+This is a <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">3D</span> <span class="pre">vector</span></code></a> whose direction is the rotation pole, and whose
+magnitude is the rotation rate in radians per million years. The script uses only the rotation rate.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The magnitude of the rotation rate vector is the rotation rate in radians per million years.</span>
 <span class="n">total_rotation_rate_in_radians_per_myr</span> <span class="o">=</span> <span class="n">total_net_rotation</span><span class="o">.</span><span class="n">get_rotation_rate_vector</span><span class="p">()</span><span class="o">.</span><span class="n">get_magnitude</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Now that we have the <em>total</em> net rotation, we next calculate the <em>individual</em> net rotation of each resolved topology
-(topological plate polygon and deforming network) at the current time. From the net rotation snapshot we obtain its associated
-<a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.get_topological_snapshot" title="pygplates.NetRotationSnapshot.get_topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">topological</span> <span class="pre">snapshot</span></code></a> and iterate over its
-<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_resolved_topologies" title="pygplates.TopologicalSnapshot.get_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundaries</span> <span class="pre">and</span> <span class="pre">networks</span></code></a>.
-For each resolved topology we retrieve its <a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.get_net_rotation" title="pygplates.NetRotationSnapshot.get_net_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">individual</span> <span class="pre">net</span> <span class="pre">rotation</span></code></a> from the net rotation snapshot.
-However not all resolved topologies will necessarily contribute to net rotation. This can happen if a resolved topology did not intersect
-any of the sample points used to calculate net rotation (eg, because the resolved topology was too thin and fell between the points).</p>
+<p>Next is the <em>individual</em> net rotation of each resolved topology (topological plate polygon or
+deforming network) at the current time.</p>
+<p><a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.get_topological_snapshot" title="pygplates.NetRotationSnapshot.get_topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotationSnapshot.get_topological_snapshot()</span></code></a> returns the topological snapshot
+that the net rotation snapshot was calculated from, and
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_resolved_topologies" title="pygplates.TopologicalSnapshot.get_resolved_topologies"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_resolved_topologies()</span></code></a> returns its resolved topological
+boundaries and networks. For each of these,
+<a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot.get_net_rotation" title="pygplates.NetRotationSnapshot.get_net_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotationSnapshot.get_net_rotation()</span></code></a> returns its net rotation.</p>
+<p>Not every resolved topology contributes to net rotation. One that contains none of the sample
+points does not (it might be so thin that it falls between the points). Its net rotation is then
+<code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">resolved_topology</span> <span class="ow">in</span> <span class="n">net_rotation_snapshot</span><span class="o">.</span><span class="n">get_topological_snapshot</span><span class="p">()</span><span class="o">.</span><span class="n">get_resolved_topologies</span><span class="p">():</span>
     <span class="n">net_rotation</span> <span class="o">=</span> <span class="n">net_rotation_snapshot</span><span class="o">.</span><span class="n">get_net_rotation</span><span class="p">(</span><span class="n">resolved_topology</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">net_rotation</span><span class="p">:</span>
         <span class="o">...</span>
 </pre></div>
 </div>
-<p>For each resolved topology that contributes net rotation we arbitrarily choose to extract its net rotation as a <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a>
-(just to contrast with the total net rotation above that was extracted as a rotation rate vector, which we could have done here as well).
-And again, we’re ignoring the rotation pole and only extracting the rotation rate (which is the angle of the finite rotation representing the net rotation over a million years).</p>
+<p>For each resolved topology that does contribute, the script gets its net rotation as a
+<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a>. This is only to contrast with the total net
+rotation above. Either could have been a finite rotation or a rotation rate vector.</p>
+<p>The finite rotation is the net rotation over one million years, so its angle is the rotation rate.
+Again the script uses only the rotation rate, and ignores the rotation pole.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># An alternative way to extract the rotation rate (in degrees per million years) just to demonstrate extracting</span>
 <span class="c1"># from a finite rotation instead of a rotation rate vector (like we did above for the total net rotation).</span>
 <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rotation_rate_in_degrees_per_myr</span> <span class="o">=</span> <span class="n">net_rotation</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span><span class="o">.</span><span class="n">get_lat_lon_euler_pole_and_angle_degrees</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>For each resolved topology that contributes net rotation we also query its <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_area" title="pygplates.NetRotation.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">area</span></code></a> (in steradians or square radians) covered
-by point samples (used to calculate net rotation). And we convert from steradians to square kilometres.</p>
+<p>The script also gets the <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_area" title="pygplates.NetRotation.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">area</span></code></a> of each of those resolved
+topologies. This is the area covered by the sample points that are inside the topology, in
+steradians (square radians). Multiplying it by the square of the Earth’s radius converts it to
+square kilometres.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The area of current topology covered by the net rotation point samples (used to calculate net rotation).</span>
 <span class="n">sampled_area_in_square_kms</span> <span class="o">=</span> <span class="n">net_rotation</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
 </pre></div>
 </div>
-<p>Note that the accuracy of this area depends on how many point samples were used to calculate net rotation. If you need an accurate area then
-it’s better to explicitly calculate the <a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">polygon</span> <span class="pre">area</span></code></a> of the resolved topology.</p>
+<p>The accuracy of this area depends on how many sample points were used to calculate net rotation.
+If an accurate area is needed, it is better to calculate the
+<a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.get_area" title="pygplates.PolygonOnSphere.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">polygon</span> <span class="pre">area</span></code></a> of the resolved topology.</p>
 </section>
 <section id="see-also">
 <h2><a class="toc-backref" href="#id4" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
@@ -263,7 +281,8 @@ it’s better to explicitly calculate the <a class="reference internal" href="..
 <li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-model"><span class="std std-ref">Topological model</span></a></p></li>
 <li><p>Reference: <a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel" title="pygplates.NetRotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotationModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot" title="pygplates.NetRotationSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotationSnapshot</span></code></a>, <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation" title="pygplates.NetRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotation</span></code></a>,
 <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a></p></li>
-<li><p>Sample code: <a class="reference internal" href="pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html#pygplates-find-average-area-and-subducting-boundary-proportion-of-topologies"><span class="std std-ref">Find average area and subducting boundary proportion of topologies</span></a>,
+<li><p>Sample code: <a class="reference internal" href="pygplates_calculate_net_rotation_from_point_samples.html#pygplates-calculate-net-rotation-from-point-samples"><span class="std std-ref">Calculate net rotation from point samples</span></a>,
+<a class="reference internal" href="pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html#pygplates-find-average-area-and-subducting-boundary-proportion-of-topologies"><span class="std std-ref">Find average area and subducting boundary proportion of topologies</span></a>,
 <a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a></p></li>
 </ul>
 </section>
@@ -273,8 +292,8 @@ it’s better to explicitly calculate the <a class="reference internal" href="..
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html" class="btn btn-neutral float-left" title="Sample strain rates inside the overriding plate at subduction zones" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="pygplates_find_nearest_feature_to_a_point.html" class="btn btn-neutral float-right" title="Find nearest reconstructed feature to a point" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html" class="btn btn-neutral float-left" title="Clamp and smooth strain rates, and set rift parameters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_calculate_net_rotation_from_point_samples.html" class="btn btn-neutral float-right" title="Calculate net rotation from point samples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

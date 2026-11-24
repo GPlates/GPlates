@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Query common feature types &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Query common feature types &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_query_common_feature_types.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -73,6 +73,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -105,13 +106,12 @@
              
   <section id="query-common-feature-types">
 <span id="pygplates-query-common-feature-types"></span><h1>Query common feature types<a class="headerlink" href="#query-common-feature-types" title="Link to this heading"></a></h1>
-<p>This example shows how to query various <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">types</span></code></a> of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a>.</p>
-<div class="line-block">
-<div class="line">Each example loads a file of features of one type and prints the properties that type supports.</div>
-<div class="line">The <code class="docutils literal notranslate"><span class="pre">get_...</span></code> methods of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a> return a default value when a feature does not
-have the property (or has more than one). Passing <code class="docutils literal notranslate"><span class="pre">None</span></code> as the default is how these examples
-test whether an optional property is present.</div>
-</div>
+<p>This example queries <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">features</span></code></a> of various
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">types</span></code></a>.</p>
+<p>Each example loads a file of features of one type, and prints properties that the type supports.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">get_...</span></code> methods of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a> return a default value when a feature does
+not have the property (or has more than one). To test whether an optional property is present,
+these examples pass <code class="docutils literal notranslate"><span class="pre">None</span></code> as the default.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-common-feature-types"><span class="std std-ref">Create common feature types</span></a></p>
@@ -187,7 +187,7 @@ test whether an optional property is present.</div>
 </nav>
 <section id="query-a-coastline-feature">
 <span id="pygplates-query-coastline-feature"></span><h2><a class="toc-backref" href="#id44" role="doc-backlink">Query a <em>coastline</em> feature</a><a class="headerlink" href="#query-a-coastline-feature" title="Link to this heading"></a></h2>
-<p>In this example we query a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">coastline</a> feature.</p>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">coastline</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-coastline-feature"><span class="std std-ref">Create a coastline feature from present-day geometry</span></a></p>
@@ -196,8 +196,8 @@ test whether an optional property is present.</div>
 <h3><a class="toc-backref" href="#id45" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h3>
 <dl class="simple">
 <dt><code class="docutils literal notranslate"><span class="pre">coastlines.gpml</span></code></dt><dd><p>Coastline features. Each has a reconstruction plate ID, a valid time period and one or more
-polyline geometries (whose lengths are printed); a name and description are printed if present.
-The GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a> has such a file.</p>
+polyline or polygon geometries (whose lengths are printed); a name and description are printed
+if present. The GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a> has such a file.</p>
 </dd>
 </dl>
 </section>
@@ -233,18 +233,26 @@ The GPlates <a class="reference external" href="https://www.gplates.org/download
 </section>
 <section id="details">
 <h3><a class="toc-backref" href="#id47" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
-<div class="line-block">
-<div class="line">Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">coastline</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">length</span></code></a> of the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometries</span></code></a>  and
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a>.</div>
-<div class="line">Some coastlines have more than one geometry per feature so we need to call <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a>
-instead of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a> - the latter will fail if there’s not exactly one geometry.
-So we print out the length of each coastline geometry in a coastline feature.</div>
-</div>
+<p>For each <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Coastline">coastline</a> feature the script
+prints:</p>
+<ul class="simple">
+<li><p>the name of its <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>,</p></li>
+<li><p>its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>,</p></li>
+<li><p>its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>,</p></li>
+<li><p>the length of each of its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometries</span></code></a>, and</p></li>
+<li><p>its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a>.</p></li>
+</ul>
+<p>Some coastline features have more than one geometry. So the script calls
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a>, which returns a list of them, and prints the length of
+each one. It cannot call <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a> instead, since that returns
+<code class="docutils literal notranslate"><span class="pre">None</span></code> unless the feature has exactly one geometry.</p>
+<p>The length of a geometry comes from its <code class="docutils literal notranslate"><span class="pre">get_arc_length()</span></code> method, which polylines and polygons
+have (see <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere.get_arc_length()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.get_arc_length" title="pygplates.PolygonOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.get_arc_length()</span></code></a>). The length is in radians. It is converted to
+kilometres by multiplying it by <a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth.mean_radius_in_kms" title="pygplates.Earth.mean_radius_in_kms"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code></a>.</p>
+<p>The valid time period is a tuple of a begin time and an end time. An end time in the distant
+future is <code class="docutils literal notranslate"><span class="pre">float('-inf')</span></code>, which prints as <code class="docutils literal notranslate"><span class="pre">-inf</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (Coastline) and the name of the coastline.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -262,12 +270,6 @@ So we print out the length of each coastline geometry in a coastline feature.</d
 <span class="c1"># Print the valid time period of the coastline.</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'  valid time period: </span><span class="si">%f</span><span class="s1"> -&gt; </span><span class="si">%f</span><span class="s1">'</span> <span class="o">%</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">())</span>
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Each geometry <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">length</span></code></a> is converted from
-radians to <code class="docutils literal notranslate"><span class="pre">Kms</span></code> by multiplying with the <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code> attribute in
-<a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Earth</span></code></a>.</p>
 </div>
 </section>
 <section id="output">
@@ -310,12 +312,10 @@ radians to <code class="docutils literal notranslate"><span class="pre">Kms</spa
 </section>
 <section id="query-an-isochron-feature">
 <span id="pygplates-query-isochron-feature"></span><h2><a class="toc-backref" href="#id49" role="doc-backlink">Query an <em>isochron</em> feature</a><a class="headerlink" href="#query-an-isochron-feature" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">In this example we query an <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">isochron</a> feature.</div>
-<div class="line">This is the same as the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example except we also query
-the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId">gpml:conjugatePlateId</a> supported by
-<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">isochron</a> features.</div>
-</div>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">isochron</a> features.</p>
+<p>It is the same as <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>, except that it also queries the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId">gpml:conjugatePlateId</a> property,
+which <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">isochron</a> features support.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-isochron-feature"><span class="std std-ref">Create an isochron feature from geometry at a past geological time</span></a></p>
@@ -363,19 +363,13 @@ and one or more polyline geometries. The GPlates <a class="reference external" h
 </section>
 <section id="id6">
 <h3><a class="toc-backref" href="#id52" role="doc-backlink">Details</a><a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
-<div class="line-block">
-<div class="line">Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">isochron</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">length</span></code></a> of the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometries</span></code></a>  and
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a>.</div>
-<div class="line">Some isochrons have more than one geometry per feature so we need to call <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a>
-instead of <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a> - the latter will fail if there’s not exactly one geometry.
-So we print out the length of each isochron geometry in a isochron feature.</div>
-</div>
+<p>For each <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Isochron">isochron</a> feature the script prints
+what <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> prints, and also its
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a>.</p>
+<p>As with coastlines, some isochron features have more than one geometry, so the script calls
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a> and prints the length of each one. And again each length
+is converted from radians to kilometres by multiplying it by
+<a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth.mean_radius_in_kms" title="pygplates.Earth.mean_radius_in_kms"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (Isochron) and the name of the isochron.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -397,22 +391,14 @@ So we print out the length of each isochron geometry in a isochron feature.</div
 <span class="nb">print</span><span class="p">(</span><span class="s1">'  valid time period: </span><span class="si">%f</span><span class="s1"> -&gt; </span><span class="si">%f</span><span class="s1">'</span> <span class="o">%</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">())</span>
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Each geometry <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">length</span></code></a> is converted from
-radians to <code class="docutils literal notranslate"><span class="pre">Kms</span></code> by multiplying with the <code class="docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code> attribute in
-<a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Earth</span></code></a>.</p>
-</div>
 </section>
 <section id="id8">
 <h3><a class="toc-backref" href="#id53" role="doc-backlink">Output</a><a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
-<div class="line-block">
-<div class="line">Some features mixed in with the isochrons were
+<p>Some of the features mixed in with the isochrons were
 <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:PassiveContinentalBoundary">passive continental boundaries</a>
-that were missing a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId">conjugate plate ID</a>.</div>
-<div class="line">In this case calls to <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a> returns a default value of zero
-as can be seen in the following output:</div>
-</div>
+that had no <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId">conjugate plate ID</a>.
+For those, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a> returns its default value of zero,
+as can be seen in the following output:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Isochron</span><span class="p">:</span> <span class="n">CARLSBERG</span> <span class="n">RIDGE</span><span class="p">,</span> <span class="n">INDIA</span><span class="o">-</span><span class="n">AFRICA</span> <span class="n">ANOMALY</span> <span class="mi">5</span> <span class="n">ISOCHRON</span>
   <span class="n">description</span><span class="p">:</span>
   <span class="n">plate</span> <span class="n">ID</span><span class="p">:</span> <span class="mi">501</span>
@@ -448,7 +434,7 @@ as can be seen in the following output:</div>
 </section>
 <section id="query-a-mid-ocean-ridge-feature">
 <span id="pygplates-query-mid-ocean-ridge-feature"></span><h2><a class="toc-backref" href="#id54" role="doc-backlink">Query a <em>mid-ocean ridge</em> feature</a><a class="headerlink" href="#query-a-mid-ocean-ridge-feature" title="Link to this heading"></a></h2>
-<p>In this example we query a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">mid-ocean ridge</a> feature.</p>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">mid-ocean ridge</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-mid-ocean-ridge-feature"><span class="std std-ref">Create a mid-ocean ridge feature from geometry at a past geological time</span></a></p>
@@ -510,9 +496,10 @@ reconstructs by half-stage rotation). The GPlates <a class="reference external" 
 </section>
 <section id="id12">
 <h3><a class="toc-backref" href="#id57" role="doc-backlink">Details</a><a class="headerlink" href="#id12" title="Link to this heading"></a></h3>
-<p>Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">mid-ocean ridge</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The name of the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MidOceanRidge">mid-ocean ridge</a>
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>, and the feature’s
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>,
+are printed as in <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (MidOceanRidge) and the name of the mid-ocean ridge.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -520,18 +507,18 @@ reconstructs by half-stage rotation). The GPlates <a class="reference external" 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  description: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_description</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">A mid-ocean ridge can reconstruct either by plate ID or by half-stage rotation. Which one is
+<p>A mid-ocean ridge reconstructs either by plate ID or by half-stage rotation. Which one is
 determined by its <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:reconstructionMethod">reconstruction method</a>,
-returned by <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_method" title="pygplates.Feature.get_reconstruction_method"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_method()</span></code></a> (which defaults to <code class="docutils literal notranslate"><span class="pre">'ByPlateId'</span></code>
-if the feature has no reconstruction method property).</div>
-<div class="line">If it reconstructs by plate ID then we print its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>
-and, if it has one, its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a>. Passing
-<code class="docutils literal notranslate"><span class="pre">None</span></code> as the default makes <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a> return <code class="docutils literal notranslate"><span class="pre">None</span></code> when
-the feature does not have exactly one conjugate plate ID, instead of the usual default of zero.</div>
-<div class="line">Otherwise it reconstructs by half-stage rotation, and we print its
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_left_plate" title="pygplates.Feature.get_left_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">left</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_right_plate" title="pygplates.Feature.get_right_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">right</span></code></a> plate IDs.</div>
-</div>
+returned by <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_method" title="pygplates.Feature.get_reconstruction_method"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_method()</span></code></a>. It returns <code class="docutils literal notranslate"><span class="pre">'ByPlateId'</span></code> for a
+feature that has no reconstruction method property.</p>
+<p>For a ridge that reconstructs by plate ID, the script prints its
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a> and, if it has one, its
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a>. Passing <code class="docutils literal notranslate"><span class="pre">None</span></code> as the
+default makes <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a> return <code class="docutils literal notranslate"><span class="pre">None</span></code> when the feature
+does not have exactly one conjugate plate ID, instead of the usual default of zero.</p>
+<p>Any other ridge reconstructs by half-stage rotation, and the script prints its
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_left_plate" title="pygplates.Feature.get_left_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">left</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_right_plate" title="pygplates.Feature.get_right_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">right</span></code></a>
+plate IDs.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A mid-ocean ridge can either reconstruct by plate ID or by half stage rotation.</span>
 <span class="c1"># The former uses the reconstruction plate ID.</span>
 <span class="c1"># The latter uses the left/right plate IDs.</span>
@@ -552,8 +539,9 @@ the feature does not have exactly one conjugate plate ID, instead of the usual d
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  right plate ID: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_right_plate</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Print the <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">length</span></code></a> of each <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometry</span></code></a>
-and the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The length of each <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometry</span></code></a> and the
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> are printed as in
+<a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the length of the mid-ocean ridge geometry(s).</span>
 <span class="c1"># There could be more than one geometry per feature.</span>
 <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
@@ -587,7 +575,7 @@ and the <a class="reference internal" href="../generated/pygplates.Feature.html#
 </section>
 <section id="query-a-subduction-zone-feature">
 <span id="pygplates-query-subduction-zone-feature"></span><h2><a class="toc-backref" href="#id59" role="doc-backlink">Query a <em>subduction zone</em> feature</a><a class="headerlink" href="#query-a-subduction-zone-feature" title="Link to this heading"></a></h2>
-<p>In this example we query a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">subduction zone</a> feature.</p>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">subduction zone</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-subduction-zone-feature"><span class="std std-ref">Create a subduction zone feature from present-day geometry</span></a></p>
@@ -596,7 +584,8 @@ and the <a class="reference internal" href="../generated/pygplates.Feature.html#
 <h3><a class="toc-backref" href="#id60" role="doc-backlink">Data files</a><a class="headerlink" href="#id15" title="Link to this heading"></a></h3>
 <dl class="simple">
 <dt><code class="docutils literal notranslate"><span class="pre">subduction_zones.gpml</span></code></dt><dd><p>Subduction zone features. Each has a reconstruction plate ID, a valid time period and one or more
-polyline geometries; a conjugate plate ID and a subduction polarity are printed if present.
+polyline geometries. A conjugate plate ID is printed if present, and so is a subduction polarity
+(<code class="docutils literal notranslate"><span class="pre">Unknown</span></code> is printed if it is absent).
 The GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a> has such a file.</p>
 </dd>
 </dl>
@@ -645,10 +634,11 @@ The GPlates <a class="reference external" href="https://www.gplates.org/download
 </section>
 <section id="id18">
 <h3><a class="toc-backref" href="#id62" role="doc-backlink">Details</a><a class="headerlink" href="#id18" title="Link to this heading"></a></h3>
-<p>Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">subduction zone</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>
-as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The name of the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:SubductionZone">subduction zone</a>
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>, and the feature’s
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>
+and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>, are printed as in
+<a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (SubductionZone) and the name of the feature.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -659,23 +649,21 @@ as in the <a class="reference internal" href="#pygplates-query-coastline-feature
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  plate ID: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">A subduction zone does not necessarily have a conjugate plate ID, so we only print it if it is present.</div>
-<div class="line">Passing <code class="docutils literal notranslate"><span class="pre">None</span></code> as the default makes <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a> return <code class="docutils literal notranslate"><span class="pre">None</span></code>
-when the feature does not have exactly one conjugate plate ID, instead of the usual default of zero.</div>
-</div>
+<p>A subduction zone does not necessarily have a conjugate plate ID, so it is printed only if it is
+present. Passing <code class="docutils literal notranslate"><span class="pre">None</span></code> as the default makes <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a>
+return <code class="docutils literal notranslate"><span class="pre">None</span></code> when the feature does not have exactly one conjugate plate ID, instead of the usual
+default of zero.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the conjugate plate ID of the feature (if it has one - use None to test this).</span>
 <span class="n">conjugate_plate_id</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_conjugate_plate_id</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">conjugate_plate_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  conjugate plate ID: </span><span class="si">{</span><span class="n">conjugate_plate_id</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity">subduction polarity</a> is an
-enumeration property, so we query it with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_enumeration" title="pygplates.Feature.get_enumeration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_enumeration()</span></code></a>.</div>
-<div class="line">This returns the enumeration value as a string (<code class="docutils literal notranslate"><span class="pre">'Left'</span></code>, <code class="docutils literal notranslate"><span class="pre">'Right'</span></code> or <code class="docutils literal notranslate"><span class="pre">'Unknown'</span></code>) if the
-feature has exactly one subduction polarity property, otherwise the default we pass (<code class="docutils literal notranslate"><span class="pre">'Unknown'</span></code>).</div>
-</div>
+<p>The <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:subductionPolarity">subduction polarity</a> is an
+enumeration property, so it is queried with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_enumeration" title="pygplates.Feature.get_enumeration"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_enumeration()</span></code></a>.</p>
+<p>This returns the enumeration value as a string (<code class="docutils literal notranslate"><span class="pre">'Left'</span></code>, <code class="docutils literal notranslate"><span class="pre">'Right'</span></code> or <code class="docutils literal notranslate"><span class="pre">'Unknown'</span></code>) if the
+feature has exactly one subduction polarity property. Otherwise it returns the default that the
+script passes, which is <code class="docutils literal notranslate"><span class="pre">'Unknown'</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the subduction polarity of the feature.</span>
 <span class="c1"># Default to 'Unknown' if there is no polarity property.</span>
 <span class="n">polarity</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_enumeration</span><span class="p">(</span>
@@ -684,8 +672,9 @@ feature has exactly one subduction polarity property, otherwise the default we p
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  polarity: </span><span class="si">{</span><span class="n">polarity</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Print the <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">length</span></code></a> of each <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometry</span></code></a>
-and the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The length of each <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometry</span></code></a> and the
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> are printed as in
+<a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the length of the feature geometry(s).</span>
 <span class="c1"># There could be more than one geometry per feature.</span>
 <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
@@ -740,7 +729,7 @@ and the <a class="reference internal" href="../generated/pygplates.Feature.html#
 </section>
 <section id="query-a-virtual-geomagnetic-pole-feature">
 <span id="pygplates-query-virtual-geomagnetic-pole-feature"></span><h2><a class="toc-backref" href="#id64" role="doc-backlink">Query a <em>virtual geomagnetic pole</em> feature</a><a class="headerlink" href="#query-a-virtual-geomagnetic-pole-feature" title="Link to this heading"></a></h2>
-<p>In this example we query a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a> feature.</p>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-virtual-geomagnetic-pole-feature"><span class="std std-ref">Create a virtual geomagnetic pole feature</span></a></p>
@@ -811,10 +800,11 @@ The GPlates <a class="reference external" href="https://www.gplates.org/download
 </section>
 <section id="id24">
 <h3><a class="toc-backref" href="#id67" role="doc-backlink">Details</a><a class="headerlink" href="#id24" title="Link to this heading"></a></h3>
-<p>Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>
-as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The name of the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole">virtual geomagnetic pole</a>
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>, and the feature’s
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>
+and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plate</span> <span class="pre">ID</span></code></a>, are printed as in
+<a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (VirtualGeomagneticPole) and the name of the feature.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -825,15 +815,14 @@ as in the <a class="reference internal" href="#pygplates-query-coastline-feature
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  plate ID: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageInclination">gpml:averageInclination</a>,
+<p>The <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageInclination">gpml:averageInclination</a>,
 <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageDeclination">gpml:averageDeclination</a>,
 <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:poleA95">gpml:poleA95</a> and
-<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageAge">gpml:averageAge</a> properties are floating-point
-numbers, so each is queried with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_double" title="pygplates.Feature.get_double"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_double()</span></code></a>.</div>
-<div class="line">Passing <code class="docutils literal notranslate"><span class="pre">None</span></code> as the default makes it return <code class="docutils literal notranslate"><span class="pre">None</span></code> when the feature does not have exactly one
-property of that name (instead of the usual default of <code class="docutils literal notranslate"><span class="pre">0.0</span></code>), so each value is only printed if present.</div>
-</div>
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageAge">gpml:averageAge</a> properties are
+floating-point numbers, so each is queried with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_double" title="pygplates.Feature.get_double"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_double()</span></code></a>.</p>
+<p>Passing <code class="docutils literal notranslate"><span class="pre">None</span></code> as the default makes it return <code class="docutils literal notranslate"><span class="pre">None</span></code> when the feature does not have exactly
+one property of that name, instead of the usual default of <code class="docutils literal notranslate"><span class="pre">0.0</span></code>. So each value is printed only
+if it is present.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the average inclination of the feature (if there is one - use None to test this).</span>
 <span class="n">average_inclination</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_double</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PropertyName</span><span class="o">.</span><span class="n">gpml_average_inclination</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 <span class="k">if</span> <span class="n">average_inclination</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -855,12 +844,11 @@ property of that name (instead of the usual default of <code class="docutils lit
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  average age: </span><span class="si">{</span><span class="n">average_age</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The default geometry of a virtual geomagnetic pole feature is its
+<p>The default geometry of a virtual geomagnetic pole feature is its
 <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:polePosition">pole position</a>, so
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a> returns it without a property name being specified.</div>
-<div class="line">It is a <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a>, and <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere.to_lat_lon" title="pygplates.PointOnSphere.to_lat_lon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.to_lat_lon()</span></code></a> gives its latitude and longitude.</div>
-</div>
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a> returns it when no property name is specified.</p>
+<p>It is a <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a>, and <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere.to_lat_lon" title="pygplates.PointOnSphere.to_lat_lon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.to_lat_lon()</span></code></a> returns
+its latitude and longitude.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the VGP pole position.</span>
 <span class="c1"># The default geometry is the pole position so we don't have to specify a property name.</span>
 <span class="n">pole_lat</span><span class="p">,</span> <span class="n">pole_lon</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
@@ -868,8 +856,8 @@ property of that name (instead of the usual default of <code class="docutils lit
 </pre></div>
 </div>
 <p>The <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:averageSampleSitePosition">average sample site position</a>
-is not the default geometry, so its property name must be given to <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a>
-(otherwise we would get the pole position again).</p>
+is not the default geometry, so its property name must be given to
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a>. Otherwise the pole position would be returned again.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the average sample site position.</span>
 <span class="c1"># We need to specify a property name otherwise we'll get the VGP pole position.</span>
 <span class="n">average_sample_site_lat</span><span class="p">,</span> <span class="n">average_sample_site_lon</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_geometry</span><span class="p">(</span>
@@ -914,14 +902,10 @@ is not the default geometry, so its property name must be given to <a class="ref
 </section>
 <section id="query-a-motion-path-feature">
 <span id="pygplates-query-motion-path-feature"></span><h2><a class="toc-backref" href="#id69" role="doc-backlink">Query a <em>motion path</em> feature</a><a class="headerlink" href="#query-a-motion-path-feature" title="Link to this heading"></a></h2>
-<p>In this example we query a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">motion path</a> feature.</p>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">motion path</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-motion-path-feature"><span class="std std-ref">Create a motion path feature</span></a></p>
-</div>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_reconstruct_motion_path_features.html#pygplates-reconstruct-motion-path-features"><span class="std std-ref">Reconstruct motion path features</span></a></p>
+<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-motion-path-feature"><span class="std std-ref">Create a motion path feature</span></a> and <a class="reference internal" href="pygplates_reconstruct_motion_path_features.html#pygplates-reconstruct-motion-path-features"><span class="std std-ref">Reconstruct motion path features</span></a></p>
 </div>
 <section id="id27">
 <h3><a class="toc-backref" href="#id70" role="doc-backlink">Data files</a><a class="headerlink" href="#id27" title="Link to this heading"></a></h3>
@@ -970,9 +954,10 @@ with <a class="reference internal" href="../generated/pygplates.FeatureCollectio
 </section>
 <section id="id29">
 <h3><a class="toc-backref" href="#id72" role="doc-backlink">Details</a><a class="headerlink" href="#id29" title="Link to this heading"></a></h3>
-<p>Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">motion path</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The name of the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:MotionPath">motion path</a>
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>, and the feature’s
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>,
+are printed as in <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (MotionPath) and the name of the motion path.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -980,13 +965,11 @@ with <a class="reference internal" href="../generated/pygplates.FeatureCollectio
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  description: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_description</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">A motion path is the path of its seed points, attached to the
+<p>A motion path is the path of its seed points, which are attached to the
 <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:reconstructionPlateId">gpml:reconstructionPlateId</a> plate,
-relative to the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:relativePlate">gpml:relativePlate</a> plate.</div>
-<div class="line">These are printed using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_plate_id()</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_relative_plate" title="pygplates.Feature.get_relative_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_relative_plate()</span></code></a>.</div>
-</div>
+relative to the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:relativePlate">gpml:relativePlate</a> plate.</p>
+<p>The two plate IDs are printed using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_plate_id()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_relative_plate" title="pygplates.Feature.get_relative_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_relative_plate()</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the plate ID of the motion path.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  plate ID: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -994,22 +977,23 @@ relative to the <a class="reference external" href="http://www.gplates.org/docs/
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  relative plate ID: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_relative_plate</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The times at which the path is sampled are returned as a list of floats by <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_times" title="pygplates.Feature.get_times"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_times()</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_times" title="pygplates.Feature.get_times"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_times()</span></code></a> returns the times at which the path is sampled, as a list of
+floats, from the youngest time to the oldest.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the times of the motion path.</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'  times: '</span><span class="p">,</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_times</span><span class="p">())</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The seed points are the feature’s geometry, obtained with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a>.</div>
-<div class="line"><a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a> gives the points whether the geometry is a single
-point or a multipoint, and <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere.to_lat_lon" title="pygplates.PointOnSphere.to_lat_lon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.to_lat_lon()</span></code></a> gives each point’s latitude and longitude.</div>
-</div>
+<p>The seed points are the geometry of the feature, returned by <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a> returns the points whether the geometry is a single
+point or a multipoint, and <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere.to_lat_lon" title="pygplates.PointOnSphere.to_lat_lon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.to_lat_lon()</span></code></a> returns the latitude and
+longitude of each point.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the seed points of the motion path.</span>
 <span class="k">for</span> <span class="n">seed_point</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_points</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">'  seed point lat: </span><span class="si">%f</span><span class="s1">, seed point lon: </span><span class="si">%f</span><span class="s1">'</span> <span class="o">%</span> <span class="n">seed_point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">())</span>
 </pre></div>
 </div>
-<p>Print the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> is printed as in
+<a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the valid time period of the motion path.</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'  valid time period: </span><span class="si">%f</span><span class="s1"> -&gt; </span><span class="si">%f</span><span class="s1">'</span> <span class="o">%</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">())</span>
 </pre></div>
@@ -1031,10 +1015,10 @@ point or a multipoint, and <a class="reference internal" href="../generated/pygp
 </section>
 <section id="query-a-flowline-feature">
 <span id="pygplates-query-flowline-feature"></span><h2><a class="toc-backref" href="#id74" role="doc-backlink">Query a <em>flowline</em> feature</a><a class="headerlink" href="#query-a-flowline-feature" title="Link to this heading"></a></h2>
-<p>In this example we query a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a> feature.</p>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-flowline-feature"><span class="std std-ref">Create a flowline feature</span></a></p>
+<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-flowline-feature"><span class="std std-ref">Create a flowline feature</span></a> and <a class="reference internal" href="pygplates_reconstruct_flowline_features.html#pygplates-reconstruct-flowline-features"><span class="std std-ref">Reconstruct flowline features</span></a></p>
 </div>
 <section id="id32">
 <h3><a class="toc-backref" href="#id75" role="doc-backlink">Data files</a><a class="headerlink" href="#id32" title="Link to this heading"></a></h3>
@@ -1081,9 +1065,10 @@ seed point geometry (a point or multipoint). The GPlates <a class="reference ext
 </section>
 <section id="id35">
 <h3><a class="toc-backref" href="#id77" role="doc-backlink">Details</a><a class="headerlink" href="#id35" title="Link to this heading"></a></h3>
-<p>Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The name of the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:Flowline">flowline</a>
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>, and the feature’s
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>,
+are printed as in <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (Flowline) and the name of the flowline.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -1091,12 +1076,11 @@ seed point geometry (a point or multipoint). The GPlates <a class="reference ext
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  description: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_description</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">A flowline tracks its seed points spreading away from a mid-ocean ridge into the
-<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:leftPlate">gpml:leftPlate</a> and
-<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rightPlate">gpml:rightPlate</a> plates.</div>
-<div class="line">These are printed using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_left_plate" title="pygplates.Feature.get_left_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_left_plate()</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_right_plate" title="pygplates.Feature.get_right_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_right_plate()</span></code></a>.</div>
-</div>
+<p>A flowline tracks its seed points spreading away from a mid-ocean ridge, into the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:leftPlate">gpml:leftPlate</a> plate and the
+<a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:rightPlate">gpml:rightPlate</a> plate.</p>
+<p>The two plate IDs are printed using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_left_plate" title="pygplates.Feature.get_left_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_left_plate()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_right_plate" title="pygplates.Feature.get_right_plate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_right_plate()</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the left plate ID of the flowline.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  left plate ID: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_left_plate</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -1104,22 +1088,23 @@ seed point geometry (a point or multipoint). The GPlates <a class="reference ext
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  right plate ID: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_right_plate</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The times at which the flowline is sampled are returned as a list of floats by <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_times" title="pygplates.Feature.get_times"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_times()</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_times" title="pygplates.Feature.get_times"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_times()</span></code></a> returns the times at which the flowline is sampled, as a list
+of floats, from the youngest time to the oldest.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the times of the flowline.</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'  times: '</span><span class="p">,</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_times</span><span class="p">())</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The seed points are the feature’s geometry, obtained with <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a>.</div>
-<div class="line"><a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a> gives the points whether the geometry is a single
-point or a multipoint, and <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere.to_lat_lon" title="pygplates.PointOnSphere.to_lat_lon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.to_lat_lon()</span></code></a> gives each point’s latitude and longitude.</div>
-</div>
+<p>The seed points are the geometry of the feature, returned by <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometry" title="pygplates.Feature.get_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometry()</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a> returns the points whether the geometry is a single
+point or a multipoint, and <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere.to_lat_lon" title="pygplates.PointOnSphere.to_lat_lon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PointOnSphere.to_lat_lon()</span></code></a> returns the latitude and
+longitude of each point.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the seed points of the flowline.</span>
 <span class="k">for</span> <span class="n">seed_point</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_points</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">'  seed point lat: </span><span class="si">%f</span><span class="s1">, seed point lon: </span><span class="si">%f</span><span class="s1">'</span> <span class="o">%</span> <span class="n">seed_point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">())</span>
 </pre></div>
 </div>
-<p>Print the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span> <span class="pre">period</span></code></a> is printed as in
+<a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the valid time period of the flowline.</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'  valid time period: </span><span class="si">%f</span><span class="s1"> -&gt; </span><span class="si">%f</span><span class="s1">'</span> <span class="o">%</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">())</span>
 </pre></div>
@@ -1141,14 +1126,10 @@ point or a multipoint, and <a class="reference internal" href="../generated/pygp
 </section>
 <section id="query-a-total-reconstruction-sequence-rotation-feature">
 <span id="pygplates-query-total-reconstruction-sequence-feature"></span><h2><a class="toc-backref" href="#id79" role="doc-backlink">Query a <em>total reconstruction sequence</em> (rotation) feature</a><a class="headerlink" href="#query-a-total-reconstruction-sequence-rotation-feature" title="Link to this heading"></a></h2>
-<p>In this example we query a <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">total reconstruction sequence</a> feature.</p>
+<p>This example queries <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">total reconstruction sequence</a> features.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-total-reconstruction-sequence-feature"><span class="std std-ref">Create a total reconstruction sequence (rotation) feature</span></a></p>
-</div>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_modify_reconstruction_pole.html#pygplates-modify-reconstruction-pole"><span class="std std-ref">Modify a reconstruction pole</span></a></p>
+<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-total-reconstruction-sequence-feature"><span class="std std-ref">Create a total reconstruction sequence (rotation) feature</span></a> and <a class="reference internal" href="pygplates_modify_reconstruction_pole.html#pygplates-modify-reconstruction-pole"><span class="std std-ref">Modify a reconstruction pole</span></a></p>
 </div>
 <section id="id38">
 <h3><a class="toc-backref" href="#id80" role="doc-backlink">Data files</a><a class="headerlink" href="#id38" title="Link to this heading"></a></h3>
@@ -1198,7 +1179,7 @@ rotation poles in the file into a total reconstruction sequence feature. The GPl
     <span class="nb">print</span><span class="p">(</span><span class="s1">'  time samples:'</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">time_sample</span> <span class="ow">in</span> <span class="n">enabled_time_samples</span><span class="p">:</span>
 
-        <span class="c1"># Get the finite rotation from the GpmlFiniteRotation property value instead the GpmlTimeSample.</span>
+        <span class="c1"># Get the finite rotation from the GpmlFiniteRotation property value inside the GpmlTimeSample.</span>
         <span class="n">finite_rotation</span> <span class="o">=</span> <span class="n">time_sample</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span>
 
         <span class="c1"># Extract the pole and angle (in degrees) from the finite rotation.</span>
@@ -1216,13 +1197,13 @@ rotation poles in the file into a total reconstruction sequence feature. The GPl
 </section>
 <section id="id41">
 <h3><a class="toc-backref" href="#id82" role="doc-backlink">Details</a><a class="headerlink" href="#id41" title="Link to this heading"></a></h3>
-<div class="line-block">
-<div class="line"><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_total_reconstruction_pole" title="pygplates.Feature.get_total_reconstruction_pole"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_total_reconstruction_pole()</span></code></a> returns a tuple of the fixed plate ID,
-the moving plate ID and the <a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">sequence</span></code></a> of finite rotations
-(it returns <code class="docutils literal notranslate"><span class="pre">None</span></code> for a feature that is not a rotation feature, which cannot happen when loading a rotation file).</div>
-<div class="line">In the PLATES4 rotation format a moving plate ID of 999 marks a pole that is commented out, so
-we skip those sequences.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_total_reconstruction_pole" title="pygplates.Feature.get_total_reconstruction_pole"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_total_reconstruction_pole()</span></code></a> returns a tuple of the fixed plate ID, the
+moving plate ID and the <a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">sequence</span></code></a> of finite
+rotations. (It returns <code class="docutils literal notranslate"><span class="pre">None</span></code> for a feature that is not a rotation feature, which cannot happen
+when loading a rotation file.)</p>
+<p>In the PLATES4 rotation format, a line with a moving plate ID of 999 is a comment and not a
+rotation pole. These lines are loaded as sequences with a moving plate ID of 999, which the script
+skips.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fixed_plate_id</span><span class="p">,</span> <span class="n">moving_plate_id</span><span class="p">,</span> <span class="n">total_reconstruction_pole</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">get_total_reconstruction_pole</span><span class="p">()</span>
 
 <span class="c1"># Ignore moving plate IDs equal to 999 since these are commented lines in the PLATES4 rotation format.</span>
@@ -1230,10 +1211,11 @@ we skip those sequences.</div>
     <span class="k">continue</span>
 </pre></div>
 </div>
-<p>Print the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">total reconstruction sequence</a>
-<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureType</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a> as in the <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a> example,
-and then the moving and fixed plate IDs obtained above.</p>
+<p>The name of the <a class="reference external" href="http://www.gplates.org/docs/gpgim/#gpml:TotalReconstructionSequence">total reconstruction sequence</a>
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>, and the feature’s
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_name" title="pygplates.Feature.get_name"><code class="xref py py-meth docutils literal notranslate"><span class="pre">name</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_description" title="pygplates.Feature.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">description</span></code></a>,
+are printed as in <a class="reference internal" href="#pygplates-query-coastline-feature"><span class="std std-ref">Query a coastline feature</span></a>. Then the moving and fixed plate IDs,
+obtained above, are printed.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the feature type (TotalReconstructionSequence) and the name of the rotation feature.</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
@@ -1247,12 +1229,11 @@ and then the moving and fixed plate IDs obtained above.</p>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  fixed plate ID: </span><span class="si">{</span><span class="n">fixed_plate_id</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Not all rotation samples in a sequence are necessarily enabled, so we get only the enabled ones using
-<a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling.get_enabled_time_samples" title="pygplates.GpmlIrregularSampling.get_enabled_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlIrregularSampling.get_enabled_time_samples()</span></code></a>.</div>
-<div class="line">The <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample.get_time" title="pygplates.GpmlTimeSample.get_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">time</span></code></a> of the first and last enabled samples gives the
-time period of the sequence.</div>
-</div>
+<p>Not all of the time samples in a sequence are necessarily enabled (a disabled sample is ignored
+when rotations are interpolated). So the script gets only the enabled ones, using
+<a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling.get_enabled_time_samples" title="pygplates.GpmlIrregularSampling.get_enabled_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlIrregularSampling.get_enabled_time_samples()</span></code></a>.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample.get_time" title="pygplates.GpmlTimeSample.get_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">times</span></code></a> of the first and last enabled samples give the
+time period of the sequence.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the time period of the rotation feature.</span>
 <span class="c1"># This is the times of the first and last enabled rotation time samples.</span>
 <span class="n">enabled_time_samples</span> <span class="o">=</span> <span class="n">total_reconstruction_pole</span><span class="o">.</span><span class="n">get_enabled_time_samples</span><span class="p">()</span>
@@ -1261,22 +1242,22 @@ time period of the sequence.</div>
           <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">enabled_time_samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Each <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">sample</span></code></a> holds a <a class="reference internal" href="../generated/pygplates.GpmlFiniteRotation.html#pygplates.GpmlFiniteRotation" title="pygplates.GpmlFiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GpmlFiniteRotation</span></code></a>
-property value, returned by <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample.get_value" title="pygplates.GpmlTimeSample.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlTimeSample.get_value()</span></code></a>, from which
-<a class="reference internal" href="../generated/pygplates.GpmlFiniteRotation.html#pygplates.GpmlFiniteRotation.get_finite_rotation" title="pygplates.GpmlFiniteRotation.get_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlFiniteRotation.get_finite_rotation()</span></code></a> gives the <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FiniteRotation</span></code></a>.</div>
-<div class="line">The pole latitude, longitude and angle (in degrees) are obtained with
-<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees" title="pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees()</span></code></a>.</div>
-<div class="line">The time and description of the pole come from the time sample itself, using
+<p>Each <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample" title="pygplates.GpmlTimeSample"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">sample</span></code></a> holds a <a class="reference internal" href="../generated/pygplates.GpmlFiniteRotation.html#pygplates.GpmlFiniteRotation" title="pygplates.GpmlFiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GpmlFiniteRotation</span></code></a>
+property value, returned by <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample.get_value" title="pygplates.GpmlTimeSample.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlTimeSample.get_value()</span></code></a>. Its
+<a class="reference internal" href="../generated/pygplates.GpmlFiniteRotation.html#pygplates.GpmlFiniteRotation.get_finite_rotation" title="pygplates.GpmlFiniteRotation.get_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlFiniteRotation.get_finite_rotation()</span></code></a> method returns the
+<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FiniteRotation</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees" title="pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees()</span></code></a> returns the latitude and
+longitude of the pole, and the angle, all in degrees.</p>
+<p>The time and description of the pole come from the time sample itself, using
 <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample.get_time" title="pygplates.GpmlTimeSample.get_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlTimeSample.get_time()</span></code></a> and <a class="reference internal" href="../generated/pygplates.GpmlTimeSample.html#pygplates.GpmlTimeSample.get_description" title="pygplates.GpmlTimeSample.get_description"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlTimeSample.get_description()</span></code></a>
-(which returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if the sample has no description).</div>
-<div class="line">These are printed as they would appear on a line of a PLATES4 rotation file, minus the moving and fixed plate IDs.</div>
-</div>
+(which returns <code class="docutils literal notranslate"><span class="pre">None</span></code> if the sample has no description).</p>
+<p>These are printed as they would appear on a line of a PLATES4 rotation file, without the moving
+and fixed plate IDs.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the rotation pole information from the enabled rotation time samples.</span>
 <span class="nb">print</span><span class="p">(</span><span class="s1">'  time samples:'</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">time_sample</span> <span class="ow">in</span> <span class="n">enabled_time_samples</span><span class="p">:</span>
 
-    <span class="c1"># Get the finite rotation from the GpmlFiniteRotation property value instead the GpmlTimeSample.</span>
+    <span class="c1"># Get the finite rotation from the GpmlFiniteRotation property value inside the GpmlTimeSample.</span>
     <span class="n">finite_rotation</span> <span class="o">=</span> <span class="n">time_sample</span><span class="o">.</span><span class="n">get_value</span><span class="p">()</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span>
 
     <span class="c1"># Extract the pole and angle (in degrees) from the finite rotation.</span>

@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reconstruct strain and strain rate &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Reconstruct strain and strain rate &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_reconstruct_strain_and_strain_rate.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -23,7 +23,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Sample strain rates inside the overriding plate at subduction zones" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html" />
-    <link rel="prev" title="Calculate velocities in dynamic plates" href="pygplates_calculate_velocities_in_dynamic_plates.html" /> 
+    <link rel="prev" title="Find plates and strain rates at static points" href="pygplates_find_plates_and_strain_rates_at_static_points.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -58,6 +58,10 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Reconstruct strain and strain rate</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
@@ -66,11 +70,15 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -103,11 +111,11 @@
              
   <section id="reconstruct-strain-and-strain-rate">
 <span id="pygplates-reconstruct-strain-and-strain-rate"></span><h1>Reconstruct strain and strain rate<a class="headerlink" href="#reconstruct-strain-and-strain-rate" title="Link to this heading"></a></h1>
-<p>This example reconstructs and deforms points through topological plate polygons and deforming networks to find
-the following quantities over a time period spanning a past geological time to present day:</p>
+<p>This example reconstructs and deforms points through topological plate polygons and deforming
+networks, from a past geological time to present day. At each time along the way it finds:</p>
 <ul class="simple">
 <li><p>the reconstructed positions of the initial points,</p></li>
-<li><p>their accumulated strains (since initial time), and</p></li>
+<li><p>their accumulated strains (since the initial time), and</p></li>
 <li><p>their instantaneous strain rates and velocities.</p></li>
 </ul>
 <p>This is the equivalent of the <em>deformation export</em> in GPlates.</p>
@@ -122,8 +130,11 @@ the following quantities over a time period spanning a past geological time to p
 <section id="data-files">
 <h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
 <dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and deforming network features. Strain only accumulates, and the strain
-rate is only non-zero, while a point is inside a deforming network.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and deforming network features. There must be networks at 30Ma,
+since the initial points are chosen from them. Leave out inactive networks, such as those in
+<code class="docutils literal notranslate"><span class="pre">Zahirovic_etal_2022_Deforming_Networks_Inactive.gpml</span></code> in the GPlates sample data, so that
+the points are chosen from networks that are deforming. Strain only accumulates, and
+the strain rate is only non-zero, while a point is inside a deforming network.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological features.</p>
 </dd>
@@ -132,18 +143,29 @@ rate is only non-zero, while a point is inside a deforming network.</p>
 </section>
 <section id="sample-code">
 <h2><a class="toc-backref" href="#id2" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
 
 
 <span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks) and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 
-<span class="c1"># The initial points that we will reconstruct (and deform) through the topological model.</span>
-<span class="n">initial_points</span> <span class="o">=</span> <span class="p">[(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">130</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="o">-</span><span class="mi">110</span><span class="p">)]</span>
-
-<span class="c1"># Our reconstruction will span from 250Ma to present day in 1 Myr intervals.</span>
-<span class="n">initial_time</span> <span class="o">=</span> <span class="mi">250</span>
+<span class="c1"># Our reconstruction will span from 30Ma to present day in 1 Myr intervals.</span>
+<span class="n">initial_time</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="c1"># The time increment must divide 'initial_time' exactly ('reconstruct_geometry()' raises ValueError otherwise).</span>
 <span class="n">time_increment</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># The initial points that we will reconstruct (and deform) through the topological model.</span>
+<span class="c1"># They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from latitude -60 to 60</span>
+<span class="c1"># (south to north): the first four that are in the deforming region of a network at the initial time.</span>
+<span class="n">grid_points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">latitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="n">grid_point_locations</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">initial_time</span><span class="p">)</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">grid_points</span><span class="p">)</span>
+<span class="n">initial_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">point</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                  <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()][:</span><span class="mi">4</span><span class="p">]</span>
+
+<span class="c1"># Stop if there are none: there are no deforming networks at the initial time, or they are too small for the grid.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">initial_points</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No grid point is in the deforming region of a network at </span><span class="si">{</span><span class="n">initial_time</span><span class="si">}</span><span class="s1">Ma'</span><span class="p">)</span>
 
 <span class="c1"># Reconstruct the initial points through the topological model from initial time to present day.</span>
 <span class="n">reconstructed_time_span</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">reconstruct_geometry</span><span class="p">(</span>
@@ -155,6 +177,10 @@ rate is only non-zero, while a point is inside a deforming network.</p>
 <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">initial_time</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">time_increment</span><span class="p">):</span>  <span class="c1"># initial_time, initial_time - time_increment, ..., 0</span>
     <span class="c1"># Reconstructed positions at the current 'time'.</span>
     <span class="n">reconstructed_points</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_geometry_points</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># If every point has been deactivated by the current 'time' then there are no positions (or anything else) to get.</span>
+    <span class="k">if</span> <span class="n">reconstructed_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">continue</span>
 
     <span class="c1"># The resolved topologies (rigid plates and deforming networks) in which the reconstructed positions are located at the current 'time'.</span>
     <span class="n">reconstructed_topology_point_locations</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_topology_point_locations</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
@@ -187,30 +213,61 @@ rate is only non-zero, while a point is inside a deforming network.</p>
         <span class="c1"># Strain-rate-style is a measure categorising the type of deformation.</span>
         <span class="c1"># A value of -1 represents contraction (eg, pure reverse faulting), 0 represents pure strike-slip faulting and 1 represents extension (eg, pure normal faulting).</span>
         <span class="n">strain_rate_style</span> <span class="o">=</span> <span class="n">reconstructed_strain_rates</span><span class="p">[</span><span class="n">reconstructed_point_index</span><span class="p">]</span><span class="o">.</span><span class="n">get_strain_rate_style</span><span class="p">()</span>
+
+        <span class="c1"># Print the dilatation, dilatation rate, total strain rate and strain rate style of the current point.</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma, point </span><span class="si">{</span><span class="n">reconstructed_point_index</span><span class="si">}</span><span class="s1">: dilatation </span><span class="si">{</span><span class="n">dilatation</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">, '</span>
+              <span class="sa">f</span><span class="s1">'dilatation rate </span><span class="si">{</span><span class="n">dilatation_rate</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s, total strain rate </span><span class="si">{</span><span class="n">total_strain_rate</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s, '</span>
+              <span class="sa">f</span><span class="s1">'strain rate style </span><span class="si">{</span><span class="n">strain_rate_style</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="details">
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">First create a <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> from topological features and rotation files.</div>
-<div class="line">The topological features can be plate polygons and deforming networks.</div>
-<div class="line">More than one file containing topological features can be specified here, however we’re only specifying one file.</div>
-<div class="line">Also note that more than one rotation file (or even a single <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>) can be specified here,
-however we’re only specifying a single rotation file.</div>
-</div>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features
+(plate polygons and deforming networks) and the rotation file.</p>
+<p>Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> can be given in place of the rotation files.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks) and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Next we get our topological model to reconstruct (and deform) our <code class="docutils literal notranslate"><span class="pre">initial_points</span></code> from their position at <code class="docutils literal notranslate"><span class="pre">initial_time</span></code>
-to present day in 1 Myr intervals using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.reconstruct_geometry()</span></code></a>. This returns a
-<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan" title="pygplates.ReconstructedGeometryTimeSpan"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">geometry</span> <span class="pre">time</span> <span class="pre">span</span></code></a> containing a history of the reconstructed
-point positions and their associated strains and strain rates that change over time when passing through deforming networks.
-Note that points within rigid plates (ie, outside deforming networks) have zero strain rate and hence do not accumulate strain
-(until/if they subsequently pass through a deforming network). And since we did not specify the <em>deactivate_points</em> parameter,
-the default deactivation is used which matches GPlates (when using ‘reconstruct by topologies’ in a green visual layer).
-This means any initial points on oceanic crust could get subducted and disappear (get deactivated).</p>
+<p>The initial points are chosen from the networks, rather than written into the script, so that the
+example works with any topological features that have deforming networks at the initial time, 30Ma.</p>
+<p>They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from
+latitude -60 to 60. It stops at 60 degrees because, in the GPlates sample data, the grid points
+nearer the poles happen to fall where the networks barely deform at 30Ma, so they would make poor
+examples. The grid is scanned from south to north, and the first points found are used. In the
+GPlates sample data, three of the first four points found from north to south barely deform.</p>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a> resolves the topologies at the initial
+time, and <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">location</span></code></a> of each grid point in them. The first four
+points that <a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region()</span></code></a>
+places in the deforming region of a network are kept. If there are none, the script stops with an
+error message that says so.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The initial points that we will reconstruct (and deform) through the topological model.</span>
+<span class="c1"># They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from latitude -60 to 60</span>
+<span class="c1"># (south to north): the first four that are in the deforming region of a network at the initial time.</span>
+<span class="n">grid_points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">latitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="n">grid_point_locations</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">initial_time</span><span class="p">)</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">grid_points</span><span class="p">)</span>
+<span class="n">initial_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">point</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                  <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()][:</span><span class="mi">4</span><span class="p">]</span>
+
+<span class="c1"># Stop if there are none: there are no deforming networks at the initial time, or they are too small for the grid.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">initial_points</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No grid point is in the deforming region of a network at </span><span class="si">{</span><span class="n">initial_time</span><span class="si">}</span><span class="s1">Ma'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.reconstruct_geometry()</span></code></a> reconstructs (and deforms) the
+<code class="docutils literal notranslate"><span class="pre">initial_points</span></code> from their positions at <code class="docutils literal notranslate"><span class="pre">initial_time</span></code> to present day, in 1 Myr intervals.</p>
+<p>It returns a <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan" title="pygplates.ReconstructedGeometryTimeSpan"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">geometry</span> <span class="pre">time</span> <span class="pre">span</span></code></a>.
+This holds the history of the reconstructed point positions, and of the strains and strain rates
+at the points.</p>
+<p>The strain and strain rate of a point change while it is passing through a deforming network. A
+point in a rigid plate (outside all deforming networks) has a strain rate of zero, so it
+accumulates no strain there.</p>
+<p>The <em>deactivate_points</em> argument is not given. So points are deactivated in the default way,
+which is the way that GPlates does it (with <code class="docutils literal notranslate"><span class="pre">Reconstruct</span> <span class="pre">using</span> <span class="pre">topologies</span></code> in a green layer).
+This means an initial point on oceanic crust can be subducted and disappear (be deactivated).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the initial points through the topological model from initial time to present day.</span>
 <span class="n">reconstructed_time_span</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">reconstruct_geometry</span><span class="p">(</span>
         <span class="n">initial_points</span><span class="p">,</span>
@@ -218,23 +275,32 @@ This means any initial points on oceanic crust could get subducted and disappear
         <span class="n">time_increment</span><span class="o">=</span><span class="n">time_increment</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Get the <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_geometry_points" title="pygplates.ReconstructedGeometryTimeSpan.get_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">positions</span></code></a> at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>.
-Note that some of the initial points can be deactivated, in which case the number
-of points in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code> could be less than <code class="docutils literal notranslate"><span class="pre">initial_points</span></code>.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_geometry_points" title="pygplates.ReconstructedGeometryTimeSpan.get_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_geometry_points()</span></code></a> returns the reconstructed
+positions at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>. Some of the initial points may have been deactivated by then,
+so <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code> can have fewer points than <code class="docutils literal notranslate"><span class="pre">initial_points</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstructed positions at the current 'time'.</span>
 <span class="n">reconstructed_points</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_geometry_points</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Query <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations" title="pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">in</span> <span class="pre">which</span> <span class="pre">resolved</span> <span class="pre">topologies</span></code></a> (rigid plates and deforming networks)
-the reconstructed positions are located at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>.
-Note that the number of values in <code class="docutils literal notranslate"><span class="pre">reconstructed_topology_point_locations</span></code> matches the number of points in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>.</p>
+<p>If <em>all</em> the points have been deactivated by the current <code class="docutils literal notranslate"><span class="pre">time</span></code> then
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_geometry_points" title="pygplates.ReconstructedGeometryTimeSpan.get_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_geometry_points()</span></code></a> returns <code class="docutils literal notranslate"><span class="pre">None</span></code> rather than an empty list,
+and so do the other queries below. So the script tests for that first, and skips the current <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If every point has been deactivated by the current 'time' then there are no positions (or anything else) to get.</span>
+<span class="k">if</span> <span class="n">reconstructed_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>Each of the queries below returns a list with one value for each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>,
+in the same order.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations" title="pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations()</span></code></a> returns the resolved
+topology (rigid plate or deforming network) that each reconstructed position is in at the current
+<code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The resolved topologies (rigid plates and deforming networks) in which the reconstructed positions are located at the current 'time'.</span>
 <span class="n">reconstructed_topology_point_locations</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_topology_point_locations</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_velocities" title="pygplates.ReconstructedGeometryTimeSpan.get_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Calculate</span> <span class="pre">a</span> <span class="pre">velocity</span></code></a> for each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>
-in cms/yr using a 1 Myr time interval from <code class="docutils literal notranslate"><span class="pre">time+1</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.
-Note that the number of values in <code class="docutils literal notranslate"><span class="pre">reconstructed_velocities</span></code> matches the number of points in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_velocities" title="pygplates.ReconstructedGeometryTimeSpan.get_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_velocities()</span></code></a> returns the velocity of each point.
+Here the velocities are in cms/yr, and are calculated over a 1 Myr interval from <code class="docutils literal notranslate"><span class="pre">time+1</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The velocity for each point at the current 'time' in cms/yr calculated with a 1 Myr time interval from 'time+1' to 'time'.</span>
 <span class="n">reconstructed_velocities</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_velocities</span><span class="p">(</span>
         <span class="n">time</span><span class="p">,</span>
@@ -243,47 +309,52 @@ Note that the number of values in <code class="docutils literal notranslate"><sp
         <span class="n">velocity_units</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityUnits</span><span class="o">.</span><span class="n">cms_per_yr</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Query the <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_strains" title="pygplates.ReconstructedGeometryTimeSpan.get_strains"><code class="xref py py-meth docutils literal notranslate"><span class="pre">accumulated</span> <span class="pre">strain</span></code></a> and
-<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_strain_rates" title="pygplates.ReconstructedGeometryTimeSpan.get_strain_rates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">instantaneous</span> <span class="pre">strain</span> <span class="pre">rate</span></code></a>
-for each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code> at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>.
-Note that the number of values in <code class="docutils literal notranslate"><span class="pre">reconstructed_strains</span></code> and <code class="docutils literal notranslate"><span class="pre">reconstructed_strain_rates</span></code> matches the number of points in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_strains" title="pygplates.ReconstructedGeometryTimeSpan.get_strains"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_strains()</span></code></a> returns the accumulated strain of each
+point at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>, and <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_strain_rates" title="pygplates.ReconstructedGeometryTimeSpan.get_strain_rates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_strain_rates()</span></code></a>
+returns its instantaneous strain rate.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The accumulated strain and instantaneous strain rate for each point at the current 'time'.</span>
 <span class="n">reconstructed_strains</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_strains</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 <span class="n">reconstructed_strain_rates</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_strain_rates</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For each point, extract various quantities from its strain and strain rate.
-For a definition of these quantities please see <a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain" title="pygplates.Strain"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Strain</span></code></a> and <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.StrainRate</span></code></a>.</p>
-<p>The <a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain.get_dilatation" title="pygplates.Strain.get_dilatation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dilatation</span></code></a> measures crustal expansion (positive) or contraction (negative),
-which is the change in crustal area with respect to the initial area for the current point.</p>
+<p>For each point, the script then gets several quantities from its strain and its strain rate.
+<a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain" title="pygplates.Strain"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Strain</span></code></a> and <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.StrainRate</span></code></a> define these quantities.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain.get_dilatation" title="pygplates.Strain.get_dilatation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dilatation</span></code></a> is the change in crustal area at the
+point, as a proportion of the initial area. It is positive where the crust has expanded and
+negative where it has contracted.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Dilatation measures the change in crustal area with respect to the initial area around the current point.</span>
 <span class="n">dilatation</span> <span class="o">=</span> <span class="n">reconstructed_strains</span><span class="p">[</span><span class="n">reconstructed_point_index</span><span class="p">]</span><span class="o">.</span><span class="n">get_dilatation</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The <a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain.get_principal_strain" title="pygplates.Strain.get_principal_strain"><code class="xref py py-meth docutils literal notranslate"><span class="pre">principal</span> <span class="pre">strain</span></code></a> is the maximum and minimum strain (along the principal major and minor axes),
-where the angle (in radians) is the direction of the <em>major</em> principal axis relative to North (ie, clockwise from North in the range <span class="math notranslate nohighlight">\([0,2\pi]\)</span>).
-The principal strains are the change in length per unit initial length (since initial time) in the principal axis directions.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain.get_principal_strain" title="pygplates.Strain.get_principal_strain"><code class="xref py py-meth docutils literal notranslate"><span class="pre">principal</span> <span class="pre">strains</span></code></a> are the maximum and minimum
+strains, which are along the major and minor principal axes. Each is the change in length per
+unit initial length (since the initial time) in the direction of its axis.</p>
+<p>The angle (in radians) is the direction of the <em>major</em> principal axis. With
+<code class="docutils literal notranslate"><span class="pre">pygplates.PrincipalAngleType.major_azimuth</span></code> it is measured clockwise from North, in the range
+<span class="math notranslate nohighlight">\([0,2\pi]\)</span>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Principal-strain is the maximum and minimum strains (along principal axes), and the angle (radians) of the major principal axis (clockwise from North).</span>
 <span class="n">max_strain</span><span class="p">,</span> <span class="n">min_strain</span><span class="p">,</span> <span class="n">major_azimuth_radians</span> <span class="o">=</span> <span class="n">reconstructed_strains</span><span class="p">[</span><span class="n">reconstructed_point_index</span><span class="p">]</span><span class="o">.</span><span class="n">get_principal_strain</span><span class="p">(</span>
         <span class="n">principal_angle_type</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PrincipalAngleType</span><span class="o">.</span><span class="n">major_azimuth</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_dilatation_rate" title="pygplates.StrainRate.get_dilatation_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dilatation</span> <span class="pre">rate</span></code></a> measures the <em>rate</em> of change of crustal area per unit area
-(in units of 1/second) for the current point. It is positive when expanding and negative when contracting.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_dilatation_rate" title="pygplates.StrainRate.get_dilatation_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dilatation</span> <span class="pre">rate</span></code></a> is the <em>rate</em> of change of
+crustal area per unit area at the point, in units of 1/second. It is positive where the crust is
+expanding and negative where it is contracting.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Dilatation-rate measures the rate of change of crustal area per unit area (in units of 1/second) around the current point.</span>
 <span class="n">dilatation_rate</span> <span class="o">=</span> <span class="n">reconstructed_strain_rates</span><span class="p">[</span><span class="n">reconstructed_point_index</span><span class="p">]</span><span class="o">.</span><span class="n">get_dilatation_rate</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_total_strain_rate" title="pygplates.StrainRate.get_total_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">total</span> <span class="pre">strain</span> <span class="pre">rate</span></code></a> measures the magnitude of the strain rate (in units of 1/second).
-This includes both the normal (extension/compression) and shear components.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_total_strain_rate" title="pygplates.StrainRate.get_total_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">total</span> <span class="pre">strain</span> <span class="pre">rate</span></code></a> is the magnitude of the
+strain rate, in units of 1/second. It includes both the normal (extension and compression) and
+the shear components.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Total-strain-rate measures the strain-rate magnitude (in units of 1/second), including both the normal (extension/compression) and shear components.</span>
 <span class="n">total_strain_rate</span> <span class="o">=</span> <span class="n">reconstructed_strain_rates</span><span class="p">[</span><span class="n">reconstructed_point_index</span><span class="p">]</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_strain_rate_style" title="pygplates.StrainRate.get_strain_rate_style"><code class="xref py py-meth docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span> <span class="pre">style</span></code></a> is a measure categorising the type of deformation.
-A value of <code class="docutils literal notranslate"><span class="pre">-1</span></code> represents contraction (eg, pure reverse faulting), <code class="docutils literal notranslate"><span class="pre">0</span></code> represents pure strike-slip faulting and
-<code class="docutils literal notranslate"><span class="pre">1</span></code> represents extension (eg, pure normal faulting). It is <code class="docutils literal notranslate"><span class="pre">NaN</span></code> where the strain rate is zero, as it is for every point
-on a rigid plate.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_strain_rate_style" title="pygplates.StrainRate.get_strain_rate_style"><code class="xref py py-meth docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span> <span class="pre">style</span></code></a> categorises the type of
+deformation. A value of <code class="docutils literal notranslate"><span class="pre">-1</span></code> represents contraction (eg, pure reverse faulting), <code class="docutils literal notranslate"><span class="pre">0</span></code> represents
+pure strike-slip faulting and <code class="docutils literal notranslate"><span class="pre">1</span></code> represents extension (eg, pure normal faulting). It is <code class="docutils literal notranslate"><span class="pre">NaN</span></code>
+where the strain rate is zero, as it is for every point on a rigid plate.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Strain-rate-style is a measure categorising the type of deformation.</span>
 <span class="c1"># A value of -1 represents contraction (eg, pure reverse faulting), 0 represents pure strike-slip faulting and 1 represents extension (eg, pure normal faulting).</span>
 <span class="n">strain_rate_style</span> <span class="o">=</span> <span class="n">reconstructed_strain_rates</span><span class="p">[</span><span class="n">reconstructed_point_index</span><span class="p">]</span><span class="o">.</span><span class="n">get_strain_rate_style</span><span class="p">()</span>
@@ -299,7 +370,7 @@ on a rigid plate.</p>
 <li><p>Reference: <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.reconstruct_geometry()</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan" title="pygplates.ReconstructedGeometryTimeSpan"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan</span></code></a>,
 <a class="reference internal" href="../generated/pygplates.Strain.html#pygplates.Strain" title="pygplates.Strain"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Strain</span></code></a>, <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.StrainRate</span></code></a></p></li>
 <li><p>Sample code: <a class="reference internal" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html#pygplates-reconstruct-crustal-thickness-and-tectonic-subsidence"><span class="std std-ref">Reconstruct crustal thickness and tectonic subsidence</span></a>,
-<a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html#pygplates-sample-intra-plate-strain-rates-at-subduction-zones"><span class="std std-ref">Sample strain rates inside the overriding plate at subduction zones</span></a></p></li>
+<a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html#pygplates-sample-intra-plate-strain-rates-at-subduction-zones"><span class="std std-ref">Sample strain rates inside the overriding plate at subduction zones</span></a>, <a class="reference internal" href="pygplates_reconstruct_points_step_by_step_through_topologies.html#pygplates-reconstruct-points-step-by-step-through-topologies"><span class="std std-ref">Reconstruct points step by step through topologies</span></a></p></li>
 </ul>
 </section>
 </section>
@@ -308,7 +379,7 @@ on a rigid plate.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pygplates_calculate_velocities_in_dynamic_plates.html" class="btn btn-neutral float-left" title="Calculate velocities in dynamic plates" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_find_plates_and_strain_rates_at_static_points.html" class="btn btn-neutral float-left" title="Find plates and strain rates at static points" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html" class="btn btn-neutral float-right" title="Sample strain rates inside the overriding plate at subduction zones" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

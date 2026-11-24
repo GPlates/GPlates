@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Find divergence at subduction zones and convergence at ridges &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Find divergence at subduction zones and convergence at ridges &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -64,12 +64,15 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_query_network_triangulation_and_rigid_blocks.html">Query the triangulation and rigid blocks of deforming networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -102,14 +105,13 @@
              
   <section id="find-divergence-at-subduction-zones-and-convergence-at-ridges">
 <span id="pygplates-find-divergence-at-subduction-zones-and-convergence-at-ridges"></span><h1>Find divergence at subduction zones and convergence at ridges<a class="headerlink" href="#find-divergence-at-subduction-zones-and-convergence-at-ridges" title="Link to this heading"></a></h1>
-<p>This example finds points on plate boundaries:</p>
+<p>This example finds points on plate boundaries, over a series of geological times:</p>
 <ul class="simple">
-<li><p>where there’s <em>convergence</em> along boundary sections labelled as <em>mid-ocean ridges</em>, and</p></li>
-<li><p>where there’s <em>divergence</em> along boundary sections labelled as <em>subduction zones</em></p></li>
+<li><p>where the plates <em>converge</em> along boundary sections labelled as <em>mid-ocean ridges</em>, and</p></li>
+<li><p>where the plates <em>diverge</em> along boundary sections labelled as <em>subduction zones</em>.</p></li>
 </ul>
-<p>…over a series of geological times.</p>
-<p>This is useful to locate regions along <em>mid-ocean ridges</em> that are <strong>not</strong> diverging as expected.
-Or regions along <em>subduction zones</em> that are <strong>not</strong> converging as expected.</p>
+<p>This is useful for locating the parts of mid-ocean ridges that are <strong>not</strong> diverging as expected,
+and the parts of subduction zones that are <strong>not</strong> converging as expected.</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
@@ -121,9 +123,10 @@ Or regions along <em>subduction zones</em> that are <strong>not</strong> converg
 <section id="data-files">
 <h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
 <dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and/or deforming network features. Mid-ocean ridges and subduction
-zones are recognised by the feature type (<code class="docutils literal notranslate"><span class="pre">gpml_mid_ocean_ridge</span></code> or <code class="docutils literal notranslate"><span class="pre">gpml_subduction_zone</span></code>)
-of the boundary section features.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and/or deforming network features, and the boundary section features
+that they reference. Mid-ocean ridges and subduction zones are recognised by the feature type
+(<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType.gpml_mid_ocean_ridge" title="pygplates.FeatureType.gpml_mid_ocean_ridge"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_mid_ocean_ridge</span></code></a> or
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType.gpml_subduction_zone" title="pygplates.FeatureType.gpml_subduction_zone"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_subduction_zone</span></code></a>) of the boundary section features.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological features.</p>
 </dd>
@@ -233,13 +236,10 @@ of the boundary section features.</p>
 </section>
 <section id="details">
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">First create a <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> from topological features and rotation files.</div>
-<div class="line">The topological features can be plate polygons and/or deforming networks.</div>
-<div class="line">More than one file containing topological features can be specified here, however we’re only specifying one file.</div>
-<div class="line">Also note that more than one rotation file (or even a single <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>) can be specified here,
-however we’re only specifying a single rotation file.</div>
-</div>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features
+and the rotation file. The topological features can be plate polygons, deforming networks or both.</p>
+<p>Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> can be given in place of the rotation files.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
 <span class="c1"># and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
@@ -247,38 +247,35 @@ however we’re only specifying a single rotation file.</div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>We create our <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a> <strong>outside</strong> the time loop since that does not require <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a> is created <strong>outside</strong> the time loop, since it does not depend on <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
 </div>
-<div class="line-block">
-<div class="line">Get a snapshot of our resolved topologies.</div>
-<div class="line">Here the topological features are resolved to the current <code class="docutils literal notranslate"><span class="pre">time</span></code>
-using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a>.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a> resolves the topological features at the
+current <code class="docutils literal notranslate"><span class="pre">time</span></code>, and returns the result as a <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
 <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Next we define a function to calculate plate boundary statistics.</div>
-<div class="line">We use a function so that we don’t have to write very similar code twice.
-Once for diverging regions and again for converging regions.</div>
-<div class="line">The function accepts an argument that determines the type of boundary to look at
-(for example, mid-ocean ridges or subduction zones).
-The second function argument is a divergence/convergence velocity threshold.
-And a third function argument is whether to detect converging points (or diverging points).</div>
-</div>
+<p>Next a function is defined that finds the converging, or the diverging, points along one type of
+plate boundary. It is a function so that very similar code is not written twice: once for
+converging points and once for diverging points.</p>
+<p>The function has three arguments:</p>
+<ul class="simple">
+<li><p>the feature type of the boundary sections to look at (mid-ocean ridges or subduction zones, for example),</p></li>
+<li><p>a velocity threshold, which the plates must converge or diverge faster than, and</p></li>
+<li><p>whether to find converging points (<code class="docutils literal notranslate"><span class="pre">True</span></code>) or diverging points (<code class="docutils literal notranslate"><span class="pre">False</span></code>).</p></li>
+</ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">calculate_converging_or_diverging_points</span><span class="p">(</span>
         <span class="n">boundary_section_feature_type</span><span class="p">,</span>
         <span class="n">divergence_convergence_threshold_cms_per_yr</span><span class="p">,</span>
         <span class="n">find_converging_points</span><span class="p">):</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Within this function we first <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics" title="pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calculate</span> <span class="pre">boundary</span> <span class="pre">statistics</span></code></a>
-along the requested boundary type. Only boundaries of the requested <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a> are looked at.</div>
-<div class="line">Also the sample points are spaced 1 degree apart along the plate boundaries.
-And velocities are calculated in cms/yr.</div>
-</div>
+<p>The function first calls <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics" title="pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics()</span></code></a>.
+It generates points along the plate boundaries, and returns a
+<a class="reference internal" href="../generated/pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlateBoundaryStatistic</span></code></a> for each point.</p>
+<p>Here the points are spaced 1 degree apart, and velocities are in centimetres per year. With
+<em>boundary_section_filter</em> set to a <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a>, there are only
+points along the boundary sections of that feature type.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate statistics along plate boundary sections labelled with the requested feature type.</span>
 <span class="n">plate_boundary_statistics</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">calculate_plate_boundary_statistics</span><span class="p">(</span>
         <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>  <span class="c1"># 1 degree spacing between points</span>
@@ -286,33 +283,27 @@ And velocities are calculated in cms/yr.</div>
         <span class="n">boundary_section_filter</span><span class="o">=</span><span class="n">boundary_section_feature_type</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Next we iterate over the <a class="reference internal" href="../generated/pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlateBoundaryStatistic</span></code></a>’s of the sampled points along the plate boundaries to
-collect their point locations and associated convergence velocities.</div>
-</div>
+<p>The function then iterates over the statistics, to collect the locations and convergence
+velocities of the points it is looking for.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Record points satisfying the converging/diverging criteria (and record their convergence velocities)</span>
 <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="n">convergence_velocities</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">plate_boundary_statistics</span><span class="p">:</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">At some sample locations along the plate boundaries there might not be a plate (or network) on one side of the boundary.
-This can happen when the topological model does not have global coverage or if there are inadvertent cracks/gaps between plates.
-In this case the convergence velocity will be <code class="docutils literal notranslate"><span class="pre">float('nan')</span></code>, and we ignore these sample locations.</div>
-</div>
+<p>At some points there might be no plate (or network) on one side of the boundary. This happens
+where the topological model does not cover the whole globe, or where there is an unintended gap
+between plates. The convergence velocity is then <code class="docutils literal notranslate"><span class="pre">float('nan')</span></code>, and the point is skipped.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If unable to calculate convergence velocity at the current point then skip it.</span>
 <span class="k">if</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">convergence_velocity_signed_magnitude</span><span class="p">):</span>
     <span class="k">continue</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Next we detect if the convergence velocity is above the threshold (if we’re looking for converging locations) or
-below minus the threshold, that is, diverging faster than the threshold (if we’re looking for diverging locations).
-If found then these points and associated convergence velocities are added to the output.</div>
-<div class="line">Note that <code class="docutils literal notranslate"><span class="pre">stat.convergence_velocity_signed_magnitude</span></code> is a <em>signed</em> magnitude, and so it’s positive if the plates
-are converging and negative if they’re diverging.</div>
-</div>
+<p><code class="docutils literal notranslate"><span class="pre">stat.convergence_velocity_signed_magnitude</span></code> is a <em>signed</em> magnitude. It is positive where the
+plates are converging and negative where they are diverging.</p>
+<p>So a converging point is one where it is greater than the threshold. And a diverging point is
+one where it is less than minus the threshold (the plates are diverging faster than the
+threshold). The location and convergence velocity of each such point are added to two lists.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># See if current point is converging (if 'find_converging_points' is True) or</span>
 <span class="c1"># diverging (if 'find_converging_points' is False).</span>
 <span class="k">if</span> <span class="p">((</span><span class="n">find_converging_points</span> <span class="ow">and</span> <span class="n">stat</span><span class="o">.</span><span class="n">convergence_velocity_signed_magnitude</span> <span class="o">&gt;</span> <span class="n">divergence_convergence_threshold_cms_per_yr</span><span class="p">)</span> <span class="ow">or</span>
@@ -321,12 +312,14 @@ are converging and negative if they’re diverging.</div>
     <span class="n">convergence_velocities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">convergence_velocity_signed_magnitude</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Then we create a <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a> containing the output points and their convergence velocities.</div>
-<div class="line">Note that each feature only exists at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>. This makes it easier when visualising over a range of times in GPlates.</div>
-<div class="line">We also <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span> <span class="pre">the</span> <span class="pre">geometry</span></code></a> as a coverage geometry (ie, a multipoint and scalar values).
-This causes the convergence velocity scalar values to show up in GPlates as a separate layer.</div>
-</div>
+<p>If any points were found, a <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span></code></a> is created to hold them and their
+convergence velocities.</p>
+<p>The feature is given a valid time that extends half a million years either side of the current
+<code class="docutils literal notranslate"><span class="pre">time</span></code>. So when the features of all the times are loaded into GPlates, each one is only visible
+at its own time.</p>
+<p>Its <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">geometry</span> <span class="pre">is</span> <span class="pre">set</span></code></a> as a coverage: a multipoint, and a
+scalar value at each of its points. GPlates displays the scalar values, here the convergence
+velocities, in a separate layer.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a feature containing the points (and their convergence velocities).</span>
 <span class="n">points_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span>
 <span class="c1"># Feature only exists at the current 'time' (for display in GPlates).</span>
@@ -343,12 +336,9 @@ This causes the convergence velocity scalar values to show up in GPlates as a se
 <span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">So that ends the definition of our function called <code class="docutils literal notranslate"><span class="pre">calculate_converging_or_diverging_points</span></code>.</div>
-<div class="line">Next we call that function twice.
-Once to find converging points along mid-ocean ridges.
-And again to find diverging points along subduction zones.</div>
-</div>
+<p>That is the end of the function <code class="docutils literal notranslate"><span class="pre">calculate_converging_or_diverging_points</span></code>. It is called twice at
+each time: once to find the converging points along mid-ocean ridges, and once to find the
+diverging points along subduction zones.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find converging points along mid-ocean ridges.</span>
 <span class="n">converging_mid_ocean_ridge_points_feature</span> <span class="o">=</span> <span class="n">calculate_converging_or_diverging_points</span><span class="p">(</span>
     <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_mid_ocean_ridge</span><span class="p">,</span>
@@ -366,11 +356,9 @@ And again to find diverging points along subduction zones.</div>
     <span class="n">diverging_subduction_zone_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">diverging_subduction_zone_points_feature</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Finally we write the output points to two separate files.
-The first file contains all points at all times along mid-ocean ridges that are converging.
-And the second file contains all points at all times along subduction zones that are diverging.</div>
-</div>
+<p>Finally the features are written to two files. The first file has the points along mid-ocean
+ridges that are converging, at all times. The second file has the points along subduction zones
+that are diverging, at all times.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write all points at all times along mid-ocean ridges that are converging.</span>
 <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">converging_mid_ocean_ridge_features</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'converging-mid-ocean-ridge-points.gpmlz'</span><span class="p">)</span>
 
@@ -378,11 +366,9 @@ And the second file contains all points at all times along subduction zones that
 <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="n">diverging_subduction_zone_features</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'diverging-subduction-zone-points.gpmlz'</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">We can now load these two files into GPlates (along with the topological model used to generate them) and
-see what parts of mid-ocean ridges are unexpectedly converging and what parts of subduction zones are
-unexpectedly diverging.</div>
-</div>
+<p>The two files can now be loaded into GPlates, along with the topological model they were generated
+from. This shows which parts of mid-ocean ridges are unexpectedly converging, and which parts of
+subduction zones are unexpectedly diverging.</p>
 </section>
 <section id="see-also">
 <h2><a class="toc-backref" href="#id4" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
@@ -391,7 +377,7 @@ unexpectedly diverging.</div>
 <li><p>Reference: <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics" title="pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics()</span></code></a>, <a class="reference internal" href="../generated/pygplates.PlateBoundaryStatistic.html#pygplates.PlateBoundaryStatistic" title="pygplates.PlateBoundaryStatistic"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PlateBoundaryStatistic</span></code></a>,
 <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_geometry" title="pygplates.Feature.set_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.set_geometry()</span></code></a></p></li>
 <li><p>Sample code: <a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html#pygplates-sample-intra-plate-strain-rates-at-subduction-zones"><span class="std std-ref">Sample strain rates inside the overriding plate at subduction zones</span></a>,
-<a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html#pygplates-find-total-ridge-and-subduction-zone-lengths"><span class="std std-ref">Find the total length of ridges and subduction zones</span></a></p></li>
+<a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html#pygplates-find-total-ridge-and-subduction-zone-lengths"><span class="std std-ref">Find the total length of ridges and subduction zones</span></a>, <a class="reference internal" href="pygplates_find_distance_and_strain_rate_along_subduction_zones.html#pygplates-find-distance-and-strain-rate-along-subduction-zones"><span class="std std-ref">Find the distance and strain rate along subduction zones</span></a></p></li>
 </ul>
 </section>
 </section>

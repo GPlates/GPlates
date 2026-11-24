@@ -3,7 +3,8 @@
 Create conjugate isochrons from a ridge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example creates a conjugate pair of isochrons from a mid-ocean ridge at each specified geological time in a series.
+This example creates a conjugate pair of isochrons from each mid-ocean ridge, at each of a
+series of geological times.
 
 .. contents::
    :local:
@@ -43,44 +44,52 @@ The ridge features are loaded into a :class:`pygplates.FeatureCollection`.
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: load-ridges
 
-The plate IDs and time period are obtained using :meth:`pygplates.Feature.get_left_plate`,
-:meth:`pygplates.Feature.get_right_plate` and :meth:`pygplates.Feature.get_valid_time`.
+:meth:`pygplates.Feature.get_left_plate`, :meth:`pygplates.Feature.get_right_plate` and
+:meth:`pygplates.Feature.get_valid_time` return the left plate ID, the right plate ID and the
+valid time period of each ridge. The valid time period is a tuple of the time the ridge appears
+and the time it disappears.
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: plate-ids-and-valid-time
 
-An isochron is created only at times when the ridge exists: after it appears and before it
-disappears. Smaller time values are closer to present day (younger).
+Isochrons are created at a creation time only if the ridge exists then: after it appears, and
+not after it disappears. Smaller time values are closer to present day (younger).
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: creation-time-test
 
-The ridges are reconstructed to their locations at time 'isochron_creation_time' in a
-:class:`pygplates.ReconstructSnapshot`.
+The ridge is reconstructed to ``isochron_creation_time`` by creating a
+:class:`pygplates.ReconstructSnapshot`. At that time the ridge is where the two isochrons are, since
+that is when their crust forms at the ridge.
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: reconstruct-ridge
 
-A Python list comprehension is used to build a list of :class:`pygplates.GeometryOnSphere` from a
-list of :class:`pygplates.ReconstructedFeatureGeometry`.
+A Python list comprehension builds a list of :class:`geometries<pygplates.GeometryOnSphere>` from
+the list of :class:`pygplates.ReconstructedFeatureGeometry`. These are the geometries of the
+isochrons at ``isochron_creation_time``, not at present day.
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: isochron-geometry
 
-`Isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ features are created using
-:meth:`pygplates.Feature.create_reconstructable_feature`.
+:meth:`pygplates.Feature.create_reconstructable_feature` creates each
+`isochron <http://www.gplates.org/docs/gpgim/#gpml:Isochron>`_ feature. The left isochron moves
+with the left plate of the ridge, and has the right plate as its conjugate. The right isochron,
+created the same way, has the two plate IDs swapped.
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: create-left-isochron
 
-The ``reverse_reconstruct`` parameter is needed because all :class:`features<pygplates.Feature>`
-must store their geometry in present day coordinates which means *reverse* reconstructing from
-``isochron_creation_time`` to present day using the rotation model.
+The *reverse_reconstruct* argument is needed because a :class:`feature<pygplates.Feature>` stores
+its geometry at its present day position. So the geometry is *reverse* reconstructed, from
+``isochron_creation_time`` to present day, using the rotation model and the reconstruction plate
+ID of the isochron.
 
-.. note:: The use of ``None`` in, for example, ``ridge_feature.get_name(None)`` results in a
-   :meth:`name<pygplates.Feature.get_name>` property only getting created if the ridge feature has a name.
+.. note:: Passing ``None`` to, for example, ``ridge_feature.get_name(None)`` means that ``None`` is
+   returned if the ridge feature has no name. The isochron is then created without a
+   :meth:`name<pygplates.Feature.get_name>` property.
 
-And finally the isochrons are saved to a new file using :meth:`pygplates.FeatureCollection.write`.
+Finally the isochrons are saved to a new file with :meth:`pygplates.FeatureCollection.write`.
 
 .. sample-code:: pygplates_create_conjugate_isochrons_from_ridge.py
    :fragment: write-isochrons
@@ -89,8 +98,8 @@ And finally the isochrons are saved to a new file using :meth:`pygplates.Feature
 Advanced
 """"""""
 
-If we want to be a bit more robust then we can check that our ridge features are actually ridges and
-we can make sure they contain left/right plate IDs and a time of appearance/disappearance:
+A more robust script would check that each ridge feature really is a mid-ocean ridge, and that it
+has left and right plate IDs and a valid time period:
 ::
 
     ...
@@ -120,18 +129,19 @@ we can make sure they contain left/right plate IDs and a time of appearance/disa
         
         ...
 
-By specifying ``None`` in:
+Passing ``None`` in:
 ::
 
     left_plate_id = ridge_feature.get_left_plate(None)
     right_plate_id = ridge_feature.get_right_plate(None)
     valid_time = ridge_feature.get_valid_time(None)
 
-| ...we will get ``None`` returned to us if the feature property (eg, left plate ID) is missing
-  in the ridge feature.
-| If we didn't specify ``None`` then a default value would be returned if a property
-  was missing. For ``get_left_plate()`` and ``get_right_plate()`` this is plate ID 0 and for
-  ``get_valid_time()`` this is a time period from *distant past* to *distant future*.
+...means that ``None`` is returned if the ridge feature does not have that property (the left
+plate ID, for example).
+
+Without the ``None``, a default value is returned for a missing property. For ``get_left_plate()``
+and ``get_right_plate()`` the default is plate ID 0. For ``get_valid_time()`` it is a time period
+from the *distant past* to the *distant future*.
 
 See also
 """"""""

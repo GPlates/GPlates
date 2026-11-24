@@ -1,0 +1,352 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Process times in parallel with multiprocessing &mdash; pygplates 1.2.0.dev9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+    <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Reference" href="../pygplates_reference.html" />
+    <link rel="prev" title="Split an isochron into ridge and transform segments" href="pygplates_split_isochron_into_ridges_and_transforms.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Process times in parallel with multiprocessing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#details">Details</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Process times in parallel with multiprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_process_times_in_parallel_with_multiprocessing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="process-times-in-parallel-with-multiprocessing">
+<span id="pygplates-process-times-in-parallel-with-multiprocessing"></span><h1>Process times in parallel with multiprocessing<a class="headerlink" href="#process-times-in-parallel-with-multiprocessing" title="Link to this heading"></a></h1>
+<p>This example shares a calculation that is done at each of a sequence of geological times among
+several processes, using a <a class="reference external" href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.pool.Pool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">multiprocessing.Pool</span></code></a> from the Python standard library.</p>
+<p>Many pyGPlates workflows do the same thing at one time after another, and the times do not depend
+on each other. They can be done at the same time by worker processes, each on its own CPU.</p>
+<p>What the main process gives a worker process, and what the worker gives back, is
+<a class="reference external" href="https://docs.python.org/3/library/pickle.html">pickled</a> to send it from one process to the other.
+Most pyGPlates objects can be pickled, including <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructModel</span></code></a>, their snapshots,
+features, feature collections and geometries. In the reference, the page of a class that can be
+pickled says so.</p>
+<p>Here the calculation is the total length of subduction zones, as in
+<a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html#pygplates-find-total-ridge-and-subduction-zone-lengths"><span class="std std-ref">Find the total length of ridges and subduction zones</span></a>, and the main process sends each
+worker process a topological model.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id2">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id3">Details</a></p></li>
+<li><p><a class="reference internal" href="#see-also" id="id4">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the features that the
+topologies are built from.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon features, with or without deforming network features. Some of their
+boundary sections should be subduction zones, or every length is zero.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="sample-code">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># The topological model of a worker process.</span>
+<span class="c1"># Each worker process has its own, which 'initialise_worker()' sets when the process starts.</span>
+<span class="n">worker_topological_model</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">initialise_worker</span><span class="p">(</span><span class="n">topological_model</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Called once in each worker process, with the topological model that the main process gave the pool."""</span>
+    <span class="k">global</span> <span class="n">worker_topological_model</span>
+    <span class="n">worker_topological_model</span> <span class="o">=</span> <span class="n">topological_model</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">find_total_subduction_zone_length</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Called in a worker process, once for each time. Returns the time and the length in kms."""</span>
+
+    <span class="c1"># Resolve the topologies at 'time', in this worker process.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">worker_topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Accumulate the lengths of the subduction zones along the resolved plate boundaries.</span>
+    <span class="n">total_subduction_zone_length</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">shared_boundary_section</span> <span class="ow">in</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_resolved_topological_sections</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
+                <span class="n">total_subduction_zone_length</span> <span class="o">+=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_arc_length</span><span class="p">()</span>
+
+    <span class="c1"># The result is sent back to the main process, so it must be something that can be pickled.</span>
+    <span class="c1"># Numbers can, and so can geometries and features, but resolved topologies cannot.</span>
+    <span class="k">return</span> <span class="n">time</span><span class="p">,</span> <span class="n">total_subduction_zone_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
+
+
+<span class="c1"># Only the main process runs the code below. A worker process imports this script to find the two</span>
+<span class="c1"># functions above, and without this test each worker would run the code below too.</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+
+    <span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+    <span class="c1"># and rotation file(s). This is done once, in the main process.</span>
+    <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+    <span class="c1"># Our geological times will be from 0Ma to 20Ma in 1 My intervals.</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+
+    <span class="c1"># Start two worker processes (leave out 'processes' to start one for each CPU).</span>
+    <span class="c1"># The topological model is pickled and sent to each worker process, which passes it to 'initialise_worker()'.</span>
+    <span class="k">with</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span>
+            <span class="n">processes</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">initializer</span><span class="o">=</span><span class="n">initialise_worker</span><span class="p">,</span>
+            <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">topological_model</span><span class="p">,))</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+
+        <span class="c1"># Share the times among the worker processes, and gather their results in the order of the times.</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">find_total_subduction_zone_length</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">total_subduction_zone_length_in_kms</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'At time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma, total subduction zone length is </span><span class="si">{</span><span class="n">total_subduction_zone_length_in_kms</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms.'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
+<p>The code that runs in the worker processes is in functions defined at the top level of the script.
+A worker process finds a function by importing the script and looking up the function’s name, so
+a function defined inside another function, or a <code class="docutils literal notranslate"><span class="pre">lambda</span></code>, will not do.</p>
+<p>Each worker process keeps its own topological model in a global variable.
+<code class="docutils literal notranslate"><span class="pre">initialise_worker()</span></code> is called once in each worker process, when it starts, and sets it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The topological model of a worker process.</span>
+<span class="c1"># Each worker process has its own, which 'initialise_worker()' sets when the process starts.</span>
+<span class="n">worker_topological_model</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">initialise_worker</span><span class="p">(</span><span class="n">topological_model</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Called once in each worker process, with the topological model that the main process gave the pool."""</span>
+    <span class="k">global</span> <span class="n">worker_topological_model</span>
+    <span class="n">worker_topological_model</span> <span class="o">=</span> <span class="n">topological_model</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">find_total_subduction_zone_length()</span></code> is called in a worker process, once for each time.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">find_total_subduction_zone_length</span><span class="p">(</span><span class="n">time</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Called in a worker process, once for each time. Returns the time and the length in kms."""</span>
+
+    <span class="c1"># Resolve the topologies at 'time', in this worker process.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">worker_topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Accumulate the lengths of the subduction zones along the resolved plate boundaries.</span>
+    <span class="n">total_subduction_zone_length</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">shared_boundary_section</span> <span class="ow">in</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_resolved_topological_sections</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">==</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
+                <span class="n">total_subduction_zone_length</span> <span class="o">+=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_arc_length</span><span class="p">()</span>
+
+    <span class="c1"># The result is sent back to the main process, so it must be something that can be pickled.</span>
+    <span class="c1"># Numbers can, and so can geometries and features, but resolved topologies cannot.</span>
+    <span class="k">return</span> <span class="n">time</span><span class="p">,</span> <span class="n">total_subduction_zone_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
+</pre></div>
+</div>
+<p>The worker process resolves the topologies itself, using its own topological model.</p>
+<p>That is the point of giving each worker process a model: the model is sent once to each worker,
+and each time is then only a number. A <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a> can be pickled too,
+but what is pickled is what it was made from (its topological features, rotations and time), not
+its resolved topologies, which are resolved again when it is unpickled. So sending a snapshot for
+each time would send every feature and rotation for each time, and resolve each time twice: once
+in the main process to make the snapshot, and again in the worker process.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Resolve the topologies at 'time', in this worker process.</span>
+<span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">worker_topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The value that the function returns is pickled and sent back to the main process.</p>
+<p>Numbers and strings can be pickled. So can geometries (such as a
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary.get_resolved_boundary" title="pygplates.ResolvedTopologicalBoundary.get_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">boundary</span> <span class="pre">polygon</span></code></a>) and
+features (such as a <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary.get_resolved_feature" title="pygplates.ResolvedTopologicalBoundary.get_resolved_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">feature</span></code></a>).</p>
+<p>The objects that hold reconstructed or resolved geometries cannot, such as
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalBoundary</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a> and
+the shared sub-segments used here. Returning one of them fails with an error from <code class="docutils literal notranslate"><span class="pre">multiprocessing</span></code>.
+So a worker returns what it calculated from them, not the objects themselves.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The result is sent back to the main process, so it must be something that can be pickled.</span>
+<span class="c1"># Numbers can, and so can geometries and features, but resolved topologies cannot.</span>
+<span class="k">return</span> <span class="n">time</span><span class="p">,</span> <span class="n">total_subduction_zone_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
+</pre></div>
+</div>
+<p>The rest of the script is inside <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">__name__</span> <span class="pre">==</span> <span class="pre">'__main__':</span></code>, which is true only in the main process.</p>
+<p>This matters wherever a worker process is a new Python interpreter that imports the script, as it
+is on Windows and macOS. Without the test each worker would itself create a model and a pool of workers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Only the main process runs the code below. A worker process imports this script to find the two</span>
+<span class="c1"># functions above, and without this test each worker would run the code below too.</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created once, in the main process,
+from the topological features and the rotation file.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s). This is done once, in the main process.</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A <a class="reference external" href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.pool.Pool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">multiprocessing.Pool</span></code></a> starts the worker processes.</p>
+<p>Its <em>initializer</em> and <em>initargs</em> arguments are the function to call in each worker process as it
+starts, and the arguments to call it with. This is where the topological model is pickled and
+sent, once for each worker process.</p>
+<p>Without <em>processes</em> the pool starts as many worker processes as the computer has CPUs. Each has a
+copy of the model, and resolves its own snapshots, so memory can limit how many are worth starting.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start two worker processes (leave out 'processes' to start one for each CPU).</span>
+<span class="c1"># The topological model is pickled and sent to each worker process, which passes it to 'initialise_worker()'.</span>
+<span class="k">with</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span>
+        <span class="n">processes</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">initializer</span><span class="o">=</span><span class="n">initialise_worker</span><span class="p">,</span>
+        <span class="n">initargs</span><span class="o">=</span><span class="p">(</span><span class="n">topological_model</span><span class="p">,))</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pool.map()</span></code> calls the function once for each time, in whichever worker process is free, and
+returns the results as a list in the order of the times.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">with</span></code> statement shuts the worker processes down when it ends, so the results are gathered inside it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Share the times among the worker processes, and gather their results in the order of the times.</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">find_total_subduction_zone_length</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally the main process prints the results.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">time</span><span class="p">,</span> <span class="n">total_subduction_zone_length_in_kms</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'At time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma, total subduction zone length is </span><span class="si">{</span><span class="n">total_subduction_zone_length_in_kms</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms.'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A worker process could instead load the files itself, in <code class="docutils literal notranslate"><span class="pre">initialise_worker()</span></code>. Sending
+the model keeps the loading in one place, and also works for a model that was not loaded from
+files as it is: one created from features that the main process created or modified.</p>
+</div>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-model"><span class="std std-ref">Topological model</span></a></p></li>
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_resolved_topological_sections" title="pygplates.TopologicalSnapshot.get_resolved_topological_sections"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_resolved_topological_sections()</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html#pygplates-find-total-ridge-and-subduction-zone-lengths"><span class="std std-ref">Find the total length of ridges and subduction zones</span></a>,
+<a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_split_isochron_into_ridges_and_transforms.html" class="btn btn-neutral float-left" title="Split an isochron into ridge and transform segments" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../pygplates_reference.html" class="btn btn-neutral float-right" title="Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

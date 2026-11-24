@@ -1,0 +1,619 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculate net rotation from point samples &mdash; pygplates 1.2.0.dev9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+    <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_calculate_net_rotation_from_point_samples.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Find nearest reconstructed feature to a point" href="pygplates_find_nearest_feature_to_a_point.html" />
+    <link rel="prev" title="Calculate net rotation" href="pygplates_calculate_net_rotation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Calculate net rotation from point samples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#calculate-net-rotation-of-static-polygons">Calculate net rotation of static polygons</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#calculate-net-rotation-from-velocities">Calculate net rotation from velocities</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Calculate net rotation from point samples</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_calculate_net_rotation_from_point_samples.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="calculate-net-rotation-from-point-samples">
+<span id="pygplates-calculate-net-rotation-from-point-samples"></span><h1>Calculate net rotation from point samples<a class="headerlink" href="#calculate-net-rotation-from-point-samples" title="Link to this heading"></a></h1>
+<p>This example calculates net rotation by adding up the contributions of sample points, where
+<a class="reference internal" href="pygplates_calculate_net_rotation.html#pygplates-calculate-net-rotation"><span class="std std-ref">Calculate net rotation</span></a> leaves that to a <a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel" title="pygplates.NetRotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotationModel</span></code></a>.</p>
+<p>A <a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel" title="pygplates.NetRotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotationModel</span></code></a> needs a topological model, and decides for itself how each
+sample point moves. Adding the samples yourself is for everything else: a plate model without
+topologies, motions that come from somewhere other than a plate model, or a net rotation over
+some of the points only.</p>
+<p>A <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation" title="pygplates.NetRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotation</span></code></a> is an accumulator. A new one is zero, each sample point
+contributes one that is created from the point, the area it stands for and its motion, and they are added together.</p>
+<p>The first example calculates the net rotation of static polygons, giving each sample point the
+rotation of its plate. The second calculates net rotation from a velocity at each sample point.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#calculate-net-rotation-of-static-polygons" id="id5">Calculate net rotation of static polygons</a></p>
+<ul>
+<li><p><a class="reference internal" href="#data-files" id="id6">Data files</a></p></li>
+<li><p><a class="reference internal" href="#sample-code" id="id7">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id8">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#calculate-net-rotation-from-velocities" id="id9">Calculate net rotation from velocities</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id10">Data files</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id11">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id4" id="id12">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id13">See also</a></p></li>
+</ul>
+</nav>
+<section id="calculate-net-rotation-of-static-polygons">
+<span id="pygplates-calculate-net-rotation-of-static-polygons"></span><h2><a class="toc-backref" href="#id5" role="doc-backlink">Calculate net rotation of static polygons</a><a class="headerlink" href="#calculate-net-rotation-of-static-polygons" title="Link to this heading"></a></h2>
+<p>This example calculates the net rotation of the plates of a model that has static polygons but no
+topologies, and the net rotation of each plate, at each time over a time period.</p>
+<section id="data-files">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the static polygons.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">static_polygons.gpml</span></code></dt><dd><p>Static polygon features, each with a reconstruction plate ID.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Create a reconstruct model from the static polygon features and the rotation model.</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
+
+<span class="c1"># The points at which net rotation is sampled: a uniform latitude-longitude grid, 3 degrees apart.</span>
+<span class="c1"># Each point has a sample area, which is the area of the globe that it stands for (in steradians).</span>
+<span class="n">num_samples_along_meridian</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">sample_spacing_in_degrees</span> <span class="o">=</span> <span class="mf">180.0</span> <span class="o">/</span> <span class="n">num_samples_along_meridian</span>
+<span class="n">sample_spacing_in_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">sample_spacing_in_degrees</span><span class="p">)</span>
+<span class="n">sample_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">sample_areas</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">latitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples_along_meridian</span><span class="p">):</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">90.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">latitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+    <span class="c1"># The cosine is because points near the North/South poles are closer together.</span>
+    <span class="n">sample_area</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">latitude</span><span class="p">))</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span>
+    <span class="k">for</span> <span class="n">longitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">num_samples_along_meridian</span><span class="p">):</span>
+        <span class="n">longitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">longitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+        <span class="n">sample_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">))</span>
+        <span class="n">sample_areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample_area</span><span class="p">)</span>
+
+<span class="c1"># Net rotations will be calculated over a time interval of 1My, from 'time + delta_time' to 'time'.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+<span class="c1"># We'll calculate net rotation from 140Ma to present day in 10 My intervals.</span>
+<span class="n">max_time</span> <span class="o">=</span> <span class="mi">140</span>
+<span class="n">time_increment</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_time</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">time_increment</span><span class="p">):</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">:'</span><span class="p">)</span>
+
+    <span class="c1"># Get a snapshot of our static polygons reconstructed to the current 'time'.</span>
+    <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Find the reconstructed static polygon that contains each sample point (None if no polygon does).</span>
+    <span class="n">reconstructed_static_polygons</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">sample_points</span><span class="p">)</span>
+
+    <span class="c1"># The net rotation of all the plates, and of each plate (a dictionary mapping a plate ID to a net rotation).</span>
+    <span class="c1"># A new net rotation is zero, and the samples are added to it.</span>
+    <span class="n">total_net_rotation</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="p">()</span>
+    <span class="n">plate_net_rotations</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># The stage rotation of each plate (a dictionary mapping a plate ID to a rotation).</span>
+    <span class="n">plate_stage_rotations</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">sample_index</span><span class="p">,</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reconstructed_static_polygons</span><span class="p">):</span>
+
+        <span class="c1"># A sample point outside all the reconstructed static polygons contributes nothing.</span>
+        <span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># The plate that the sample point is on, and the rotation of that plate from 'time + delta_time' to 'time'.</span>
+        <span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_static_polygon</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">plate_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plate_stage_rotations</span><span class="p">:</span>
+            <span class="n">plate_stage_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
+
+        <span class="c1"># The contribution of the sample point to net rotation.</span>
+        <span class="n">net_rotation_sample</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="o">.</span><span class="n">create_sample_from_finite_rotation</span><span class="p">(</span>
+                <span class="n">sample_points</span><span class="p">[</span><span class="n">sample_index</span><span class="p">],</span>
+                <span class="n">sample_areas</span><span class="p">[</span><span class="n">sample_index</span><span class="p">],</span>
+                <span class="n">plate_stage_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">],</span>
+                <span class="n">delta_time</span><span class="p">)</span>
+
+        <span class="c1"># Add the sample to the net rotation of all the plates, and to the net rotation of its own plate.</span>
+        <span class="n">total_net_rotation</span> <span class="o">+=</span> <span class="n">net_rotation_sample</span>
+        <span class="k">if</span> <span class="n">plate_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plate_net_rotations</span><span class="p">:</span>
+            <span class="n">plate_net_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="p">()</span>
+        <span class="n">plate_net_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">+=</span> <span class="n">net_rotation_sample</span>
+
+    <span class="c1"># The pole (latitude and longitude) and the rotation rate of the total net rotation.</span>
+    <span class="c1"># The angle of the net rotation over a million years is its rate in degrees per million years.</span>
+    <span class="n">pole_latitude</span><span class="p">,</span> <span class="n">pole_longitude</span><span class="p">,</span> <span class="n">rotation_rate_in_degrees_per_myr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">total_net_rotation</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span><span class="o">.</span><span class="n">get_lat_lon_euler_pole_and_angle_degrees</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Total net rotation: </span><span class="si">{</span><span class="n">rotation_rate_in_degrees_per_myr</span><span class="si">}</span><span class="s1"> degrees/myr '</span>
+          <span class="sa">f</span><span class="s1">'about (</span><span class="si">{</span><span class="n">pole_latitude</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">pole_longitude</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">plate_id</span><span class="p">,</span> <span class="n">plate_net_rotation</span> <span class="ow">in</span> <span class="n">plate_net_rotations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># The magnitude of the rotation rate vector is the rotation rate in radians per million years.</span>
+        <span class="n">plate_rotation_rate_in_degrees_per_myr</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">plate_net_rotation</span><span class="o">.</span><span class="n">get_rotation_rate_vector</span><span class="p">()</span><span class="o">.</span><span class="n">get_magnitude</span><span class="p">())</span>
+        <span class="c1"># The area of the plate covered by its sample points.</span>
+        <span class="n">sampled_area_in_square_kms</span> <span class="o">=</span> <span class="n">plate_net_rotation</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1"> has net rotation </span><span class="si">{</span><span class="n">plate_rotation_rate_in_degrees_per_myr</span><span class="si">}</span><span class="s1"> degrees/myr '</span>
+              <span class="sa">f</span><span class="s1">'sampled over an area of </span><span class="si">{</span><span class="n">sampled_area_in_square_kms</span><span class="si">}</span><span class="s1"> square kms'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>The rotations are loaded into a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>, which is kept because the
+rotation of each plate is needed below.</p>
+<p>A <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> is created from the static polygons and
+the rotation model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load one or more rotation files into a rotation model.</span>
+<span class="n">rotation_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Create a reconstruct model from the static polygon features and the rotation model.</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="n">rotation_model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Net rotation is an integral over the surface of the globe, which is approximated by a sum over
+sample points. Each sample point has a <em>sample area</em>: the area of the globe that it stands for,
+in steradians (square radians).</p>
+<p>Here the points are a uniform latitude-longitude grid, which is what
+<a class="reference internal" href="../generated/pygplates.NetRotationModel.html#pygplates.NetRotationModel" title="pygplates.NetRotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotationModel</span></code></a> uses by default (at a finer spacing). On such a grid the sample
+area shrinks with the cosine of the latitude, because the points are closer together near the poles.</p>
+<p>Any distribution of points will do, as long as each has its sample area. For points spread evenly
+over the sphere that is the same for every point: the area of the sphere divided by the number of points.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The points at which net rotation is sampled: a uniform latitude-longitude grid, 3 degrees apart.</span>
+<span class="c1"># Each point has a sample area, which is the area of the globe that it stands for (in steradians).</span>
+<span class="n">num_samples_along_meridian</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">sample_spacing_in_degrees</span> <span class="o">=</span> <span class="mf">180.0</span> <span class="o">/</span> <span class="n">num_samples_along_meridian</span>
+<span class="n">sample_spacing_in_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">sample_spacing_in_degrees</span><span class="p">)</span>
+<span class="n">sample_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">sample_areas</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">latitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples_along_meridian</span><span class="p">):</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">90.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">latitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+    <span class="c1"># The cosine is because points near the North/South poles are closer together.</span>
+    <span class="n">sample_area</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">latitude</span><span class="p">))</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span>
+    <span class="k">for</span> <span class="n">longitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">num_samples_along_meridian</span><span class="p">):</span>
+        <span class="n">longitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">longitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+        <span class="n">sample_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">))</span>
+        <span class="n">sample_areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample_area</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The motion of each plate is taken over a 1My interval, from <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">+</span> <span class="pre">delta_time</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Net rotations will be calculated over a time interval of 1My, from 'time + delta_time' to 'time'.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mf">1.0</span>
+</pre></div>
+</div>
+<p>At each time the static polygons are reconstructed, and <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_locations" title="pygplates.ReconstructSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_locations()</span></code></a>
+finds the <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">static</span> <span class="pre">polygon</span></code></a> that
+contains each sample point (see <a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html#pygplates-calculate-velocities-in-static-polygons"><span class="std std-ref">Calculate velocities in static polygons</span></a>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find the reconstructed static polygon that contains each sample point (None if no polygon does).</span>
+<span class="n">reconstructed_static_polygons</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">sample_points</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">pygplates.NetRotation()</span></code> creates a zero net rotation.</p>
+<p>One accumulates the net rotation of all the plates. The others, one for each plate, are kept in a
+dictionary whose keys are plate IDs.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The net rotation of all the plates, and of each plate (a dictionary mapping a plate ID to a net rotation).</span>
+<span class="c1"># A new net rotation is zero, and the samples are added to it.</span>
+<span class="n">total_net_rotation</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="p">()</span>
+<span class="n">plate_net_rotations</span> <span class="o">=</span> <span class="p">{}</span>
+</pre></div>
+</div>
+<p>A sample point that is outside all the reconstructed static polygons is skipped. It contributes
+neither a rotation nor its sample area.</p>
+<p>So the total is the net rotation of the area that the polygons cover, not of the whole globe
+(see the note below).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">sample_index</span><span class="p">,</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reconstructed_static_polygons</span><span class="p">):</span>
+
+    <span class="c1"># A sample point outside all the reconstructed static polygons contributes nothing.</span>
+    <span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">continue</span>
+</pre></div>
+</div>
+<p>The motion of a sample point is the motion of its plate: the
+<a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">stage</span> <span class="pre">rotation</span></code></a> of the polygon’s reconstruction plate ID
+from <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">+</span> <span class="pre">delta_time</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<p>Many sample points are on the same plate, so the stage rotation of each plate is looked up once
+and kept in a dictionary.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The plate that the sample point is on, and the rotation of that plate from 'time + delta_time' to 'time'.</span>
+<span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_static_polygon</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">plate_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plate_stage_rotations</span><span class="p">:</span>
+    <span class="n">plate_stage_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">plate_id</span><span class="p">,</span> <span class="n">time</span> <span class="o">+</span> <span class="n">delta_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.create_sample_from_finite_rotation" title="pygplates.NetRotation.create_sample_from_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotation.create_sample_from_finite_rotation()</span></code></a> creates the contribution of one
+sample point from the point, its sample area, and the finite rotation that moves it.</p>
+<p>The last argument is the time interval of that finite rotation (which defaults to 1My), so that
+the rotation can be converted to a rate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The contribution of the sample point to net rotation.</span>
+<span class="n">net_rotation_sample</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="o">.</span><span class="n">create_sample_from_finite_rotation</span><span class="p">(</span>
+        <span class="n">sample_points</span><span class="p">[</span><span class="n">sample_index</span><span class="p">],</span>
+        <span class="n">sample_areas</span><span class="p">[</span><span class="n">sample_index</span><span class="p">],</span>
+        <span class="n">plate_stage_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">],</span>
+        <span class="n">delta_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Net rotations are added with <code class="docutils literal notranslate"><span class="pre">+=</span></code> (or with <code class="docutils literal notranslate"><span class="pre">+</span></code>, which returns a new net rotation).</p>
+<p>The same sample is added to the net rotation of all the plates and to the net rotation of its own plate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add the sample to the net rotation of all the plates, and to the net rotation of its own plate.</span>
+<span class="n">total_net_rotation</span> <span class="o">+=</span> <span class="n">net_rotation_sample</span>
+<span class="k">if</span> <span class="n">plate_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plate_net_rotations</span><span class="p">:</span>
+    <span class="n">plate_net_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="p">()</span>
+<span class="n">plate_net_rotations</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">+=</span> <span class="n">net_rotation_sample</span>
+</pre></div>
+</div>
+<p>A net rotation can be extracted as a <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_finite_rotation" title="pygplates.NetRotation.get_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">finite</span> <span class="pre">rotation</span></code></a>
+over one million years, or as a <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_rotation_rate_vector" title="pygplates.NetRotation.get_rotation_rate_vector"><code class="xref py py-meth docutils literal notranslate"><span class="pre">rotation</span> <span class="pre">rate</span> <span class="pre">vector</span></code></a>.</p>
+<p>Here the pole and the angle of the finite rotation are printed. The angle is the rotation rate in
+degrees per million years.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The pole (latitude and longitude) and the rotation rate of the total net rotation.</span>
+<span class="c1"># The angle of the net rotation over a million years is its rate in degrees per million years.</span>
+<span class="n">pole_latitude</span><span class="p">,</span> <span class="n">pole_longitude</span><span class="p">,</span> <span class="n">rotation_rate_in_degrees_per_myr</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">total_net_rotation</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span><span class="o">.</span><span class="n">get_lat_lon_euler_pole_and_angle_degrees</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Total net rotation: </span><span class="si">{</span><span class="n">rotation_rate_in_degrees_per_myr</span><span class="si">}</span><span class="s1"> degrees/myr '</span>
+      <span class="sa">f</span><span class="s1">'about (</span><span class="si">{</span><span class="n">pole_latitude</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">pole_longitude</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The net rotation of each plate is printed as the magnitude of its rotation rate vector, which is
+in radians per million years.</p>
+<p><a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.get_area" title="pygplates.NetRotation.get_area"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotation.get_area()</span></code></a> is the sum of the sample areas that were added, so here it
+is the area of the plate as its sample points measure it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">plate_id</span><span class="p">,</span> <span class="n">plate_net_rotation</span> <span class="ow">in</span> <span class="n">plate_net_rotations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="c1"># The magnitude of the rotation rate vector is the rotation rate in radians per million years.</span>
+    <span class="n">plate_rotation_rate_in_degrees_per_myr</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">plate_net_rotation</span><span class="o">.</span><span class="n">get_rotation_rate_vector</span><span class="p">()</span><span class="o">.</span><span class="n">get_magnitude</span><span class="p">())</span>
+    <span class="c1"># The area of the plate covered by its sample points.</span>
+    <span class="n">sampled_area_in_square_kms</span> <span class="o">=</span> <span class="n">plate_net_rotation</span><span class="o">.</span><span class="n">get_area</span><span class="p">()</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="o">**</span><span class="mi">2</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1"> has net rotation </span><span class="si">{</span><span class="n">plate_rotation_rate_in_degrees_per_myr</span><span class="si">}</span><span class="s1"> degrees/myr '</span>
+          <span class="sa">f</span><span class="s1">'sampled over an area of </span><span class="si">{</span><span class="n">sampled_area_in_square_kms</span><span class="si">}</span><span class="s1"> square kms'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A net rotation is an average over the area of its own samples. The net rotation of a plate
+is averaged over the area of that plate, and the total here over the area that the reconstructed
+polygons cover, which shrinks as gaps open between them at past times. To average over the whole
+globe instead, also add a sample for each point that is outside all the polygons, with a rotation
+of <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.create_identity_rotation" title="pygplates.FiniteRotation.create_identity_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FiniteRotation.create_identity_rotation()</span></code></a>. It adds its sample area but no
+rotation, and so reduces the net rotation in proportion.</p>
+</div>
+</section>
+</section>
+<section id="calculate-net-rotation-from-velocities">
+<span id="pygplates-calculate-net-rotation-from-velocities"></span><h2><a class="toc-backref" href="#id9" role="doc-backlink">Calculate net rotation from velocities</a><a class="headerlink" href="#calculate-net-rotation-from-velocities" title="Link to this heading"></a></h2>
+<p>This example calculates net rotation from a velocity at each sample point. Here the velocities come
+from resolved topologies, but they could come from anywhere, such as a file of velocities.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">Data files</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological features.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon features, with or without deforming network features.</p>
+</dd>
+</dl>
+<p>Files of these kinds are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Sample code</a><a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># The points at which net rotation is sampled: a uniform latitude-longitude grid, 3 degrees apart.</span>
+<span class="c1"># Each point has a sample area, which is the area of the globe that it stands for (in steradians).</span>
+<span class="n">num_samples_along_meridian</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">sample_spacing_in_degrees</span> <span class="o">=</span> <span class="mf">180.0</span> <span class="o">/</span> <span class="n">num_samples_along_meridian</span>
+<span class="n">sample_spacing_in_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">sample_spacing_in_degrees</span><span class="p">)</span>
+<span class="n">sample_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">sample_areas</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">latitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples_along_meridian</span><span class="p">):</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">90.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">latitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+    <span class="c1"># The cosine is because points near the North/South poles are closer together.</span>
+    <span class="n">sample_area</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">latitude</span><span class="p">))</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span>
+    <span class="k">for</span> <span class="n">longitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">num_samples_along_meridian</span><span class="p">):</span>
+        <span class="n">longitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">longitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+        <span class="n">sample_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">))</span>
+        <span class="n">sample_areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample_area</span><span class="p">)</span>
+
+<span class="c1"># Velocities will be calculated over a time interval of 1My, from 'time + delta_time' to 'time'.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+<span class="c1"># We'll calculate net rotation from 140Ma to present day in 10 My intervals.</span>
+<span class="n">max_time</span> <span class="o">=</span> <span class="mi">140</span>
+<span class="n">time_increment</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_time</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">time_increment</span><span class="p">):</span>
+
+    <span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Calculate a velocity at each sample point, in kilometres per million years.</span>
+    <span class="c1"># A velocity is None if its point is outside all the resolved plates (and deforming networks).</span>
+    <span class="n">sample_velocity_vectors</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+            <span class="n">sample_points</span><span class="p">,</span>
+            <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">,</span>
+            <span class="n">velocity_units</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityUnits</span><span class="o">.</span><span class="n">kms_per_my</span><span class="p">,</span>
+            <span class="n">earth_radius_in_kms</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="p">)</span>
+
+    <span class="c1"># The net rotation of all the plates. A new net rotation is zero, and the samples are added to it.</span>
+    <span class="n">net_rotation</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">sample_point</span><span class="p">,</span> <span class="n">sample_area</span><span class="p">,</span> <span class="n">sample_velocity_vector</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sample_points</span><span class="p">,</span> <span class="n">sample_areas</span><span class="p">,</span> <span class="n">sample_velocity_vectors</span><span class="p">):</span>
+
+        <span class="c1"># A sample point outside all the plates contributes nothing.</span>
+        <span class="k">if</span> <span class="n">sample_velocity_vector</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># The rotation rate vector of the sample point, with a magnitude in radians per million years.</span>
+        <span class="c1"># This is the cross product of its position (a unit vector) and its velocity,</span>
+        <span class="c1"># with the velocity converted from kilometres to radians (of arc) per million years.</span>
+        <span class="n">sample_position_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="p">(</span><span class="n">sample_point</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">())</span>
+        <span class="n">sample_rotation_rate_vector</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">sample_position_vector</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">sample_velocity_vector</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="p">))</span>
+
+        <span class="c1"># Add the contribution of the sample point to net rotation.</span>
+        <span class="n">net_rotation</span> <span class="o">+=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="o">.</span><span class="n">create_sample_from_rotation_rate</span><span class="p">(</span>
+                <span class="n">sample_point</span><span class="p">,</span>
+                <span class="n">sample_area</span><span class="p">,</span>
+                <span class="n">sample_rotation_rate_vector</span><span class="p">)</span>
+
+    <span class="c1"># The magnitude of the rotation rate vector is the rotation rate in radians per million years.</span>
+    <span class="n">rotation_rate_in_degrees_per_myr</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">net_rotation</span><span class="o">.</span><span class="n">get_rotation_rate_vector</span><span class="p">()</span><span class="o">.</span><span class="n">get_magnitude</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">: net rotation </span><span class="si">{</span><span class="n">rotation_rate_in_degrees_per_myr</span><span class="si">}</span><span class="s1"> degrees/myr'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Details</a><a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features
+and the rotation file. The sample points, their sample areas and the time interval are the same as
+in the first example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># The points at which net rotation is sampled: a uniform latitude-longitude grid, 3 degrees apart.</span>
+<span class="c1"># Each point has a sample area, which is the area of the globe that it stands for (in steradians).</span>
+<span class="n">num_samples_along_meridian</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">sample_spacing_in_degrees</span> <span class="o">=</span> <span class="mf">180.0</span> <span class="o">/</span> <span class="n">num_samples_along_meridian</span>
+<span class="n">sample_spacing_in_radians</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">sample_spacing_in_degrees</span><span class="p">)</span>
+<span class="n">sample_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">sample_areas</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">latitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples_along_meridian</span><span class="p">):</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">90.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">latitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+    <span class="c1"># The cosine is because points near the North/South poles are closer together.</span>
+    <span class="n">sample_area</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">latitude</span><span class="p">))</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span> <span class="o">*</span> <span class="n">sample_spacing_in_radians</span>
+    <span class="k">for</span> <span class="n">longitude_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">num_samples_along_meridian</span><span class="p">):</span>
+        <span class="n">longitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">longitude_index</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="n">sample_spacing_in_degrees</span>
+        <span class="n">sample_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">PointOnSphere</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">))</span>
+        <span class="n">sample_areas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample_area</span><span class="p">)</span>
+
+<span class="c1"># Velocities will be calculated over a time interval of 1My, from 'time + delta_time' to 'time'.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mf">1.0</span>
+</pre></div>
+</div>
+<p>At each time, <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a> calculates the velocity
+at each sample point from the plate or deforming network that contains it (see
+<a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a>).</p>
+<p>The units and the Earth radius are the defaults. They are spelled out because the conversion
+below depends on them.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate a velocity at each sample point, in kilometres per million years.</span>
+<span class="c1"># A velocity is None if its point is outside all the resolved plates (and deforming networks).</span>
+<span class="n">sample_velocity_vectors</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+        <span class="n">sample_points</span><span class="p">,</span>
+        <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">,</span>
+        <span class="n">velocity_units</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">VelocityUnits</span><span class="o">.</span><span class="n">kms_per_my</span><span class="p">,</span>
+        <span class="n">earth_radius_in_kms</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A sample point that is outside all the plates has no velocity, and is skipped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">sample_point</span><span class="p">,</span> <span class="n">sample_area</span><span class="p">,</span> <span class="n">sample_velocity_vector</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sample_points</span><span class="p">,</span> <span class="n">sample_areas</span><span class="p">,</span> <span class="n">sample_velocity_vectors</span><span class="p">):</span>
+
+    <span class="c1"># A sample point outside all the plates contributes nothing.</span>
+    <span class="k">if</span> <span class="n">sample_velocity_vector</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">continue</span>
+</pre></div>
+</div>
+<p>The motion of a sample point is given as a rotation rate vector: its direction is the axis that
+the point is rotating about, and its magnitude is the rate in radians per million years.</p>
+<p>For a point at position <span class="math notranslate nohighlight">\(\boldsymbol r\)</span> (a unit vector) with velocity <span class="math notranslate nohighlight">\(\boldsymbol v\)</span>,
+the vector <span class="math notranslate nohighlight">\(\boldsymbol r \times \boldsymbol v\)</span> is such a rotation rate, once the velocity is
+divided by the radius of the Earth to convert kilometres to radians.</p>
+<p>It is not the only rotation rate that gives the point that velocity. A rotation about an axis
+through the point itself doesn’t move the point, so any amount of it can be added without changing
+the velocity. Net rotation measures how the lithosphere moves, so it uses only the part of a
+sample’s rotation rate that moves the point, and it doesn’t matter which of these rotation rates is
+given. <span class="math notranslate nohighlight">\(\boldsymbol r \times \boldsymbol v\)</span> is the simplest of them.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The rotation rate vector of the sample point, with a magnitude in radians per million years.</span>
+<span class="c1"># This is the cross product of its position (a unit vector) and its velocity,</span>
+<span class="c1"># with the velocity converted from kilometres to radians (of arc) per million years.</span>
+<span class="n">sample_position_vector</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Vector3D</span><span class="p">(</span><span class="n">sample_point</span><span class="o">.</span><span class="n">to_xyz</span><span class="p">())</span>
+<span class="n">sample_rotation_rate_vector</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">sample_position_vector</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">sample_velocity_vector</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span><span class="p">))</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.create_sample_from_rotation_rate" title="pygplates.NetRotation.create_sample_from_rotation_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotation.create_sample_from_rotation_rate()</span></code></a> creates the contribution of one
+sample point from the point, its sample area and its rotation rate vector. It is added to the net
+rotation with <code class="docutils literal notranslate"><span class="pre">+=</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add the contribution of the sample point to net rotation.</span>
+<span class="n">net_rotation</span> <span class="o">+=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">NetRotation</span><span class="o">.</span><span class="n">create_sample_from_rotation_rate</span><span class="p">(</span>
+        <span class="n">sample_point</span><span class="p">,</span>
+        <span class="n">sample_area</span><span class="p">,</span>
+        <span class="n">sample_rotation_rate_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The net rotation is printed as the magnitude of its rotation rate vector, converted to degrees per million years.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The magnitude of the rotation rate vector is the rotation rate in radians per million years.</span>
+<span class="n">rotation_rate_in_degrees_per_myr</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">net_rotation</span><span class="o">.</span><span class="n">get_rotation_rate_vector</span><span class="p">()</span><span class="o">.</span><span class="n">get_magnitude</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">: net rotation </span><span class="si">{</span><span class="n">rotation_rate_in_degrees_per_myr</span><span class="si">}</span><span class="s1"> degrees/myr'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>With the same sample points and areas (its <em>point_distribution</em> argument), a
+<a class="reference internal" href="../generated/pygplates.NetRotationSnapshot.html#pygplates.NetRotationSnapshot" title="pygplates.NetRotationSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotationSnapshot</span></code></a> calculates the same net rotation for points inside rigid
+plates. Inside the deforming region of a network the two differ slightly: the snapshot
+interpolates the <em>stage rotations</em> of the corners of the network triangle that contains the point,
+where <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a> interpolates the <em>velocities</em> of
+the vertices near the point, using natural neighbour interpolation.</p>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id13" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-stage-rotation"><span class="std std-ref">Equivalent stage rotation</span></a></p></li>
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation" title="pygplates.NetRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.NetRotation</span></code></a>, <a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.create_sample_from_finite_rotation" title="pygplates.NetRotation.create_sample_from_finite_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotation.create_sample_from_finite_rotation()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.NetRotation.html#pygplates.NetRotation.create_sample_from_rotation_rate" title="pygplates.NetRotation.create_sample_from_rotation_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.NetRotation.create_sample_from_rotation_rate()</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_locations" title="pygplates.ReconstructSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_locations()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a>, <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_calculate_net_rotation.html#pygplates-calculate-net-rotation"><span class="std std-ref">Calculate net rotation</span></a>, <a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html#pygplates-calculate-velocities-in-static-polygons"><span class="std std-ref">Calculate velocities in static polygons</span></a>,
+<a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_calculate_net_rotation.html" class="btn btn-neutral float-left" title="Calculate net rotation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_find_nearest_feature_to_a_point.html" class="btn btn-neutral float-right" title="Find nearest reconstructed feature to a point" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

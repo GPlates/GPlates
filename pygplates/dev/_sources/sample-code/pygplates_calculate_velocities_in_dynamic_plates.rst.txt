@@ -1,21 +1,24 @@
+.. The first example below also carries two labels named after section anchors of this page in the
+   pyGPlates 1.0 documentation, because links to those anchors are published. They are listed, and
+   checked, in '_OLD_PAGE_ANCHORS' in conf.py.
+
 .. _pygplates_calculate_velocities_in_dynamic_plates:
 
 Calculate velocities in dynamic plates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example shows three similar ways to calculate velocities of topological plates at static point locations.
+This example shows two similar ways to calculate velocities of topological plates at static point locations.
 
-| All three read the same files and calculate the same velocities: at each time the topological plates
-  are resolved, each point is matched to the plate containing it, and the velocity of that plate is
-  calculated at the point.
-| All three treat every plate as rigid: a point's velocity comes from the stage rotation of its plate's
-  reconstruction plate ID. That is wrong inside a deforming network, whose velocity varies across it.
-  For velocities that account for deforming networks use
-  :meth:`pygplates.TopologicalSnapshot.get_point_velocities` instead.
-| They differ in how the points are matched to plates. The first partitions the point features and
-  reads the plate ID assigned to each partitioned feature. The second partitions the point features but
-  keeps them grouped by partitioning plate, and reads the plate ID from the plate. The third partitions
-  each point individually.
+Both read the same files and calculate the same velocities: at each time the topological plates
+(and deforming networks) are resolved, and :meth:`pygplates.TopologicalSnapshot.get_point_velocities`
+calculates the velocity at each point from the plate or network that contains it.
+
+Inside a rigid plate that is the velocity of the plate, which comes from the motion of its
+reconstruction plate ID. Inside a deforming network it is the velocity of the network at the point,
+which varies across the network.
+
+The first example calculates a velocity at each point, keeping the points in their order. The second
+also finds which plate contains each point, and groups the points and their velocities by plate.
 
 .. contents::
    :local:
@@ -24,16 +27,16 @@ This example shows three similar ways to calculate velocities of topological pla
 Data files
 ++++++++++
 
-All three scripts read the same files:
+Both scripts read the same files:
 
 ``rotations.rot``
     A rotation file. It must contain rotations for the plate IDs of the topological plates in
-    ``topologies.gpml``, since the velocity of a plate comes from its stage rotation.
+    ``topologies.gpml``, since the velocity of a plate comes from the motion of its plate ID.
 
 ``topologies.gpml``
-    Topological plate polygon features. They are resolved at each time to give the partitioning plates,
-    and each must have a reconstruction plate ID, since that is the plate ID whose stage rotation is used.
-    A deforming network would be treated as a rigid plate (see above).
+    Topological plate polygon features, with or without deforming network features. They are resolved
+    at each time. Each plate polygon should have a reconstruction plate ID, since that is the plate ID
+    whose motion gives its velocity (a plate polygon without one is given plate ID zero).
 
 ``lat_lon_velocity_domain_9_18.gpml``
     The velocity domain: features whose geometries contain the static points at which velocities are
@@ -42,105 +45,94 @@ All three scripts read the same files:
 
 Rotation files and topological plate polygons are in the GPlates `sample data <https://www.gplates.org/download/>`_.
 
-Calculate velocities by assigning plate IDs of dynamic plates to static points
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+.. _calculate-velocities-by-assigning-plate-ids-of-dynamic-plates-to-static-points:
+.. _calculate-velocities-by-individually-partitioning-each-static-point-into-dynamic-plates:
+
+Calculate velocities of dynamic plates at static points
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Sample code
 """""""""""
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
 
 Details
 """""""
 
-The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
+A :class:`topological model<pygplates.TopologicalModel>` is created from the topological features and the rotation file.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: load-rotations
+The topological features are not resolved here. That happens at each time, in the loop below.
 
-| The topological plate polygon features are loaded into a :class:`pygplates.FeatureCollection`.
-| They are not resolved here. That happens at each time, when the plate partitioner is created.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: load-topologies
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
+   :fragment: create-topological-model
 
 The velocity domain features contain the static points at which velocities are calculated.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
    :fragment: load-velocity-domain
+
+The points of all the velocity domain features are gathered into one list.
+
+A velocity domain feature usually has a single geometry, but :meth:`pygplates.Feature.get_geometries`
+handles any number, and :meth:`pygplates.GeometryOnSphere.get_points` reduces each geometry to its points.
+
+The points are not reconstructed. They stay where they are while the plates move over them, so the
+same list is used at every time.
+
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
+   :fragment: domain-points
 
 The velocities at each ``time`` are calculated over a 1My interval, from ``time + delta_time`` to ``time``.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
    :fragment: delta-time
 
-| A :class:`pygplates.PlatePartitioner` is created from the topological features, the rotation model and
-  the current ``time``. It resolves the topological features to ``time``, and the resolved plate polygons
-  (and deforming networks) become the partitioning plates.
-| :meth:`pygplates.PlatePartitioner.partition_features` then partitions the velocity domain features
-  into those plates. The partitioner does not reconstruct the features it is given (they are taken to
-  be at the reconstruction time already), which is what we want for static points.
-| By default a feature whose geometry lies in more than one plate is split into one feature per plate
-  (``pygplates.PartitionMethod.split_into_plates``), and the only property copied from a partitioning
-  plate to the features it partitions is its reconstruction plate ID (the *properties_to_copy* argument).
-| The returned list contains new features (the originals are not modified): the partitioned features,
-  each carrying the plate ID of its partitioning plate, together with any features (or parts of
-  features) that were outside all the plates.
+The topological features are resolved to the current ``time`` using :meth:`pygplates.TopologicalModel.topological_snapshot`.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: partition-features
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
+   :fragment: topological-snapshot
 
-.. note:: A new partitioner is created at each ``time`` because the plates are dynamic: which plate
+.. note:: A new snapshot is needed at each ``time`` because the plates are dynamic: which plate
    contains a point changes as the plate boundaries move.
 
-| The plate ID assigned to a partitioned feature is retrieved with :meth:`pygplates.Feature.get_reconstruction_plate_id`.
-| A feature that was outside all the plates had no plate ID copied to it, so this returns its own
-  plate ID, which is zero for velocity domain features generated in GPlates. The
-  rotation of plate zero relative to the anchor plate (also zero, the default) is the identity rotation,
-  so the velocities calculated for such a feature below are zero.
+:meth:`pygplates.TopologicalSnapshot.get_point_velocities` returns one velocity for each point, in the
+order of the points. Each is a :class:`pygplates.Vector3D` (a global cartesian velocity vector), in
+kilometres per million years unless the *velocity_units* argument says otherwise.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: partitioning-plate-id
+A point that is outside all the resolved plates and networks has no velocity: its entry in the list is ``None``.
 
-| The :ref:`equivalent stage rotation<pygplates_primer_equivalent_stage_rotation>` of the partitioning
-  plate, from ``time + delta_time`` to ``time``, is obtained using :meth:`pygplates.RotationModel.get_rotation`.
-| This is the same rotation used in :ref:`pygplates_calculate_velocities_by_plate_id`, except that there
-  the plate ID came from the feature itself.
+Where a deforming network overlays a rigid plate, a point inside both gets the velocity of the network.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: equivalent-stage-rotation
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
+   :fragment: point-velocities
 
-| A velocity domain feature usually has a single geometry, but :meth:`pygplates.Feature.get_geometries`
-  handles any number.
-| Each geometry is reduced to its points using :meth:`pygplates.GeometryOnSphere.get_points`.
+The points that have no velocity are left out before the velocities are converted, since the
+conversion below raises ``TypeError`` if it is given ``None`` in place of a vector.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: iterate-geometries
+The points that remain are still in the order of the velocity domain points. A script that needs
+an entry for every velocity domain point can use ``domain_velocity_vectors`` instead, which lines
+up with ``domain_points``.
 
-| The velocities are :func:`calculated<pygplates.calculate_velocities>` at the points using the stage rotation.
-| This returns one :class:`pygplates.Vector3D` per point (a global cartesian velocity vector).
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: calculate-velocities
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
+   :fragment: points-in-plates
 
 The vectors are converted to local (magnitude, azimuth, inclination) tuples, one per point, using
 :meth:`pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination`.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
+Each point determines its own local coordinate system. For example, the velocity *azimuth* is
+relative to North as viewed from that point.
+
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates.py
    :fragment: convert-velocities
 
-| Finally the points and their velocities are appended to lists covering all features at the current ``time``.
-| Since features that crossed plate boundaries were split, the points are not in the same order as in
-  the velocity domain file. The third example below keeps that order.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_assign_plate_ids.py
-   :fragment: append-results
+.. seealso:: :ref:`pygplates_calculate_velocities_by_plate_id`, whose alternate sample code calculates
+   the velocity of a rigid plate by hand, from the stage rotation of its plate ID.
 
 Calculate velocities by grouping static points into dynamic plates
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-| This example is similar to the above example except it groups velocities by partitioning plates.
-| It is also slightly faster than the above example, but only by one or two percent.
+This example is like the one above, except that it groups the points, and their velocities, by
+the plate that contains them.
 
 Sample code
 """""""""""
@@ -150,132 +142,82 @@ Sample code
 Details
 """""""
 
-The rotation model, topological features, velocity domain features and time interval are the same as
-in the first example.
+The topological model, velocity domain points and time interval are the same as in the first example.
 
 .. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
    :fragment: load-inputs
 
-| The :class:`pygplates.PlatePartitioner` is created as before, but
-  :meth:`pygplates.PlatePartitioner.partition_features` is called with two extra arguments.
-| *properties_to_copy* is an empty list, so no plate IDs are copied to the partitioned features. The
-  plate ID will instead come from the partitioning plate itself.
-| *partition_return* is ``pygplates.PartitionReturn.partitioned_groups_and_unpartitioned``, so instead
-  of a single combined list the call returns a 2-tuple: a list of groups, each a 2-tuple of a
-  partitioning plate and the list of features it partitioned, and a list of the unpartitioned features.
-  This example ignores the unpartitioned features (the first example would have given them zero velocities).
+:meth:`pygplates.TopologicalSnapshot.get_point_velocities` is called as before, but with
+*return_point_locations* set to ``True``.
+
+It then returns a 2-tuple: the list of velocities, and a list with the
+:class:`location<pygplates.TopologyPointLocation>` of each point in the resolved topologies.
+Both lists are in the order of the points.
+
+This is more efficient than getting the locations in a separate call to
+:meth:`pygplates.TopologicalSnapshot.get_point_locations`.
 
 .. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: partition-features
+   :fragment: point-velocities
 
-Iterating over the groups visits each partitioning plate once.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: iterate-groups
-
-| The partitioning plate is a resolved :class:`topological boundary<pygplates.ResolvedTopologicalBoundary>`
-  (or :class:`network<pygplates.ResolvedTopologicalNetwork>`), so its plate ID is obtained from its feature
-  using :meth:`pygplates.ResolvedTopologicalBoundary.get_feature` and :meth:`pygplates.Feature.get_reconstruction_plate_id`.
+Each point is visited with its velocity and its location.
 
 .. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: partitioning-plate-id
-
-| The :ref:`equivalent stage rotation<pygplates_primer_equivalent_stage_rotation>` is obtained as before,
-  but once per partitioning plate rather than once per partitioned feature.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: equivalent-stage-rotation
-
-The points of every geometry of every feature in the group are gathered.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: partitioned-domain-points
-
-The velocities are calculated and converted exactly as in the first example.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: calculate-velocities
-
-The points and velocities of each geometry are appended to lists for the current partitioning plate.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: append-results
-
-Finally those lists are stored in dictionaries keyed by the plate ID of the partitioning plate, so the
-results for the current ``time`` are grouped by plate.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
-   :fragment: store-results
-
-Calculate velocities by individually partitioning each static point into dynamic plates
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-| This example is **ten times slower** than the above two examples.
-| However it has the advantage of keeping the output velocities (and domain positions) in the same
-  order as the input domain points (ie, the order of points in each domain multipoint).
-
-Sample code
-"""""""""""
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
-
-Details
-"""""""
-
-The rotation model, topological features, velocity domain features and time interval are the same as
-in the first example.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
-   :fragment: load-inputs
-
-The :class:`pygplates.PlatePartitioner` is created as before, but
-:meth:`pygplates.PlatePartitioner.partition_features` is not called. Instead each point is partitioned on its own.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
-   :fragment: plate-partitioner
-
-| The velocity domain features themselves are iterated over (rather than features returned by the
-  partitioner), so the points are visited in the order they appear in the velocity domain file.
-| Each point is appended to the output points before it is partitioned, so the output always has one
-  entry per input point, in the same order.
-
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
    :fragment: iterate-points
 
-:meth:`pygplates.PlatePartitioner.partition_point` returns the first partitioning plate containing the
-point, or ``None`` if no plate contains it.
+:meth:`pygplates.TopologyPointLocation.located_in_resolved_boundary` returns the
+:class:`resolved topological boundary<pygplates.ResolvedTopologicalBoundary>` (the rigid plate) that
+contains the point, or ``None``.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
-   :fragment: partition-point
+:meth:`pygplates.TopologyPointLocation.located_in_resolved_network` returns the
+:class:`resolved topological network<pygplates.ResolvedTopologicalNetwork>` that contains the point,
+or ``None``. That includes a point inside one of the network's interior rigid blocks.
 
-If a plate was found then its plate ID, and the
-:ref:`equivalent stage rotation<pygplates_primer_equivalent_stage_rotation>` of that plate, are
-obtained from the partitioning plate as in the second example.
+A point is located in one or the other, not both: where a network overlays a plate, the point is
+located in the network.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
-   :fragment: partitioning-plate-and-stage-rotation
+A point located in neither is outside all the plates and networks. Its velocity is ``None``, and it is skipped.
 
-| The velocity is calculated and converted as in the first example, but for a single point.
-| :func:`pygplates.calculate_velocities` and
-  :meth:`pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination`
-  are given one-element lists, and the single resulting tuple is appended to the output velocities.
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
+   :fragment: containing-plate
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
-   :fragment: calculate-velocity
+The point and its velocity are appended to the lists of the plate that contains the point.
 
-If no plate contains the point then a zero velocity is appended instead, so that the output
-velocities stay aligned with the output points.
+The lists are kept in two dictionaries whose keys are the resolved plates themselves. A plate's
+plate ID would not do as the key, since nothing stops two topologies from having the same plate ID.
 
-.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_partition_points.py
-   :fragment: unpartitioned-point
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
+   :fragment: group-points
+
+Iterating over a dictionary visits each plate that contains a point once.
+
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
+   :fragment: iterate-plates
+
+The velocities are converted as in the first example, but one plate at a time.
+
+No point here is without a velocity, since every point in the dictionaries is inside a plate.
+
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
+   :fragment: convert-velocities
+
+Finally the plate ID and name of each plate are read from its feature
+(:meth:`pygplates.ResolvedTopologicalBoundary.get_feature`, or
+:meth:`pygplates.ResolvedTopologicalNetwork.get_feature` for a network), and printed with the number
+of points in the plate.
+
+.. sample-code:: pygplates_calculate_velocities_in_dynamic_plates_group_points.py
+   :fragment: plate-id
 
 See also
 ++++++++
 
-- Primer: :ref:`pygplates_primer_equivalent_stage_rotation`
-- Reference: :class:`pygplates.PlatePartitioner`, :meth:`pygplates.PlatePartitioner.partition_features`,
-  :meth:`pygplates.PlatePartitioner.partition_point`, :meth:`pygplates.RotationModel.get_rotation`,
-  :func:`pygplates.calculate_velocities`, :class:`pygplates.LocalCartesian`
-- Sample code: :ref:`pygplates_calculate_velocities_by_plate_id`,
-  :ref:`pygplates_import_geometries_and_assign_plate_ids`,
-  :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`
+- Primer: :ref:`pygplates_primer_topological_model`, :ref:`pygplates_primer_topological_snapshot`
+- Reference: :class:`pygplates.TopologicalModel`, :meth:`pygplates.TopologicalSnapshot.get_point_velocities`,
+  :meth:`pygplates.TopologicalSnapshot.get_point_locations`, :class:`pygplates.TopologyPointLocation`,
+  :class:`pygplates.LocalCartesian`
+- Sample code: :ref:`pygplates_calculate_velocities_in_static_polygons`,
+  :ref:`pygplates_calculate_velocities_by_plate_id`,
+  :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`,
+  :ref:`pygplates_find_plates_and_strain_rates_at_static_points`,
+  :ref:`pygplates_reconstruct_strain_and_strain_rate`

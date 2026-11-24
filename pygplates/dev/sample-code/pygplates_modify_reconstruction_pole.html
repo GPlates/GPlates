@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Modify a reconstruction pole &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Modify a reconstruction pole &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_modify_reconstruction_pole.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -70,6 +70,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -105,19 +106,16 @@
 <p>This example:</p>
 <ul class="simple">
 <li><p>reads a rotation file,</p></li>
-<li><p>modifies a total reconstruction pole such that a reconstructed point coincides with its desired location
-at a particular reconstruction time, and</p></li>
-<li><p>writes the modifications back to the same rotation file.</p></li>
+<li><p>modifies a total reconstruction pole so that a point reconstructs to a desired location at a
+reconstruction time, and</p></li>
+<li><p>writes the modified rotations back to the same rotation file.</p></li>
 </ul>
-<p>The functionality in this example is similar to the <code class="docutils literal notranslate"><span class="pre">Modify</span> <span class="pre">Reconstruction</span> <span class="pre">Pole</span></code> tool
+<p>This is similar to what the <code class="docutils literal notranslate"><span class="pre">Modify</span> <span class="pre">Reconstruction</span> <span class="pre">Pole</span></code> tool does
 in <a class="reference external" href="http://www.gplates.org">GPlates</a>.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-total-reconstruction-sequence-feature"><span class="std std-ref">Create a total reconstruction sequence (rotation) feature</span></a></p>
-</div>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-total-reconstruction-sequence-feature"><span class="std std-ref">Query a total reconstruction sequence (rotation) feature</span></a></p>
+<p><a class="reference internal" href="pygplates_create_common_feature_types.html#pygplates-create-total-reconstruction-sequence-feature"><span class="std std-ref">Create a total reconstruction sequence (rotation) feature</span></a> and
+<a class="reference internal" href="pygplates_query_common_feature_types.html#pygplates-query-total-reconstruction-sequence-feature"><span class="std std-ref">Query a total reconstruction sequence (rotation) feature</span></a></p>
 </div>
 <nav class="contents local" id="contents">
 <ul class="simple">
@@ -212,7 +210,7 @@ Rotation files are in the GPlates <a class="reference external" href="https://ww
             <span class="c1"># All time samples are disabled.</span>
             <span class="k">continue</span>
 
-        <span class="c1"># Match sure the time span of the rotation feature's enabled samples spans the reconstruction time.</span>
+        <span class="c1"># Make sure the time span of the rotation feature's enabled samples includes the reconstruction time.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">enabled_rotation_samples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">reconstruction_time</span> <span class="ow">and</span>
                 <span class="n">enabled_rotation_samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">reconstruction_time</span><span class="p">):</span>
             <span class="k">continue</span>
@@ -272,28 +270,25 @@ Rotation files are in the GPlates <a class="reference external" href="https://ww
 </section>
 <section id="details">
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
-<p>The filenames of one or more rotation files. We’ll be writing modifications back out to these files.</p>
+<p>The script starts with the filenames of one or more rotation files. The modified rotations are
+written back to these files at the end.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># One or more rotation filenames.</span>
 <span class="n">rotation_filenames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'rotations.rot'</span><span class="p">]</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The rotation adjustment will get applied at 60Ma.</div>
-<div class="line">We wrap the reconstruction time in a <a class="reference internal" href="../generated/pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GeoTimeInstant</span></code></a> purely because its comparison
-operators (==, !=, &lt;, &lt;=, &gt;, &gt;=) handle numerical tolerance in floating-point comparisons. This is
-a good idea in general when comparing floating-point numbers even though in our case the sample code
-would probably still work if we directly compared floating-point numbers (without a comparison threshold) -
-in other words if we wrote this as <code class="docutils literal notranslate"><span class="pre">reconstruction_time</span> <span class="pre">=</span> <span class="pre">60</span></code> instead.</div>
-</div>
+<p>The rotation is adjusted at 60Ma.</p>
+<p>The reconstruction time is a <a class="reference internal" href="../generated/pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GeoTimeInstant</span></code></a> rather than a plain number. Its
+comparison operators (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>) compare times within a
+numerical tolerance, which is a good idea whenever floating-point numbers are compared. The script
+compares the reconstruction time with the times of rotation samples further down.</p>
+<p>Here the script would probably still work with <code class="docutils literal notranslate"><span class="pre">reconstruction_time</span> <span class="pre">=</span> <span class="pre">60</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The reconstruction time (Ma) at which the rotation adjustment needs to be applied.</span>
 <span class="n">reconstruction_time</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">GeoTimeInstant</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The desired reconstructed position is the location we want the present day point position to
-reconstruct to at 60Ma.</div>
-<div class="line">We specify point locations by passing a latitude and longitude to <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a>.</div>
-</div>
+<p>There are two positions. The present day position is the point to reconstruct. The desired
+reconstructed position is where that point should be at 60Ma.</p>
+<p>Each is a <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a>, created from a latitude and a longitude.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The present day point position specified using latitude and longitude (in degrees).</span>
 <span class="n">present_day_latitude</span> <span class="o">=</span> <span class="o">-</span><span class="mi">20</span>
 <span class="n">present_day_longitude</span> <span class="o">=</span> <span class="mi">135</span>
@@ -307,52 +302,48 @@ reconstruct to at 60Ma.</div>
     <span class="n">desired_reconstructed_latitude</span><span class="p">,</span> <span class="n">desired_reconstructed_longitude</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Before we can reconstruct the point location we need to create a <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a>.</div>
-<div class="line">This contains the information (plate ID and present day position) needed to reconstruct the point to the reconstruction time.</div>
-</div>
+<p>A point is reconstructed as part of a <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a>. The feature holds what the
+reconstruction needs: the plate ID (801) and the present day position.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a point feature so we can reconstruct it using its plate ID.</span>
 <span class="n">point_feature</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Feature</span><span class="p">()</span>
 <span class="n">point_feature</span><span class="o">.</span><span class="n">set_reconstruction_plate_id</span><span class="p">(</span><span class="n">reconstruction_plate_id</span><span class="p">)</span>
 <span class="n">point_feature</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="n">present_day_position</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">We use the utility class <a class="reference internal" href="../generated/pygplates.FeaturesFunctionArgument.html#pygplates.FeaturesFunctionArgument" title="pygplates.FeaturesFunctionArgument"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeaturesFunctionArgument</span></code></a> to load our rotation file(s).</div>
-<div class="line">This makes it a little easier for us to write changes to the rotation features back out to the same files.</div>
-<div class="line">Alternatively we could have loaded each rotation file into its own <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a> and then
-later <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saved</span></code></a> them back to their rotation file(s).</div>
-</div>
+<p>The rotation files are loaded with the utility class <a class="reference internal" href="../generated/pygplates.FeaturesFunctionArgument.html#pygplates.FeaturesFunctionArgument" title="pygplates.FeaturesFunctionArgument"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeaturesFunctionArgument</span></code></a>.
+It keeps the features of each file together with the filename, which makes it a little easier to
+write the modified rotation features back to their files.</p>
+<p>Alternatively, each rotation file could be loaded into its own <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection" title="pygplates.FeatureCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeatureCollection</span></code></a>
+and later <a class="reference internal" href="../generated/pygplates.FeatureCollection.html#pygplates.FeatureCollection.write" title="pygplates.FeatureCollection.write"><code class="xref py py-meth docutils literal notranslate"><span class="pre">saved</span></code></a> back to its file.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the rotation features from rotation files.</span>
 <span class="c1"># Using a 'pygplates.FeaturesFunctionArgument' to make it easier to write changes back out to the files.</span>
 <span class="n">rotation_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeaturesFunctionArgument</span><span class="p">(</span><span class="n">rotation_filenames</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">We use the unmodified rotation features to generate a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">rotation</span> <span class="pre">model</span></code></a>.</div>
-<div class="line">We’ll use this model to reconstruct the point and to help us make an adjustment to the total reconstruction pole.</div>
-</div>
+<p>A <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">rotation</span> <span class="pre">model</span></code></a> is created from the rotation features before
+they are modified. It is used to reconstruct the point, and later to work out the adjustment to the
+total reconstruction pole.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A rotation model using the rotation features before they are modified.</span>
 <span class="n">rotation_model_before_adjustment</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="n">rotation_features</span><span class="o">.</span><span class="n">get_features</span><span class="p">())</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">To find the <em>actual</em> reconstructed point location at 60Ma we <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span></code></a> our point feature.</div>
-<div class="line">Since our point feature is valid for all time (by default if we don’t <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_valid_time" title="pygplates.Feature.set_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set</span> <span class="pre">its</span> <span class="pre">valid</span> <span class="pre">time</span></code></a>)
-we should get one <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a> from which we obtain the
-<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry" title="pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">point</span> <span class="pre">position</span></code></a>.</div>
-</div>
+<p>The point feature is <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span></code></a> to 60Ma, to find where
+the point <em>actually</em> is at that time.</p>
+<p>The point feature has no <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.set_valid_time" title="pygplates.Feature.set_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">valid</span> <span class="pre">time</span></code></a>, which means it
+exists at all times. So there is exactly one <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a>, and
+its <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry" title="pygplates.ReconstructedFeatureGeometry.get_reconstructed_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">geometry</span></code></a>
+is the reconstructed point.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct our point feature to obtain the reconstructed point location.</span>
 <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="n">point_feature</span><span class="p">,</span> <span class="n">rotation_model_before_adjustment</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
 <span class="n">reconstructed_position</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">If the <em>actual reconstructed position</em> differs from the <em>desired reconstructed position</em> then we need to adjust
-the appropriate rotation feature(s) so that they match.</div>
-<div class="line">The rotation adjustment is the rotation from <code class="docutils literal notranslate"><span class="pre">reconstructed_position</span></code> to <code class="docutils literal notranslate"><span class="pre">desired_reconstructed_position</span></code>.
-The rotation is created using the <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.__init__" title="pygplates.FiniteRotation.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> of <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FiniteRotation</span></code></a>.</div>
-</div>
+<p>If the actual reconstructed position differs from the desired reconstructed position then the
+rotations of plate 801 need to be adjusted.</p>
+<p>The rotation adjustment is the rotation from <code class="docutils literal notranslate"><span class="pre">reconstructed_position</span></code> to
+<code class="docutils literal notranslate"><span class="pre">desired_reconstructed_position</span></code>. This <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.__init__" title="pygplates.FiniteRotation.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">constructor</span></code></a> of
+<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FiniteRotation</span></code></a> creates the rotation that moves one point to another along the
+great circle arc between them.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If the actual and desired reconstructed positions are different then adjust rotation feature(s) to make them the same.</span>
 <span class="k">if</span> <span class="n">reconstructed_position</span> <span class="o">!=</span> <span class="n">desired_reconstructed_position</span><span class="p">:</span>
 
@@ -360,14 +351,14 @@ The rotation is created using the <a class="reference internal" href="../generat
     <span class="n">rotation_adjustment</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FiniteRotation</span><span class="p">(</span><span class="n">reconstructed_position</span><span class="p">,</span> <span class="n">desired_reconstructed_position</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Next we iterate over all the rotation features to find those whose moving plate ID matches the plate ID
-of our point feature. This is because we only want our rotation adjustment to affect the plate on
-which our point lies (and all <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">child plates</span></a>
-at the reconstruction time).</div>
-<div class="line">We obtain the moving/fixed plate IDs and the time-varying total reconstruction poles from the rotation feature
-using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_total_reconstruction_pole" title="pygplates.Feature.get_total_reconstruction_pole"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_total_reconstruction_pole()</span></code></a>.</div>
-</div>
+<p>The script then iterates over the rotation features, looking for those whose moving plate ID is
+the plate ID of the point feature. Changing the rotation of that plate moves the point, along with
+everything else on that plate and on its
+<a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-reconstruction-hierarchy"><span class="std std-ref">child plates</span></a> (the plates that move
+relative to it at the reconstruction time).</p>
+<p><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_total_reconstruction_pole" title="pygplates.Feature.get_total_reconstruction_pole"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_total_reconstruction_pole()</span></code></a> returns the fixed plate ID, the moving
+plate ID and the time-varying total reconstruction pole of a rotation feature. It returns <code class="docutils literal notranslate"><span class="pre">None</span></code>
+for a feature that does not have all three, which means it is not a rotation feature.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Modify the rotation feature (or features) corresponding to the reconstruction plate ID.</span>
 <span class="k">for</span> <span class="n">rotation_feature</span> <span class="ow">in</span> <span class="n">rotation_features</span><span class="o">.</span><span class="n">get_features</span><span class="p">():</span>
 
@@ -383,34 +374,86 @@ using <a class="reference internal" href="../generated/pygplates.Feature.html#py
         <span class="k">continue</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">A rotation sequence is a <a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span> <span class="pre">sequence</span></code></a> of total rotations of
-a moving plate relative to a fixed plate.</div>
-<div class="line">Not all rotation samples in the sequence are necessarily enabled. So we ignore the disabled samples by
-calling <a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling.get_enabled_time_samples" title="pygplates.GpmlIrregularSampling.get_enabled_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlIrregularSampling.get_enabled_time_samples()</span></code></a>.</div>
-<div class="line">We use the enabled rotation samples to determine if the time range of the rotation sequence includes the reconstruction time.</div>
-<div class="line">Note that since <code class="docutils literal notranslate"><span class="pre">reconstruction_time</span></code> is a <a class="reference internal" href="../generated/pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GeoTimeInstant</span></code></a>, comparisons with it
-will handle numerical tolerance (as mentioned above). This ensures that the test will pass if the
-reconstruction time coincides with the time of the first or last rotation sample.</div>
-</div>
+<p>The total reconstruction pole is a <a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling" title="pygplates.GpmlIrregularSampling"><code class="xref py py-class docutils literal notranslate"><span class="pre">sequence</span> <span class="pre">of</span> <span class="pre">time</span> <span class="pre">samples</span></code></a>.
+Each sample is the total rotation of the moving plate relative to the fixed plate at one time.</p>
+<p>Some of the samples may be disabled.
+<a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling.get_enabled_time_samples" title="pygplates.GpmlIrregularSampling.get_enabled_time_samples"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlIrregularSampling.get_enabled_time_samples()</span></code></a> returns only the enabled ones.</p>
+<p>The script continues with this rotation feature only if the reconstruction time is within the
+time range of its enabled samples, which are ordered from youngest to oldest.</p>
+<p>Because <code class="docutils literal notranslate"><span class="pre">reconstruction_time</span></code> is a <a class="reference internal" href="../generated/pygplates.GeoTimeInstant.html#pygplates.GeoTimeInstant" title="pygplates.GeoTimeInstant"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.GeoTimeInstant</span></code></a>, these comparisons are made
+within a numerical tolerance (as mentioned above). So the test passes when the reconstruction time
+is the time of the first or the last sample.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the enabled rotation samples - ignore the disabled samples.</span>
 <span class="n">enabled_rotation_samples</span> <span class="o">=</span> <span class="n">rotation_sequence</span><span class="o">.</span><span class="n">get_enabled_time_samples</span><span class="p">()</span>
 <span class="k">if</span> <span class="ow">not</span> <span class="n">enabled_rotation_samples</span><span class="p">:</span>
     <span class="c1"># All time samples are disabled.</span>
     <span class="k">continue</span>
 
-<span class="c1"># Match sure the time span of the rotation feature's enabled samples spans the reconstruction time.</span>
+<span class="c1"># Make sure the time span of the rotation feature's enabled samples includes the reconstruction time.</span>
 <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">enabled_rotation_samples</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">reconstruction_time</span> <span class="ow">and</span>
         <span class="n">enabled_rotation_samples</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">reconstruction_time</span><span class="p">):</span>
     <span class="k">continue</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">If one of the enabled rotation samples matches the reconstruction time then
-get its description so we don’t clobber it when we write the adjusted rotation.</div>
-<div class="line">Each rotation sample usually has a comment/description in the rotation file and this
-enables us to retain them when writing back out to the rotation file.</div>
+<p><a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling.get_value" title="pygplates.GpmlIrregularSampling.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlIrregularSampling.get_value()</span></code></a> returns the original rotation at the
+reconstruction time. If the reconstruction time is between two rotation samples then it
+<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.interpolate" title="pygplates.FiniteRotation.interpolate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">interpolates</span></code></a> between them.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the finite rotation at the reconstruction time.</span>
+<span class="c1"># If the reconstruction time is between rotation samples then it will get interpolated.</span>
+<span class="n">rotation_property_value</span> <span class="o">=</span> <span class="n">rotation_sequence</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">rotation_property_value</span><span class="p">:</span>
+    <span class="k">continue</span>
+<span class="n">rotation</span> <span class="o">=</span> <span class="n">rotation_property_value</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span>
+</pre></div>
 </div>
+<p>The next step is to adjust the original rotation, so that the present day position reconstructs
+to the desired reconstructed position.</p>
+<p>A point on moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> is reconstructed to time <span class="math notranslate nohighlight">\(t\)</span> by the
+<a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-total-rotation"><span class="std std-ref">equivalent total rotation</span></a> of that plate. This
+is its rotation relative to the anchor plate <span class="math notranslate nohighlight">\(P_{A}\)</span>, from present day to time <span class="math notranslate nohighlight">\(t\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\text{reconstructed\_position} = R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}\]</div>
+<p>Using the approach in <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-composing-finite-rotations"><span class="std std-ref">Composing finite rotations</span></a>, the desired reconstructed
+position can be written in terms of the actual reconstructed position:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{desired\_reconstructed\_position} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times \text{reconstructed\_position} \\
+                      &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}\end{split}\]</div>
+<p>Here <span class="math notranslate nohighlight">\(R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position})\)</span>
+is the rotation adjustment: the <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">rotation</span></code></a> from
+<span class="math notranslate nohighlight">\(\text{reconstructed\_position}\)</span> to <span class="math notranslate nohighlight">\(\text{desired\_reconstructed\_position}\)</span>. In
+pyGPlates it is <code class="docutils literal notranslate"><span class="pre">pygplates.FiniteRotation(reconstructed_position,</span> <span class="pre">desired_reconstructed_position)</span></code>.</p>
+<p>The composed rotation, from the present day position to the desired reconstructed position, is the
+adjusted <em>equivalent</em> rotation:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\text{desired\_reconstructed\_position} &amp;= R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} \times \text{present\_day\_position} \\
+R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M})\end{split}\]</div>
+<p>But the pole of a rotation feature is not an equivalent rotation. It is a <em>relative</em> rotation, of
+the moving plate relative to the fixed plate <span class="math notranslate nohighlight">\(P_{F}\)</span> of the rotation feature.</p>
+<p>So the adjusted equivalent rotation (relative to the anchor plate) is rewritten as an adjusted
+relative rotation (relative to the fixed plate), using the result
+<span class="math notranslate nohighlight">\(R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})\)</span>
+from <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-circuit-paths"><span class="std std-ref">Plate circuit paths</span></a>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \\
+R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})\end{split}\]</div>
+<p>Pre-multiplying both sides by <span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1}\)</span> gives:</p>
+<div class="math notranslate nohighlight">
+\[R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} = R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1} \times R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})\]</div>
+<p>This gives the <em>adjusted</em> relative rotation <span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted}\)</span>
+in terms of the <em>original</em> relative rotation <span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{F} \rightarrow P_{M})\)</span>.</p>
+<p>In pyGPlates this is written as follows, where <code class="docutils literal notranslate"><span class="pre">fixed_plate_frame</span></code> is
+<span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{A} \rightarrow P_{F})\)</span>, the equivalent total rotation of the fixed plate:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The rotation adjustment needs to be applied to the rotation feature (total reconstruction pole).</span>
+<span class="c1"># Since this is a rotation relative to the fixed plate of the rotation feature, and not the anchored plate,</span>
+<span class="c1"># we need to transform the adjustment appropriately before applying it.</span>
+<span class="n">fixed_plate_frame</span> <span class="o">=</span> <span class="n">rotation_model_before_adjustment</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">,</span> <span class="n">fixed_plate_id</span><span class="p">)</span>
+<span class="n">fixed_plate_frame_rotation_adjustment</span> <span class="o">=</span> <span class="n">fixed_plate_frame</span><span class="o">.</span><span class="n">get_inverse</span><span class="p">()</span> <span class="o">*</span> <span class="n">rotation_adjustment</span> <span class="o">*</span> <span class="n">fixed_plate_frame</span>
+<span class="n">adjusted_rotation</span> <span class="o">=</span> <span class="n">fixed_plate_frame_rotation_adjustment</span> <span class="o">*</span> <span class="n">rotation</span>
+</pre></div>
+</div>
+<p>A rotation sample usually has a description, which is the comment at the end of its line in the
+rotation file. If one of the enabled samples is at the reconstruction time then the script gets
+its description, so that it is not lost when the adjusted rotation replaces that sample.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If one of the enabled rotation samples matches the reconstruction time then</span>
 <span class="c1"># get its description so we don't clobber it when we write the adjusted rotation.</span>
 <span class="n">rotation_description</span> <span class="o">=</span> <span class="kc">None</span>
@@ -420,65 +463,10 @@ enables us to retain them when writing back out to the rotation file.</div>
         <span class="k">break</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">We obtain the original rotation (at the reconstruction time) from the rotation feature using <a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling.get_value" title="pygplates.GpmlIrregularSampling.get_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlIrregularSampling.get_value()</span></code></a>.</div>
-<div class="line">This will <a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation.interpolate" title="pygplates.FiniteRotation.interpolate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">interpolate</span></code></a> between the two nearest rotation time samples in the rotation sequence
-if the reconstruction time does not coincide with a rotation sample.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the finite rotation at the reconstruction time.</span>
-<span class="c1"># If the reconstruction time is between rotation samples then it will get interpolated.</span>
-<span class="n">rotation_property_value</span> <span class="o">=</span> <span class="n">rotation_sequence</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
-<span class="k">if</span> <span class="ow">not</span> <span class="n">rotation_property_value</span><span class="p">:</span>
-    <span class="k">continue</span>
-<span class="n">rotation</span> <span class="o">=</span> <span class="n">rotation_property_value</span><span class="o">.</span><span class="n">get_finite_rotation</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>Now that we have the original rotation from the rotation feature we need to calculate a rotation adjustment such that the new rotation
-will result in the <em>present day position</em> reconstructing to the <em>desired reconstructed position</em>.</p>
-<p>The reconstruction of the present day point position is given by the equation for the <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-equivalent-total-rotation"><span class="std std-ref">Equivalent total rotation</span></a>
-which shows the equivalent total rotation of  moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> (relative to anchored plate <span class="math notranslate nohighlight">\(P_{A}\)</span>) at time <span class="math notranslate nohighlight">\(t\)</span> (relative to present day) is:</p>
-<div class="math notranslate nohighlight">
-\[\text{reconstructed\_position} = R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}\]</div>
-<p>Using the approach in <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-composing-finite-rotations"><span class="std std-ref">Composing finite rotations</span></a> we write the <em>desired reconstructed position</em>
-in terms of the <em>actual reconstructed position</em>:</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}\text{desired\_reconstructed\_position} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times \text{reconstructed\_position} \\
-                      &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present\_day\_position}\end{split}\]</div>
-<p>…where the rotation adjustment <span class="math notranslate nohighlight">\(R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position})\)</span> represents the
-<a class="reference internal" href="../generated/pygplates.FiniteRotation.html#pygplates.FiniteRotation" title="pygplates.FiniteRotation"><code class="xref py py-class docutils literal notranslate"><span class="pre">rotation</span></code></a> from <span class="math notranslate nohighlight">\(\text{reconstructed\_position}\)</span> to <span class="math notranslate nohighlight">\(\text{desired\_reconstructed\_position}\)</span> which (in pyGPlates) is
-<code class="docutils literal notranslate"><span class="pre">pygplates.FiniteRotation(reconstructed_position,</span> <span class="pre">desired_reconstructed_position)</span></code>.</p>
-<p>The composed rotation from <em>present day position</em> to <em>desired reconstructed position</em> represents the adjusted <em>equivalent</em> rotation:</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}\text{desired\_reconstructed\_position} &amp;= R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} \times \text{present\_day\_position} \\
-R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M})\end{split}\]</div>
-<div class="line-block">
-<div class="line">However we want to adjust a total rotation pole in a rotation feature. But a rotation feature represents a <em>relative</em> rotation between a moving and fixed plate pair.</div>
-<div class="line">So we need to rewrite the adjusted <em>equivalent</em> rotation (which is relative to the anchored plate) as an adjusted <em>relative</em> rotation (relative to the fixed plate
-<span class="math notranslate nohighlight">\(P_{F}\)</span> of the rotation feature/pole) using the result <span class="math notranslate nohighlight">\(R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})\)</span>
-from <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-plate-circuit-paths"><span class="std std-ref">Plate circuit paths</span></a>:</div>
-</div>
-<div class="math notranslate nohighlight">
-\[\begin{split}R(0 \rightarrow t,P_{A} \rightarrow P_{M})_{adjusted} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \\
-R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} &amp;= R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})\end{split}\]</div>
-<p>Pre-multiplying both sides by <span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1}\)</span> gives:</p>
-<div class="math notranslate nohighlight">
-\[R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted} = R(0 \rightarrow t,P_{A} \rightarrow P_{F})^{-1} \times R(\text{reconstructed\_position} \rightarrow \text{desired\_reconstructed\_position}) \times R(0 \rightarrow t,P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t,P_{F} \rightarrow P_{M})\]</div>
-<p>…which represents the <em>adjusted</em> relative rotation <span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{F} \rightarrow P_{M})_{adjusted}\)</span>
-in terms of the <em>original</em> relative rotation <span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{F} \rightarrow P_{M})\)</span>.</p>
-<p>This is written in pyGPlates as:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The rotation adjustment needs to be applied to the rotation feature (total reconstruction pole).</span>
-<span class="c1"># Since this is a rotation relative to the fixed plate of the rotation feature, and not the anchored plate,</span>
-<span class="c1"># we need to transform the adjustment appropriately before applying it.</span>
-<span class="n">fixed_plate_frame</span> <span class="o">=</span> <span class="n">rotation_model_before_adjustment</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">,</span> <span class="n">fixed_plate_id</span><span class="p">)</span>
-<span class="n">fixed_plate_frame_rotation_adjustment</span> <span class="o">=</span> <span class="n">fixed_plate_frame</span><span class="o">.</span><span class="n">get_inverse</span><span class="p">()</span> <span class="o">*</span> <span class="n">rotation_adjustment</span> <span class="o">*</span> <span class="n">fixed_plate_frame</span>
-<span class="n">adjusted_rotation</span> <span class="o">=</span> <span class="n">fixed_plate_frame_rotation_adjustment</span> <span class="o">*</span> <span class="n">rotation</span>
-</pre></div>
-</div>
-<p>…where <code class="docutils literal notranslate"><span class="pre">fixed_plate_frame</span></code> represents <span class="math notranslate nohighlight">\(R(0 \rightarrow t,P_{A} \rightarrow P_{F})\)</span>.</p>
-<div class="line-block">
-<div class="line">Now that we have calculated the adjusted relative rotation we set it back in the rotation feature, at
-the reconstruction time, with the description we kept from any existing sample at that time.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.GpmlIrregularSampling.html#pygplates.GpmlIrregularSampling.set_value" title="pygplates.GpmlIrregularSampling.set_value"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GpmlIrregularSampling.set_value()</span></code></a> sets the adjusted relative rotation in the
+rotation feature, at the reconstruction time. If there is a sample at that time then it is
+modified, otherwise a new sample is inserted. Either way the sample gets the description found
+above (or none).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the adjusted rotation back into the rotation sequence.</span>
 <span class="n">rotation_sequence</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span>
     <span class="n">pygplates</span><span class="o">.</span><span class="n">GpmlFiniteRotation</span><span class="p">(</span><span class="n">adjusted_rotation</span><span class="p">),</span>
@@ -486,20 +474,23 @@ the reconstruction time, with the description we kept from any existing sample a
     <span class="n">rotation_description</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Our rotation adjustment may require crossovers to be re-synchronised. This can happen when
-a child plate (a plate that moves relative to the plate we made the adjustment on) crosses over
-from another plate (or to another plate) at the reconstruction time of the rotation adjustment (60Ma).
-The two crossover rotations will no longer match resulting in a jump in the reconstruction.</div>
-<div class="line">So we call <a class="reference internal" href="../generated/pygplates.synchronise_crossovers.html#pygplates.synchronise_crossovers" title="pygplates.synchronise_crossovers"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.synchronise_crossovers()</span></code></a> to synchronise all crossover rotations.</div>
-<div class="line">How each encountered crossover is synchronised needs to be specified. For example, do we synchronise
-the younger or older rotation sequence (younger/older relative to the crossover time) ?  Here we
-use the function <code class="docutils literal notranslate"><span class="pre">pygplates.CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys</span></code> to
-determine this for us. It will use <code class="docutils literal notranslate"><span class="pre">&#64;xo_</span></code> tags in the rotation file (pole comments/descriptions)
-to determine this and default to the <code class="docutils literal notranslate"><span class="pre">&#64;xo_ys</span></code> tag if not present for a particular crossover.
-See <a class="reference internal" href="../generated/pygplates.synchronise_crossovers.html#pygplates.synchronise_crossovers" title="pygplates.synchronise_crossovers"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.synchronise_crossovers()</span></code></a> for more details.</div>
-<div class="line">Note that this modifies the rotation features in-place.</div>
-</div>
+<p>The adjustment can put crossovers out of step. A crossover is a time at which a plate stops moving
+relative to one fixed plate and starts moving relative to another, so two of its rotation
+sequences meet there.</p>
+<p>The adjustment changes the motion of plate 801 around 60Ma, and with it the motion of every plate
+below plate 801 in the hierarchy (the plates that move relative to it, the plates that move
+relative to those, and so on). Suppose a plate crosses over, at a time the adjustment affects,
+between one of those plates and a plate elsewhere in the hierarchy. Its two rotation sequences no
+longer agree at the crossover time, so the plate would jump in the reconstruction.</p>
+<p>So the script calls <a class="reference internal" href="../generated/pygplates.synchronise_crossovers.html#pygplates.synchronise_crossovers" title="pygplates.synchronise_crossovers"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.synchronise_crossovers()</span></code></a>. It synchronises every crossover in
+the rotation features that is out of step by more than <em>crossover_threshold_degrees</em>, and
+modifies the rotation features in place.</p>
+<p>The function needs to know how to synchronise each crossover: by changing the rotation sequence
+that is younger than the crossover time, or the one that is older. Here that is decided by
+<code class="docutils literal notranslate"><span class="pre">pygplates.CrossoverTypeFunction.type_from_xo_tags_in_comment_default_xo_ys</span></code>. It looks for an
+<code class="docutils literal notranslate"><span class="pre">&#64;xo_</span></code> tag in the description of the crossover’s younger pole (its comment in the rotation
+file), and treats a crossover without a tag as if it had the <code class="docutils literal notranslate"><span class="pre">&#64;xo_ys</span></code> tag. See
+<a class="reference internal" href="../generated/pygplates.synchronise_crossovers.html#pygplates.synchronise_crossovers" title="pygplates.synchronise_crossovers"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.synchronise_crossovers()</span></code></a> for the tags and what they mean.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Our rotation adjustment may require crossovers to be re-synchronised.</span>
 <span class="k">if</span> <span class="ow">not</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">synchronise_crossovers</span><span class="p">(</span>
         <span class="n">rotation_features</span><span class="o">.</span><span class="n">get_features</span><span class="p">(),</span>
@@ -510,10 +501,9 @@ See <a class="reference internal" href="../generated/pygplates.synchronise_cross
     <span class="nb">print</span><span class="p">(</span><span class="s1">'Unable to synchronise all crossovers.'</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Now we reconstruct the point feature again, but this time using the modified rotation features.</div>
-<div class="line">This time the reconstructed point location should match the desired reconstructed point location.</div>
-</div>
+<p>The point feature is then reconstructed again, this time with a rotation model created from the
+modified rotation features. Its reconstructed position should now be the desired reconstructed
+position.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a new rotation model that uses the adjusted rotation features.</span>
 <span class="n">rotation_model_after_adjustment</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">RotationModel</span><span class="p">(</span><span class="n">rotation_features</span><span class="o">.</span><span class="n">get_features</span><span class="p">())</span>
 <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructSnapshot</span><span class="p">(</span><span class="n">point_feature</span><span class="p">,</span> <span class="n">rotation_model_after_adjustment</span><span class="p">,</span> <span class="n">reconstruction_time</span><span class="p">)</span>
@@ -523,11 +513,9 @@ See <a class="reference internal" href="../generated/pygplates.synchronise_cross
 <span class="nb">print</span><span class="p">(</span><span class="s1">'Reconstructed lat/lon position after adjustment (</span><span class="si">{:f}</span><span class="s1">, </span><span class="si">{:f}</span><span class="s1">)'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">reconstructed_position</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()))</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">The last step is to write the (modified) rotation features back to the files they came from.</div>
-<div class="line">This is made a little easier for us by using the ability of <a class="reference internal" href="../generated/pygplates.FeaturesFunctionArgument.html#pygplates.FeaturesFunctionArgument" title="pygplates.FeaturesFunctionArgument"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.FeaturesFunctionArgument</span></code></a>
-to list those feature collections that came from files as well as their associated filenames.</div>
-</div>
+<p>The last step is to write the modified rotation features back to the files they came from.
+<a class="reference internal" href="../generated/pygplates.FeaturesFunctionArgument.html#pygplates.FeaturesFunctionArgument.get_files" title="pygplates.FeaturesFunctionArgument.get_files"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.FeaturesFunctionArgument.get_files()</span></code></a> returns each feature collection that was
+loaded from a file, along with its filename.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write the (modified) rotation feature collections back to the files they came from.</span>
 <span class="n">rotation_files</span> <span class="o">=</span> <span class="n">rotation_features</span><span class="o">.</span><span class="n">get_files</span><span class="p">()</span>
 <span class="k">if</span> <span class="n">rotation_files</span><span class="p">:</span>

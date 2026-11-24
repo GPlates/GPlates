@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Split an isochron into ridge and transform segments &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Split an isochron into ridge and transform segments &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,14 +15,14 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_split_isochron_into_ridges_and_transforms.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Reference" href="../pygplates_reference.html" />
+    <link rel="next" title="Process times in parallel with multiprocessing" href="pygplates_process_times_in_parallel_with_multiprocessing.html" />
     <link rel="prev" title="Create conjugate isochrons from a ridge" href="pygplates_create_conjugate_isochrons_from_ridge.html" /> 
 </head>
 
@@ -68,6 +68,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -100,18 +101,19 @@
              
   <section id="split-an-isochron-into-ridge-and-transform-segments">
 <span id="pygplates-split-isochron-into-ridges-and-transforms"></span><h1>Split an isochron into ridge and transform segments<a class="headerlink" href="#split-an-isochron-into-ridge-and-transform-segments" title="Link to this heading"></a></h1>
-<p>This example splits the geometry of an isochron into ridge and transform segments based on each segment’s
-alignment with the isochron’s stage pole at its time of appearance.</p>
+<p>This example splits the geometry of an isochron into ridge segments and transform segments. Each
+segment is classified by how well it is aligned with the stage pole of the isochron at its time of
+appearance.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>This algorithm only works well under the following conditions:</p>
 <ul class="simple">
 <li><p>ridge segments are perpendicular to their spreading directions,</p></li>
-<li><p>isochron geometries are up-to-date with respect to the rotation model (ie, stage pole is in correct location relative to geometry),</p></li>
-<li><p>there are valid rotations (in rotation model) for each isochron at its birth time plus one (ie, 1My <em>prior</em> to isochron birth time),</p></li>
+<li><p>isochron geometries are up-to-date with respect to the rotation model (ie, the stage pole is in the correct location relative to the geometry),</p></li>
+<li><p>the rotation model has valid rotations for each isochron at its birth time plus one (ie, 1My <em>prior</em> to the isochron’s birth time),</p></li>
 <li><p>all isochrons have <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">conjugate</span> <span class="pre">plate</span> <span class="pre">IDs</span></code></a>.</p></li>
 </ul>
-<p>Note that you can tweak the <em>isochron_segment_deviation_in_radians</em> parameter. A 45 degree split may not always be appropriate.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">isochron_segment_deviation_in_radians</span></code> parameter can be adjusted. A 45 degree split is not always appropriate.</p>
 </div>
 <nav class="contents local" id="contents">
 <ul class="simple">
@@ -225,54 +227,49 @@ reconstruction plate ID, a conjugate plate ID and polyline geometry.</p>
 <span class="n">isochron_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'isochrons.gpml'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The time period and conjugate plate IDs are obtained using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_valid_time()</span></code></a>,
-<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_plate_id()</span></code></a> and <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_valid_time" title="pygplates.Feature.get_valid_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_valid_time()</span></code></a>, <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_reconstruction_plate_id()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_conjugate_plate_id" title="pygplates.Feature.get_conjugate_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_conjugate_plate_id()</span></code></a> return the valid time period, the plate ID and the
+conjugate plate ID of each isochron. The begin time of the valid time period is the birth time of
+the isochron (its time of appearance).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">begin_time</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">=</span> <span class="n">isochron_feature</span><span class="o">.</span><span class="n">get_valid_time</span><span class="p">()</span>
 <span class="n">plate_id</span> <span class="o">=</span> <span class="n">isochron_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
 <span class="n">conjugate_plate_id</span> <span class="o">=</span> <span class="n">isochron_feature</span><span class="o">.</span><span class="n">get_conjugate_plate_id</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">We calculate the stage rotation at the isochron birth time <code class="docutils literal notranslate"><span class="pre">begin_time</span></code> of the isochron’s
-plate <code class="docutils literal notranslate"><span class="pre">plate_id</span></code> relative to its conjugate plate <code class="docutils literal notranslate"><span class="pre">conjugate_plate_id</span></code> using
-<a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a>.</div>
-<div class="line">We also set the anchor plate to the isochron’s conjugate plate <code class="docutils literal notranslate"><span class="pre">conjugate_plate_id</span></code>. We could have
-set it to zero and it shouldn’t change the result. We set it to the isochron’s conjugate plate just
-in case there is no plate circuit path from plate zero to plate <code class="docutils literal notranslate"><span class="pre">conjugate_plate_id</span></code>.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel.get_rotation" title="pygplates.RotationModel.get_rotation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.RotationModel.get_rotation()</span></code></a> returns the stage rotation of the isochron’s plate
+<code class="docutils literal notranslate"><span class="pre">plate_id</span></code> relative to its conjugate plate <code class="docutils literal notranslate"><span class="pre">conjugate_plate_id</span></code>, at the isochron’s birth time.
+It is the rotation from <code class="docutils literal notranslate"><span class="pre">begin_time</span></code> to <code class="docutils literal notranslate"><span class="pre">begin_time</span> <span class="pre">+</span> <span class="pre">1</span></code>, which is 1My earlier.</p>
+<p>The anchor plate (the last argument) is also set to <code class="docutils literal notranslate"><span class="pre">conjugate_plate_id</span></code>. Leaving it as zero
+should give the same result. It is set to the conjugate plate in case there is no plate circuit
+path from plate zero to plate <code class="docutils literal notranslate"><span class="pre">conjugate_plate_id</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate the stage rotation at the isochron birth time of the isochron's plate relative</span>
 <span class="c1"># to its conjugate plate.</span>
 <span class="n">stage_rotation</span> <span class="o">=</span> <span class="n">rotation_model</span><span class="o">.</span><span class="n">get_rotation</span><span class="p">(</span>
         <span class="n">begin_time</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">plate_id</span><span class="p">,</span> <span class="n">begin_time</span><span class="p">,</span> <span class="n">conjugate_plate_id</span><span class="p">,</span> <span class="n">conjugate_plate_id</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">From the stage rotation we can get the stage pole which is equivalent to the location on the globe
-where the rotation axis is.</div>
-<div class="line">Since the isochron spreads about this rotation axis its ridge segments will generally be pointing
-towards the rotation axis and its transform segments will generally be perpendicular (ie, aligned
-with the direction of rotation).</div>
-</div>
+<p>The stage pole of the stage rotation is the location on the globe of its rotation axis.</p>
+<p>The isochron spreads about this rotation axis. So its ridge segments generally point towards the
+stage pole, and its transform segments are generally perpendicular to that (aligned with the
+direction of rotation).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">stage_pole</span><span class="p">,</span> <span class="n">stage_angle_radians</span> <span class="o">=</span> <span class="n">stage_rotation</span><span class="o">.</span><span class="n">get_euler_pole_and_angle</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Now that we have the stage pole location we need to move it into the same frame of reference as
-the geometry. Since we will be extracting the geometry directly from the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a>
-the geometry will be in present day coordinates.</div>
-<div class="line">To find out which reference frame the stage pole is in we start with the equation for
-<a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-relative-stage-rotation"><span class="std std-ref">Relative stage rotation</span></a> which shows the relative stage rotation of
-moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> relative to fixed plate <span class="math notranslate nohighlight">\(P_{F}\)</span>, and from time <span class="math notranslate nohighlight">\(t_{from}\)</span>
-to time <span class="math notranslate nohighlight">\(t_{to}\)</span> is:</div>
-</div>
+<p>The stage pole now has to be moved into the same frame of reference as the geometry. The geometry
+is taken directly from the <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature" title="pygplates.Feature"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Feature</span></code></a>, so it is at its present day position.</p>
+<p>To find the frame of reference of the stage pole, start with the equation for the
+<a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-relative-stage-rotation"><span class="std std-ref">relative stage rotation</span></a>. The relative stage
+rotation of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> relative to fixed plate <span class="math notranslate nohighlight">\(P_{F}\)</span>, from time
+<span class="math notranslate nohighlight">\(t_{from}\)</span> to time <span class="math notranslate nohighlight">\(t_{to}\)</span>, is:</p>
 <div class="math notranslate nohighlight">
 \[R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F})^{-1} \times R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{M})^{-1} \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{F})\]</div>
 <p>…where <span class="math notranslate nohighlight">\(P_{A}\)</span> is the anchor plate.</p>
-<p>Rearranging this gives us the rotation of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> from present day to time <span class="math notranslate nohighlight">\(t_{to}\)</span>:</p>
+<p>Rearranging this gives the rotation of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> from present day to time <span class="math notranslate nohighlight">\(t_{to}\)</span>:</p>
 <div class="math notranslate nohighlight">
 \[R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})\]</div>
-<p>Using the approach in <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-composing-finite-rotations"><span class="std std-ref">Composing finite rotations</span></a> we can write the transformation of a
-present day geometry on moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> to time <span class="math notranslate nohighlight">\(t_{to}\)</span> via the stage pole reference frame:</p>
+<p>Using the approach in <a class="reference internal" href="../primer/pygplates_primer_rotations.html#pygplates-primer-composing-finite-rotations"><span class="std std-ref">Composing finite rotations</span></a>, the transformation of a
+present day geometry on moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span> to time <span class="math notranslate nohighlight">\(t_{to}\)</span> can be written so that it
+goes via the frame of reference of the stage pole:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\text{geometry\_moving\_plate} &amp;= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times \text{geometry\_present\_day} \\
                       &amp;= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(0 \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry\_present\_day} \\
@@ -280,11 +277,13 @@ present day geometry on moving plate <span class="math notranslate nohighlight">
                       &amp;= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry\_stage\_pole\_frame} \\
 \text{geometry\_stage\_pole\_frame} &amp;= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry\_present\_day} \\
 \text{geometry\_present\_day} &amp;= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1} \times \text{geometry\_stage\_pole\_frame}\end{split}\]</div>
-<div class="line-block">
-<div class="line">The geometry <span class="math notranslate nohighlight">\(\text{geometry\_stage\_pole\_frame}\)</span> is in the stage pole frame because it gets rotated by the stage pole rotation <span class="math notranslate nohighlight">\(R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M})\)</span>.</div>
-<div class="line">As can be seen from the last equation above, the geometry in the stage pole frame can be reverse-rotated back to present day using <span class="math notranslate nohighlight">\(R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1}\)</span>.</div>
-<div class="line">And this is the same rotation we use to reverse-rotate the stage pole location to the present-day frame of the geometry of moving plate <span class="math notranslate nohighlight">\(P_{M}\)</span>:</div>
-</div>
+<p>The geometry <span class="math notranslate nohighlight">\(\text{geometry\_stage\_pole\_frame}\)</span> is in the frame of reference of the stage
+pole, because it is the geometry that the stage rotation
+<span class="math notranslate nohighlight">\(R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M})\)</span> rotates.</p>
+<p>The last equation shows that a geometry in the stage pole frame is rotated back to present day by
+<span class="math notranslate nohighlight">\(R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1}\)</span>.</p>
+<p>The same rotation moves the stage pole into the present day frame of the geometry of moving plate
+<span class="math notranslate nohighlight">\(P_{M}\)</span>. Here <span class="math notranslate nohighlight">\(t_{from}\)</span> is <code class="docutils literal notranslate"><span class="pre">begin_time</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Present day geometries need to be rotated, relative to the conjugate plate, to the 'from' time</span>
 <span class="c1"># of the above stage rotation (which is 'begin_time') so that they can then be rotated by</span>
 <span class="c1"># the stage rotation. To avoid having to rotate the present day geometries into this stage pole</span>
@@ -294,49 +293,48 @@ present day geometry on moving plate <span class="math notranslate nohighlight">
 <span class="n">stage_pole</span> <span class="o">=</span> <span class="n">stage_pole_reference_frame</span><span class="o">.</span><span class="n">get_inverse</span><span class="p">()</span> <span class="o">*</span> <span class="n">stage_pole</span>
 </pre></div>
 </div>
-<p>Next we iterate over the geometries of the isochron feature using <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a>.</p>
+<p>The script then iterates over the geometries of the isochron feature, which
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a> returns.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>We are iterating over the un-rotated (or present day) geometries as noted above.</p>
+<p>These are the un-rotated (present day) geometries, as noted above.</p>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A feature usually has a single geometry but it could have more - iterate over them all.</span>
 <span class="c1"># Note that we are iterating over the un-rotated (or present day) geometries as noted above.</span>
 <span class="k">for</span> <span class="n">isochron_geometry</span> <span class="ow">in</span> <span class="n">isochron_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
 </pre></div>
 </div>
-<p>We then iterate over the segments of the <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polyline</span></code></a> geometry
-of the isochron using <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_segments" title="pygplates.PolylineOnSphere.get_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere.get_segments()</span></code></a>.</p>
+<p><a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_segments" title="pygplates.PolylineOnSphere.get_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere.get_segments()</span></code></a> returns the segments of the
+<a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere" title="pygplates.PolylineOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">polyline</span></code></a> geometry of the isochron, and the script iterates
+over them.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over the segments of the current geometry.</span>
 <span class="c1"># Note that we're assuming the geometry is a polyline (or polygon) - otherwise this will raise an error.</span>
 <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="n">isochron_geometry</span><span class="o">.</span><span class="n">get_segments</span><span class="p">():</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">…this will actually raise an error if the isochron’s geometry is a <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a>
-or a <a class="reference internal" href="../generated/pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.MultiPointOnSphere</span></code></a> since those geometry types do not have segments.</div>
-<div class="line">We could protect against this by always converting to a polyline by writing
-<code class="docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere(isochron_geometry).get_segments()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">isochron_geometry.get_segments()</span></code>.</div>
-</div>
-<p>A zero-length <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> has not direction so we ignore them.</p>
+<p>This raises an error if the geometry of the isochron is a <a class="reference internal" href="../generated/pygplates.PointOnSphere.html#pygplates.PointOnSphere" title="pygplates.PointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.PointOnSphere</span></code></a> or a
+<a class="reference internal" href="../generated/pygplates.MultiPointOnSphere.html#pygplates.MultiPointOnSphere" title="pygplates.MultiPointOnSphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.MultiPointOnSphere</span></code></a>, since those geometry types have no segments.</p>
+<p>To protect against that, the geometry can always be converted to a polyline first, by writing
+<code class="docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere(isochron_geometry).get_segments()</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">isochron_geometry.get_segments()</span></code>.</p>
+<p>A zero-length <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">segment</span></code></a> has no direction, so it is skipped.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ignore zero length segments - they don't have a direction.</span>
 <span class="k">if</span> <span class="n">segment</span><span class="o">.</span><span class="n">is_zero_length</span><span class="p">():</span>
     <span class="k">continue</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">We choose the middle of a segment to test direction with.</div>
-<div class="line">The segment mid-point is found using <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_arc_point" title="pygplates.GreatCircleArc.get_arc_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GreatCircleArc.get_arc_point()</span></code></a> and
-the segment direction (tangential to the globe) at the midpoint is found using
-<a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_arc_direction" title="pygplates.GreatCircleArc.get_arc_direction"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GreatCircleArc.get_arc_direction()</span></code></a></div>
-</div>
+<p>The direction of a segment is tested at its midpoint. <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_arc_point" title="pygplates.GreatCircleArc.get_arc_point"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GreatCircleArc.get_arc_point()</span></code></a>
+returns the midpoint, and <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_arc_direction" title="pygplates.GreatCircleArc.get_arc_direction"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GreatCircleArc.get_arc_direction()</span></code></a> returns the direction
+of the segment there (which is tangential to the globe).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the point in the middle of the segment and its tangential direction.</span>
 <span class="n">segment_midpoint</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">get_arc_point</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
 <span class="n">segment_direction_at_midpoint</span> <span class="o">=</span> <span class="n">segment</span><span class="o">.</span><span class="n">get_arc_direction</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Next we calculate a <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">3D</span> <span class="pre">vector</span></code></a> from the segment mid-point towards
-the stage pole by creating an <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">arc</span></code></a> from the mid-point to the
-stage pole and then getting the direction of the arc using <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_arc_direction" title="pygplates.GreatCircleArc.get_arc_direction"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GreatCircleArc.get_arc_direction()</span></code></a>.</p>
+<p>The direction from the segment midpoint towards the stage pole is also needed. The script creates
+an <a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc" title="pygplates.GreatCircleArc"><code class="xref py py-class docutils literal notranslate"><span class="pre">arc</span></code></a> from the midpoint to the stage pole. Then
+<a class="reference internal" href="../generated/pygplates.GreatCircleArc.html#pygplates.GreatCircleArc.get_arc_direction" title="pygplates.GreatCircleArc.get_arc_direction"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GreatCircleArc.get_arc_direction()</span></code></a> returns the direction of that arc at its start,
+as a <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">3D</span> <span class="pre">vector</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the direction from the segment midpoint to the stage pole.</span>
 <span class="c1"># This is the tangential direction at the start of an arc from the segment</span>
 <span class="c1"># midpoint to the stage pole (the zero parameter indicates the arc start point</span>
@@ -345,21 +343,19 @@ stage pole and then getting the direction of the arc using <a class="reference i
         <span class="n">segment_midpoint</span><span class="p">,</span> <span class="n">stage_pole</span><span class="p">)</span><span class="o">.</span><span class="n">get_arc_direction</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Both vectors point <em>from</em> the segment’s mid-point, but in different directions.</div>
-<div class="line">The angle (in <em>radians</em>) between them is found using the <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D.angle_between" title="pygplates.Vector3D.angle_between"><code class="xref py py-meth docutils literal notranslate"><span class="pre">angle_between()</span></code></a> method of one of them.</div>
-</div>
+<p>Both vectors point <em>from</em> the midpoint of the segment, but in different directions. The
+<a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D.angle_between" title="pygplates.Vector3D.angle_between"><code class="xref py py-meth docutils literal notranslate"><span class="pre">angle_between()</span></code></a> method of one of them returns the angle
+between them, in <em>radians</em>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The angle that the segment deviates from the stage pole direction.</span>
 <span class="n">deviation_of_segment_direction_from_stage_pole</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">segment_direction_at_midpoint</span><span class="o">.</span><span class="n">angle_between</span><span class="p">(</span><span class="n">segment_to_stage_pole_direction</span><span class="p">))</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Our <em>isochron_segment_deviation_in_radians</em> parameter determines the maximum deviation angle at which
-at which the isochron segment switches from a ridge segment to a transform segment.</div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">math.pi</span> <span class="pre">-</span> <span class="pre">isochron_segment_deviation_in_radians</span></code> is the threshold used when the isochron direction
-is facing away from the stage pole (instead of towards it).</div>
-</div>
+<p><code class="docutils literal notranslate"><span class="pre">isochron_segment_deviation_in_radians</span></code> is the largest angle by which a ridge segment can deviate
+from the direction of the stage pole. A segment that deviates by more than that is a transform
+segment.</p>
+<p>The segment might point away from the stage pole instead of towards it. For that case the
+threshold is <code class="docutils literal notranslate"><span class="pre">math.pi</span> <span class="pre">-</span> <span class="pre">isochron_segment_deviation_in_radians</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># When comparing the deviation angle we need to consider the case where the two</span>
 <span class="c1"># direction vectors are aligned but pointing in opposite directions.</span>
 <span class="k">if</span> <span class="p">(</span><span class="n">deviation_of_segment_direction_from_stage_pole</span> <span class="o">&lt;</span> <span class="n">isochron_segment_deviation_in_radians</span> <span class="ow">or</span>
@@ -369,6 +365,7 @@ is facing away from the stage pole (instead of towards it).</div>
     <span class="n">transform_segments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">segment</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Finally, for each geometry, the script prints the numbers of ridge segments and transform segments.</p>
 </section>
 <section id="see-also">
 <h2><a class="toc-backref" href="#id4" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
@@ -387,7 +384,7 @@ is facing away from the stage pole (instead of towards it).</div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="pygplates_create_conjugate_isochrons_from_ridge.html" class="btn btn-neutral float-left" title="Create conjugate isochrons from a ridge" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../pygplates_reference.html" class="btn btn-neutral float-right" title="Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pygplates_process_times_in_parallel_with_multiprocessing.html" class="btn btn-neutral float-right" title="Process times in parallel with multiprocessing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

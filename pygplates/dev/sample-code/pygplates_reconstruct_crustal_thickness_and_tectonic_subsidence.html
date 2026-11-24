@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reconstruct crustal thickness and tectonic subsidence &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Reconstruct crustal thickness and tectonic subsidence &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,14 +15,14 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Calculate velocities by plate ID" href="pygplates_calculate_velocities_by_plate_id.html" />
-    <link rel="prev" title="Find gaps and overlaps in global topological boundaries" href="pygplates_detect_topology_gaps_and_overlaps.html" /> 
+    <link rel="prev" title="Reconstruct points step by step through topologies" href="pygplates_reconstruct_points_step_by_step_through_topologies.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -58,6 +58,8 @@
 <li class="toctree-l3"><a class="reference internal" href="pygplates_find_total_ridge_and_subduction_zone_lengths.html">Find the total length of ridges and subduction zones</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_query_network_triangulation_and_rigid_blocks.html">Query the triangulation and rigid blocks of deforming networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Reconstruct crustal thickness and tectonic subsidence</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sample-code">Sample code</a></li>
@@ -70,6 +72,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -102,10 +105,11 @@
              
   <section id="reconstruct-crustal-thickness-and-tectonic-subsidence">
 <span id="pygplates-reconstruct-crustal-thickness-and-tectonic-subsidence"></span><h1>Reconstruct crustal thickness and tectonic subsidence<a class="headerlink" href="#reconstruct-crustal-thickness-and-tectonic-subsidence" title="Link to this heading"></a></h1>
-<p>This example reconstructs (and deforms) points through topological plate polygons (and deforming networks) to find
-the following quantities over a time period spanning a past geological time to present day:</p>
+<p>This example reconstructs (and deforms) points through topological plate polygons and deforming
+networks, from a past geological time to present day. At each time along the way it finds:</p>
 <ul class="simple">
 <li><p>the reconstructed positions of the initial points,</p></li>
+<li><p>their crustal thicknesses,</p></li>
 <li><p>their crustal stretching factors, and</p></li>
 <li><p>their tectonic subsidences.</p></li>
 </ul>
@@ -120,8 +124,12 @@ the following quantities over a time period spanning a past geological time to p
 <section id="data-files">
 <h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
 <dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and/or deforming network features. The crustal stretching factor and
-tectonic subsidence of a point only change while it is inside a deforming network.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and deforming network features. There must be networks at 30Ma,
+since the initial points are chosen from them. Leave out inactive networks, such as those in
+<code class="docutils literal notranslate"><span class="pre">Zahirovic_etal_2022_Deforming_Networks_Inactive.gpml</span></code> in the GPlates sample data, so that
+the points are chosen from networks that are deforming. The crustal thickness, crustal
+stretching factor and tectonic subsidence of a point only change while it is inside the
+deforming region of a network.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological features.</p>
 </dd>
@@ -130,19 +138,30 @@ tectonic subsidence of a point only change while it is inside a deforming networ
 </section>
 <section id="sample-code">
 <h2><a class="toc-backref" href="#id2" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
 
 
-<span class="c1"># Create a topological model from our topological features (can be plate polygons and/or deforming networks)</span>
+<span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks)</span>
 <span class="c1"># and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 
-<span class="c1"># The initial points that we will reconstruct (and deform) through the topological model.</span>
-<span class="n">initial_points</span> <span class="o">=</span> <span class="p">[(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">130</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="o">-</span><span class="mi">110</span><span class="p">)]</span>
-
-<span class="c1"># Our reconstruction will span from 250Ma to present day in 1 Myr intervals.</span>
-<span class="n">initial_time</span> <span class="o">=</span> <span class="mi">250</span>
+<span class="c1"># Our reconstruction will span from 30Ma to present day in 1 Myr intervals.</span>
+<span class="n">initial_time</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="c1"># The time increment must divide 'initial_time' exactly ('reconstruct_geometry()' raises ValueError otherwise).</span>
 <span class="n">time_increment</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># The initial points that we will reconstruct (and deform) through the topological model.</span>
+<span class="c1"># They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from latitude -60 to 60</span>
+<span class="c1"># (south to north): the first four that are in the deforming region of a network at the initial time.</span>
+<span class="n">grid_points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">latitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="n">grid_point_locations</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">initial_time</span><span class="p">)</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">grid_points</span><span class="p">)</span>
+<span class="n">initial_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">point</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                  <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()][:</span><span class="mi">4</span><span class="p">]</span>
+
+<span class="c1"># Stop if there are none: there are no deforming networks at the initial time, or they are too small for the grid.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">initial_points</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No grid point is in the deforming region of a network at </span><span class="si">{</span><span class="n">initial_time</span><span class="si">}</span><span class="s1">Ma'</span><span class="p">)</span>
 
 <span class="c1"># Reconstruct the initial points through the topological model from initial time to present day.</span>
 <span class="n">reconstructed_time_span</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">reconstruct_geometry</span><span class="p">(</span>
@@ -150,44 +169,87 @@ tectonic subsidence of a point only change while it is inside a deforming networ
         <span class="n">initial_time</span><span class="p">,</span>
         <span class="n">time_increment</span><span class="o">=</span><span class="n">time_increment</span><span class="p">)</span>
 
-<span class="c1"># Get the history of reconstructed positions, crustal stretching and tectonic subsidence of the initial points from initial time to present day.</span>
+<span class="c1"># Get the history of reconstructed positions, crustal thickness, crustal stretching and tectonic subsidence</span>
+<span class="c1"># of the initial points from initial time to present day.</span>
 <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">initial_time</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="n">time_increment</span><span class="p">):</span>  <span class="c1"># initial_time, initial_time - time_increment, ..., 0</span>
     <span class="c1"># Reconstructed positions at the current 'time'.</span>
     <span class="n">reconstructed_points</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_geometry_points</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 
+    <span class="c1"># If every point has been deactivated by the current 'time' then there are no positions (or anything else) to get.</span>
+    <span class="k">if</span> <span class="n">reconstructed_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma: all points have been deactivated'</span><span class="p">)</span>
+        <span class="k">continue</span>
+
     <span class="c1"># In which resolved topologies are the reconstructed positions located at the current 'time'.</span>
     <span class="n">reconstructed_topology_point_locations</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_topology_point_locations</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 
-    <span class="c1"># The crustal stretching factor and tectonic subsidence (in kms) for each point at the current 'time'.</span>
-    <span class="n">reconstructed_scalar_values</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_scalar_values</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
-    <span class="n">reconstructed_crustal_stretching_factors</span> <span class="o">=</span> <span class="n">reconstructed_scalar_values</span><span class="p">[</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ScalarType</span><span class="o">.</span><span class="n">gpml_crustal_stretching_factor</span><span class="p">]</span>
-    <span class="n">reconstructed_tectonic_subsidences</span> <span class="o">=</span> <span class="n">reconstructed_scalar_values</span><span class="p">[</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ScalarType</span><span class="o">.</span><span class="n">gpml_tectonic_subsidence</span><span class="p">]</span>
+    <span class="c1"># The crustal thickness (in kms), crustal stretching factor and tectonic subsidence (in kms)</span>
+    <span class="c1"># for each point at the current 'time'.</span>
+    <span class="n">reconstructed_crustal_thicknesses</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_crustal_thicknesses</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">reconstructed_crustal_stretching_factors</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_crustal_stretching_factors</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">reconstructed_tectonic_subsidences</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_tectonic_subsidences</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Print the position, crustal thickness, crustal stretching factor and tectonic subsidence of each point.</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma:'</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">reconstructed_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reconstructed_points</span><span class="p">):</span>
+        <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="n">reconstructed_point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  lat: </span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, lon: </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, '</span>
+              <span class="sa">f</span><span class="s1">'crustal thickness: </span><span class="si">{</span><span class="n">reconstructed_crustal_thicknesses</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms, '</span>
+              <span class="sa">f</span><span class="s1">'crustal stretching factor: </span><span class="si">{</span><span class="n">reconstructed_crustal_stretching_factors</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, '</span>
+              <span class="sa">f</span><span class="s1">'tectonic subsidence: </span><span class="si">{</span><span class="n">reconstructed_tectonic_subsidences</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
 <section id="details">
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">First create a <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> from topological features and rotation files.</div>
-<div class="line">The topological features can be plate polygons and/or deforming networks.</div>
-<div class="line">More than one file containing topological features can be specified here, however we’re only specifying one file.</div>
-<div class="line">Also note that more than one rotation file (or even a single <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>) can be specified here,
-however we’re only specifying a single rotation file.</div>
-</div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from our topological features (can be plate polygons and/or deforming networks)</span>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features
+(plate polygons and deforming networks) and the rotation file.</p>
+<p>Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> can be given in place of the rotation files.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from our topological features (plate polygons and deforming networks)</span>
 <span class="c1"># and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Next we get our topological model to reconstruct (and deform) our <code class="docutils literal notranslate"><span class="pre">initial_points</span></code> from their position at <code class="docutils literal notranslate"><span class="pre">initial_time</span></code>
-to present day in 1 Myr intervals using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.reconstruct_geometry()</span></code></a>. This returns a
-<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan" title="pygplates.ReconstructedGeometryTimeSpan"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">geometry</span> <span class="pre">time</span> <span class="pre">span</span></code></a> containing a history of the reconstructed
-point positions and their associated scalar values, such as crustal stretching factor and tectonic subsidence, that change over time
-when passing through deforming networks. Since we did not specify the <em>initial_scalars</em> parameter, the initial crustal stretching factors
-and initial tectonic subsidences will have default values (of 1.0 and 0.0 respectively) indicating no initial stretching and sea-level subsidence.
-And since we did not specify the <em>deactivate_points</em> parameter, the default deactivation is used which matches GPlates
-(when using ‘reconstruct by topologies’ in a green visual layer). This means any initial points on oceanic crust could get subducted and
-disappear (get deactivated).</p>
+<p>The initial points are chosen from the networks, rather than written into the script, so that the
+example works with any topological features that have deforming networks at the initial time, 30Ma.</p>
+<p>They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from
+latitude -60 to 60. It stops at 60 degrees because, in the GPlates sample data, the grid points
+nearer the poles happen to fall where the networks barely deform at 30Ma, so they would make poor
+examples. The grid is scanned from south to north, and the first points found are used. In the
+GPlates sample data, three of the first four points found from north to south barely deform.</p>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a> resolves the topologies at the initial
+time, and <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">location</span></code></a> of each grid point in them. The first four
+points that <a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region()</span></code></a>
+places in the deforming region of a network are kept. If there are none, the script stops with an
+error message that says so.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The initial points that we will reconstruct (and deform) through the topological model.</span>
+<span class="c1"># They are chosen from a coarse grid of (latitude, longitude) points, 10 degrees apart, from latitude -60 to 60</span>
+<span class="c1"># (south to north): the first four that are in the deforming region of a network at the initial time.</span>
+<span class="n">grid_points</span> <span class="o">=</span> <span class="p">[(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">)</span> <span class="k">for</span> <span class="n">latitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">60</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="k">for</span> <span class="n">longitude</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
+<span class="n">grid_point_locations</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">initial_time</span><span class="p">)</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">grid_points</span><span class="p">)</span>
+<span class="n">initial_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">point</span> <span class="k">for</span> <span class="n">point</span><span class="p">,</span> <span class="n">point_location</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">grid_points</span><span class="p">,</span> <span class="n">grid_point_locations</span><span class="p">)</span>
+                  <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()][:</span><span class="mi">4</span><span class="p">]</span>
+
+<span class="c1"># Stop if there are none: there are no deforming networks at the initial time, or they are too small for the grid.</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">initial_points</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="sa">f</span><span class="s1">'No grid point is in the deforming region of a network at </span><span class="si">{</span><span class="n">initial_time</span><span class="si">}</span><span class="s1">Ma'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.reconstruct_geometry()</span></code></a> reconstructs (and deforms) the
+<code class="docutils literal notranslate"><span class="pre">initial_points</span></code> from their positions at <code class="docutils literal notranslate"><span class="pre">initial_time</span></code> to present day, in 1 Myr intervals.</p>
+<p>It returns a <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan" title="pygplates.ReconstructedGeometryTimeSpan"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">geometry</span> <span class="pre">time</span> <span class="pre">span</span></code></a>.
+This holds the history of the reconstructed point positions and of the scalar values at the points,
+such as crustal thickness and tectonic subsidence, which change while a point is passing through a
+deforming network.</p>
+<p>The <em>initial_scalars</em> argument is not given. So the initial crustal thicknesses, crustal stretching
+factors and tectonic subsidences have their default values, of 40 kms, 1.0 and 0.0. The last two
+mean that there is no stretching, and that the subsidence is at sea level, at the initial time.</p>
+<p>The <em>deactivate_points</em> argument is not given either. So points are deactivated in the default
+way, which is the way that GPlates does it (with <code class="docutils literal notranslate"><span class="pre">Reconstruct</span> <span class="pre">using</span> <span class="pre">topologies</span></code> in a green
+layer). This means an initial point on oceanic crust can be subducted and disappear (be
+deactivated).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstruct the initial points through the topological model from initial time to present day.</span>
 <span class="n">reconstructed_time_span</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">reconstruct_geometry</span><span class="p">(</span>
         <span class="n">initial_points</span><span class="p">,</span>
@@ -195,26 +257,57 @@ disappear (get deactivated).</p>
         <span class="n">time_increment</span><span class="o">=</span><span class="n">time_increment</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Get the reconstructed positions at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>. Note that some of the initial points can be deactivated, in which case the number
-of points in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code> could be less than <code class="docutils literal notranslate"><span class="pre">initial_points</span></code>.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_geometry_points" title="pygplates.ReconstructedGeometryTimeSpan.get_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_geometry_points()</span></code></a> returns the reconstructed
+positions at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>. Some of the initial points may have been deactivated by then,
+so <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code> can have fewer points than <code class="docutils literal notranslate"><span class="pre">initial_points</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reconstructed positions at the current 'time'.</span>
 <span class="n">reconstructed_points</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_geometry_points</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Query in which resolved topologies the reconstructed positions are located at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>.
-Note that the number of values in <code class="docutils literal notranslate"><span class="pre">reconstructed_topology_point_locations</span></code> matches the number of points in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>.</p>
+<p>If <em>all</em> the points have been deactivated by the current <code class="docutils literal notranslate"><span class="pre">time</span></code> then
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_geometry_points" title="pygplates.ReconstructedGeometryTimeSpan.get_geometry_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_geometry_points()</span></code></a> returns <code class="docutils literal notranslate"><span class="pre">None</span></code> rather than an empty list,
+and so do the other queries below. So the script tests for that first.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># If every point has been deactivated by the current 'time' then there are no positions (or anything else) to get.</span>
+<span class="k">if</span> <span class="n">reconstructed_points</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma: all points have been deactivated'</span><span class="p">)</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations" title="pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations()</span></code></a> returns the resolved
+topology that each reconstructed position is in at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>. It returns one
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">location</span></code></a> for each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>, in
+the same order. The script gets the locations but does not print them.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># In which resolved topologies are the reconstructed positions located at the current 'time'.</span>
 <span class="n">reconstructed_topology_point_locations</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_topology_point_locations</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Extract the reconstructed/deformed crustal stretching factor and tectonic subsidence (in kms) for each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>.
-Note that <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_scalar_values" title="pygplates.ReconstructedGeometryTimeSpan.get_scalar_values"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_scalar_values()</span></code></a> returns a Python dictionary mapping scalar types to their scalar values
-(unless a specific scalar type is specified). From that dictionary we then extract the crustal stretching factor and tectonic subsidence values.
-Also note that these builtin scalar types are always available (even when no initial scalar values are provided).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The crustal stretching factor and tectonic subsidence (in kms) for each point at the current 'time'.</span>
-<span class="n">reconstructed_scalar_values</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_scalar_values</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
-<span class="n">reconstructed_crustal_stretching_factors</span> <span class="o">=</span> <span class="n">reconstructed_scalar_values</span><span class="p">[</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ScalarType</span><span class="o">.</span><span class="n">gpml_crustal_stretching_factor</span><span class="p">]</span>
-<span class="n">reconstructed_tectonic_subsidences</span> <span class="o">=</span> <span class="n">reconstructed_scalar_values</span><span class="p">[</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ScalarType</span><span class="o">.</span><span class="n">gpml_tectonic_subsidence</span><span class="p">]</span>
+<p>The crustal thickness (in kms), the crustal stretching factor and the tectonic subsidence (in kms)
+of each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code> are returned by
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses" title="pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors" title="pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences" title="pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences()</span></code></a>.</p>
+<p>Each returns a list with one value for each point in <code class="docutils literal notranslate"><span class="pre">reconstructed_points</span></code>, in the same order.</p>
+<p>The crustal stretching factor is the initial crustal thickness divided by the crustal thickness at the current <code class="docutils literal notranslate"><span class="pre">time</span></code>.
+So crust that has been stretched to half its initial thickness has a crustal stretching factor of 2.</p>
+<p>These three scalar types are builtin, so they are always available (even when no initial scalar values are provided).
+Each method is the equivalent of calling <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_scalar_values" title="pygplates.ReconstructedGeometryTimeSpan.get_scalar_values"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_scalar_values()</span></code></a>
+with the corresponding <a class="reference internal" href="../generated/pygplates.ScalarType.html#pygplates.ScalarType" title="pygplates.ScalarType"><code class="xref py py-class docutils literal notranslate"><span class="pre">scalar</span> <span class="pre">type</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The crustal thickness (in kms), crustal stretching factor and tectonic subsidence (in kms)</span>
+<span class="c1"># for each point at the current 'time'.</span>
+<span class="n">reconstructed_crustal_thicknesses</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_crustal_thicknesses</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+<span class="n">reconstructed_crustal_stretching_factors</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_crustal_stretching_factors</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+<span class="n">reconstructed_tectonic_subsidences</span> <span class="o">=</span> <span class="n">reconstructed_time_span</span><span class="o">.</span><span class="n">get_tectonic_subsidences</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally the script prints the position, crustal thickness, crustal stretching factor and tectonic subsidence of each point.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Print the position, crustal thickness, crustal stretching factor and tectonic subsidence of each point.</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma:'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">reconstructed_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reconstructed_points</span><span class="p">):</span>
+    <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="n">reconstructed_point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  lat: </span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, lon: </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, '</span>
+          <span class="sa">f</span><span class="s1">'crustal thickness: </span><span class="si">{</span><span class="n">reconstructed_crustal_thicknesses</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms, '</span>
+          <span class="sa">f</span><span class="s1">'crustal stretching factor: </span><span class="si">{</span><span class="n">reconstructed_crustal_stretching_factors</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1">, '</span>
+          <span class="sa">f</span><span class="s1">'tectonic subsidence: </span><span class="si">{</span><span class="n">reconstructed_tectonic_subsidences</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -225,8 +318,11 @@ Also note that these builtin scalar types are always available (even when no ini
 <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-reconstructed-geometry-time-span-crustal-thickness-factors"><span class="std std-ref">Crustal thickness factors</span></a>,
 <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-reconstructed-geometry-time-span-tectonic-subsidence"><span class="std std-ref">Tectonic subsidence</span></a></p></li>
 <li><p>Reference: <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.reconstruct_geometry" title="pygplates.TopologicalModel.reconstruct_geometry"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.reconstruct_geometry()</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan" title="pygplates.ReconstructedGeometryTimeSpan"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses" title="pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors" title="pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences" title="pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences()</span></code></a>,
 <a class="reference internal" href="../generated/pygplates.ReconstructedGeometryTimeSpan.html#pygplates.ReconstructedGeometryTimeSpan.get_scalar_values" title="pygplates.ReconstructedGeometryTimeSpan.get_scalar_values"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedGeometryTimeSpan.get_scalar_values()</span></code></a>, <a class="reference internal" href="../generated/pygplates.ScalarType.html#pygplates.ScalarType" title="pygplates.ScalarType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ScalarType</span></code></a></p></li>
-<li><p>Sample code: <a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html#pygplates-reconstruct-strain-and-strain-rate"><span class="std std-ref">Reconstruct strain and strain rate</span></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html#pygplates-reconstruct-strain-and-strain-rate"><span class="std std-ref">Reconstruct strain and strain rate</span></a>, <a class="reference internal" href="pygplates_reconstruct_points_step_by_step_through_topologies.html#pygplates-reconstruct-points-step-by-step-through-topologies"><span class="std std-ref">Reconstruct points step by step through topologies</span></a></p></li>
 </ul>
 </section>
 </section>
@@ -235,7 +331,7 @@ Also note that these builtin scalar types are always available (even when no ini
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="pygplates_detect_topology_gaps_and_overlaps.html" class="btn btn-neutral float-left" title="Find gaps and overlaps in global topological boundaries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_reconstruct_points_step_by_step_through_topologies.html" class="btn btn-neutral float-left" title="Reconstruct points step by step through topologies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="pygplates_calculate_velocities_by_plate_id.html" class="btn btn-neutral float-right" title="Calculate velocities by plate ID" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

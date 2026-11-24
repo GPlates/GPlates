@@ -1,0 +1,571 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculate velocities in static polygons &mdash; pygplates 1.2.0.dev9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+    <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_calculate_velocities_in_static_polygons.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Calculate velocities of plate boundaries" href="pygplates_calculate_velocities_of_plate_boundaries.html" />
+    <link rel="prev" title="Calculate velocities in dynamic plates" href="pygplates_calculate_velocities_in_dynamic_plates.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Calculate velocities in static polygons</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#calculate-velocities-of-static-polygons-at-static-points">Calculate velocities of static polygons at static points</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#find-the-static-polygon-containing-each-static-point">Find the static polygon containing each static point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Calculate velocities in static polygons</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_calculate_velocities_in_static_polygons.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="calculate-velocities-in-static-polygons">
+<span id="pygplates-calculate-velocities-in-static-polygons"></span><h1>Calculate velocities in static polygons<a class="headerlink" href="#calculate-velocities-in-static-polygons" title="Link to this heading"></a></h1>
+<p>This example calculates velocities of plates at static point locations using static polygons, for a
+plate model that has no topologies.</p>
+<p>Static polygons are regular features with polygon geometries, each with the reconstruction plate ID
+of the plate it is part of. At each time they are reconstructed, and
+<a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_velocities" title="pygplates.ReconstructSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_velocities()</span></code></a> calculates the velocity at each point
+from the reconstructed polygon that contains it: the velocity of that polygon’s plate ID at the point.</p>
+<p>Unlike the <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">plates</span></code></a> in
+<a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a>, static polygons keep their present day
+shapes. Reconstructed to a past time they move apart, leaving gaps, and over each other. So a point
+can be outside all of them, or inside more than one.</p>
+<p>The first example calculates the velocities, and groups them by plate. The second finds only which
+polygon contains each point, and counts the points in gaps and in overlaps.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id3">Data files</a></p></li>
+<li><p><a class="reference internal" href="#calculate-velocities-of-static-polygons-at-static-points" id="id4">Calculate velocities of static polygons at static points</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sample-code" id="id5">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id6">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#find-the-static-polygon-containing-each-static-point" id="id7">Find the static polygon containing each static point</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id8">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id9">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id10">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<p>Both scripts read the same files:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the static polygons, since the
+velocity of a polygon comes from the motion of its plate ID.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">static_polygons.gpml</span></code></dt><dd><p>Static polygon features, each with a reconstruction plate ID and a valid time period. A polygon
+without a plate ID is given plate ID zero. Features with other geometry types can be in the
+file, but only polygons can contain points.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lat_lon_velocity_domain_9_18.gpml</span></code></dt><dd><p>The velocity domain: features whose geometries contain the static points at which velocities are
+calculated. Any geometry type will do, since only its points are used. Such a file can be
+generated in GPlates using the menu <code class="docutils literal notranslate"><span class="pre">Features</span> <span class="pre">&gt;</span> <span class="pre">Generate</span> <span class="pre">Velocity</span> <span class="pre">Domain</span> <span class="pre">Points</span></code>.</p>
+</dd>
+</dl>
+<p>Rotation files and static polygons are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="calculate-velocities-of-static-polygons-at-static-points">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Calculate velocities of static polygons at static points</a><a class="headerlink" href="#calculate-velocities-of-static-polygons-at-static-points" title="Link to this heading"></a></h2>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a reconstruct model from the static polygon features and rotation file(s).</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points at which velocities are calculated.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+
+    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+
+<span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
+<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">140</span>
+
+<span class="c1"># 'time' = 0, 1, 2, ... , 140</span>
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time: </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="c1"># Get a snapshot of our static polygons reconstructed to the current 'time'.</span>
+    <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Calculate a velocity at each domain point, from 'time + delta_time' to 'time',</span>
+    <span class="c1"># and find the reconstructed static polygon that contains each domain point.</span>
+    <span class="c1"># Both lists are in the same order as the domain points.</span>
+    <span class="n">domain_velocity_vectors</span><span class="p">,</span> <span class="n">domain_point_locations</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+            <span class="n">domain_points</span><span class="p">,</span>
+            <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">,</span>
+            <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># The domain points on each plate, and their velocity vectors.</span>
+    <span class="c1"># Each is a dictionary mapping a plate ID to a list.</span>
+    <span class="n">points_on_plates</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">velocity_vectors_on_plates</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">domain_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">domain_points</span><span class="p">):</span>
+        <span class="n">domain_velocity_vector</span> <span class="o">=</span> <span class="n">domain_velocity_vectors</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+        <span class="n">reconstructed_static_polygon</span> <span class="o">=</span> <span class="n">domain_point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># The point is outside all the reconstructed static polygons, so it has no velocity.</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># The plate that the point is on is the reconstruction plate ID of the static polygon containing it.</span>
+        <span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_static_polygon</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+
+        <span class="c1"># Add the point, and its velocity, to those of its plate.</span>
+        <span class="k">if</span> <span class="n">plate_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">points_on_plates</span><span class="p">:</span>
+            <span class="n">points_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">velocity_vectors_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">points_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_point</span><span class="p">)</span>
+        <span class="n">velocity_vectors_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_velocity_vector</span><span class="p">)</span>
+
+    <span class="c1"># All (magnitude, azimuth, inclination) velocities for the current time, grouped by plate ID.</span>
+    <span class="n">velocities_on_plates</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">plate_id</span><span class="p">,</span> <span class="n">points_on_plate</span> <span class="ow">in</span> <span class="n">points_on_plates</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+        <span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+        <span class="n">velocities_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+                <span class="n">points_on_plate</span><span class="p">,</span>
+                <span class="n">velocity_vectors_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">])</span>
+
+        <span class="c1"># The mean speed (velocity magnitude) of the points on the plate.</span>
+        <span class="n">mean_speed</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">magnitude</span><span class="p">,</span> <span class="n">azimuth</span><span class="p">,</span> <span class="n">inclination</span> <span class="ow">in</span> <span class="n">velocities_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">points_on_plate</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">points_on_plate</span><span class="p">)</span><span class="si">}</span><span class="s1"> points, mean speed </span><span class="si">{</span><span class="n">mean_speed</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1"> km/My'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>A <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstruct</span> <span class="pre">model</span></code></a> is created from the static polygon features and the rotation file.</p>
+<p>The static polygons are not reconstructed here. That happens at each time, in the loop below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a reconstruct model from the static polygon features and rotation file(s).</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The velocity domain features contain the static points at which velocities are calculated.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the features that contain the geometries we will calculate velocities at.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The points of all the velocity domain features are gathered into one list.</p>
+<p>A velocity domain feature usually has a single geometry, but <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a>
+handles any number, and <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a> reduces each geometry to its points.</p>
+<p>The points are not reconstructed. They stay where they are while the polygons move over them, so the
+same list is used at every time.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The static points at which velocities are calculated.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+
+    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>The velocities at each <code class="docutils literal notranslate"><span class="pre">time</span></code> are calculated over a 1My interval, from <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">+</span> <span class="pre">delta_time</span></code> to <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate velocities using a delta time interval of 1My.</span>
+<span class="n">delta_time</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>The static polygons are reconstructed to the current <code class="docutils literal notranslate"><span class="pre">time</span></code> using <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel.reconstruct_snapshot" title="pygplates.ReconstructModel.reconstruct_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructModel.reconstruct_snapshot()</span></code></a>.</p>
+<p>A polygon that does not exist at that time (according to its valid time period) is not reconstructed,
+so it contains no points.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a snapshot of our static polygons reconstructed to the current 'time'.</span>
+<span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_velocities" title="pygplates.ReconstructSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_velocities()</span></code></a> returns one velocity for each point, in the
+order of the points. Each is a <a class="reference internal" href="../generated/pygplates.Vector3D.html#pygplates.Vector3D" title="pygplates.Vector3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Vector3D</span></code></a> (a global cartesian velocity vector), in
+kilometres per million years unless the <em>velocity_units</em> argument says otherwise.</p>
+<p>With <em>return_point_locations</em> set to <code class="docutils literal notranslate"><span class="pre">True</span></code> it returns a 2-tuple: the list of velocities, and a
+list with the <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">static</span> <span class="pre">polygon</span></code></a> that
+contains each point. This is more efficient than getting the polygons in a separate call to
+<a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_locations" title="pygplates.ReconstructSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_locations()</span></code></a>.</p>
+<p>Where reconstructed polygons overlap, a point inside more than one gets the first that is found.
+By default they are searched from the highest plate ID to the lowest, so that the result does not
+depend on the order of the features in the file (the second example searches another way).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate a velocity at each domain point, from 'time + delta_time' to 'time',</span>
+<span class="c1"># and find the reconstructed static polygon that contains each domain point.</span>
+<span class="c1"># Both lists are in the same order as the domain points.</span>
+<span class="n">domain_velocity_vectors</span><span class="p">,</span> <span class="n">domain_point_locations</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_velocities</span><span class="p">(</span>
+        <span class="n">domain_points</span><span class="p">,</span>
+        <span class="n">velocity_delta_time</span><span class="o">=</span><span class="n">delta_time</span><span class="p">,</span>
+        <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each point is visited with its velocity and the polygon that contains it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">domain_point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">domain_points</span><span class="p">):</span>
+    <span class="n">domain_velocity_vector</span> <span class="o">=</span> <span class="n">domain_velocity_vectors</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">reconstructed_static_polygon</span> <span class="o">=</span> <span class="n">domain_point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A point that is outside all the reconstructed static polygons has no polygon and no velocity: both
+of its entries are <code class="docutils literal notranslate"><span class="pre">None</span></code>. It is skipped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># The point is outside all the reconstructed static polygons, so it has no velocity.</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>The plate that the point is on is read from the feature of the polygon
+(<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry.get_feature" title="pygplates.ReconstructedFeatureGeometry.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry.get_feature()</span></code></a>). It is this
+<a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_reconstruction_plate_id" title="pygplates.Feature.get_reconstruction_plate_id"><code class="xref py py-meth docutils literal notranslate"><span class="pre">reconstruction</span> <span class="pre">plate</span> <span class="pre">ID</span></code></a> whose motion gave the
+point its velocity.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The plate that the point is on is the reconstruction plate ID of the static polygon containing it.</span>
+<span class="n">plate_id</span> <span class="o">=</span> <span class="n">reconstructed_static_polygon</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The point and its velocity are appended to the lists of its plate.</p>
+<p>The lists are kept in two dictionaries whose keys are plate IDs. A plate is usually made of many
+static polygons, all with its plate ID and all moving together, so the points are grouped by plate
+rather than by polygon.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add the point, and its velocity, to those of its plate.</span>
+<span class="k">if</span> <span class="n">plate_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">points_on_plates</span><span class="p">:</span>
+    <span class="n">points_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">velocity_vectors_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">points_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_point</span><span class="p">)</span>
+<span class="n">velocity_vectors_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">domain_velocity_vector</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Iterating over a dictionary visits each plate that has a point on it once.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">plate_id</span><span class="p">,</span> <span class="n">points_on_plate</span> <span class="ow">in</span> <span class="n">points_on_plates</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</pre></div>
+</div>
+<p>The vectors are converted to local (magnitude, azimuth, inclination) tuples, one per point, using
+<a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination" title="pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination()</span></code></a>.</p>
+<p>Each point determines its own local coordinate system. For example, the velocity <em>azimuth</em> is
+relative to North as viewed from that point.</p>
+<p>No point here is without a velocity, since the points outside all the polygons were skipped. The
+conversion raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> if it is given <code class="docutils literal notranslate"><span class="pre">None</span></code> in place of a vector.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).</span>
+<span class="n">velocities_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">LocalCartesian</span><span class="o">.</span><span class="n">convert_from_geocentric_to_magnitude_azimuth_inclination</span><span class="p">(</span>
+        <span class="n">points_on_plate</span><span class="p">,</span>
+        <span class="n">velocity_vectors_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Finally the number of points on the plate is printed with their mean speed, which is the mean of the
+velocity magnitudes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The mean speed (velocity magnitude) of the points on the plate.</span>
+<span class="n">mean_speed</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">magnitude</span> <span class="k">for</span> <span class="n">magnitude</span><span class="p">,</span> <span class="n">azimuth</span><span class="p">,</span> <span class="n">inclination</span> <span class="ow">in</span> <span class="n">velocities_on_plates</span><span class="p">[</span><span class="n">plate_id</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">points_on_plate</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  Plate </span><span class="si">{</span><span class="n">plate_id</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">points_on_plate</span><span class="p">)</span><span class="si">}</span><span class="s1"> points, mean speed </span><span class="si">{</span><span class="n">mean_speed</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1"> km/My'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="find-the-static-polygon-containing-each-static-point">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Find the static polygon containing each static point</a><a class="headerlink" href="#find-the-static-polygon-containing-each-static-point" title="Link to this heading"></a></h2>
+<p>This example finds the reconstructed static polygon that contains each point, without calculating
+velocities. At each time it counts the points that are in a gap between the polygons, and the points
+that are inside more than one polygon, where the polygon found depends on the order of the search.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Sample code</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a reconstruct model from the static polygon features and rotation file(s).</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the static points.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+
+    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+
+<span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
+<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">140</span>
+
+<span class="c1"># 'time' = 0, 1, 2, ... , 140</span>
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+    <span class="c1"># Get a snapshot of our static polygons reconstructed to the current 'time'.</span>
+    <span class="n">reconstruct_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Find the reconstructed static polygon that contains each domain point (None if no polygon does).</span>
+    <span class="c1"># Where reconstructed polygons overlap, this finds the one with the highest plate ID.</span>
+    <span class="n">domain_point_locations</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">domain_points</span><span class="p">)</span>
+
+    <span class="c1"># Do the same but, where reconstructed polygons overlap, find the one with the largest area.</span>
+    <span class="n">domain_point_locations_by_area</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span>
+            <span class="n">domain_points</span><span class="p">,</span>
+            <span class="n">sort_reconstructed_static_polygons</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">SortReconstructedStaticPolygons</span><span class="o">.</span><span class="n">by_plate_area</span><span class="p">)</span>
+
+    <span class="c1"># The reconstructed static polygons themselves (of the static polygon features that exist at 'time').</span>
+    <span class="n">reconstructed_static_polygons</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">()</span>
+
+    <span class="c1"># Count the points that no polygon contains, the points that more than one polygon contains, and of</span>
+    <span class="c1"># those, the points for which the two searches find different polygons.</span>
+    <span class="n">num_points_outside_polygons</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_points_in_overlapping_polygons</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_points_depending_on_search_order</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">domain_point</span><span class="p">,</span> <span class="n">reconstructed_static_polygon</span><span class="p">,</span> <span class="n">reconstructed_static_polygon_by_area</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">domain_points</span><span class="p">,</span> <span class="n">domain_point_locations</span><span class="p">,</span> <span class="n">domain_point_locations_by_area</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">num_points_outside_polygons</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># The number of reconstructed polygons that contain the point.</span>
+        <span class="n">num_containing_polygons</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">reconstructed_polygon</span> <span class="ow">in</span> <span class="n">reconstructed_static_polygons</span><span class="p">:</span>
+            <span class="n">polygon</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">)</span> <span class="ow">and</span> <span class="n">polygon</span><span class="o">.</span><span class="n">is_point_in_polygon</span><span class="p">(</span><span class="n">domain_point</span><span class="p">):</span>
+                <span class="n">num_containing_polygons</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">num_containing_polygons</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">num_points_in_overlapping_polygons</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="o">!=</span> <span class="n">reconstructed_static_polygon_by_area</span><span class="p">:</span>
+                <span class="n">num_points_depending_on_search_order</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">: of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">domain_points</span><span class="p">)</span><span class="si">}</span><span class="s1"> points, </span><span class="si">{</span><span class="n">num_points_outside_polygons</span><span class="si">}</span><span class="s1"> are outside all polygons '</span>
+          <span class="sa">f</span><span class="s1">'and </span><span class="si">{</span><span class="n">num_points_in_overlapping_polygons</span><span class="si">}</span><span class="s1"> are inside more than one '</span>
+          <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">num_points_depending_on_search_order</span><span class="si">}</span><span class="s1"> of them in a different polygon when searched by area)'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Details</a><a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>The reconstruct model and the static points are the same as in the first example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a reconstruct model from the static polygon features and rotation file(s).</span>
+<span class="n">reconstruct_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'static_polygons.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the static points.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">velocity_domain_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points.</span>
+<span class="n">domain_points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">velocity_domain_feature</span> <span class="ow">in</span> <span class="n">velocity_domain_features</span><span class="p">:</span>
+
+    <span class="c1"># A velocity domain feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">velocity_domain_geometry</span> <span class="ow">in</span> <span class="n">velocity_domain_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">domain_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">velocity_domain_geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_locations" title="pygplates.ReconstructSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_locations()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">reconstructed</span> <span class="pre">static</span> <span class="pre">polygon</span></code></a> that contains each
+point, in the order of the points. The entry of a point that is outside all the polygons is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>Where reconstructed polygons overlap, it returns the first that is found, searching from the highest
+plate ID to the lowest.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find the reconstructed static polygon that contains each domain point (None if no polygon does).</span>
+<span class="c1"># Where reconstructed polygons overlap, this finds the one with the highest plate ID.</span>
+<span class="n">domain_point_locations</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">domain_points</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <em>sort_reconstructed_static_polygons</em> argument changes the order of the search (see
+<a class="reference internal" href="../generated/pygplates.SortReconstructedStaticPolygons.html#pygplates.SortReconstructedStaticPolygons" title="pygplates.SortReconstructedStaticPolygons"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.SortReconstructedStaticPolygons</span></code></a>). Here the polygons are searched from the
+largest area to the smallest.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_velocities" title="pygplates.ReconstructSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_velocities()</span></code></a> accepts the same argument.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Do the same but, where reconstructed polygons overlap, find the one with the largest area.</span>
+<span class="n">domain_point_locations_by_area</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span>
+        <span class="n">domain_points</span><span class="p">,</span>
+        <span class="n">sort_reconstructed_static_polygons</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">SortReconstructedStaticPolygons</span><span class="o">.</span><span class="n">by_plate_area</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A point with no polygon is in a gap between the reconstructed polygons.</p>
+<p><a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_locations" title="pygplates.ReconstructSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_locations()</span></code></a> finds only one polygon for each point, so
+it can’t tell whether a point is inside more than one. To count those points, the script tests each
+point against every reconstructed polygon itself, with
+<a class="reference internal" href="../generated/pygplates.PolygonOnSphere.html#pygplates.PolygonOnSphere.is_point_in_polygon" title="pygplates.PolygonOnSphere.is_point_in_polygon"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolygonOnSphere.is_point_in_polygon()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The reconstructed static polygons themselves (of the static polygon features that exist at 'time').</span>
+<span class="n">reconstructed_static_polygons</span> <span class="o">=</span> <span class="n">reconstruct_snapshot</span><span class="o">.</span><span class="n">get_reconstructed_geometries</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>For a point inside more than one polygon, the polygon found (and so its plate ID and its velocity)
+depends on the order of the search. Of those points, the script also counts the ones for which the
+two searches find different polygons. For the others, both searches happen to find the same one.</p>
+<p>A point on the boundary between two polygons is inside both, so points also count as inside more
+than one where polygons only share a boundary, as static polygons do at present day.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Count the points that no polygon contains, the points that more than one polygon contains, and of</span>
+<span class="c1"># those, the points for which the two searches find different polygons.</span>
+<span class="n">num_points_outside_polygons</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">num_points_in_overlapping_polygons</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">num_points_depending_on_search_order</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">domain_point</span><span class="p">,</span> <span class="n">reconstructed_static_polygon</span><span class="p">,</span> <span class="n">reconstructed_static_polygon_by_area</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">domain_points</span><span class="p">,</span> <span class="n">domain_point_locations</span><span class="p">,</span> <span class="n">domain_point_locations_by_area</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">num_points_outside_polygons</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">continue</span>
+
+    <span class="c1"># The number of reconstructed polygons that contain the point.</span>
+    <span class="n">num_containing_polygons</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">reconstructed_polygon</span> <span class="ow">in</span> <span class="n">reconstructed_static_polygons</span><span class="p">:</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="n">reconstructed_polygon</span><span class="o">.</span><span class="n">get_reconstructed_geometry</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">PolygonOnSphere</span><span class="p">)</span> <span class="ow">and</span> <span class="n">polygon</span><span class="o">.</span><span class="n">is_point_in_polygon</span><span class="p">(</span><span class="n">domain_point</span><span class="p">):</span>
+            <span class="n">num_containing_polygons</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">num_containing_polygons</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">num_points_in_overlapping_polygons</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">reconstructed_static_polygon</span> <span class="o">!=</span> <span class="n">reconstructed_static_polygon_by_area</span><span class="p">:</span>
+            <span class="n">num_points_depending_on_search_order</span> <span class="o">+=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id10" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructModel</span></code></a>, <a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_velocities" title="pygplates.ReconstructSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_velocities()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot.get_point_locations" title="pygplates.ReconstructSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot.get_point_locations()</span></code></a>, <a class="reference internal" href="../generated/pygplates.SortReconstructedStaticPolygons.html#pygplates.SortReconstructedStaticPolygons" title="pygplates.SortReconstructedStaticPolygons"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.SortReconstructedStaticPolygons</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a>, <a class="reference internal" href="../generated/pygplates.LocalCartesian.html#pygplates.LocalCartesian" title="pygplates.LocalCartesian"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.LocalCartesian</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a>,
+<a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html#pygplates-calculate-velocities-by-plate-id"><span class="std std-ref">Calculate velocities by plate ID</span></a>, <a class="reference internal" href="pygplates_partition_features_into_plates.html#pygplates-partition-features-into-plates"><span class="std std-ref">Partition features into plates</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_calculate_velocities_in_dynamic_plates.html" class="btn btn-neutral float-left" title="Calculate velocities in dynamic plates" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_calculate_velocities_of_plate_boundaries.html" class="btn btn-neutral float-right" title="Calculate velocities of plate boundaries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

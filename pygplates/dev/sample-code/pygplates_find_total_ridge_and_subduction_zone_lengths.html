@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Find the total length of ridges and subduction zones &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>Find the total length of ridges and subduction zones &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=ba81d210"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -65,12 +65,15 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_query_network_triangulation_and_rigid_blocks.html">Query the triangulation and rigid blocks of deforming networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
@@ -103,12 +106,12 @@
              
   <section id="find-the-total-length-of-ridges-and-subduction-zones">
 <span id="pygplates-find-total-ridge-and-subduction-zone-lengths"></span><h1>Find the total length of ridges and subduction zones<a class="headerlink" href="#find-the-total-length-of-ridges-and-subduction-zones" title="Link to this heading"></a></h1>
-<p>This example resolves topological plate polygons (and deforming networks) and determines:</p>
+<p>This example resolves topological plate polygons (and deforming networks) over a series of
+geological times. At each time it finds:</p>
 <ul class="simple">
 <li><p>the total length of all mid-ocean ridges, and</p></li>
-<li><p>the total length of all subduction zones</p></li>
+<li><p>the total length of all subduction zones.</p></li>
 </ul>
-<p>…over a series of geological times.</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#data-files" id="id1">Data files</a></p></li>
@@ -121,9 +124,10 @@
 <section id="data-files">
 <h2><a class="toc-backref" href="#id1" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
 <dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and/or deforming network features. Mid-ocean ridges and subduction
-zones are recognised by the feature type (<code class="docutils literal notranslate"><span class="pre">gpml_mid_ocean_ridge</span></code> or <code class="docutils literal notranslate"><span class="pre">gpml_subduction_zone</span></code>)
-of the boundary section features.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and/or deforming network features, and the boundary section features
+that they reference. Mid-ocean ridges and subduction zones are recognised by the feature type
+(<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType.gpml_mid_ocean_ridge" title="pygplates.FeatureType.gpml_mid_ocean_ridge"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_mid_ocean_ridge</span></code></a> or
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType.gpml_subduction_zone" title="pygplates.FeatureType.gpml_subduction_zone"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_subduction_zone</span></code></a>) of the boundary section features.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological features.</p>
 </dd>
@@ -176,7 +180,7 @@ of the boundary section features.</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">total_subduction_zone_length</span> <span class="o">+=</span> <span class="n">shared_sub_segments_length</span>
 
-    <span class="c1"># The lengths are for a unit-length sphere so we must multiple by the Earth's radius.</span>
+    <span class="c1"># The lengths are for a unit-radius sphere so we must multiply by the Earth's radius.</span>
     <span class="n">total_ridge_length_in_kms</span> <span class="o">=</span> <span class="n">total_ridge_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
     <span class="n">total_subduction_zone_length_in_kms</span> <span class="o">=</span> <span class="n">total_subduction_zone_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
 
@@ -187,13 +191,10 @@ of the boundary section features.</p>
 </section>
 <section id="details">
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h2>
-<div class="line-block">
-<div class="line">First create a <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> from topological features and rotation files.</div>
-<div class="line">The topological features can be plate polygons and/or deforming networks.</div>
-<div class="line">More than one file containing topological features can be specified here, however we’re only specifying one file.</div>
-<div class="line">Also note that more than one rotation file (or even a single <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a>) can be specified here,
-however we’re only specifying a single rotation file.</div>
-</div>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features
+and the rotation file. The topological features can be plate polygons, deforming networks or both.</p>
+<p>Here there is one file of topological features and one rotation file. More than one of each can be
+given, and a <a class="reference internal" href="../generated/pygplates.RotationModel.html#pygplates.RotationModel" title="pygplates.RotationModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.RotationModel</span></code></a> can be given in place of the rotation files.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
 <span class="c1"># and rotation file(s).</span>
 <span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
@@ -201,50 +202,43 @@ however we’re only specifying a single rotation file.</div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>We create our <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a> <strong>outside</strong> the time loop since that does not require <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalModel</span></code></a> is created <strong>outside</strong> the time loop, since it does not depend on <code class="docutils literal notranslate"><span class="pre">time</span></code>.</p>
 </div>
-<div class="line-block">
-<div class="line">Get a snapshot of our resolved topologies.</div>
-<div class="line">Here the topological features are resolved to the current <code class="docutils literal notranslate"><span class="pre">time</span></code>
-using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-func docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a>.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a> resolves the topological features at the
+current <code class="docutils literal notranslate"><span class="pre">time</span></code>, and returns the result as a <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot" title="pygplates.TopologicalSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot</span></code></a>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
 <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.</div>
-<div class="line">By default both <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalBoundary</span></code></a> (used for dynamic plate polygons) and
-<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork</span></code></a> (used for deforming regions) are listed in the boundary sections.</div>
-</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_resolved_topological_sections" title="pygplates.TopologicalSnapshot.get_resolved_topological_sections"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_resolved_topological_sections()</span></code></a> returns the boundary
+sections of the resolved topologies in the snapshot. By default these are the sections on the
+boundaries of both the resolved plate polygons (<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalBoundary</span></code></a>) and
+the resolved deforming networks (<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork</span></code></a>).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.</span>
 <span class="n">shared_boundary_sections</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_resolved_topological_sections</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">These <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection" title="pygplates.ResolvedTopologicalSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">boundary</span> <span class="pre">sections</span></code></a> are actually what
-we’re interested in because they contain no duplicate sub-segments.</div>
-<div class="line">If we were to iterate over the resolved topologies and <em>their</em> sub-segments, as we do in the
-<a class="reference internal" href="pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html#pygplates-find-average-area-and-subducting-boundary-proportion-of-topologies"><span class="std std-ref">Find average area and subducting boundary proportion of topologies</span></a> sample code,
-then those sub-segments would have been counted twice (since two adjacent plate polygons will both
-have sub-segments at the same shared boundary).</div>
-</div>
-<p>The <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_feature_type" title="pygplates.Feature.get_feature_type"><code class="xref py py-meth docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a> of each topological section is checked
-to see if it’s a ridge or subduction zone <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType" title="pygplates.FeatureType"><code class="xref py py-class docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a> and
-ignored if it’s neither.</p>
+<p>These <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection" title="pygplates.ResolvedTopologicalSection"><code class="xref py py-class docutils literal notranslate"><span class="pre">boundary</span> <span class="pre">sections</span></code></a> are used, rather than the
+resolved topologies, because they count each part of a boundary once.</p>
+<p>Two neighbouring plate polygons each have a sub-segment along the boundary that they share. So
+iterating over the resolved topologies and <em>their</em> sub-segments, as in
+<a class="reference internal" href="pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies.html#pygplates-find-average-area-and-subducting-boundary-proportion-of-topologies"><span class="std std-ref">Find average area and subducting boundary proportion of topologies</span></a>, would count
+the length of that boundary twice.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_feature_type" title="pygplates.Feature.get_feature_type"><code class="xref py py-meth docutils literal notranslate"><span class="pre">feature</span> <span class="pre">type</span></code></a> of each boundary section is compared
+with <a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType.gpml_subduction_zone" title="pygplates.FeatureType.gpml_subduction_zone"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_subduction_zone</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.FeatureType.html#pygplates.FeatureType.gpml_mid_ocean_ridge" title="pygplates.FeatureType.gpml_mid_ocean_ridge"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.FeatureType.gpml_mid_ocean_ridge</span></code></a>. A section that is neither is skipped.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Skip sections that are not ridges or subduction zones.</span>
 <span class="k">if</span> <span class="p">(</span><span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">!=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_subduction_zone</span> <span class="ow">and</span>
     <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_feature_type</span><span class="p">()</span> <span class="o">!=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">gpml_mid_ocean_ridge</span><span class="p">):</span>
     <span class="k">continue</span>
 </pre></div>
 </div>
-<div class="line-block">
-<div class="line">Not all parts of a topological section feature’s geometry contribute to the boundaries of topologies.</div>
-<div class="line">Little bits at the ends get clipped off.</div>
-<div class="line">The parts that do contribute can be found using <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection.get_shared_sub_segments" title="pygplates.ResolvedTopologicalSection.get_shared_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSection.get_shared_sub_segments()</span></code></a>.</div>
-<div class="line">So we iterate over these and accumulate the lengths of each sub-segment obtained with
-<a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere.get_arc_length()</span></code></a>.</div>
-</div>
+<p>Not all of the geometry of a boundary section feature is on the boundary of a topology. For
+example, the ends of a section that extend past its neighbouring sections are clipped off.</p>
+<p><a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSection.html#pygplates.ResolvedTopologicalSection.get_shared_sub_segments" title="pygplates.ResolvedTopologicalSection.get_shared_sub_segments"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalSection.get_shared_sub_segments()</span></code></a> returns the parts that are on
+a boundary. Each is a <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalSharedSubSegment.html#pygplates.ResolvedTopologicalSharedSubSegment" title="pygplates.ResolvedTopologicalSharedSubSegment"><code class="xref py py-class docutils literal notranslate"><span class="pre">shared</span> <span class="pre">sub-segment</span></code></a>
+whose geometry is a polyline, and <a class="reference internal" href="../generated/pygplates.PolylineOnSphere.html#pygplates.PolylineOnSphere.get_arc_length" title="pygplates.PolylineOnSphere.get_arc_length"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.PolylineOnSphere.get_arc_length()</span></code></a> returns its
+length. The script adds up these lengths.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Iterate over the shared sub-segments to accumulate their lengths.</span>
 <span class="n">shared_sub_segments_length</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="k">for</span> <span class="n">shared_sub_segment</span> <span class="ow">in</span> <span class="n">shared_boundary_section</span><span class="o">.</span><span class="n">get_shared_sub_segments</span><span class="p">():</span>
@@ -253,13 +247,15 @@ ignored if it’s neither.</p>
     <span class="n">shared_sub_segments_length</span> <span class="o">+=</span> <span class="n">shared_sub_segment</span><span class="o">.</span><span class="n">get_resolved_geometry</span><span class="p">()</span><span class="o">.</span><span class="n">get_arc_length</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The lengths are for a unit-length sphere so we must multiple by the Earth’s radius (see <a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth" title="pygplates.Earth"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.Earth</span></code></a>).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The lengths are for a unit-length sphere so we must multiple by the Earth's radius.</span>
+<p>The lengths are those of polylines on a sphere of radius one (so they are in radians). They are
+converted to kilometres by multiplying them by the Earth’s radius,
+<a class="reference internal" href="../generated/pygplates.Earth.html#pygplates.Earth.mean_radius_in_kms" title="pygplates.Earth.mean_radius_in_kms"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.Earth.mean_radius_in_kms</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The lengths are for a unit-radius sphere so we must multiply by the Earth's radius.</span>
 <span class="n">total_ridge_length_in_kms</span> <span class="o">=</span> <span class="n">total_ridge_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
 <span class="n">total_subduction_zone_length_in_kms</span> <span class="o">=</span> <span class="n">total_subduction_zone_length</span> <span class="o">*</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">Earth</span><span class="o">.</span><span class="n">mean_radius_in_kms</span>
 </pre></div>
 </div>
-<p>Finally the results for the current ‘time’ are printed.</p>
+<p>Finally the total lengths for the current <code class="docutils literal notranslate"><span class="pre">time</span></code> are printed.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'At time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma, total ridge length is </span><span class="si">{</span><span class="n">total_ridge_length_in_kms</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms '</span>
       <span class="sa">f</span><span class="s1">'and total subduction zone length is </span><span class="si">{</span><span class="n">total_subduction_zone_length_in_kms</span><span class="si">:</span><span class="s1">f</span><span class="si">}</span><span class="s1"> kms.'</span><span class="p">)</span>
 </pre></div>

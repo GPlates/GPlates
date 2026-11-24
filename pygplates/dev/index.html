@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PyGPlates 1.2.0.dev8 documentation &mdash; pygplates 1.2.0.dev8 documentation</title>
+  <title>PyGPlates 1.2.0.dev9 documentation &mdash; pygplates 1.2.0.dev9 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=18a0d069" />
@@ -15,7 +15,7 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/index.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=ba81d210"></script>
+      <script src="_static/documentation_options.js?v=1ef95609"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
@@ -65,7 +65,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">PyGPlates 1.2.0.dev8 documentation</li>
+      <li class="breadcrumb-item active">PyGPlates 1.2.0.dev9 documentation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -76,7 +76,7 @@
            <div itemprop="articleBody">
              
   <section id="pygplates-release-documentation">
-<span id="pygplates-index"></span><h1>PyGPlates 1.2.0.dev8 documentation<a class="headerlink" href="#pygplates-release-documentation" title="Link to this heading"></a></h1>
+<span id="pygplates-index"></span><h1>PyGPlates 1.2.0.dev9 documentation<a class="headerlink" href="#pygplates-release-documentation" title="Link to this heading"></a></h1>
 <p>PyGPlates enables access to <a class="reference external" href="http://www.gplates.org">GPlates</a>
 functionality via the <a class="reference external" href="http://www.python.org">Python</a> programming language.</p>
 <p>This documentation includes:</p>
@@ -143,6 +143,7 @@ functionality via the <a class="reference external" href="http://www.python.org"
 <li class="toctree-l1"><a class="reference internal" href="pygplates_sample_code.html">Sample code</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="pygplates_sample_code.html#load-and-save">Load and save</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_import_geometries_and_assign_plate_ids.html">Import geometries and assign plate IDs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_partition_features_into_plates.html">Partition features into plates</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_load_and_save_feature_collections.html">Load and save feature collections</a></li>
 </ul>
 </li>
@@ -169,26 +170,40 @@ functionality via the <a class="reference external" href="http://www.python.org"
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths.html">Find the total length of ridges and subduction zones</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges.html">Find divergence at subduction zones and convergence at ridges</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_detect_topology_gaps_and_overlaps.html">Find gaps and overlaps in global topological boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_query_network_triangulation_and_rigid_blocks.html">Query the triangulation and rigid blocks of deforming networks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_points_step_by_step_through_topologies.html">Reconstruct points step by step through topologies</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence.html">Reconstruct crustal thickness and tectonic subsidence</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html">Find plates and strain rates at static points</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="pygplates_sample_code.html#spatial-queries">Spatial queries</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_nearest_feature_to_a_point.html">Find nearest reconstructed feature to a point</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html">Find reconstructed features overlapping a polygon</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overlap_union_and_difference_of_polygons.html">Find the overlap, union and difference of polygons</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_find_overriding_plate_of_closest_subducting_line.html">Find overriding plate of closest subducting line</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="pygplates_sample_code.html#isochrons">Isochrons</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_create_conjugate_isochrons_from_ridge.html">Create conjugate isochrons from a ridge</a></li>
 <li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_split_isochron_into_ridges_and_transforms.html">Split an isochron into ridge and transform segments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pygplates_sample_code.html#parallel-processing">Parallel processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="sample-code/pygplates_process_times_in_parallel_with_multiprocessing.html">Process times in parallel with multiprocessing</a></li>
 </ul>
 </li>
 </ul>

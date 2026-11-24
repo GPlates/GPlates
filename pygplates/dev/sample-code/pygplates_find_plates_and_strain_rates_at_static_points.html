@@ -1,0 +1,607 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find plates and strain rates at static points &mdash; pygplates 1.2.0.dev9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=18a0d069" />
+
+  
+    <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/sample-code/pygplates_find_plates_and_strain_rates_at_static_points.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=1ef95609"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Reconstruct strain and strain rate" href="pygplates_reconstruct_strain_and_strain_rate.html" />
+    <link rel="prev" title="Calculate velocities of motion path and flowline seed points" href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pygplates
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_primer.html">Primer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../pygplates_sample_code.html">Sample code</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#load-and-save">Load and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#create-and-query-features">Create and query features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#reconstruct">Reconstruct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#rotations">Rotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#topologies-and-plate-boundaries">Topologies and plate boundaries</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../pygplates_sample_code.html#velocities-strain-and-net-rotation">Velocities, strain and net rotation</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_by_plate_id.html">Calculate velocities by plate ID</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html">Calculate velocities in dynamic plates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_in_static_polygons.html">Calculate velocities in static polygons</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_plate_boundaries.html">Calculate velocities of plate boundaries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html">Calculate velocities of motion path and flowline seed points</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Find plates and strain rates at static points</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-files">Data files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#find-the-plate-or-network-containing-each-static-point">Find the plate or network containing each static point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#calculate-strain-rates-at-static-points">Calculate strain rates at static points</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html">Reconstruct strain and strain rate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html">Sample strain rates inside the overriding plate at subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_find_distance_and_strain_rate_along_subduction_zones.html">Find the distance and strain rate along subduction zones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html">Clamp and smooth strain rates, and set rift parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation.html">Calculate net rotation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pygplates_calculate_net_rotation_from_point_samples.html">Calculate net rotation from point samples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#spatial-queries">Spatial queries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#isochrons">Isochrons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../pygplates_sample_code.html#parallel-processing">Parallel processing</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../pygplates_reference.html">Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pygplates</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../pygplates_sample_code.html">Sample code</a></li>
+      <li class="breadcrumb-item active">Find plates and strain rates at static points</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/sample-code/pygplates_find_plates_and_strain_rates_at_static_points.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="find-plates-and-strain-rates-at-static-points">
+<span id="pygplates-find-plates-and-strain-rates-at-static-points"></span><h1>Find plates and strain rates at static points<a class="headerlink" href="#find-plates-and-strain-rates-at-static-points" title="Link to this heading"></a></h1>
+<p>This example finds which topological plate or deforming network contains each of a set of static
+points, and the strain rate at each point, over a series of geological times.</p>
+<p>At each time the topological plates (and deforming networks) are resolved. Then
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a> finds the plate or network that contains
+each point, and <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_strain_rates" title="pygplates.TopologicalSnapshot.get_point_strain_rates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_strain_rates()</span></code></a> calculates the strain
+rate there.</p>
+<p>The points do not move. So this finds the plates that pass over fixed locations, and how fast the
+crust at those locations is deforming at each time. To follow points as they move with the plates,
+accumulating strain, see <a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html#pygplates-reconstruct-strain-and-strain-rate"><span class="std std-ref">Reconstruct strain and strain rate</span></a>.</p>
+<p><a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a> calculates velocities at static points in
+the same way.</p>
+<p>The first example finds where each point is: in a rigid plate, in the deforming region of a network,
+in a rigid block inside a network, or outside them all. The second calculates the strain rate at
+each point.</p>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#data-files" id="id3">Data files</a></p></li>
+<li><p><a class="reference internal" href="#find-the-plate-or-network-containing-each-static-point" id="id4">Find the plate or network containing each static point</a></p>
+<ul>
+<li><p><a class="reference internal" href="#sample-code" id="id5">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#details" id="id6">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#calculate-strain-rates-at-static-points" id="id7">Calculate strain rates at static points</a></p>
+<ul>
+<li><p><a class="reference internal" href="#id1" id="id8">Sample code</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id9">Details</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#see-also" id="id10">See also</a></p></li>
+</ul>
+</nav>
+<section id="data-files">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Data files</a><a class="headerlink" href="#data-files" title="Link to this heading"></a></h2>
+<p>Both scripts read the same files:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">rotations.rot</span></code></dt><dd><p>A rotation file. It must contain rotations for the plate IDs of the topological features, and
+of the features that the boundaries of the deforming networks are built from.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">topologies.gpml</span></code></dt><dd><p>Topological plate polygon and deforming network features. They are resolved at each time.
+A strain rate is only non-zero inside the deforming region of a network.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lat_lon_velocity_domain_9_18.gpml</span></code></dt><dd><p>Features whose geometries contain the static points. Any geometry type will do, since only its
+points are used. Such a file can be generated in GPlates using the menu
+<code class="docutils literal notranslate"><span class="pre">Features</span> <span class="pre">&gt;</span> <span class="pre">Generate</span> <span class="pre">Velocity</span> <span class="pre">Domain</span> <span class="pre">Points</span></code>.</p>
+</dd>
+</dl>
+<p>Rotation files and topological features are in the GPlates <a class="reference external" href="https://www.gplates.org/download/">sample data</a>.</p>
+</section>
+<section id="find-the-plate-or-network-containing-each-static-point">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Find the plate or network containing each static point</a><a class="headerlink" href="#find-the-plate-or-network-containing-each-static-point" title="Link to this heading"></a></h2>
+<section id="sample-code">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Sample code</a><a class="headerlink" href="#sample-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the static points.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">point_feature</span> <span class="ow">in</span> <span class="n">point_features</span><span class="p">:</span>
+
+    <span class="c1"># A feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">point_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+
+<span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
+<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">30</span>
+
+<span class="c1"># 'time' = 0, 1, 2, ... , 30</span>
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+    <span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Find the resolved plate (or deforming network) that contains each point.</span>
+    <span class="c1"># The locations are in the same order as the points.</span>
+    <span class="n">point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+    <span class="c1"># Do the same, but search the rigid plates only.</span>
+    <span class="c1"># For a point in a deforming network, this finds the rigid plate (if any) that the network overlays there.</span>
+    <span class="n">point_locations_in_plates</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span>
+            <span class="n">points</span><span class="p">,</span>
+            <span class="n">resolve_topology_types</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ResolveTopologyType</span><span class="o">.</span><span class="n">boundary</span><span class="p">)</span>
+
+    <span class="n">num_points_outside</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">num_points_in_plates</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">lines_for_points_in_networks</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+        <span class="n">point_location</span> <span class="o">=</span> <span class="n">point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">not_located_in_resolved_topology</span><span class="p">():</span>
+            <span class="c1"># The point is outside all the resolved plates (and deforming networks).</span>
+            <span class="n">num_points_outside</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">():</span>
+            <span class="c1"># The point is in a rigid plate (and not in a deforming network).</span>
+            <span class="n">num_points_in_plates</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Otherwise the point is in a deforming network:</span>
+        <span class="c1"># either in one of its interior rigid blocks or in its deforming region.</span>
+        <span class="n">rigid_block_location</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_rigid_block</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">rigid_block_location</span><span class="p">:</span>
+            <span class="n">resolved_network</span><span class="p">,</span> <span class="n">rigid_block</span> <span class="o">=</span> <span class="n">rigid_block_location</span>
+            <span class="n">rigid_block_plate_id</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+            <span class="n">where_in_network</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'a rigid block (plate </span><span class="si">{</span><span class="n">rigid_block_plate_id</span><span class="si">}</span><span class="s1">) of'</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">resolved_network</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()</span>
+            <span class="n">where_in_network</span> <span class="o">=</span> <span class="s1">'the deforming region of'</span>
+
+        <span class="c1"># The rigid plate that the network overlays at the point (None if there is no plate there).</span>
+        <span class="n">resolved_plate_beneath</span> <span class="o">=</span> <span class="n">point_locations_in_plates</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">resolved_plate_beneath</span><span class="p">:</span>
+            <span class="n">plate_beneath_feature</span> <span class="o">=</span> <span class="n">resolved_plate_beneath</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+            <span class="n">plate_beneath</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">'over plate </span><span class="si">{</span><span class="n">plate_beneath_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> '</span>
+                             <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">plate_beneath_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plate_beneath</span> <span class="o">=</span> <span class="s1">'over no plate'</span>
+
+        <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+        <span class="n">network_feature</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+        <span class="n">lines_for_points_in_networks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">'  (</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">) is in </span><span class="si">{</span><span class="n">where_in_network</span><span class="si">}</span><span class="s1"> network '</span>
+                <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">), </span><span class="si">{</span><span class="n">plate_beneath</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma: </span><span class="si">{</span><span class="n">num_points_in_plates</span><span class="si">}</span><span class="s1"> points are in rigid plates, '</span>
+          <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lines_for_points_in_networks</span><span class="p">)</span><span class="si">}</span><span class="s1"> in deforming networks and </span><span class="si">{</span><span class="n">num_points_outside</span><span class="si">}</span><span class="s1"> outside both'</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines_for_points_in_networks</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="details">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Details</a><a class="headerlink" href="#details" title="Link to this heading"></a></h3>
+<p>A <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel" title="pygplates.TopologicalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">topological</span> <span class="pre">model</span></code></a> is created from the topological features and the rotation file.</p>
+<p>The topological features are not resolved here. That happens at each time, in the loop below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The points of all the features are gathered into one list.</p>
+<p>A feature usually has a single geometry, but <a class="reference internal" href="../generated/pygplates.Feature.html#pygplates.Feature.get_geometries" title="pygplates.Feature.get_geometries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.Feature.get_geometries()</span></code></a> handles any
+number, and <a class="reference internal" href="../generated/pygplates.GeometryOnSphere.html#pygplates.GeometryOnSphere.get_points" title="pygplates.GeometryOnSphere.get_points"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.GeometryOnSphere.get_points()</span></code></a> reduces each geometry to its points.</p>
+<p>The points are not reconstructed. They stay where they are while the plates move over them, so the
+same list is used at every time.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the features that contain the static points.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">point_feature</span> <span class="ow">in</span> <span class="n">point_features</span><span class="p">:</span>
+
+    <span class="c1"># A feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">point_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>The topological features are resolved to the current <code class="docutils literal notranslate"><span class="pre">time</span></code> using <a class="reference internal" href="../generated/pygplates.TopologicalModel.html#pygplates.TopologicalModel.topological_snapshot" title="pygplates.TopologicalModel.topological_snapshot"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalModel.topological_snapshot()</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
+<span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">location</span></code></a> of each point in the resolved topologies, in the
+order of the points.</p>
+<p>Where a deforming network overlays a rigid plate, a point inside both is located in the network.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find the resolved plate (or deforming network) that contains each point.</span>
+<span class="c1"># The locations are in the same order as the points.</span>
+<span class="n">point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <em>resolve_topology_types</em> argument chooses what is searched: the rigid plates
+(<code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.boundary</span></code>), the deforming networks
+(<code class="docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType.network</span></code>), or both, which is the default.</p>
+<p>Here a second search looks at the rigid plates only. For a point in a network, it finds the plate
+that the network overlays there.</p>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_strain_rates" title="pygplates.TopologicalSnapshot.get_point_strain_rates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_strain_rates()</span></code></a> and
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_velocities" title="pygplates.TopologicalSnapshot.get_point_velocities"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_velocities()</span></code></a> accept the same argument.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Do the same, but search the rigid plates only.</span>
+<span class="c1"># For a point in a deforming network, this finds the rigid plate (if any) that the network overlays there.</span>
+<span class="n">point_locations_in_plates</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_locations</span><span class="p">(</span>
+        <span class="n">points</span><span class="p">,</span>
+        <span class="n">resolve_topology_types</span><span class="o">=</span><span class="n">pygplates</span><span class="o">.</span><span class="n">ResolveTopologyType</span><span class="o">.</span><span class="n">boundary</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each point is visited with its location.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+    <span class="n">point_location</span> <span class="o">=</span> <span class="n">point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.not_located_in_resolved_topology" title="pygplates.TopologyPointLocation.not_located_in_resolved_topology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.not_located_in_resolved_topology()</span></code></a> returns <code class="docutils literal notranslate"><span class="pre">True</span></code> for a point
+that is outside all the resolved plates and networks. Such points are only counted.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">not_located_in_resolved_topology</span><span class="p">():</span>
+    <span class="c1"># The point is outside all the resolved plates (and deforming networks).</span>
+    <span class="n">num_points_outside</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_boundary" title="pygplates.TopologyPointLocation.located_in_resolved_boundary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_boundary()</span></code></a> returns the
+<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalBoundary.html#pygplates.ResolvedTopologicalBoundary" title="pygplates.ResolvedTopologicalBoundary"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">boundary</span></code></a> (the rigid plate) that
+contains the point, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>It is <code class="docutils literal notranslate"><span class="pre">None</span></code> for a point in a network, even where the network overlays a plate. Points in rigid
+plates are only counted too.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">():</span>
+    <span class="c1"># The point is in a rigid plate (and not in a deforming network).</span>
+    <span class="n">num_points_in_plates</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>A point that remains is in a deforming network, and a point in a network is in one of two places.</p>
+<p>It can be in one of the network’s interior rigid blocks, which are polygons inside the network that
+do not deform. Then <a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block" title="pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_rigid_block()</span></code></a>
+returns a 2-tuple: the <a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork" title="pygplates.ResolvedTopologicalNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">resolved</span> <span class="pre">topological</span> <span class="pre">network</span></code></a>,
+and the rigid block as a <a class="reference internal" href="../generated/pygplates.ReconstructedFeatureGeometry.html#pygplates.ReconstructedFeatureGeometry" title="pygplates.ReconstructedFeatureGeometry"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructedFeatureGeometry</span></code></a>. The block moves with the
+reconstruction plate ID of its feature.</p>
+<p>Otherwise it is in the deforming region of the network. Then that method returns <code class="docutils literal notranslate"><span class="pre">None</span></code>, and
+<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region" title="pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network_deforming_region()</span></code></a> returns the
+resolved network.</p>
+<p>(<a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation.located_in_resolved_network" title="pygplates.TopologyPointLocation.located_in_resolved_network"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation.located_in_resolved_network()</span></code></a> returns the resolved network
+in both cases.)</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Otherwise the point is in a deforming network:</span>
+<span class="c1"># either in one of its interior rigid blocks or in its deforming region.</span>
+<span class="n">rigid_block_location</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_rigid_block</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">rigid_block_location</span><span class="p">:</span>
+    <span class="n">resolved_network</span><span class="p">,</span> <span class="n">rigid_block</span> <span class="o">=</span> <span class="n">rigid_block_location</span>
+    <span class="n">rigid_block_plate_id</span> <span class="o">=</span> <span class="n">rigid_block</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span>
+    <span class="n">where_in_network</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'a rigid block (plate </span><span class="si">{</span><span class="n">rigid_block_plate_id</span><span class="si">}</span><span class="s1">) of'</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">resolved_network</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()</span>
+    <span class="n">where_in_network</span> <span class="o">=</span> <span class="s1">'the deforming region of'</span>
+</pre></div>
+</div>
+<p>The rigid plate beneath the network at the point comes from the second list of locations, which
+searched the plates only.</p>
+<p>There might be none: nothing requires a network to lie over a plate.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The rigid plate that the network overlays at the point (None if there is no plate there).</span>
+<span class="n">resolved_plate_beneath</span> <span class="o">=</span> <span class="n">point_locations_in_plates</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span><span class="o">.</span><span class="n">located_in_resolved_boundary</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">resolved_plate_beneath</span><span class="p">:</span>
+    <span class="n">plate_beneath_feature</span> <span class="o">=</span> <span class="n">resolved_plate_beneath</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+    <span class="n">plate_beneath</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">'over plate </span><span class="si">{</span><span class="n">plate_beneath_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> '</span>
+                     <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">plate_beneath_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">)'</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">plate_beneath</span> <span class="o">=</span> <span class="s1">'over no plate'</span>
+</pre></div>
+</div>
+<p>A line is made for the point, with the plate ID and name of the network. They are read from its
+feature (<a class="reference internal" href="../generated/pygplates.ResolvedTopologicalNetwork.html#pygplates.ResolvedTopologicalNetwork.get_feature" title="pygplates.ResolvedTopologicalNetwork.get_feature"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.ResolvedTopologicalNetwork.get_feature()</span></code></a>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+<span class="n">network_feature</span> <span class="o">=</span> <span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span>
+<span class="n">lines_for_points_in_networks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s1">'  (</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">) is in </span><span class="si">{</span><span class="n">where_in_network</span><span class="si">}</span><span class="s1"> network '</span>
+        <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_reconstruction_plate_id</span><span class="p">()</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">network_feature</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">), </span><span class="si">{</span><span class="n">plate_beneath</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally the numbers of points are printed for the current <code class="docutils literal notranslate"><span class="pre">time</span></code>, followed by the line of each
+point that is in a network.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma: </span><span class="si">{</span><span class="n">num_points_in_plates</span><span class="si">}</span><span class="s1"> points are in rigid plates, '</span>
+      <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lines_for_points_in_networks</span><span class="p">)</span><span class="si">}</span><span class="s1"> in deforming networks and </span><span class="si">{</span><span class="n">num_points_outside</span><span class="si">}</span><span class="s1"> outside both'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines_for_points_in_networks</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="calculate-strain-rates-at-static-points">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Calculate strain rates at static points</a><a class="headerlink" href="#calculate-strain-rates-at-static-points" title="Link to this heading"></a></h2>
+<p>This example calculates the strain rate at each static point, and prints it for the points that are
+in the deforming region of a network.</p>
+<section id="id1">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink">Sample code</a><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
+
+
+<span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the static points.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">point_feature</span> <span class="ow">in</span> <span class="n">point_features</span><span class="p">:</span>
+
+    <span class="c1"># A feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">point_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+
+<span class="c1"># Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.</span>
+<span class="n">num_time_steps</span> <span class="o">=</span> <span class="mi">30</span>
+
+<span class="c1"># 'time' = 0, 1, 2, ... , 30</span>
+<span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_time_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Time </span><span class="si">{</span><span class="n">time</span><span class="si">}</span><span class="s1">Ma:'</span><span class="p">)</span>
+
+    <span class="c1"># Get a snapshot of our resolved topologies at the current 'time'.</span>
+    <span class="n">topological_snapshot</span> <span class="o">=</span> <span class="n">topological_model</span><span class="o">.</span><span class="n">topological_snapshot</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+    <span class="c1"># Calculate the strain rate at each point,</span>
+    <span class="c1"># and find the resolved plate (or deforming network) that contains each point.</span>
+    <span class="c1"># Both lists are in the same order as the points.</span>
+    <span class="n">point_strain_rates</span><span class="p">,</span> <span class="n">point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_strain_rates</span><span class="p">(</span>
+            <span class="n">points</span><span class="p">,</span>
+            <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+        <span class="n">point_strain_rate</span> <span class="o">=</span> <span class="n">point_strain_rates</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+        <span class="n">point_location</span> <span class="o">=</span> <span class="n">point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">point_strain_rate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># The point is outside all the resolved plates (and deforming networks), so it has no strain rate.</span>
+            <span class="k">continue</span>
+
+        <span class="n">resolved_network</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resolved_network</span><span class="p">:</span>
+            <span class="c1"># The point is in a rigid plate, or in a rigid block of a deforming network.</span>
+            <span class="c1"># Its strain rate is zero.</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># The rate of change of crustal area per unit area (in units of 1/second).</span>
+        <span class="c1"># It is positive where the crust is extending and negative where it is contracting.</span>
+        <span class="n">dilatation_rate</span> <span class="o">=</span> <span class="n">point_strain_rate</span><span class="o">.</span><span class="n">get_dilatation_rate</span><span class="p">()</span>
+        <span class="c1"># The magnitude of the strain rate (in units of 1/second), including both its normal and shear components.</span>
+        <span class="n">total_strain_rate</span> <span class="o">=</span> <span class="n">point_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span>
+
+        <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  (</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">) in "</span><span class="si">{</span><span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">": '</span>
+              <span class="sa">f</span><span class="s1">'dilatation rate </span><span class="si">{</span><span class="n">dilatation_rate</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s, total strain rate </span><span class="si">{</span><span class="n">total_strain_rate</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Details</a><a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>The topological model and the static points are the same as in the first example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a topological model from the topological plate polygon features (can also include deforming networks)</span>
+<span class="c1"># and rotation file(s).</span>
+<span class="n">topological_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">TopologicalModel</span><span class="p">(</span><span class="s1">'topologies.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
+
+<span class="c1"># Load the features that contain the static points.</span>
+<span class="c1"># These can be generated in GPlates via the menu 'Features &gt; Generate Velocity Domain Points'.</span>
+<span class="n">point_features</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">FeatureCollection</span><span class="p">(</span><span class="s1">'lat_lon_velocity_domain_9_18.gpml'</span><span class="p">)</span>
+
+<span class="c1"># The static points.</span>
+<span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">point_feature</span> <span class="ow">in</span> <span class="n">point_features</span><span class="p">:</span>
+
+    <span class="c1"># A feature usually has a single geometry but we'll assume it can be any number.</span>
+    <span class="c1"># Iterate over them all.</span>
+    <span class="k">for</span> <span class="n">geometry</span> <span class="ow">in</span> <span class="n">point_feature</span><span class="o">.</span><span class="n">get_geometries</span><span class="p">():</span>
+
+        <span class="n">points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">geometry</span><span class="o">.</span><span class="n">get_points</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_strain_rates" title="pygplates.TopologicalSnapshot.get_point_strain_rates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_strain_rates()</span></code></a> returns one
+<a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">strain</span> <span class="pre">rate</span></code></a> for each point, in the order of the points.</p>
+<p>With <em>return_point_locations</em> set to <code class="docutils literal notranslate"><span class="pre">True</span></code> it returns a 2-tuple: the list of strain rates, and a
+list with the <a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">location</span></code></a> of each point in the resolved
+topologies. This is more efficient than getting the locations in a separate call to
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a>.</p>
+<p>The strain rate is that of the snapshot’s time. It is calculated from the velocities of the network
+around the point, which are always calculated over a 1My time interval (the method has no velocity
+arguments).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate the strain rate at each point,</span>
+<span class="c1"># and find the resolved plate (or deforming network) that contains each point.</span>
+<span class="c1"># Both lists are in the same order as the points.</span>
+<span class="n">point_strain_rates</span><span class="p">,</span> <span class="n">point_locations</span> <span class="o">=</span> <span class="n">topological_snapshot</span><span class="o">.</span><span class="n">get_point_strain_rates</span><span class="p">(</span>
+        <span class="n">points</span><span class="p">,</span>
+        <span class="n">return_point_locations</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each point is visited with its strain rate and its location.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">point_index</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+    <span class="n">point_strain_rate</span> <span class="o">=</span> <span class="n">point_strain_rates</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+    <span class="n">point_location</span> <span class="o">=</span> <span class="n">point_locations</span><span class="p">[</span><span class="n">point_index</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A point that is outside all the resolved plates and networks has no strain rate: its entry in the
+list is <code class="docutils literal notranslate"><span class="pre">None</span></code>. It is skipped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">point_strain_rate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># The point is outside all the resolved plates (and deforming networks), so it has no strain rate.</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>A point in a rigid plate has a strain rate of zero (<a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.zero" title="pygplates.StrainRate.zero"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pygplates.StrainRate.zero</span></code></a>), since a
+rigid plate does not deform. So has a point in a rigid block of a network.</p>
+<p>Only a point in the deforming region of a network can have a strain rate that is not zero, so the
+other points are skipped.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">resolved_network</span> <span class="o">=</span> <span class="n">point_location</span><span class="o">.</span><span class="n">located_in_resolved_network_deforming_region</span><span class="p">()</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">resolved_network</span><span class="p">:</span>
+    <span class="c1"># The point is in a rigid plate, or in a rigid block of a deforming network.</span>
+    <span class="c1"># Its strain rate is zero.</span>
+    <span class="k">continue</span>
+</pre></div>
+</div>
+<p>Two quantities are taken from the strain rate. Both are in units of 1/second.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_dilatation_rate" title="pygplates.StrainRate.get_dilatation_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dilatation</span> <span class="pre">rate</span></code></a> is the rate of change of
+crustal area per unit area. It is positive where the crust is extending and negative where it is
+contracting.</p>
+<p>The <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate.get_total_strain_rate" title="pygplates.StrainRate.get_total_strain_rate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">total</span> <span class="pre">strain</span> <span class="pre">rate</span></code></a> is the magnitude of the
+strain rate. It includes both the normal (extension or compression) and shear components.</p>
+<p>See <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.StrainRate</span></code></a> for the other quantities, and for how they are defined.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The rate of change of crustal area per unit area (in units of 1/second).</span>
+<span class="c1"># It is positive where the crust is extending and negative where it is contracting.</span>
+<span class="n">dilatation_rate</span> <span class="o">=</span> <span class="n">point_strain_rate</span><span class="o">.</span><span class="n">get_dilatation_rate</span><span class="p">()</span>
+<span class="c1"># The magnitude of the strain rate (in units of 1/second), including both its normal and shear components.</span>
+<span class="n">total_strain_rate</span> <span class="o">=</span> <span class="n">point_strain_rate</span><span class="o">.</span><span class="n">get_total_strain_rate</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Finally the point is printed with the name of its network and the two quantities.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span> <span class="o">=</span> <span class="n">point</span><span class="o">.</span><span class="n">to_lat_lon</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'  (</span><span class="si">{</span><span class="n">latitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">longitude</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1">) in "</span><span class="si">{</span><span class="n">resolved_network</span><span class="o">.</span><span class="n">get_feature</span><span class="p">()</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span><span class="si">}</span><span class="s1">": '</span>
+      <span class="sa">f</span><span class="s1">'dilatation rate </span><span class="si">{</span><span class="n">dilatation_rate</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s, total strain rate </span><span class="si">{</span><span class="n">total_strain_rate</span><span class="si">:</span><span class="s1">.3e</span><span class="si">}</span><span class="s1"> 1/s'</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The deforming region of a network is divided into triangles, each with one strain rate.
+By default the strain rate at a point is smoothed, using the strain rates of the triangles around
+the point. See <a class="reference internal" href="pygplates_query_network_triangulation_and_rigid_blocks.html#pygplates-query-network-triangulation-and-rigid-blocks"><span class="std std-ref">Query the triangulation and rigid blocks of deforming networks</span></a> for the triangle that
+contains a point, and <a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#pygplates-clamp-and-smooth-strain-rates-and-set-rift-parameters"><span class="std std-ref">Clamp and smooth strain rates, and set rift parameters</span></a> for
+how to change the smoothing.</p>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2><a class="toc-backref" href="#id10" role="doc-backlink">See also</a><a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Primer: <a class="reference internal" href="../primer/pygplates_primer_topologies.html#pygplates-primer-topological-snapshot"><span class="std std-ref">Topological snapshot</span></a>, <a class="reference internal" href="../primer/pygplates_primer_deformation.html#pygplates-primer-topological-network"><span class="std std-ref">Topological network</span></a>,
+<a class="reference internal" href="../primer/pygplates_primer_deformation.html#pygplates-primer-rigid-blocks"><span class="std std-ref">Rigid blocks</span></a>, <a class="reference internal" href="../primer/pygplates_primer_deformation.html#pygplates-primer-strain-rates-in-triangulation"><span class="std std-ref">Strain rates in triangulation</span></a></p></li>
+<li><p>Reference: <a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_locations" title="pygplates.TopologicalSnapshot.get_point_locations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_locations()</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.TopologicalSnapshot.html#pygplates.TopologicalSnapshot.get_point_strain_rates" title="pygplates.TopologicalSnapshot.get_point_strain_rates"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pygplates.TopologicalSnapshot.get_point_strain_rates()</span></code></a>, <a class="reference internal" href="../generated/pygplates.TopologyPointLocation.html#pygplates.TopologyPointLocation" title="pygplates.TopologyPointLocation"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.TopologyPointLocation</span></code></a>,
+<a class="reference internal" href="../generated/pygplates.ResolveTopologyType.html#pygplates.ResolveTopologyType" title="pygplates.ResolveTopologyType"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ResolveTopologyType</span></code></a>, <a class="reference internal" href="../generated/pygplates.StrainRate.html#pygplates.StrainRate" title="pygplates.StrainRate"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.StrainRate</span></code></a></p></li>
+<li><p>Sample code: <a class="reference internal" href="pygplates_calculate_velocities_in_dynamic_plates.html#pygplates-calculate-velocities-in-dynamic-plates"><span class="std std-ref">Calculate velocities in dynamic plates</span></a>,
+<a class="reference internal" href="pygplates_reconstruct_strain_and_strain_rate.html#pygplates-reconstruct-strain-and-strain-rate"><span class="std std-ref">Reconstruct strain and strain rate</span></a>,
+<a class="reference internal" href="pygplates_query_network_triangulation_and_rigid_blocks.html#pygplates-query-network-triangulation-and-rigid-blocks"><span class="std std-ref">Query the triangulation and rigid blocks of deforming networks</span></a>,
+<a class="reference internal" href="pygplates_clamp_and_smooth_strain_rates_and_set_rift_parameters.html#pygplates-clamp-and-smooth-strain-rates-and-set-rift-parameters"><span class="std std-ref">Clamp and smooth strain rates, and set rift parameters</span></a>,
+<a class="reference internal" href="pygplates_sample_intra-plate_strain_rates_at_subduction_zones.html#pygplates-sample-intra-plate-strain-rates-at-subduction-zones"><span class="std std-ref">Sample strain rates inside the overriding plate at subduction zones</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pygplates_calculate_velocities_of_motion_path_and_flowline_seed_points.html" class="btn btn-neutral float-left" title="Calculate velocities of motion path and flowline seed points" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pygplates_reconstruct_strain_and_strain_rate.html" class="btn btn-neutral float-right" title="Reconstruct strain and strain rate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright (C) 2003-2026 The University of Sydney, Australia
+(C) 2004-2026 California Institute of Technology
+(C) 2007-2026 The Geological Survey of Norway
+.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
