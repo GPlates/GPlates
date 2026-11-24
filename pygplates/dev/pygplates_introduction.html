@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; pygplates 1.2.0.dev7 documentation</title>
+  <title>Introduction &mdash; pygplates 1.2.0.dev8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=18a0d069" />
@@ -15,14 +15,14 @@
     <link rel="canonical" href="https://gplates.github.io/GPlates/pygplates/stable/pygplates_introduction.html" />
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=529b71d2"></script>
+      <script src="_static/documentation_options.js?v=ba81d210"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Getting started" href="pygplates_getting_started.html" />
-    <link rel="prev" title="PyGPlates 1.2.0.dev7 documentation" href="index.html" /> 
+    <link rel="prev" title="PyGPlates 1.2.0.dev8 documentation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -87,8 +87,8 @@
              
   <section id="introduction">
 <span id="pygplates-introduction"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
-<p>This document introduces pyGPlates and covers some advantages over GPlates.
-It also gives an overview of embedded versus external pyGPlates.</p>
+<p>This document introduces pyGPlates and covers some advantages it has over GPlates.
+It also covers the two ways to run pyGPlates: in your own Python, or embedded in GPlates.</p>
 <nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#gplates-versus-pygplates" id="id2">GPlates versus pyGPlates</a></p></li>
@@ -103,26 +103,28 @@ It also gives an overview of embedded versus external pyGPlates.</p>
 </nav>
 <section id="gplates-versus-pygplates">
 <span id="pygplates-introduction-using-gplates-versus-pygplates"></span><h2><a class="toc-backref" href="#id2" role="doc-backlink">GPlates versus pyGPlates</a><a class="headerlink" href="#gplates-versus-pygplates" title="Link to this heading"></a></h2>
-<p><a class="reference external" href="http://www.gplates.org">GPlates</a> is desktop software for the interactive visualisation of plate-tectonics.</p>
-<p>It can be used to load geological data, reconstruct it to past geological times and visualise/export the results.</p>
-<p>There are two ways to interact with GPlates functionality:</p>
+<p><a class="reference external" href="https://www.gplates.org">GPlates</a> is desktop software for the interactive visualisation of plate tectonics.
+It can load geological data, reconstruct it to past geological times, and visualise or export the results.</p>
+<p>PyGPlates is a Python library that gives you access to GPlates functionality from the
+<a class="reference external" href="https://www.python.org">Python</a> programming language.</p>
+<p>So there are two ways to use GPlates functionality:</p>
 <ol class="arabic">
 <li><p><em>Using the graphical user interface (GUI)</em>:</p>
-<p>Here you control GPlates by interacting with a user interface (such as <em>menus and dialogs</em>).</p>
+<p>Here you control GPlates through its user interface (its <em>menus and dialogs</em>).</p>
 <p>For example, to export reconstructed data you:</p>
 <ul class="simple">
-<li><p>open up the Export dialog,</p></li>
+<li><p>open the Export dialog (<span class="menuselection">Reconstruction ‣ Export…</span>),</p></li>
 <li><p>select a range of geological times,</p></li>
 <li><p>select the type of export (eg, reconstructed geometries),</p></li>
 <li><p>select some export options, and</p></li>
 <li><p>export the reconstructed results to files.</p></li>
 </ul>
-<p>To do this you can download the <a class="reference external" href="http://www.gplates.org">GPlates desktop application (executable)</a>.</p>
+<p>To do this you download the <a class="reference external" href="https://www.gplates.org/download/">GPlates desktop application</a>.</p>
 </li>
 <li><p><em>Using Python</em>:</p>
-<p>Here you access GPlates functionality using the <a class="reference external" href="http://www.python.org">Python</a> programming language.</p>
-<p>For example, to export reconstructed data (the equivalent of the above GPlates example) you can write a
-small Python script using functions (and classes) provided by <a class="reference internal" href="pygplates_reference.html#pygplates-reference"><span class="std std-ref">pygplates</span></a>:</p>
+<p>Here you write a Python script that calls the functions and classes provided by
+<a class="reference internal" href="pygplates_reference.html#pygplates-reference"><span class="std std-ref">pygplates</span></a>.</p>
+<p>For example, this small script is the equivalent of the GPlates steps above:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the pyGPlates library.</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
 
@@ -130,7 +132,7 @@ small Python script using functions (and classes) provided by <a class="referenc
 <span class="n">reconstruct_coastlines_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
 
 <span class="c1"># Iterate from 200Ma to 0Ma inclusive in steps of 10My.</span>
-<span class="k">for</span> <span class="n">reconstruction_time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">10</span><span class="p">):</span>
+<span class="k">for</span> <span class="n">reconstruction_time</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">):</span>
 
     <span class="c1"># Reconstruct the coastlines to the current reconstruction time.</span>
     <span class="n">reconstruct_coastlines_snapshot</span> <span class="o">=</span> <span class="n">reconstruct_coastlines_model</span><span class="o">.</span><span class="n">reconstruct_snapshot</span><span class="p">(</span><span class="n">reconstruction_time</span><span class="p">)</span>
@@ -142,17 +144,18 @@ small Python script using functions (and classes) provided by <a class="referenc
     <span class="n">reconstruct_coastlines_snapshot</span><span class="o">.</span><span class="n">export_reconstructed_geometries</span><span class="p">(</span><span class="n">reconstructed_coastlines_filename</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>It writes one Shapefile for each reconstruction time, from <code class="docutils literal notranslate"><span class="pre">reconstructed_coastlines_200.00Ma.shp</span></code> to
+<code class="docutils literal notranslate"><span class="pre">reconstructed_coastlines_0.00Ma.shp</span></code>.</p>
 </li>
 </ol>
 </section>
 <section id="why-use-pygplates">
 <span id="pygplates-introduction-why-use-pygplates"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink">Why use pyGPlates ?</a><a class="headerlink" href="#why-use-pygplates" title="Link to this heading"></a></h2>
-<p>In general, writing a Python script affords a greater level of flexibility (compared to a
-graphical user interface) provided you are comfortable using Python as a programming language.
-Python libraries such as pyGPlates typically provide both high-level and low-level granularity
-in their functions and classes to enable this kind of flexibility.</p>
-<p>High-level functionality enables common tasks (such as reconstructing entire files of geological data)
-and is typically easier to use but more restrictive in what it can do.
+<p>In general, a Python script gives you more flexibility than a graphical user interface, provided you are
+comfortable programming in Python. To enable this flexibility, pyGPlates provides its functions and classes at both a
+high level and a low level.</p>
+<p>High-level functionality does a common task for you (such as reconstructing entire files of geological data).
+It is typically easier to use, but more restrictive in what it can do.
 For example, <a class="reference internal" href="generated/pygplates.ReconstructModel.html#pygplates.ReconstructModel" title="pygplates.ReconstructModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructModel</span></code></a> and <a class="reference internal" href="generated/pygplates.ReconstructSnapshot.html#pygplates.ReconstructSnapshot" title="pygplates.ReconstructSnapshot"><code class="xref py py-class docutils literal notranslate"><span class="pre">pygplates.ReconstructSnapshot</span></code></a> are high-level
 classes that can reconstruct geological data to a past geological time (such as 10 Ma):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reconstruct_coastlines_model</span> <span class="o">=</span> <span class="n">pygplates</span><span class="o">.</span><span class="n">ReconstructModel</span><span class="p">(</span><span class="s1">'coastlines.gpml'</span><span class="p">,</span> <span class="s1">'rotations.rot'</span><span class="p">)</span>
@@ -160,12 +163,12 @@ classes that can reconstruct geological data to a past geological time (such as 
 <span class="n">reconstruct_coastlines_snapshot</span><span class="o">.</span><span class="n">export_reconstructed_geometries</span><span class="p">(</span><span class="s1">'reconstructed_coastlines_10Ma.shp'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>…but they cannot restrict reconstructed data to a specific region on the globe.
-To achieve that, some more Python code needs to be written that accesses lower-level pyGPlates functionality
-as shown in the sample code <a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html#pygplates-find-features-overlapping-a-polygon"><span class="std std-ref">Find reconstructed features overlapping a polygon</span></a>.</p>
-<p>Also if GPlates is just one node in a research pipeline then it can be easier to process all nodes
-together in a single script (or collection of scripts) reducing the need to interact with a graphical
-user interface. In this case <a class="reference internal" href="#pygplates-introduction-using-pygplates-external"><span class="std std-ref">external pyGPlates</span></a>
+<p>However, they cannot restrict the reconstructed data to a specific region of the globe.
+To do that you write some more Python code, using lower-level pyGPlates functionality, as shown in the sample code
+<a class="reference internal" href="sample-code/pygplates_find_features_overlapping_a_polygon.html#pygplates-find-features-overlapping-a-polygon"><span class="std std-ref">Find reconstructed features overlapping a polygon</span></a>.</p>
+<p>A script also suits a research pipeline. If GPlates is just one node in a pipeline, it can be easier to process all
+the nodes together in a single script (or collection of scripts), since that reduces the need to interact with a
+graphical user interface. In this case <a class="reference internal" href="#pygplates-introduction-using-pygplates-external"><span class="std std-ref">external pyGPlates</span></a>
 can replace the GPlates desktop application as a node in the pipeline.</p>
 </section>
 <section id="external-versus-embedded-pygplates">
@@ -178,25 +181,23 @@ You can run it in either:</p>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>A Python <strong>interpreter</strong> executes source code written in the Python programming language.</p>
+<p>A Python <strong>interpreter</strong> is the program that executes source code written in the Python programming
+language.</p>
 </div>
 <section id="using-pygplates-with-an-external-python-interpreter">
 <span id="pygplates-introduction-using-pygplates-external"></span><h3><a class="toc-backref" href="#id5" role="doc-backlink">Using pyGPlates with an <em>external</em> Python interpreter</a><a class="headerlink" href="#using-pygplates-with-an-external-python-interpreter" title="Link to this heading"></a></h3>
-<p>In this scenario you are running a Python script using an <em>external</em> Python interpreter.</p>
+<p>Here you run a Python script with an <em>external</em> Python interpreter: your own Python, outside GPlates.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This does <strong>not</strong> require the <a class="reference external" href="http://www.gplates.org">GPlates desktop application (executable)</a>.</p>
+<p>This does <strong>not</strong> require the <a class="reference external" href="https://www.gplates.org/download/">GPlates desktop application</a>.</p>
 </div>
-<p>For example you might have a file called <code class="docutils literal notranslate"><span class="pre">my_python_script.py</span></code> that you execute on the terminal or shell command-line as:</p>
+<p>For example, you might have a file called <code class="docutils literal notranslate"><span class="pre">my_python_script.py</span></code> that you run in a terminal or command window with:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">my_python_script</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
-<p>…this starts up the Python interpreter and instructs it to execute Python source code found in
-the <code class="docutils literal notranslate"><span class="pre">my_python_script.py</span></code> script.</p>
-<div class="line-block">
-<div class="line">In your Python script you will need to import pyGPlates before you can access pyGPlates functionality.</div>
-<div class="line">For example a script that just prints the pyGPlates version would look like:</div>
-</div>
+<p>This starts the Python interpreter and tells it to execute the Python source code in <code class="docutils literal notranslate"><span class="pre">my_python_script.py</span></code>.</p>
+<p>Your script needs to import pyGPlates before it can use pyGPlates functionality.
+For example, a script that just prints the pyGPlates version looks like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pygplates</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s1">'Imported pyGPlates version: </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pygplates</span><span class="o">.</span><span class="n">Version</span><span class="o">.</span><span class="n">get_imported_version</span><span class="p">()))</span>
@@ -204,27 +205,27 @@ the <code class="docutils literal notranslate"><span class="pre">my_python_scrip
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You will need to <a class="reference internal" href="pygplates_getting_started.html#pygplates-getting-started-installation"><span class="std std-ref">install</span></a> pyGPlates so that the
-Python interpreter can find it when you execute <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">my_python_script.py</span></code>.</p>
+<p>You need to <a class="reference internal" href="pygplates_getting_started.html#pygplates-getting-started-installation"><span class="std std-ref">install</span></a> pyGPlates first, so that the
+Python interpreter can find it when you run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">my_python_script.py</span></code>.</p>
 </div>
 </section>
 <section id="using-pygplates-with-the-gplates-embedded-python-interpreter">
 <span id="pygplates-introduction-using-pygplates-embedded"></span><h3><a class="toc-backref" href="#id6" role="doc-backlink">Using pyGPlates with the GPlates <em>embedded</em> Python interpreter</a><a class="headerlink" href="#using-pygplates-with-the-gplates-embedded-python-interpreter" title="Link to this heading"></a></h3>
-<p>In this scenario you are running Python source code using a Python interpreter that is embedded inside
-the GPlates desktop application.</p>
-<p>In this case you have started the GPlates desktop application and opened its Python console
-(<span class="menuselection">Utilities ‣ Open Python Console</span>, or <kbd class="kbd docutils literal notranslate">F12</kbd>). There you can interactively enter
-Python source code, or run a Python script with the <span class="guilabel">Run Script…</span> button.
-Anything your code prints appears in the console.</p>
+<p>Here you run Python source code with the Python interpreter that is <em>embedded</em> inside the GPlates desktop
+application.</p>
+<p>To do this, start GPlates and open its Python console (<span class="menuselection">Utilities ‣ Open Python Console</span>, or
+<kbd class="kbd docutils literal notranslate">F12</kbd>). There you can enter Python source code interactively, or run a Python script with the
+<span class="guilabel">Run Script…</span> button. Anything your code prints appears in the console.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You do not need to <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">pygplates</span></code> here since it has already been imported/embedded
-into GPlates (when GPlates started up).</p>
+<p>You do not need to <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">pygplates</span></code> here, since GPlates has already imported it (when GPlates
+started up).</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This does <strong>not</strong> require <a class="reference internal" href="pygplates_getting_started.html#pygplates-getting-started-installation"><span class="std std-ref">installing</span></a> pyGPlates,
-since the GPlates desktop application contains its own pyGPlates.</p>
+since the GPlates desktop application contains its own pyGPlates. That pyGPlates was built with your version of
+GPlates, so it can be older than the one this documentation describes.</p>
 </div>
 </section>
 </section>
@@ -234,7 +235,7 @@ since the GPlates desktop application contains its own pyGPlates.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="PyGPlates 1.2.0.dev7 documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="PyGPlates 1.2.0.dev8 documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="pygplates_getting_started.html" class="btn btn-neutral float-right" title="Getting started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
