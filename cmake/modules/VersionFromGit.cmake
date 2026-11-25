@@ -74,6 +74,17 @@
 # and once one of those is made on a series branch cut later, every configure here would fail
 # (gplates_check_frozen_version says why).
 #
+# SERIES CUT RECORDS: the same commit that cuts a release series branch also records the
+# development branch commit it was cut from, 'set(RELEASE_SERIES_CUT_FROM <commit>)'. Without
+# it, a series' branch point can only be taken to be where HEAD's history and the series' tags
+# part - which, from a branch made off the development branch *before* the cut, is that branch's
+# own fork point. Such a branch looks exactly like the development branch after a cut whose
+# target was never moved on, and from the series' first tag it was refused. With the record, a
+# release tag whose recorded cut is not in HEAD's history is skipped: HEAD left the development
+# branch before that series existed, so its releases are not HEAD's business. The record is read
+# at the tag, so the answer depends only on the commit and the tags, like everything else here
+# (_gplates_version_series_cut has the rules).
+#
 
 if (CMAKE_SCRIPT_MODE_FILE)
 	# Only when run as 'cmake -P'; when included, the project has already set this.
@@ -338,7 +349,10 @@ endfunction()
 #     not by '1.1.1'. There is no such thing as skipping past a release that never happened.
 #     (And '1.1.0' only on the commit tagged as it - gplates_check_untagged_release.)
 #   - Off the line (the development branch, once the series branch cut from it has its first
-#     candidate; or a feature branch cut before then): the candidate's head counts as released
+#     candidate; or a branch made from it before its target moved on - one made before the cut
+#     sees no candidate at all, if the series records where it was cut, since a release of a
+#     series cut after HEAD's history left the development branch is skipped; see SERIES CUT
+#     RECORDS at the top of this file): the candidate's head counts as released
 #     for the no-skip rule, and *staying* on that head is refused. The 1.1.0 line has moved to
 #     the series branch, which is minting '1.1.0rc1.devN' there, and this line's nearest tag is
 #     now that candidate at the branch point - so its own count has restarted, and left on
@@ -426,8 +440,7 @@ function(gplates_check_release_target product target reference reference_tag dis
 					"branch cut from this line ${distance} commit(s) back. This line's development "
 					"number now counts from that branch point, so a target of '${_ref_head}' would "
 					"re-issue versions it has already used. Set the target in ${_where} to the release "
-					"after '${_ref_head}' - or, on a branch cut before the series branch was, merge the "
-					"development branch in, where the target has already moved on."
+					"after '${_ref_head}'."
 			)
 			set(${error_var} "${_msg}" PARENT_SCOPE)
 			return()
@@ -466,6 +479,63 @@ function(gplates_check_release_target product target reference reference_tag dis
 		)
 		set(${error_var} "${_msg}" PARENT_SCOPE)
 	endif()
+endfunction()
+
+
+#
+# The ways out of a gplates_check_release_target refusal whose reference is off HEAD's first-parent
+# line, to append to its message: <out_var> is a paragraph starting with a newline, or the empty
+# string if there is nothing to add. The arguments are gplates_check_release_target's, plus
+# 'series_line', which says whether HEAD is on a release series line (its release file freezes the
+# other product).
+#
+# That refusal says what to do on the line it was written for - the development branch, or a
+# release series branch - but the same refusal reaches a branch made from either of them before
+# its target moved on past the reference: one made from the development branch at the commit a
+# series branch was cut from (a series cut record cannot help it, since the cut is in its
+# history), or a patch branch overtaken by the next release on its series branch. The first's
+# way out is to merge the development branch in. The second's is to rebase onto the series
+# branch: merged in, a candidate stays off the patch branch's first-parent line, where it binds
+# the target exactly as before. And any of them can be built as it is by setting the version.
+#
+# A target that skips past the reference has nothing to do with any of this, so gets nothing.
+#
+function(gplates_off_line_refusal_advice product target reference reference_tag series_line out_var)
+	set(${out_var} "" PARENT_SCOPE)
+
+	gplates_split_version(${product} "${target}" _ok _target_base _target_dev)
+	if (NOT _ok)
+		return()
+	endif()
+	_gplates_version_base_rank(${product} "${_target_base}" _ok_t _target_head _t_rank _t_n _t_post)
+	_gplates_version_base_rank(${product} "${reference}" _ok_r _ref_head _r_rank _r_n _r_post)
+	if (NOT _ok_t OR NOT _ok_r OR _target_head VERSION_GREATER _ref_head)
+		return()
+	endif()
+
+	if (product STREQUAL "gplates")
+		set(_variable_name GPLATES_SEMANTIC_VERSION)
+	else()
+		set(_variable_name PYGPLATES_PEP440_VERSION)
+	endif()
+	if (series_line)
+		string(CONCAT _advice
+				"\nOn a branch made from a release series branch before '${reference_tag}' was "
+				"tagged on it, rebase onto the series branch instead (merged in, a candidate stays "
+				"off this branch's line, refused the same way).")
+	else()
+		string(CONCAT _advice
+				"\nOn a branch made from the development branch before its target moved on past "
+				"'${_ref_head}', merge the development branch in instead: that brings the target "
+				"it has moved on to.")
+	endif()
+	string(APPEND _advice
+			" To build this commit as it is, set the ${product} version explicitly in the "
+			"environment variable ${_variable_name} (a '-D${_variable_name}=<version>' define "
+			"works for the build tree it is given to, but not for the 'version-resolver-test' "
+			"registered there)."
+	)
+	set(${out_var} "${_advice}" PARENT_SCOPE)
 endfunction()
 
 
@@ -661,6 +731,98 @@ function(gplates_check_frozen_version product tag_prefix frozen_version tags_at_
 endfunction()
 
 
+#
+# Read a release series branch's record of the development branch commit it was cut from,
+# 'set(RELEASE_SERIES_CUT_FROM <commit>)', out of the content of a 'VersionRelease.cmake'. Sets
+# <out_var> to the commit as written, or to the empty string if there is no record. Only a 'set'
+# at a line start counts, as in gplates_check_anchor_tag, so that a copy of the line in a comment
+# is not read instead; and of several, the last, as CMake itself would take it.
+#
+function(gplates_read_series_cut release_file out_var)
+	set(${out_var} "" PARENT_SCOPE)
+	set(_ws "[ \t]*")
+	set(_name "RELEASE_SERIES_CUT_FROM")
+	set(_value "\"?([^\" \t\r\n);]+)\"?")
+	set(_record_set "[\r\n]${_ws}[sS][eE][tT]${_ws}\\(${_ws}${_name}[ \t]+${_value}${_ws}\\)")
+	string(PREPEND release_file "\n")
+	string(REGEX MATCHALL "${_record_set}" _records "${release_file}")
+	if (_records STREQUAL "")
+		return()
+	endif()
+	list(GET _records -1 _record)
+	if (_record MATCHES "${_record_set}")
+		set(${out_var} "${CMAKE_MATCH_1}" PARENT_SCOPE)
+	endif()
+endfunction()
+
+
+#
+# Set <out_var> TRUE if the content of a 'VersionRelease.cmake' freezes either product's version
+# (a 'set' of GPLATES_FROZEN_VERSION or PYGPLATES_FROZEN_VERSION at a line start), and FALSE if not.
+# Every commit on a release series branch freezes the product it does not release, and no commit
+# on the development branch freezes anything - which is what tells the two apart.
+#
+function(gplates_release_file_freezes release_file out_var)
+	set(_ws "[ \t]*")
+	set(_frozen_set "[\r\n]${_ws}[sS][eE][tT]${_ws}\\(${_ws}(PY)?GPLATES_FROZEN_VERSION[ \t]")
+	string(PREPEND release_file "\n")
+	if (release_file MATCHES "${_frozen_set}")
+		set(${out_var} TRUE PARENT_SCOPE)
+	else()
+		set(${out_var} FALSE PARENT_SCOPE)
+	endif()
+endfunction()
+
+
+#
+# Whether the content of a 'VersionRelease.cmake' could be a development branch commit's, which is
+# what a series cut record must name. Sets <out_var> to the empty string if it could, and otherwise
+# to why not, for a message: it freezes a version, which every commit of a series branch does from
+# the one that cuts it on; or a target is a pre-release (alpha, beta or candidate), which a series
+# branch sets - the first commit of one usually sets its first candidate - and the development
+# branch is not expected to. Nothing refuses a candidate target on the development branch, though
+# (only a candidate *tag* there), so the message says what to do if it did carry one: record the
+# last development branch commit before it, an older commit than the cut, which is harmless.
+# Of several 'set's of a target, the last is read, as CMake itself would take it.
+#
+function(gplates_release_file_not_development release_file out_var)
+	set(${out_var} "" PARENT_SCOPE)
+
+	gplates_release_file_freezes("${release_file}" _freezes)
+	if (_freezes)
+		set(${out_var} "it freezes a version" PARENT_SCOPE)
+		return()
+	endif()
+
+	set(_ws "[ \t]*")
+	set(_value "\"?([^\" \t\r\n);]+)\"?")
+	string(PREPEND release_file "\n")
+	foreach (_product IN ITEMS gplates pygplates)
+		string(TOUPPER "${_product}_RELEASE_VERSION" _name)
+		set(_target_set "[\r\n]${_ws}[sS][eE][tT]${_ws}\\(${_ws}${_name}[ \t]+${_value}${_ws}\\)")
+		# Of several, the last, as CMake itself would take it.
+		string(REGEX MATCHALL "${_target_set}" _sets "${release_file}")
+		if (_sets STREQUAL "")
+			continue()
+		endif()
+		list(GET _sets -1 _set)
+		if (NOT _set MATCHES "${_target_set}")
+			continue()
+		endif()
+		set(_target "${CMAKE_MATCH_1}")
+		_gplates_version_base_rank(${_product} "${_target}" _ok _head _rank _n _post)
+		if (_ok AND _rank LESS 4)
+			string(CONCAT _why
+					"its ${_product} target '${_target}' is a pre-release, which the development "
+					"branch is not expected to carry - if it did carry it, record the last "
+					"development branch commit before that target was set")
+			set(${out_var} "${_why}" PARENT_SCOPE)
+			return()
+		endif()
+	endforeach()
+endfunction()
+
+
 # Run git in the source tree, returning its exit code and stripped standard output.
 function(_gplates_version_git result_var output_var)
 	execute_process(
@@ -694,6 +856,105 @@ function(_gplates_version_check_anchor product tag_prefix anchor_tag)
 	if (NOT _error STREQUAL "")
 		message(FATAL_ERROR "${_error}")
 	endif()
+endfunction()
+
+
+#
+# The development branch commit a release series branch was cut from, as recorded in
+# 'VersionRelease.cmake' at <commit> on it (see SERIES CUT RECORDS at the top of this file). Sets
+# <cut_var> to the full commit hash if the record is valid, and otherwise to the empty string,
+# with <problem_var> saying what is wrong, for a message.
+#
+# A record is valid if it is:
+#
+#   - a full commit hash. An abbreviated one can become ambiguous as the repository grows, and a
+#     record that stopped resolving would change what an old commit resolves to;
+#   - in <commit>'s history;
+#   - a commit that could be the development branch's (gplates_release_file_not_development):
+#     one that freezes nothing and has no pre-release target. A series branch freezes the other
+#     product from the commit that cuts it on, so the likeliest slip - recording that commit
+#     itself instead of its parent - is caught.
+#
+# What remains is a commit of the development branch at or before the cut. One before it is
+# wrong but harmless: branches made from the development branch between it and the cut are
+# refused as they were without a record, and the development branch itself still has it in its
+# history, so it still gets every check it got before.
+#
+# The other slip is not harmless. If the freeze is forgotten in the commit that cuts the series
+# branch and added in a later one, the series commits before it freeze nothing either, and one of
+# them recorded skips the series' tags from the development branch, which then loses the check
+# that makes it move its target on. The pre-release test is what catches it, as long as that
+# commit set the series' first candidate, as the first commit of one usually does. A series
+# commit with a plain target that freezes nothing gets through - a series cut straight at a final
+# release with its freeze forgotten, or preparation commits made on the series branch before the
+# one that freezes - since nothing in the history tells it from a real cut. So guards 7 and 8 (in
+# _gplates_version_from_git) both say which commit to record - the one the series branch was
+# made from, not the parent of a later commit.
+#
+# The parts that depend only on the recorded commit (what its release file says, and whether it
+# exists) are remembered for the rest of the run: every release of a series records the same
+# commit.
+#
+function(_gplates_version_series_cut commit cut_var problem_var)
+	set(${cut_var} "" PARENT_SCOPE)
+	set(${problem_var} "" PARENT_SCOPE)
+
+	_gplates_version_git(_result _release_file show "${commit}:cmake/modules/VersionRelease.cmake")
+	if (NOT _result EQUAL 0)
+		set(_release_file "")
+	endif()
+	gplates_read_series_cut("${_release_file}" _cut)
+	if (_cut STREQUAL "")
+		set(${problem_var} "does not record the commit it was cut from" PARENT_SCOPE)
+		return()
+	endif()
+
+	set(_recorded "records the cut as '${_cut}'")
+	string(LENGTH "${_cut}" _length)
+	if (NOT _cut MATCHES "^[0-9a-fA-F]+$" OR NOT _length EQUAL 40)
+		set(${problem_var} "${_recorded}, which is not a full (40-digit) commit hash" PARENT_SCOPE)
+		return()
+	endif()
+	string(TOLOWER "${_cut}" _cut)
+
+	# What the recorded commit itself says - '' if it is fine, else the problem - worked out once.
+	get_property(_known GLOBAL PROPERTY "GPLATES_VERSION_SERIES_CUT_${_cut}" SET)
+	if (_known)
+		get_property(_cut_problem GLOBAL PROPERTY "GPLATES_VERSION_SERIES_CUT_${_cut}")
+	else()
+		set(_cut_problem "")
+		_gplates_version_git(_result _type cat-file -t "${_cut}")
+		if (NOT _result EQUAL 0 OR NOT _type STREQUAL "commit")
+			set(_cut_problem "${_recorded}, which is not a commit in this repository")
+		else()
+			# A commit from before 'VersionRelease.cmake' existed has no file to show, and
+			# freezes nothing.
+			_gplates_version_git(_result _cut_release_file
+					show "${_cut}:cmake/modules/VersionRelease.cmake")
+			if (_result EQUAL 0)
+				gplates_release_file_not_development("${_cut_release_file}" _why)
+				if (NOT _why STREQUAL "")
+					string(CONCAT _cut_problem
+							"${_recorded}, which looks like a commit on a release series branch "
+							"(${_why}), not the development branch commit the series was cut from")
+				endif()
+			endif()
+		endif()
+		set_property(GLOBAL PROPERTY "GPLATES_VERSION_SERIES_CUT_${_cut}" "${_cut_problem}")
+	endif()
+	if (NOT _cut_problem STREQUAL "")
+		set(${problem_var} "${_cut_problem}" PARENT_SCOPE)
+		return()
+	endif()
+
+	# Exit code 1 is 'not an ancestor'; anything else means git could not answer.
+	_gplates_version_git(_result _ignored merge-base --is-ancestor "${_cut}" "${commit}")
+	if (NOT _result EQUAL 0)
+		set(${problem_var} "${_recorded}, which is not in the history of this commit" PARENT_SCOPE)
+		return()
+	endif()
+
+	set(${cut_var} "${_cut}" PARENT_SCOPE)
 endfunction()
 
 
@@ -882,6 +1143,17 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 	set(_at_tag_name "")
 	set(_at_tag_dev 0)
 
+	# The tags HEAD does not have in its history, which are the only ones a series cut record can
+	# skip (see the loop), found once rather than asked of each tag.
+	_gplates_version_git(_result _not_merged
+			tag --no-merged "${_head_commit}" --list "${tag_prefix}*")
+	if (NOT _result EQUAL 0)
+		set(_not_merged "")
+	endif()
+	string(REGEX REPLACE "\r?\n" ";" _not_merged "${_not_merged}")
+	set(_skipped "")
+	set(_skipped_bases "")
+
 	foreach (_tag IN LISTS _tags)
 		string(REGEX REPLACE "^${tag_prefix}" "" _tag_version "${_tag}")
 		gplates_split_version(${product} "${_tag_version}" _ok _base _dev)
@@ -940,6 +1212,33 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 			endif()
 		endif()
 
+		# A release of a series cut from the development branch after HEAD's history left it is
+		# skipped (SERIES CUT RECORDS at the top of this file). The distance above would count
+		# from HEAD's own fork point instead, and make this line look like the development branch
+		# with its target left behind. Only a tag HEAD does not have in its history can be one; a
+		# tag without a valid record is treated as it always was.
+		if (_dev EQUAL 0 AND _tag IN_LIST _not_merged)
+			_gplates_version_series_cut("${_tag_commit}" _cut _ignored)
+			if (NOT _cut STREQUAL "")
+				# Once per recorded commit, since a series' releases all record the same one.
+				# Exit code 1 only: anything else means git could not answer.
+				if (NOT DEFINED _cut_outside_head_${_cut})
+					_gplates_version_git(_result _ignored
+							merge-base --is-ancestor "${_cut}" "${_head_commit}")
+					if (_result EQUAL 1)
+						set(_cut_outside_head_${_cut} TRUE)
+					else()
+						set(_cut_outside_head_${_cut} FALSE)
+					endif()
+				endif()
+				if (_cut_outside_head_${_cut})
+					list(APPEND _skipped "${_tag}")
+					list(APPEND _skipped_bases "${_base}")
+					continue()
+				endif()
+			endif()
+		endif()
+
 		# Track the nearest release, which the release-target checks below compare against.
 		if (_dev EQUAL 0)
 			set(_is_nearer FALSE)
@@ -985,6 +1284,21 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		return()
 	endif()
 	if (_best_distance LESS 0)
+		# Nothing to count from. Without a skipped tag, that is a commit older than every tag,
+		# and the file fallbacks have always answered for it. With one, those fallbacks could
+		# only answer with a stale recorded version (every 'pip install .' writes one into the
+		# source tree), so refuse instead.
+		if (NOT _skipped STREQUAL "")
+			string(REPLACE ";" "', '" _skipped_text "${_skipped}")
+			message(FATAL_ERROR
+					"Cannot derive the ${product} version: the only '${tag_prefix}*' tags it "
+					"could be counted from ('${_skipped_text}') are releases of series cut from "
+					"the development branch after this commit's history left it, which are not "
+					"counted from here. This repository may be missing the tags of earlier "
+					"releases: fetch them from the upstream repository ('git fetch --tags "
+					"<upstream>'). Or set the version explicitly (see the message at the end of "
+					"VersionFromGit.cmake).")
+		endif()
 		return()
 	endif()
 
@@ -1017,7 +1331,59 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 		endif()
 		gplates_check_release_target(${product} "${target}" "${_ref_base}" "${_ref_tag}"
 				${_ref_distance} ${_ref_on_line} _target_error)
+
+		# Whether HEAD is on a release series line: its release file freezes the other product.
+		set(_series_line FALSE)
+		if (DEFINED GPLATES_FROZEN_VERSION OR DEFINED PYGPLATES_FROZEN_VERSION)
+			set(_series_line TRUE)
+		endif()
+
+		# A target that skips past the reference may still be the release after a series
+		# skipped above: a branch made from the development branch before that series was cut,
+		# which then took the development branch's later target without its history (a squash
+		# merge, or a cherry-picked target change), is not skipping a version - that series
+		# released it. So for such a branch the no-skip policy accepts the release after any
+		# skipped series too. Only that policy: a target at or below a skipped series' head is
+		# not refused for it, which is the point of skipping the series.
+		#
+		# Not on a release series line, where every later series is skipped, and a target past
+		# this series' head is the development branch's, taken by mistake. Nor against a
+		# candidate on HEAD's first-parent line, whose refusal is a different rule ("not been
+		# finished").
+		set(_skip_relaxable FALSE)
+		if (NOT _target_error STREQUAL "" AND NOT _skipped_bases STREQUAL "" AND NOT _series_line)
+			gplates_split_version(${product} "${target}" _ok _target_base _target_dev)
+			_gplates_version_base_rank(${product} "${_target_base}"
+					_ok_t _target_head _t_rank _t_n _t_post)
+			_gplates_version_base_rank(${product} "${_ref_base}"
+					_ok_r _ref_head _r_rank _r_n _r_post)
+			if (_ok AND _ok_t AND _ok_r AND _target_head VERSION_GREATER _ref_head
+					AND NOT (_ref_on_line AND _r_rank LESS 4))
+				set(_skip_relaxable TRUE)
+				foreach (_skipped_base IN LISTS _skipped_bases)
+					gplates_check_release_target(${product} "${target}" "${_skipped_base}" ""
+							0 FALSE _skipped_error)
+					if (_skipped_error STREQUAL "")
+						set(_target_error "")
+						break()
+					endif()
+				endforeach()
+			endif()
+		endif()
+
 		if (NOT _target_error STREQUAL "")
+			if (_skip_relaxable)
+				string(REPLACE ";" "', '" _skipped_text "${_skipped}")
+				string(APPEND _target_error
+						"\nThe releases of series cut after this commit's history left the "
+						"development branch ('${_skipped_text}') are not counted from here, but "
+						"the release after one of them would also be accepted.")
+			endif()
+			if (NOT _ref_on_line)
+				gplates_off_line_refusal_advice(${product} "${target}" "${_ref_base}" "${_ref_tag}"
+						${_series_line} _advice)
+				string(APPEND _target_error "${_advice}")
+			endif()
 			message(FATAL_ERROR "${_target_error}")
 		endif()
 
@@ -1082,7 +1448,30 @@ function(_gplates_version_from_git product tag_prefix target out_var)
 					"development branch commit the series branch was cut from. Without it, the first "
 					"${_other} release made on a series branch cut later stops every configure here, "
 					"this tag included. Delete the tag, freeze ${_other} in a new commit, and tag "
-					"that.")
+					"that. If the series branch does not yet record the development branch commit "
+					"it was made from, record it in the same new commit: "
+					"'set(RELEASE_SERIES_CUT_FROM <commit>)', with <commit> the parent of the "
+					"series branch's first commit - not the parent of the new commit.")
+		endif()
+		# The same commit that cuts the series branch records where it was cut from (SERIES CUT
+		# RECORDS at the top of this file). Forgotten, every branch made from the development
+		# branch before the cut would stop configuring once this tag exists, and a tag cannot be
+		# repaired afterwards - so, like the freeze, it is checked at the tag. Read from the
+		# commit rather than the working tree, since the commit is what other clones will read.
+		_gplates_version_series_cut("${_head_commit}" _cut _problem)
+		if (_cut STREQUAL "")
+			message(FATAL_ERROR
+					"This commit is tagged '${_at_tag_name}', but its "
+					"'cmake/modules/VersionRelease.cmake' ${_problem}. A release series branch "
+					"records, beside the freeze, the development branch commit it was made "
+					"from, in full: 'set(RELEASE_SERIES_CUT_FROM <commit>)', with <commit> the "
+					"parent of the series branch's first commit (or 'git merge-base HEAD "
+					"<development branch>') - the parent of this commit only if this is that "
+					"first commit. Without the record, every branch made from the development "
+					"branch before the cut stops configuring once this tag exists; and a record "
+					"naming a series commit instead would switch off the development branch's "
+					"check that it moves its target on. Delete the tag, record the cut in a new "
+					"commit, and tag that.")
 		endif()
 		set(${out_var} "${target}" PARENT_SCOPE)
 		return()
@@ -1110,8 +1499,10 @@ endfunction()
 #      sdist: an unpacked sdist, or the conda-forge feedstock building from one. (The sdist's
 #      PKG-INFO has only the pyGPlates version, and both are needed.)
 #
-# Git is tried ahead of the recorded file, and a repository with none of the product's tags is
-# refused rather than passed on to it, so that a stale recorded file does not win in a working
+# Git is tried ahead of the recorded file, and a repository with none of the product's tags - or
+# none left to count from once releases of series cut after this commit's history left the
+# development branch are skipped - is refused rather than passed on to it, so that a stale
+# recorded file does not win in a working
 # checkout: the file is gitignored, but every 'pip install .' writes one into the source tree.
 #
 function(gplates_resolve_version product out_var)
@@ -1222,10 +1613,23 @@ endfunction()
 # metadata plugin ('cmake/version.py') get it without configuring a build.
 #
 if (CMAKE_SCRIPT_MODE_FILE AND CMAKE_CURRENT_LIST_FILE STREQUAL CMAKE_SCRIPT_MODE_FILE)
-	if (NOT DEFINED CMAKE_ARGV3)
+	# The product is the argument after this script, which follows '-P'. Not a fixed position:
+	# '-D' options may come before '-P' ('cmake -DPYGPLATES_PEP440_VERSION=... -P ...').
+	set(_product "")
+	math(EXPR _last "${CMAKE_ARGC} - 1")
+	foreach (_i RANGE 1 ${_last})
+		if (CMAKE_ARGV${_i} STREQUAL "-P")
+			math(EXPR _product_index "${_i} + 2")
+			if (DEFINED CMAKE_ARGV${_product_index})
+				set(_product "${CMAKE_ARGV${_product_index}}")
+			endif()
+			break()
+		endif()
+	endforeach()
+	if (_product STREQUAL "")
 		message(FATAL_ERROR "usage: cmake -P cmake/modules/VersionFromGit.cmake <gplates|pygplates>")
 	endif()
-	gplates_resolve_version("${CMAKE_ARGV3}" GPLATES_RESOLVED_VERSION)
+	gplates_resolve_version("${_product}" GPLATES_RESOLVED_VERSION)
 	# 'message()' writes to standard error in script mode, so echo it instead.
 	execute_process(COMMAND "${CMAKE_COMMAND}" -E echo "${GPLATES_RESOLVED_VERSION}")
 endif()

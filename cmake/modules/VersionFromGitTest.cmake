@@ -12,7 +12,8 @@
 # This covers mainly the parts of 'VersionFromGit.cmake' that are pure functions of their
 # arguments - splitting and joining a version, ordering two of them, checking the hand-edited
 # release target against the nearest release, checking an anchor tag against the release target
-# at its own commit, and checking a frozen version. The parts that consult git are not covered
+# at its own commit, checking a frozen version, and reading a series cut record. The parts that
+# consult git are not covered
 # case by case: what they compute is mostly a commit count rather than a decision. The
 # exception is a set of scenarios on one synthetic repository, with a release series branch per
 # product, for failures that come from the shape of the history rather than from any one
@@ -239,6 +240,54 @@ function(expect_frozen_rejected product prefix version tags_at_head expected_phr
 	set(_failures ${_failures} PARENT_SCOPE)
 endfunction()
 
+# The release file records the given cut ('' for no record).
+function(expect_series_cut release_file expected)
+	gplates_read_series_cut("${release_file}" _cut)
+	if (NOT _cut STREQUAL expected)
+		_fail("series cut read from '${release_file}': got '${_cut}', expected '${expected}'.")
+	endif()
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+# The release file freezes a product (TRUE) or not (FALSE).
+function(expect_freezes release_file expected)
+	gplates_release_file_freezes("${release_file}" _freezes)
+	if (NOT _freezes STREQUAL expected)
+		_fail("'${release_file}': freezes is ${_freezes}, expected ${expected}.")
+	endif()
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+# The release file could be a development branch commit's (an empty phrase), or the reason it
+# could not matches the phrase.
+function(expect_not_development release_file expected_phrase)
+	gplates_release_file_not_development("${release_file}" _why)
+	if (expected_phrase STREQUAL "")
+		if (NOT _why STREQUAL "")
+			_fail("'${release_file}': expected a development branch file, got: ${_why}")
+		endif()
+	elseif (NOT _why MATCHES "${expected_phrase}")
+		_fail("'${release_file}': expected a reason matching '${expected_phrase}', got '${_why}'.")
+	endif()
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
+# The advice added to an off-line refusal matches the phrase, or is empty for an empty phrase.
+function(expect_off_line_advice product target reference series_line expected_phrase)
+	gplates_off_line_refusal_advice(${product} "${target}" "${reference}" "Tag-${reference}"
+			${series_line} _advice)
+	if (expected_phrase STREQUAL "")
+		if (NOT _advice STREQUAL "")
+			_fail("${product} target '${target}', off-line reference '${reference}': expected no "
+					"advice, got:\n  ${_advice}")
+		endif()
+	elseif (NOT _advice MATCHES "${expected_phrase}")
+		_fail("${product} target '${target}', off-line reference '${reference}': expected advice "
+				"matching '${expected_phrase}', got:\n  ${_advice}")
+	endif()
+	set(_failures ${_failures} PARENT_SCOPE)
+endfunction()
+
 
 #
 # Splitting.
@@ -443,6 +492,65 @@ expect_frozen_rejected(pygplates "PyGPlates-" "1.2.0" "" "not a development vers
 expect_frozen_rejected(gplates "GPlates-" "2.6-150" "" "not a development version")
 
 #
+# A release series branch records the development branch commit it was cut from. The record is
+# read at a line start, whatever the case of 'set', and may be quoted; a copy in a comment is not
+# a record. (Whether a record is valid needs git, so the scenarios below check that.)
+#
+set(_cut "0123456789abcdef0123456789abcdef01234567")
+expect_series_cut("set(RELEASE_SERIES_CUT_FROM ${_cut})\n" "${_cut}")
+expect_series_cut("  SET( RELEASE_SERIES_CUT_FROM \"${_cut}\" )\n" "${_cut}")
+expect_series_cut("set(GPLATES_FROZEN_VERSION 2.6.0-2)\nset(RELEASE_SERIES_CUT_FROM ${_cut})"
+		"${_cut}")
+expect_series_cut("#    set(RELEASE_SERIES_CUT_FROM ${_cut})\n" "")
+# Of several, the last, as CMake itself would take it.
+set(_two_records "set(RELEASE_SERIES_CUT_FROM 1111111111111111111111111111111111111111)\n")
+string(APPEND _two_records "set(RELEASE_SERIES_CUT_FROM ${_cut})\n")
+expect_series_cut("${_two_records}" "${_cut}")
+expect_series_cut("set(PYGPLATES_RELEASE_VERSION 1.2.0)\n" "")
+expect_series_cut("" "")
+# A series commit freezes the product it does not release; a development branch commit freezes
+# nothing, and neither does a commented-out freeze (the file's own header has one).
+expect_freezes("set(GPLATES_FROZEN_VERSION 2.6.0-2)\nset(PYGPLATES_RELEASE_VERSION 1.1.0rc1)" TRUE)
+expect_freezes("set(GPLATES_RELEASE_VERSION 2.6.0-rc.1)\nset(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)"
+		TRUE)
+expect_freezes("set(GPLATES_RELEASE_VERSION 2.6.0)\nset(PYGPLATES_RELEASE_VERSION 1.2.0)" FALSE)
+expect_freezes("#        set(GPLATES_FROZEN_VERSION 2.6.0-150)\nset(GPLATES_RELEASE_VERSION 2.6.0)"
+		FALSE)
+# What a recorded cut must look like: a development branch commit's file, with no freeze and no
+# pre-release target. A series branch's first commit sets its first candidate, so recording it
+# by mistake - with the freeze forgotten there, and added later - is caught by its target.
+expect_not_development("set(GPLATES_RELEASE_VERSION 2.6.0)\nset(PYGPLATES_RELEASE_VERSION 1.2.0)"
+		"")
+expect_not_development("set(GPLATES_FROZEN_VERSION 2.6.0-2)\nset(PYGPLATES_RELEASE_VERSION 1.1.0)"
+		"freezes a version")
+expect_not_development("set(GPLATES_RELEASE_VERSION 2.6.0)\nset(PYGPLATES_RELEASE_VERSION 1.1.0rc1)"
+		"pygplates target '1.1.0rc1' is a pre-release")
+expect_not_development("set(GPLATES_RELEASE_VERSION 2.6.0-beta.2)\n"
+		"gplates target '2.6.0-beta.2' is a pre-release")
+set(_commented "# set(PYGPLATES_RELEASE_VERSION 1.1.0rc1)\n")
+string(APPEND _commented "set(PYGPLATES_RELEASE_VERSION 1.1.0)\n")
+expect_not_development("${_commented}" "")
+# Of several 'set's of a target, the last, as CMake itself would take it.
+set(_two_targets "set(PYGPLATES_RELEASE_VERSION 1.1.0rc1)\n")
+string(APPEND _two_targets "set(PYGPLATES_RELEASE_VERSION 1.1.0)\n")
+expect_not_development("${_two_targets}" "")
+# A post-release is not a pre-release (nor would the development branch set one).
+expect_not_development("set(PYGPLATES_RELEASE_VERSION 1.1.0.post1)" "")
+
+#
+# An off-line refusal also names the way out for a branch made from the development branch, or
+# from a series branch, before its target moved on - except for a target that skips ahead, which
+# is a different mistake.
+#
+expect_off_line_advice(pygplates "1.1.0" "1.1.0rc1" FALSE "merge the development branch in")
+expect_off_line_advice(pygplates "1.1.0" "1.1.0" FALSE "PYGPLATES_PEP440_VERSION")
+expect_off_line_advice(pygplates "1.0.0" "1.1.0rc1" FALSE "moved on past '1.1.0'")
+expect_off_line_advice(gplates "2.6.0" "2.6.0-rc.1" FALSE "GPLATES_SEMANTIC_VERSION")
+expect_off_line_advice(pygplates "1.1.0rc1" "1.1.0" TRUE
+		"before 'Tag-1.1.0' was tagged on it, rebase onto the series branch")
+expect_off_line_advice(pygplates "1.3.0" "1.1.0rc1" FALSE "")
+
+#
 # Scenarios on a synthetic repository: two release series branches, one per product, cut from the
 # development branch one after the other. They are here because what they check is not a pure
 # function: before versions were frozen, every commit on the older series branch - its own release
@@ -499,13 +607,29 @@ else()
 		endif()
 	endfunction()
 
-	# A commit whose 'VersionRelease.cmake' holds the two given lines.
+	# The full hash of a commit in the synthetic repository.
+	function(_scenario_rev out_var rev)
+		execute_process(
+				COMMAND ${_scenario_env} "${_scenario_git_executable}" -C "${_scenario_dir}"
+					rev-parse --verify "${rev}^{commit}"
+				RESULT_VARIABLE _result
+				OUTPUT_VARIABLE _output
+				OUTPUT_STRIP_TRAILING_WHITESPACE)
+		if (NOT _result EQUAL 0)
+			message(FATAL_ERROR "Setting up the scenario repository: no commit '${rev}'.")
+		endif()
+		set(${out_var} "${_output}" PARENT_SCOPE)
+	endfunction()
+
+	# A commit whose 'VersionRelease.cmake' holds the two given lines, and any more given after
+	# them (a series cut record).
 	set(_scenario_count 0)
 	function(_scenario_commit message gplates_line pygplates_line)
 		math(EXPR _n "${_scenario_count} + 1")
 		set(_scenario_count ${_n} PARENT_SCOPE)
+		string(JOIN "\n" _more ${ARGN})
 		file(WRITE "${_scenario_dir}/cmake/modules/VersionRelease.cmake"
-				"${gplates_line}\n${pygplates_line}\n")
+				"${gplates_line}\n${pygplates_line}\n${_more}\n")
 		file(WRITE "${_scenario_dir}/file" "${_n}\n")
 		_scenario_git(add -A)
 		_scenario_git(commit -q -m "${message}")
@@ -571,14 +695,19 @@ else()
 	_scenario_git(tag GPlates-2.5)
 	_scenario_git(tag PyGPlates-1.0.0)
 	_scenario_commit("m1" "${_g} 2.6.0)" "${_p} 1.1.0)")
+	_scenario_rev(_m1 HEAD)
 	_scenario_commit("m2" "${_g} 2.6.0)" "${_p} 1.1.0)")
 	_scenario_expect("development branch" gplates "2.6.0-2")
 	_scenario_expect("development branch" pygplates "1.1.0.dev2")
 
-	# 'release/pygplates-1.1' cut, freezing GPlates at what the development branch gave, and its
-	# first commit tagged as the first candidate. The development branch moves its target on.
+	# 'release/pygplates-1.1' cut, freezing GPlates at what the development branch gave and
+	# recording the commit it was cut from, and its first commit tagged as the first candidate.
+	# The development branch moves its target on.
+	_scenario_rev(_m2 HEAD)
+	set(_cut_pyg11 "set(RELEASE_SERIES_CUT_FROM ${_m2})")
 	_scenario_git(switch -q -c release/pygplates-1.1)
-	_scenario_commit("pyg cut" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.0rc1)")
+	_scenario_commit("pyg cut" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.0rc1)"
+			"${_cut_pyg11}")
 	_scenario_git(tag PyGPlates-1.1.0rc1)
 	_scenario_expect("on PyGPlates-1.1.0rc1" gplates "2.6.0-2")
 	_scenario_expect("on PyGPlates-1.1.0rc1" pygplates "1.1.0rc1")
@@ -590,8 +719,11 @@ else()
 
 	# 'release/gplates-2.6' cut later, freezing pyGPlates, and tagged as the first GPlates
 	# candidate. This is the tag that used to stop every configure on 'release/pygplates-1.1'.
+	_scenario_rev(_m3 HEAD)
+	set(_cut_gpl26 "set(RELEASE_SERIES_CUT_FROM ${_m3})")
 	_scenario_git(switch -q -c release/gplates-2.6)
-	_scenario_commit("gpl cut" "${_g} 2.6.0-rc.1)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)")
+	_scenario_commit("gpl cut" "${_g} 2.6.0-rc.1)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)"
+			"${_cut_gpl26}")
 	_scenario_git(tag GPlates-2.6.0-rc.1)
 	_scenario_expect("on GPlates-2.6.0-rc.1" gplates "2.6.0-rc.1")
 	_scenario_expect("on GPlates-2.6.0-rc.1" pygplates "1.2.0.dev2")
@@ -605,15 +737,18 @@ else()
 	# tagged, since '1.1.0.dev1' would sort below the candidate; then it is exactly '1.1.0'. The
 	# GPlates candidate on the other series branch does not touch the frozen GPlates version.
 	_scenario_git(switch -q release/pygplates-1.1)
-	_scenario_commit("pyg release" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.0)")
+	_scenario_commit("pyg release" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.0)"
+			"${_cut_pyg11}")
 	_scenario_expect("release commit, untagged" pygplates
 			"FATAL:not tagged 'PyGPlates-1.1.0'.*tag it 'PyGPlates-1.1.0'")
 	_scenario_expect("release commit, untagged" gplates "2.6.0-2")
 	_scenario_git(tag PyGPlates-1.1.0)
 	_scenario_expect("on PyGPlates-1.1.0" pygplates "1.1.0")
 	_scenario_expect("on PyGPlates-1.1.0" gplates "2.6.0-2")
-	_scenario_commit("pyg bump 1.1.1" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.1)")
-	_scenario_commit("pyg fix" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.1)")
+	_scenario_commit("pyg bump 1.1.1" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.1)"
+			"${_cut_pyg11}")
+	_scenario_commit("pyg fix" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.1)"
+			"${_cut_pyg11}")
 	_scenario_expect("pyGPlates series, patch line" pygplates "1.1.1.dev2")
 	_scenario_expect("pyGPlates series, patch line" gplates "2.6.0-2")
 
@@ -624,12 +759,22 @@ else()
 
 	# The mirror image: a later pyGPlates series leaves the GPlates candidate's tag buildable.
 	_scenario_git(switch -q main)
+	_scenario_rev(_m4 HEAD)
 	_scenario_git(switch -q -c release/pygplates-1.2)
-	_scenario_commit("pyg 1.2 cut" "set(GPLATES_FROZEN_VERSION 2.7.0-2)" "${_p} 1.2.0rc1)")
+	_scenario_commit("pyg 1.2 cut" "set(GPLATES_FROZEN_VERSION 2.7.0-2)" "${_p} 1.2.0rc1)"
+			"set(RELEASE_SERIES_CUT_FROM ${_m4})")
 	_scenario_git(tag PyGPlates-1.2.0rc1)
 	_scenario_git(switch -q main)
 	_scenario_commit("bump 1.3" "${_g} 2.7.0)" "${_p} 1.3.0)")
 	_scenario_expect("development branch after the second pyGPlates cut" pygplates "1.3.0.dev1")
+	# A series branch given the development branch's target by mistake still skips a version:
+	# that a later series is skipped from here does not make its successor this line's.
+	_scenario_git(switch -q -c release/pygplates-1.1-mistake release/pygplates-1.1)
+	_scenario_commit("development target taken" "set(GPLATES_FROZEN_VERSION 2.6.0-2)"
+			"${_p} 1.3.0)" "${_cut_pyg11}")
+	_scenario_expect("series branch given the development branch's target" pygplates
+			"FATAL:skips past '1.1.0'")
+	_scenario_git(switch -q main)
 	_scenario_git(switch -q --detach GPlates-2.6.0-rc.1)
 	_scenario_expect("on GPlates-2.6.0-rc.1, later" gplates "2.6.0-rc.1")
 	_scenario_expect("on GPlates-2.6.0-rc.1, later" pygplates "1.2.0.dev2")
@@ -642,8 +787,10 @@ else()
 	# offered. After it, the release commit below it is history: warned about, not refused, so
 	# that it stays buildable.
 	_scenario_git(switch -q release/gplates-2.6)
-	_scenario_commit("gpl release" "${_g} 2.6.0)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)")
-	_scenario_commit("gpl late fix" "${_g} 2.6.0)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)")
+	_scenario_commit("gpl release" "${_g} 2.6.0)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)"
+			"${_cut_gpl26}")
+	_scenario_commit("gpl late fix" "${_g} 2.6.0)" "set(PYGPLATES_FROZEN_VERSION 1.2.0.dev2)"
+			"${_cut_gpl26}")
 	_scenario_expect("late fix on the release commit, untagged" gplates
 			"FATAL:not directly on the candidate.*'2.6.0-rc.2'")
 	_scenario_git(tag GPlates-2.6.0)
@@ -682,6 +829,153 @@ else()
 	_scenario_expect("two anchors on HEAD" gplates "2.7.0-2000")
 	_scenario_commit("after two anchors" "${_g} 2.7.0)" "${_p} 1.3.0)")
 	_scenario_expect("one commit after two anchors" gplates "2.7.0-2001")
+
+	# A branch made from the development branch before either series branch was cut, its targets
+	# still '2.6.0' and '1.1.0'. Every release of those series is skipped, since the cut each
+	# records is not in its history, so it counts from the releases it had when it was made.
+	# Without the records it was refused: the newest of the series' tags, all tied at its fork
+	# point, became its reference.
+	_scenario_git(switch -q -c feature/old "${_m1}")
+	_scenario_commit("old feature" "${_g} 2.6.0)" "${_p} 1.1.0)")
+	_scenario_expect("branch made before both cuts" pygplates "1.1.0.dev2")
+	_scenario_expect("branch made before both cuts" gplates "2.6.0-2")
+	# The same branch given the development branch's later target without its history (a squash
+	# merge, say): '1.2.0' is the release after the skipped 1.1 series, so it skips nothing, but
+	# '1.4.0' still skips 1.3 after the skipped '1.2.0rc1'.
+	_scenario_git(switch -q -c feature/old-squashed)
+	_scenario_commit("squash of the development branch" "${_g} 2.7.0)" "${_p} 1.2.0)")
+	_scenario_expect("branch made before the cuts, given a later target" pygplates "1.2.0.dev3")
+	_scenario_commit("target too far" "${_g} 2.7.0)" "${_p} 1.4.0)")
+	_scenario_expect("branch made before the cuts, given a skipping target" pygplates
+			"FATAL:skips past.*the release after one of them would also be accepted")
+	# A candidate on the branch's own line binds it as on any line ("not been finished"), even
+	# with a later series skipped whose successor the target would be.
+	_scenario_git(switch -q -c feature/old-candidate feature/old)
+	_scenario_commit("candidate on the branch" "${_g} 2.6.0)" "${_p} 1.1.0rc5)")
+	_scenario_git(tag PyGPlates-1.1.0rc5)
+	_scenario_commit("past the candidate" "${_g} 2.6.0)" "${_p} 1.2.0)")
+	_scenario_expect("branch made before the cuts, its own candidate unfinished" pygplates
+			"FATAL:not been finished")
+	_scenario_git(tag -d PyGPlates-1.1.0rc5)
+	_scenario_git(switch -q feature/old)
+
+	# A branch made at the very commit 'release/pygplates-1.1' was cut from has that cut in its
+	# history, so as far as anything can tell it is the development branch with its target left
+	# behind: refused, naming the way out. Its GPlates version is unaffected, since
+	# 'release/gplates-2.6' was cut later.
+	_scenario_git(switch -q -c feature/at-cut "${_m2}")
+	_scenario_commit("feature at the cut" "${_g} 2.6.0)" "${_p} 1.1.0)")
+	_scenario_expect("branch made at the pyGPlates cut" pygplates
+			"FATAL:already been released.*merge the development branch in")
+	_scenario_expect("branch made at the pyGPlates cut" gplates "2.6.0-3")
+	# Built as it is, with the version set explicitly as a define, which may come before '-P'
+	# when the resolver is run as a script.
+	execute_process(
+			COMMAND ${_scenario_env} "${CMAKE_COMMAND}" -DPYGPLATES_PEP440_VERSION=1.1.0.dev7
+				-P "${_scenario_dir}/cmake/modules/VersionFromGit.cmake" pygplates
+			RESULT_VARIABLE _result
+			OUTPUT_VARIABLE _output
+			ERROR_VARIABLE _error
+			OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (NOT _result EQUAL 0 OR NOT _output STREQUAL "1.1.0.dev7")
+		_fail("a define before '-P': expected '1.1.0.dev7', got '${_output}':
+  ${_error}")
+	endif()
+
+	# A patch branch made from 'release/pygplates-1.1' at its first candidate, then overtaken by
+	# the release: refused, naming the series branch to rebase onto.
+	_scenario_git(switch -q -c fix/pyg-patch PyGPlates-1.1.0rc1)
+	_scenario_commit("pyg patch" "set(GPLATES_FROZEN_VERSION 2.6.0-2)" "${_p} 1.1.0rc2)"
+			"${_cut_pyg11}")
+	_scenario_expect("patch branch overtaken by its series' release" pygplates
+			"FATAL:sorts below '1.1.0'.*rebase onto the series branch")
+
+	# A release tag whose commit has no valid record is refused at the tag, where it can still be
+	# repaired. Each attempt is a new commit on one series branch, tagged and then untagged.
+	_scenario_git(switch -q main)
+	_scenario_rev(_m5 HEAD)
+	_scenario_git(switch -q -c release/pygplates-1.3)
+	set(_pyg13 "set(GPLATES_FROZEN_VERSION 2.7.0-2001)" "${_p} 1.3.0rc1)")
+	_scenario_commit("pyg 1.3 cut, no record" ${_pyg13})
+	_scenario_git(tag PyGPlates-1.3.0rc1)
+	_scenario_expect("release tag without a cut record" pygplates
+			"FATAL:does not record the commit it was cut from")
+	# Seen from elsewhere, a release without a record is treated as before records existed: the
+	# branch made before every cut is refused again, against that release.
+	_scenario_git(switch -q feature/old)
+	_scenario_expect("branch made before a cut that records nothing" pygplates
+			"FATAL:sorts below '1.3.0rc1'")
+	_scenario_git(switch -q release/pygplates-1.3)
+	_scenario_git(tag -d PyGPlates-1.3.0rc1)
+	# The likeliest slips: a series commit (here the one before), and an abbreviated hash.
+	_scenario_rev(_series_commit HEAD)
+	_scenario_commit("pyg 1.3, a series commit recorded" ${_pyg13}
+			"set(RELEASE_SERIES_CUT_FROM ${_series_commit})")
+	_scenario_git(tag PyGPlates-1.3.0rc1)
+	_scenario_expect("cut record naming a series commit" pygplates
+			"FATAL:looks like a commit on a release series branch")
+	_scenario_git(tag -d PyGPlates-1.3.0rc1)
+	string(SUBSTRING "${_m5}" 0 12 _short)
+	_scenario_commit("pyg 1.3, abbreviated record" ${_pyg13}
+			"set(RELEASE_SERIES_CUT_FROM ${_short})")
+	_scenario_git(tag PyGPlates-1.3.0rc1)
+	_scenario_expect("cut record abbreviated" pygplates "FATAL:not a full")
+	_scenario_git(tag -d PyGPlates-1.3.0rc1)
+	# A commit off this branch's history, and one not in the repository at all.
+	_scenario_rev(_old feature/old)
+	_scenario_commit("pyg 1.3, record off the history" ${_pyg13}
+			"set(RELEASE_SERIES_CUT_FROM ${_old})")
+	_scenario_git(tag PyGPlates-1.3.0rc1)
+	_scenario_expect("cut record not in the history" pygplates "FATAL:not in the history")
+	_scenario_git(tag -d PyGPlates-1.3.0rc1)
+	_scenario_commit("pyg 1.3, record not a commit" ${_pyg13}
+			"set(RELEASE_SERIES_CUT_FROM 0123456789abcdef0123456789abcdef01234567)")
+	_scenario_git(tag PyGPlates-1.3.0rc1)
+	_scenario_expect("cut record not a commit" pygplates "FATAL:not a commit in this repository")
+	_scenario_git(tag -d PyGPlates-1.3.0rc1)
+	# The freeze forgotten in a commit that sets the first candidate, then added in the next
+	# with a record naming the one before: that commit freezes nothing, but its candidate target
+	# shows it is a series commit. Recorded, it would have switched off the development branch's
+	# check that it moves its target on.
+	_scenario_commit("pyg 1.3, freeze forgotten" "${_g} 2.7.0)" "${_p} 1.3.0rc1)")
+	_scenario_rev(_unfrozen HEAD)
+	_scenario_commit("pyg 1.3, frozen late" ${_pyg13} "set(RELEASE_SERIES_CUT_FROM ${_unfrozen})")
+	_scenario_git(tag PyGPlates-1.3.0rc1)
+	_scenario_expect("cut record naming an unfrozen series commit" pygplates
+			"FATAL:target '1.3.0rc1' is a pre-release")
+	_scenario_git(tag -d PyGPlates-1.3.0rc1)
+	# Recorded correctly: the tag resolves, the branch made before every cut skips it again, and
+	# the development branch, which has the cut in its history, is still held to moving its
+	# target on from its next commit. (At the cut itself the tag is in HEAD's future, which is
+	# skipped as it always was.)
+	_scenario_commit("pyg 1.3, recorded" ${_pyg13} "set(RELEASE_SERIES_CUT_FROM ${_m5})")
+	# Annotated, as real release tags are.
+	_scenario_git(tag -a -m "pyGPlates 1.3.0rc1" PyGPlates-1.3.0rc1)
+	_scenario_expect("on PyGPlates-1.3.0rc1" pygplates "1.3.0rc1")
+	_scenario_git(switch -q feature/old)
+	_scenario_expect("branch made before a cut that records it" pygplates "1.1.0.dev2")
+	# Without the one release it can count from, everything left is skipped: refused, rather
+	# than passed on to a stale recorded version.
+	_scenario_rev(_base PyGPlates-1.0.0)
+	_scenario_git(tag -d PyGPlates-1.0.0)
+	file(WRITE "${_scenario_dir}/cmake/modules/VersionRecorded.cmake"
+			"set(GPLATES_SEMANTIC_VERSION 2.6.0-999)\nset(PYGPLATES_PEP440_VERSION 1.0.0.dev999)\n")
+	_scenario_expect("branch whose only countable tags are skipped" pygplates
+			"FATAL:the only 'PyGPlates-")
+	file(REMOVE "${_scenario_dir}/cmake/modules/VersionRecorded.cmake")
+	_scenario_git(tag PyGPlates-1.0.0 "${_base}")
+	_scenario_git(switch -q main)
+	_scenario_commit("m6, target not moved on" "${_g} 2.7.0)" "${_p} 1.3.0)")
+	_scenario_expect("development branch, target not moved on past a recorded cut" pygplates
+			"FATAL:being released on another branch")
+
+	# A fork made from the development branch before the cuts, with its own anchor (the design
+	# document's section 9): it counts on from the anchor, and its target is checked against the
+	# releases it had when it was made, not against 'GPlates-2.6.0' at its fork point.
+	_scenario_git(switch -q feature/old)
+	_scenario_git(tag GPlates-2.6.0-2000)
+	_scenario_commit("fork commit" "${_g} 2.6.0)" "${_p} 1.1.0)")
+	_scenario_expect("fork made before the cuts, past its anchor" gplates "2.6.0-2001")
 
 	file(REMOVE_RECURSE "${_scenario_dir}")
 endif()

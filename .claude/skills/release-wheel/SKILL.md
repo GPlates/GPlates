@@ -46,11 +46,17 @@ committing, tagging, or pushing. Do not push a tag without explicit approval.
      `set(GPLATES_FROZEN_VERSION <that version>)`. Without it, the first GPlates release made on
      its own series branch would stop every configure on this one, its release tags included,
      so the resolver refuses a release tag whose commit does not freeze GPlates.
+   - **The same commit records where the series was cut**: add
+     `set(RELEASE_SERIES_CUT_FROM <commit>)` with the full hash of that `main` commit
+     (`git rev-parse <it>`). Without it, the series' releases would stop every configure on
+     branches made from `main` before the cut, so the resolver refuses a release tag whose
+     commit does not record it, or records a commit on the series branch itself.
 2. **Tag exactly `PyGPlates-<version>`, on the release commit, then check it.** That is the
    commit on the `release/pygplates-<major>.<minor>` branch being released, whose target is the
    version: a candidate, the release itself or a later patch. Tag it locally first — a local tag
    starts nothing — and check that `cmake -P cmake/modules/VersionFromGit.cmake pygplates` gives
-   exactly `<version>` (it also refuses a release tag without the freeze). Check at the tag, not
+   exactly `<version>` (it also refuses a release tag without the freeze or the cut record).
+   Check at the tag, not
    before it: the release after a candidate is refused on an untagged commit, since
    `<version>.devN` would sort below the candidate. Then run
    `python pygplates/wheel/check_release_commit.py PyGPlates-<version> <version>`, the run's own

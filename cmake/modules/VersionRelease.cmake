@@ -6,7 +6,8 @@
 # The release each develop line is heading towards.
 #
 # THIS IS THE ONLY HAND-EDITED PART OF THE VERSION (with, on a release series branch, the frozen
-# version of the product it does not release - see 2 below). The development number that turns
+# version of the product it does not release, and the record of where the branch was cut - see 2
+# below). The development number that turns
 # it into a full version (eg, '2.6.0' -> '2.6.0-47', '1.1.0' -> '1.1.0.dev46') is counted from
 # git by 'VersionFromGit.cmake' - see the comments there, and 'Version.cmake' for the version
 # grammars.
@@ -52,6 +53,25 @@
 #    'VersionFromGit.cmake' says why). It is set once and never edited again. A forgotten freeze
 #    shows only when a release is tagged: the resolver refuses a release tag of either product
 #    on a commit that does not freeze the other.
+#
+#    The same commit also records the development branch commit the series branch is cut from -
+#    its parent, as the series branch's first commit - as a full commit hash:
+#
+#        set(RELEASE_SERIES_CUT_FROM 0123456789abcdef0123456789abcdef01234567)
+#
+#    A branch made from the development branch before the cut has the series' tags off its
+#    history and, without the record, nothing to tell it from the development branch with its
+#    target left behind: from the series' first tag it would be refused. With it, the resolver
+#    skips the release tags of a series whose cut is not in HEAD's history (SERIES CUT RECORDS in
+#    'VersionFromGit.cmake'). It too is set once and never edited again, and the resolver refuses
+#    a release tag on a commit without a valid record - one naming a commit in that commit's
+#    history that freezes nothing and has no pre-release target. That catches recording the
+#    cutting commit itself instead of its parent. If the freeze and the record are added in a
+#    later commit (the freeze forgotten at the cut, or commits made on the series branch before
+#    it), the commit to record is still the parent of the series branch's *first* commit, not of
+#    the later one. Recorded, an earlier series commit would switch off the development branch's
+#    check that it moves its target on; it is caught if it has a candidate target, but not if its
+#    target is plain (a series cut straight at a final release, or a preparation commit).
 #
 #    Nothing detects the branch by name: a target is a decision ("there will be another release
 #    candidate"), and branch-name detection is unreliable anyway under detached HEAD, pull
