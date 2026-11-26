@@ -324,13 +324,14 @@ Set `PYGPLATES_RELEASE_VERSION` in `cmake/modules/VersionRelease.cmake` to the r
 commit, then tag **exactly** `PyGPlates-<version>` on the release series branch
 `release/pygplates-<X.Y>` (release tags belong only there — see *Branches and pull requests*).
 Pushing the tag starts the run, which fails in its first minute on a mismatch, a `.dev`
-version, a commit that does not freeze GPlates, or a final release that is not its last
-candidate unchanged (plus one commit setting the target and the changelog heading). Tag locally
-and check the version before pushing: after a candidate, the release's target is refused on any
-commit not yet tagged as it, because the version there would sort below the candidate. The
-commit that cuts a series branch also freezes the other product's version there
-(`VersionRelease.cmake` says how): otherwise that product's own later releases stop every
-configure on this branch, tags included. A development version is
+version, a commit that does not freeze GPlates or record its cut, or a final release that is not
+its last candidate unchanged (plus one commit setting the target and the changelog heading). Tag
+locally and check the version before pushing: after a candidate, the release's target is refused
+on any commit not yet tagged as it, because the version there would sort below the candidate. The
+commit that cuts a series branch also freezes the other product's version there, and records
+the `main` commit it was cut from (`VersionRelease.cmake` says how): otherwise that product's
+own later releases stop every configure on this branch, tags included, and this series' releases
+stop every configure on branches made from `main` before the cut. A development version is
 built only by a manual dispatch — from a `PyGPlates-*.dev*` tag, by preference, so that the build
 stays findable — and a dispatch can never publish. Standing on the release tag, the derived
 version *is* the release target (no development number), which is what makes the two agree.

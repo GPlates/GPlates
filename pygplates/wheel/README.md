@@ -433,12 +433,19 @@ The flow, end to end:
    from. GPlates is not released from a pyGPlates series branch, and without the freeze a later
    GPlates release on its own series branch would stop every configure here, this branch's
    release tags included (`VersionRelease.cmake` has the details).
+
+   The same commit records the `main` commit the branch is cut from - the parent of the series
+   branch's first commit - in full, as
+   `set(RELEASE_SERIES_CUT_FROM <commit>)`. Without it, this series' releases would stop every
+   configure on branches made from `main` before the cut, since they would look like `main` with
+   its target left behind.
 2. Tag that commit `PyGPlates-<version>` (exactly the version string), check that
    `cmake -P cmake/modules/VersionFromGit.cmake pygplates` now gives exactly `<version>`, run
    `python pygplates/wheel/check_release_commit.py PyGPlates-<version> <version>`, and push the
    tag. A local tag starts nothing; the push does. If it is the series' first tag, move `main`'s
    target on as soon as it is pushed (step 7), not after the steps below. The run fails in its
-   first minute if GPlates is not frozen (the resolver refuses the release tag), and then - in `check_release_commit.py`,
+   first minute if GPlates is not frozen or the cut not recorded (the resolver refuses the
+   release tag), and then - in `check_release_commit.py`,
    the same check as the local run - if the tag and the version disagree, if the version is a
    `.dev` one, if it does not sort above every earlier release in its history, or if a final
    release is not its last candidate unchanged (the script says how to override the last of

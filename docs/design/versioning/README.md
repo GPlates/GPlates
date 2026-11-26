@@ -51,7 +51,8 @@ The rules that follow from it:
   `release/pygplates-1.1`.
 - **A series branch releases one product and freezes the other.** The same first commit replaces
   the other product's target with the version it resolved to at the cut, which is then used as
-  it is (section 7.4). The resolver refuses a release tag of either product without it.
+  it is (section 7.4), and records the development branch commit it was cut from (section 7.6).
+  The resolver refuses a release tag of either product without both.
 - **After a candidate, the next commit either sets the next candidate or is the release**, and
   the release is that candidate unchanged apart from its target and changelog heading. The
   resolver refuses the release's target on any commit not tagged as it, and the publishing run
@@ -227,7 +228,8 @@ carried by a live branch.
 
 `cmake/modules/VersionFromGit.cmake` computes it; its header comment is the reference, and this
 section is the reasoning. There are two inputs: a hand-edited **release target** in
-`cmake/modules/VersionRelease.cmake`, and the repository's tags.
+`cmake/modules/VersionRelease.cmake`, and the repository's tags (including what that file says at
+a series' release tags: section 7.6).
 
 ### 7.1 The algorithm
 
@@ -245,10 +247,13 @@ section is the reasoning. There are two inputs: a hand-edited **release target**
    needs (section 8.1) — but a number recorded on another line means nothing on this one: a
    fork's anchor, fetched by tag auto-follow along with its branch, or a development tag on a
    feature branch since merged, would otherwise take over the development branch's count.
-6. The nearest tag wins. At the same distance a release beats an anchor, since a release resets
+6. Skip a release tag that HEAD does not have in its history if its series records the
+   development branch commit it was cut from, and that commit is not in HEAD's history either:
+   HEAD left the development branch before that series existed (section 7.6).
+7. The nearest tag wins. At the same distance a release beats an anchor, since a release resets
    the count and a development tag left beside it on the same commit must not carry the old count
    past it; among anchors the largest number wins, so the count cannot go backwards.
-7. **N = that tag's development number + its distance**, and the version is `join(target, N)`.
+8. **N = that tag's development number + its distance**, and the version is `join(target, N)`.
 
 The base always comes from the *target*, never from the tag. A tag contributes a number and a
 position in history; tags' bases are read only by the guards. An anchor tag's base is checked
@@ -283,17 +288,19 @@ this order: an existing CMake variable (`-D…`), an environment variable of the
 frozen version (the other product's, on a release series branch — section 7.4), git,
 `cmake/modules/VersionRecorded.cmake` (written into the pyGPlates sdist by `cmake/version.py`),
 then a fatal error. A shallow clone is refused outright rather than allowed to produce a
-smaller, plausible number, and so is a repository with none of the product's tags (section 9):
-passing it on to the recorded file would let a stale one win, since that file is gitignored and
-every `pip install .` writes one into the source tree. The sdist's `PKG-INFO` is not a fallback
+smaller, plausible number, and so is a repository with none of the product's tags (section 9),
+or a commit whose only countable tags are skipped by step 6 (section 7.6): passing either on to
+the recorded file would let a stale one win, since that file is gitignored and every
+`pip install .` writes one into the source tree. The sdist's `PKG-INFO` is not a fallback
 of its own: it records only the pyGPlates version, and a build needs both. It serves only to
 mark a tree as an unpacked sdist.
 
 ### 7.2 The guards
 
-Seven guards abort the configure rather than let a bad version reach a package. (Besides them,
-the resolver refuses a shallow clone, a repository without the product's tags, a malformed frozen
-version, and an anchor tag whose base is not the target at its commit — section 9.)
+Eight guards abort the configure rather than let a bad version reach a package. (Besides them,
+the resolver refuses a shallow clone, a repository without the product's tags, a commit whose
+only countable tags are skipped (section 7.6), a malformed frozen version, and an anchor tag whose
+base is not the target at its commit — section 9.)
 
 1. **Standing on a release tag whose base is not the target.** Tagging `PyGPlates-1.1.0` while the
    target still says `1.0.0` is a fatal error naming what to set the target to. This is what makes
@@ -312,7 +319,8 @@ version, and an anchor tag whose base is not the target at its commit — sectio
    messages.
 4. **The target skips a version.** Check 3 passes `1.2.0` after a released `1.0.0`, which is the
    accidentally-skipped `1.1` case. So the target's numeric head must be the reference's, or its
-   next patch, next minor or next major:
+   next patch, next minor or next major (or, on a branch made before a series was cut, the next
+   after that skipped series: section 7.6):
 
    | reference | allowed targets | rejected |
    |---|---|---|
@@ -327,7 +335,8 @@ version, and an anchor tag whose base is not the target at its commit — sectio
    only the candidate's own head may follow, as another candidate or as the release (check 5
    restricts the release further). Off the
    line — the development branch once the series branch cut from it has its first candidate, or
-   a feature branch cut before then — the candidate's head counts as released, and *staying* on
+   a branch made from it before its target moved on (one made before the cut skips a series that
+   records its cut: section 7.6) — the candidate's head counts as released, and *staying* on
    it is refused: the `1.1.0` line has moved to the series branch, which is minting
    `1.1.0rc1.devN`, and the development branch's count has restarted from the branch point
    (section 8.2), so left on `1.1.0` it would re-issue `1.1.0.dev1`, `dev2`, … for new commits.
@@ -356,7 +365,7 @@ version, and an anchor tag whose base is not the target at its commit — sectio
    cherry-picked after the target was set, say. A dispatch of `build-wheels.yml` builds wheels
    from either, and they lose to the candidate whenever pip chooses, and fail a dependent's
    `pygplates>=1.1.0rc1` outright. So the release's target is accepted only on the commit tagged as
-   it, where of these guards only checks 1 and 7 apply: the ordering checks are not consulted
+   it, where of these guards only checks 1, 7 and 8 apply: the ordering checks are not consulted
    there at all (the release script checks the order instead, once — section 7.5). The advice
    depends on where the commit is. Directly on the candidate it may be the release awaiting its
    tag, so the refusal offers both ways forward: tag it (a local tag publishes nothing, so tag,
@@ -377,6 +386,9 @@ version, and an anchor tag whose base is not the target at its commit — sectio
 7. **A release tag on a commit that does not freeze the other product.** The mirror of check 6:
    a release is made on a series branch of its own product, which freezes the other (section
    7.4 has why, and why this check is safe in the resolver).
+8. **A release tag on a commit that does not record its cut.** The same commit that freezes the
+   other product records the development branch commit the series was cut from; the tag is
+   refused without a valid record, since a tag cannot be repaired afterwards (section 7.6).
 
 **Which release is "the nearest release"** for checks 3 and 4 is a separate question from which
 tag supplies the count, and is computed separately:
@@ -402,7 +414,10 @@ it was made, and fails ("already released", or "being released on another branch
 keeps that window empty — the cut commit itself is an ancestor of the series tag, so the tag is
 skipped there and that commit still counts from the older release — and it is only non-empty if
 something else lands on the development branch in between. A bisect that lands in it anyway can
-pass the version as a `-D` define. So the cut, the first tag and the bump belong in one sitting:
+set the version in the environment variable (section 7.6 has why that, rather than a `-D`
+define). (A branch made from the development branch *before* the cut is
+not in this position, if the series records its cut: section 7.6.) So the cut, the first tag and
+the bump belong in one sitting:
 prepare the candidate on the development branch, cut the series branch once it is ready, tag the
 branch's first commit — the one that sets the target to the candidate — push the tag, and bump.
 The candidate's artifacts are what get tested, and whatever testing finds goes into the next
@@ -416,12 +431,13 @@ branch was cut: a release of one product on its own series branch stopped every 
 and the frozen versions that fix it.
 
 The pure parts of the resolver — splitting, joining, ordering, the target checks, the
-untagged-release check and the frozen version check — are tested by
+untagged-release check, the frozen version check and reading a series cut record — are tested by
 `cmake/modules/VersionFromGitTest.cmake`, registered with CTest as `version-resolver-test` in both
 build trees, and runnable directly with `cmake -P`. So are the history-shaped cases, on a
 synthetic repository with a release series branch per product, cut one after the other: the
-shape section 7.4's failure needs, and the release commit that guard 5 only warns about once a
-later tag has it in its history. It ends by running the whole
+shape section 7.4's failure needs, the release commit that guard 5 only warns about once a
+later tag has it in its history, branches made before, at and after a cut, and the records guard
+8 refuses. It ends by running the whole
 resolver once against the repository it is in, so the git path gets exercised and a mistake in
 `VersionRelease.cmake` fails a test as well as the configure. (An earlier version wrote the
 expected nearest releases down as literals, `2.5.0` and `1.0.0`, which would have gone red at the
@@ -438,7 +454,9 @@ pyGPlates unless stated; `T` is the target in `VersionRelease.cmake`.
 | standing on the tag `PyGPlates-1.1.0rc1` | `1.1.0rc1` | at HEAD, dev 0, base = T | `1.1.0rc1` |
 | development branch, 2 commits after the series branch was cut, target not moved | `1.1.0` | `PyGPlates-1.1.0rc1`, distance 2, off the line | **fatal** — `1.1.0` is being released on another branch; set T to `1.2.0` |
 | same, target moved on | `1.2.0` | `PyGPlates-1.1.0rc1`, distance 2 | `1.2.0.dev2` |
-| a feature branch cut before the series branch, not yet merged with the development branch | `1.1.0` | `PyGPlates-1.1.0rc1`, off the line | **fatal** — merge the development branch in |
+| a feature branch made 2 commits past `PyGPlates-1.0.0`, before the series branch was cut, not yet merged with the development branch | `1.1.0` | `PyGPlates-1.0.0`, distance 2 (`PyGPlates-1.1.0rc1` skipped: its recorded cut is not in this history) | `1.1.0.dev2` |
+| same, the series having no record (cut before records existed, so the branch runs the resolver from before them too) | `1.1.0` | `PyGPlates-1.1.0rc1`, off the line | **fatal**, in that resolver's words — merge the development branch in |
+| a feature branch made at the commit the series branch was cut from | `1.1.0` | `PyGPlates-1.1.0rc1`, off the line (the cut is in its history) | **fatal** — merge the development branch in |
 | two commits later, a second candidate decided | `1.1.0rc2` | `PyGPlates-1.1.0rc1`, distance 2 | `1.1.0rc2.dev2` |
 | series branch after `rc1`, the release's target set but the commit not yet tagged | `1.1.0` | `PyGPlates-1.1.0rc1`, distance 1, on the line | **fatal** — tag it `PyGPlates-1.1.0`, or set T to `1.1.0rc2` |
 | same, with a fix cherry-picked on top | `1.1.0` | `PyGPlates-1.1.0rc1`, distance 2, on the line | **fatal** — set T to `1.1.0rc2` (not directly on the candidate, so tagging is not offered) |
@@ -448,10 +466,12 @@ pyGPlates unless stated; `T` is the target in `VersionRelease.cmake`.
 | series branch, 3 commits after the release, target not bumped | `1.1.0` | `PyGPlates-1.1.0`, distance 3, base = T | **fatal** — already released |
 | same, after bumping the target for the patch line | `1.1.1` | `PyGPlates-1.1.0`, distance 3 | `1.1.1.dev3` |
 | development branch after the release, target bumped | `1.2.0` | `PyGPlates-1.1.0`, distance 5 | `1.2.0.dev5` |
+| a patch branch made from the series branch at `rc1`, after `PyGPlates-1.1.0` is tagged there | `1.1.0rc2` | `PyGPlates-1.1.0`, off the line | **fatal** — sorts below `1.1.0`; rebase onto the series branch |
 | GPlates on `release/pygplates-1.1`, frozen at the cut | frozen `2.6.0-150` | not consulted | `2.6.0-150` |
 | same, after `GPlates-2.6.0` is tagged on `release/gplates-2.6`, cut later | frozen `2.6.0-150` | not consulted | `2.6.0-150` (counted from git with the target `2.6.0`: **fatal**, section 7.4) |
 | GPlates on `release/pygplates-1.1`, a `GPlates-2.6.0` tag put there by mistake | frozen `2.6.0-150` | at HEAD | **fatal** — not released from this branch |
 | standing on `PyGPlates-1.1.0rc1`, on a commit that does not freeze GPlates | `1.1.0rc1` | at HEAD | **fatal** — freeze GPlates in a new commit, and tag that |
+| standing on `PyGPlates-1.1.0rc1`, on a commit that does not record its cut (or records a series commit, or an abbreviated hash) | `1.1.0rc1` | at HEAD | **fatal** — record the cut in a new commit, and tag that |
 | development branch, a candidate tagged on it by mistake, the next commit | `1.2.0` | `PyGPlates-1.1.0rc1`, distance 1, on the line | **fatal** — not finished, or the tag is the mistake (the tagged commit itself is refused too: it freezes nothing) |
 | development branch, target left at `0.9.0` | `0.9.0` | `PyGPlates-1.0.0` | **fatal** — sorts below the release |
 | development branch, target set to `1.3.0` | `1.3.0` | `PyGPlates-1.0.0` | **fatal** — skips 1.1 and 1.2 |
@@ -582,15 +602,144 @@ here, `PYGPLATES_RELEASE_ALLOW_CHANGES_SINCE_CANDIDATE`). A resolver rule needs 
 branch, and that edit stays in its history.
 
 **What the resolver promises at a tag.** A tag matching the target configures, on a commit that
-freezes the other product (guard 7) — and a commit that did not would stop configuring at the
-other product's next release anyway. Policy checks kept out of the resolver leave that rule
-simple.
+freezes the other product (guard 7) and records its cut (guard 8) — and a commit that did not
+freeze would stop configuring at the other product's next release anyway. Policy checks kept out
+of the resolver leave that rule simple.
 
 **A refusal is only as strong as its enforcement.** The `release-wheel` skill tells the agent
 running it to confirm each step with the developer. That is an instruction, not a gate, and a
 release made by hand never sees it. The `pypi` environment's required reviewer is a real gate, but
 it is a bare approval that shows nothing about the commit's history. The publishing checks are
 the only things that enforce the order at a tag and the candidate rule.
+
+### 7.6 Branches made before a series was cut
+
+A branch made from the development branch before a series branch is cut keeps the development
+branch's target as it was then. Once the series has its first tag, that tag is off the branch's
+line, and section 8.1's rule counts it from where the two histories part: from this branch, its
+own fork point, not the commit the series was cut from. The branch then looks exactly like the
+development branch after a cut whose target was never moved on, and every configure of it was
+refused from the moment the tag existed: "being released on another branch" (guard 4), "already
+released" once the release is final (guard 2), or "sorts below" for a branch older than two cuts
+(guard 3). This was found on 2026-11-25 on a documentation branch made 39 first-parent commits
+before `release/pygplates-1.1` was cut. Old development branch commits, series branches, branches
+made after the target moved on and pull request builds (which build the merge with the
+development branch) were unaffected.
+
+The history cannot say where a series was cut, for the reason section 7.4 gives: seen from the
+branch, the development branch commits between its fork point and the cut are indistinguishable
+from series commits. So, as with the freeze, **the series branch says it**. The commit that cuts
+it, its first commit, records its parent, the development branch commit it was cut from, as a
+full hash:
+
+```
+set(RELEASE_SERIES_CUT_FROM 0123456789abcdef0123456789abcdef01234567)
+```
+
+A release tag that HEAD does not have in its history is then skipped if its series' recorded cut
+is not in HEAD's history either (section 7.1, step 6), since HEAD left the development branch
+before that series existed. The record is read at the tag, so the answer depends only on the
+commit and the tags, like everything else here. And a later series' tag can only be skipped by a
+commit made before its cut, never start refusing it, which is the property section 7.5 asks of a
+resolver rule that depends on tags appearing later.
+
+A skipped series still counts for one thing, the no-skip policy (guard 4). A branch made before
+the cut can take the development branch's later target without its history, by a squash merge or
+a cherry-picked target change, and `1.2.0` after a skipped 1.1 series skips nothing: that series
+released 1.1. So off a release series line, guard 4 also accepts the release after any skipped
+series. Nothing else about a skipped series binds HEAD. (Found in review: without this, such a
+branch was refused as skipping 1.1, where it had resolved before records existed.) Not on a
+series line, where every later series is skipped and a target past the series' own head is the
+development branch's, taken by mistake; nor against a candidate on HEAD's first-parent line,
+which is guard 4's "not been finished" rule (both found in a second review, where a first version
+of this relaxation accepted them).
+
+**A record is valid** if it is a full commit hash (an abbreviated one can become ambiguous as the
+repository grows, and change what an old commit resolves to), in the tagged commit's history, and
+a commit that could be the development branch's: one that freezes nothing and has no pre-release
+target. A series branch freezes the other product from the commit that cuts it on, and no
+development branch commit freezes anything, so the likeliest slip, recording the cutting commit
+itself instead of its parent, is rejected. An older development branch commit than the cut is
+wrong but harmless: branches made between it and the real cut are refused as they were without
+a record, and the development branch still has it in its history, so it keeps every check.
+
+The other slip is not harmless. If the freeze is forgotten in the cutting commit and added in a
+later one, the series commits before it freeze nothing either, and one of them recorded has the
+same shape in the history as a real cut. The development branch does not have it in its
+history, so it skips the series' tags, and loses the check that makes it move its target on:
+left on `1.1.0` after the cut, it went on resolving `1.1.0.devN` even after `1.1.0` was released
+(found in review, on a synthetic repository). The pre-release test catches it whenever that
+commit set the series' first candidate, which the first commit of a series normally does, and
+which the development branch is not expected to carry. Nothing refuses a candidate *target* on
+the development branch (only a candidate tag), so if one ever had one, the message says to record
+the last development branch commit before it: older than the cut, which is harmless. A series
+commit with a plain target that freezes nothing still gets through: a series cut straight at a
+final release with its freeze forgotten, or preparation commits made on the series branch before
+the one that freezes. So guards 7 and 8 both say which commit to record: the parent of the series
+branch's *first* commit, not of a later one. A
+ref-based check (that the recorded commit is on `main`) was considered and set aside: in the
+publishing run it comes after the tag is pushed, when the tag can no longer be repaired; before
+that, the remote's name varies, and so does how recently it was fetched; and GPlates has no
+publishing run.
+
+A release tag on a commit without a valid record is refused at the tag (guard 8), where it can
+still be repaired. Unlike a missing freeze, a missing record does this branch no harm, so the
+guard does give up configuring a commit that would otherwise work; it is accepted because the
+tag is the last point at which the record can still be added. Seen from any other commit, a tag
+without a valid record is treated as it was before records existed.
+
+**What a record cannot help.** Each of these has the cut in its history, so it is
+indistinguishable from the development branch with its target left behind, and its refusal names
+the way out:
+
+- a branch made at the commit the series was cut from, or between the cut and the development
+  branch's target change (a window that is normally empty: section 7.2's honest limit). Merge
+  the development branch in;
+- a patch branch made from a series branch and overtaken by that series' next tag. Rebase it onto
+  the series branch: merged in, a candidate stays off the patch branch's first-parent line, and
+  binds its target exactly as before.
+
+Either can also be built as it is by setting the refused product's version in the environment
+variable (`GPLATES_SEMANTIC_VERSION` or `PYGPLATES_PEP440_VERSION`). A `-D` define of the same name
+works for the build tree it is given to, but not for the `version-resolver-test` registered there,
+which resolves the version again.
+
+Nor can a record help a commit made before records existed, which runs the resolver it carries,
+with that resolver's messages. That includes every branch made before `release/pygplates-1.1` was
+cut. Merging the development branch in brings the new target and the new resolver together.
+
+`release/pygplates-1.1` was cut before records existed. It has no record, and needs none: every
+commit that carries the rule has `ccc7ee1a5`, that series' cut, in its history, so the series'
+tags are never candidates for skipping. Were the resolver change ever cherry-picked onto that
+branch, guard 8 would refuse its next tag without a record, so the record would go into the same
+commit. After a candidate, that commit is a change the release cannot carry (section 7.5), so it
+would start another candidate.
+
+A record would also skip the other product's later releases on a series branch (section 7.4's
+failure), but the freeze stays. It is the right version for that product, not merely a harmless
+one, and it was already a fixed value.
+
+Alternatives considered:
+
+- **Find the development branch by its ref.** Series branches are cut from `main`, so
+  `merge-base(tag, main)` is the cut for an up-to-date `main`, with nothing recorded. A review
+  before implementation rejected it. `refs/remotes/*/main` matches every remote, and refs the
+  branch model does not govern gave `main` itself wrong results: a fork remote whose `main` had
+  merged a release tag (`3.0.0-2` became `3.0.0-6`), a series merged back with `--no-ff`, and one
+  fix branch merged into both a series and `main` (the merge-base is then the fix, not the cut).
+  The same commit could resolve to two different versions in two clones. And it did nothing
+  without a `main` ref, as in a single-branch clone with fetched tags, a fork's CI, or a fork
+  whose default branch has another name.
+- **A marker tag at each cut.** New non-release tags on the public repository, which otherwise
+  carries only releases and anchors.
+- **Compare the tag with the target at the merge-base.** The branch's fork point and the cut both
+  carry the old target, and both resolve without the tag (they are its ancestors), so nothing
+  there tells them apart.
+- **Derive the cut as the parent of the commit that introduced the freeze**, with nothing new
+  recorded. It costs a history search per tag, and it is wrong, undetectably, if the freeze ever
+  lands in a second series commit.
+- **Make the refusal a warning.** The development branch would lose the guard that makes it move
+  its target on, and a final release (guard 2) would not be covered.
 
 ## 8. Three things that look like bugs and are not
 
@@ -624,6 +773,10 @@ count from the branch point  : 5
 and the same equality with the series branch never merged back. So **N is the number of times
 the development tip has advanced since that release diverged**, which is a more meaningful
 quantity than distance to a tagged commit would have been.
+
+That holds for a commit that has the branch point in its history. From a branch made off the
+development branch *before* the cut, the histories part at that branch's own fork point instead,
+which is why a series branch records where it was cut (section 7.6).
 
 The shape already existed in-tree before the model changed: `PyGPlates-1.0.0rc1` is on
 `f4de85708`, a commit of the old `release/pygplates-1.0.0` branch. From the old `pygplates`
@@ -751,6 +904,13 @@ merges `gplates` in and commits once more:
 | fork, the merge commit | `2.7.0-2003` |
 | fork, the commit after the merge | `2.7.0-2004` |
 | the same, after re-anchoring the merge commit as `GPlates-2.7.0-2000` | `2.7.0-2001` |
+
+The fork's commits before the merge resolve only if upstream moved on at least one commit from the
+fork point before cutting, and `release/gplates-2.6` records where it was cut (section 7.6): the
+fork then left the development branch before that series existed, and `GPlates-2.6.0` is
+skipped. Otherwise - cut from the fork point itself, or with no record - `GPlates-2.6.0` is their
+nearest release, off the line at the fork point, and the target `2.6.0` is refused as already
+released until the fork merges the development branch in.
 
 So a fork's number keeps rising across upstream's releases unless the fork places a new anchor,
 and either is fine for ordering, since the base sorts first. A new anchor goes on the merge commit
